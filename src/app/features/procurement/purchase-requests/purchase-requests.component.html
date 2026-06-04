@@ -1,0 +1,427 @@
+<div class="space-y-6">
+  
+  <!-- Header with actions -->
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
+    <div>
+      <h1 class="text-2xl font-black text-slate-800 tracking-tight">{{ 'procurement.purchase_requests.title' | translate }}</h1>
+      <p class="text-xs text-slate-500 font-semibold mt-1">{{ 'procurement.purchase_requests.subtitle' | translate }}</p>
+    </div>
+    
+    <div class="flex items-center space-x-2.5 shrink-0">
+      <button 
+        (click)="toggleViewMode()" 
+        class="flex items-center space-x-1.5 px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all shadow-sm"
+      >
+        @if (isFormView()) {
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+          <span>Back to List</span>
+        } @else {
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+          </svg>
+          <span>{{ 'procurement.purchase_requests.new_request' | translate }}</span>
+        }
+      </button>
+    </div>
+  </div>
+
+  @if (isFormView()) {
+    <!-- NEW PURCHASE REQUEST FORM -->
+    <div class="bg-white rounded-xl border border-slate-100 shadow-sm p-6 max-w-4xl mx-auto animate-fade-in">
+      <div class="pb-4 mb-6 border-b border-slate-150">
+        <h2 class="text-sm font-bold text-slate-800">{{ 'procurement.purchase_requests.new_request' | translate }}</h2>
+        <p class="text-[10px] text-slate-400 font-semibold mt-0.5">Please provide cost allocation details and specify material requirements below.</p>
+      </div>
+
+      <form (submit)="submitPR($event)" class="space-y-6">
+        <!-- Core PR details -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs font-semibold text-slate-600">
+          <div>
+            <label class="block mb-1.5" for="dept">{{ 'procurement.purchase_requests.col_dept' | translate }}</label>
+            <select 
+              id="dept" 
+              name="department" 
+              [(ngModel)]="formPR.department" 
+              class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-slate-800 focus:outline-none focus:border-accent"
+              required
+            >
+              <option value="Drilling Operations">Drilling Operations</option>
+              <option value="Maintenance & Engineering">Maintenance & Engineering</option>
+              <option value="HSE & Safety">HSE & Safety</option>
+              <option value="Logistics & Warehousing">Logistics & Warehousing</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block mb-1.5" for="cc">Cost Center Allocation</label>
+            <select 
+              id="cc" 
+              name="costCenter" 
+              [(ngModel)]="formPR.costCenter" 
+              class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-slate-800 focus:outline-none focus:border-accent"
+              required
+            >
+              <option value="CC-DRL-001">CC-DRL-001 (Rig Alpha Ops)</option>
+              <option value="CC-MNT-002">CC-MNT-002 (Rig Beta Maint)</option>
+              <option value="CC-HSE-001">CC-HSE-001 (Safety General)</option>
+              <option value="CC-LOG-004">CC-LOG-004 (Supply Logistics)</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block mb-1.5" for="reqDate">Target Delivery Date</label>
+            <input 
+              id="reqDate" 
+              type="date" 
+              name="requiredDate" 
+              [(ngModel)]="formPR.requiredDate" 
+              class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-slate-800 focus:outline-none focus:border-accent"
+              required
+            >
+          </div>
+        </div>
+
+        <div class="text-xs font-semibold text-slate-600">
+          <label class="block mb-1.5" for="desc">Purpose / Scope of Work</label>
+          <textarea 
+            id="desc" 
+            name="description" 
+            [(ngModel)]="formPR.description" 
+            rows="3"
+            class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-slate-800 focus:outline-none focus:border-accent leading-relaxed"
+            placeholder="Explain the operational necessity for this request..."
+            required
+          ></textarea>
+        </div>
+
+        <!-- Items Grid -->
+        <div class="space-y-3">
+          <div class="flex justify-between items-center pb-2 border-b border-slate-100">
+            <h3 class="text-xs font-black text-slate-400 uppercase tracking-widest">Requisition Line Items</h3>
+            <button 
+              type="button" 
+              (click)="addItemRow()" 
+              class="text-xs font-bold text-accent hover:underline flex items-center"
+            >
+              <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4" />
+              </svg>
+              Add Line Item
+            </button>
+          </div>
+
+          @for (item of formPR.items; track $index) {
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-end bg-slate-50 p-3 rounded-lg border border-slate-100 animate-fade-in text-xs">
+              
+              <!-- Material Selection -->
+              <div class="md:col-span-5 font-semibold text-slate-600">
+                <label class="block mb-1">Material / Service</label>
+                <select 
+                  [name]="'itemSelect_' + $index" 
+                  [(ngModel)]="item.itemCode"
+                  (change)="onItemSelect($index)" 
+                  class="w-full bg-white border border-slate-200 rounded-md p-2 text-slate-800 focus:outline-none focus:border-accent"
+                  required
+                >
+                  <option value="">-- Select Material --</option>
+                  @for (inv of inventory(); track inv.id) {
+                    <option [value]="inv.itemCode">{{ inv.itemName }} ({{ inv.itemCode }})</option>
+                  }
+                </select>
+              </div>
+
+              <!-- Quantity -->
+              <div class="md:col-span-2 font-semibold text-slate-600">
+                <label class="block mb-1">Qty</label>
+                <input 
+                  type="number" 
+                  [name]="'itemQty_' + $index" 
+                  [(ngModel)]="item.quantity" 
+                  min="1"
+                  class="w-full bg-white border border-slate-200 rounded-md p-2 text-slate-800 focus:outline-none focus:border-accent"
+                  required
+                >
+              </div>
+
+              <!-- Unit of Measure -->
+              <div class="md:col-span-1.5 font-semibold text-slate-600">
+                <label class="block mb-1">UOM</label>
+                <input 
+                  type="text" 
+                  [name]="'itemUom_' + $index" 
+                  [(ngModel)]="item.uom" 
+                  class="w-full bg-slate-100 border border-slate-200 rounded-md p-2 text-slate-500 text-center font-bold focus:outline-none"
+                  readonly
+                >
+              </div>
+
+              <!-- Notes -->
+              <div class="md:col-span-3.5 font-semibold text-slate-600">
+                <label class="block mb-1">Notes</label>
+                <div class="flex items-center space-x-2">
+                  <input 
+                    type="text" 
+                    [name]="'itemNotes_' + $index" 
+                    [(ngModel)]="item.notes" 
+                    placeholder="E.g. urgent, grade"
+                    class="w-full bg-white border border-slate-200 rounded-md p-2 text-slate-800 focus:outline-none"
+                  >
+                  <!-- Delete button -->
+                  @if (formPR.items.length > 1) {
+                    <button 
+                      type="button" 
+                      (click)="removeItemRow($index)" 
+                      class="text-danger hover:text-red-700 p-2 hover:bg-red-50 rounded-md transition-colors"
+                      title="Delete row"
+                    >
+                      <svg class="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </button>
+                  }
+                </div>
+              </div>
+
+            </div>
+          }
+        </div>
+
+        <!-- Form Submit Actions -->
+        <div class="pt-4 border-t border-slate-100 flex items-center justify-end space-x-3">
+          <button 
+            type="button" 
+            (click)="toggleViewMode()" 
+            class="px-4 py-2 border border-slate-200 rounded-lg hover:bg-slate-50 text-slate-600 font-bold text-xs transition-colors"
+          >
+            Cancel
+          </button>
+          <button 
+            type="submit" 
+            class="px-5 py-2 bg-slate-900 text-white rounded-lg hover:bg-slate-800 font-bold text-xs transition-colors shadow-sm"
+          >
+            Submit Requisition
+          </button>
+        </div>
+
+      </form>
+    </div>
+  } @else {
+    <!-- PURCHASE REQUESTS TABLE LIST -->
+    <div class="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden animate-fade-in">
+      
+      <!-- Table Filter Header -->
+      <div class="p-4 bg-slate-50/50 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-xs">
+        <div class="flex items-center space-x-2 w-full max-w-sm">
+          <div class="relative w-full">
+            <input 
+              type="text" 
+              placeholder="{{ 'procurement.purchase_requests.search_placeholder' | translate }}" 
+              (input)="searchQuery.set($any($event.target).value)"
+              class="w-full bg-white border border-slate-200 rounded-lg pl-8 pr-3 py-2 text-slate-800 focus:outline-none focus:border-accent"
+            >
+            <svg class="w-4 h-4 text-slate-400 absolute left-2.5 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
+        </div>
+
+        <div class="flex items-center space-x-2 font-semibold">
+          <span class="text-slate-400">{{ 'procurement.purchase_requests.filter_label' | translate }}</span>
+          <select 
+            (change)="statusFilter.set($any($event.target).value)"
+            class="bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-700 focus:outline-none"
+          >
+            <option value="ALL">{{ 'procurement.purchase_requests.all_stages' | translate }}</option>
+            <option value="Draft">Draft</option>
+            <option value="Pending Approval">Pending Approval</option>
+            <option value="Approved">Approved</option>
+            <option value="RFQ Created">RFQ Created</option>
+            <option value="Rejected">Rejected</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Table Body -->
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse text-xs">
+          <thead>
+            <tr class="text-slate-400 font-bold border-b border-slate-100 bg-slate-50/20">
+              <th class="p-4 py-3">{{ 'procurement.purchase_requests.col_pr_number' | translate }}</th>
+              <th class="p-4 py-3">{{ 'procurement.purchase_requests.col_dept' | translate }}</th>
+              <th class="p-4 py-3">Cost Center</th>
+              <th class="p-4 py-3">{{ 'procurement.purchase_requests.col_date' | translate }}</th>
+              <th class="p-4 py-3">Required Date</th>
+              <th class="p-4 py-3 text-center">{{ 'procurement.purchase_requests.col_status' | translate }}</th>
+              <th class="p-4 py-3 text-right">{{ 'procurement.purchase_requests.col_actions' | translate }}</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-50 font-medium text-slate-700">
+            @for (pr of filteredPRs(); track pr.id) {
+              <tr class="hover:bg-slate-50/50 transition-colors">
+                <td class="p-4 font-bold text-slate-900">{{ pr.requestNumber }}</td>
+                <td class="p-4 text-slate-600">{{ pr.department }}</td>
+                <td class="p-4 font-mono text-slate-500">{{ pr.costCenter }}</td>
+                <td class="p-4 text-slate-500">{{ pr.requestDate }}</td>
+                <td class="p-4 text-slate-500">{{ pr.requiredDate }}</td>
+                <td class="p-4 text-center">
+                  <span 
+                    class="px-2.5 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider"
+                    [class.bg-slate-100]="pr.status === 'Draft'"
+                    [class.text-slate-500]="pr.status === 'Draft'"
+                    [class.bg-amber-50]="pr.status === 'Pending Approval'"
+                    [class.text-accent]="pr.status === 'Pending Approval'"
+                    [class.bg-green-50]="pr.status === 'Approved'"
+                    [class.text-success]="pr.status === 'Approved'"
+                    [class.bg-blue-50]="pr.status === 'RFQ Created'"
+                    [class.text-blue-600]="pr.status === 'RFQ Created'"
+                    [class.bg-red-50]="pr.status === 'Rejected'"
+                    [class.text-danger]="pr.status === 'Rejected'"
+                  >
+                    {{ pr.status }}
+                  </span>
+                </td>
+                <td class="p-4 text-right">
+                  <div class="inline-flex space-x-2">
+                    <button 
+                      (click)="viewDetails(pr)"
+                      class="px-2.5 py-1.5 rounded-md hover:bg-slate-100 text-slate-600 font-bold border border-slate-100 transition-colors"
+                    >
+                      {{ 'procurement.purchase_requests.view_details' | translate }}
+                    </button>
+                    @if (pr.status === 'Pending Approval') {
+                      <button 
+                        (click)="approveRequisition(pr.id)"
+                        class="px-2.5 py-1.5 rounded-md bg-green-50 hover:bg-green-100 text-success font-bold border border-green-100 transition-colors"
+                      >
+                        {{ 'procurement.purchase_requests.approve' | translate }}
+                      </button>
+                    }
+                    @if (pr.status === 'Approved') {
+                      <button 
+                        (click)="createRFQForPR(pr)"
+                        class="px-2.5 py-1.5 rounded-md bg-amber-50 hover:bg-amber-100 text-accent font-bold border border-amber-100 transition-colors"
+                      >
+                        {{ 'procurement.purchase_requests.generate_rfq' | translate }}
+                      </button>
+                    }
+                  </div>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="7" class="p-8 text-center text-slate-400">
+                  <div class="max-w-xs mx-auto space-y-2">
+                    <svg class="w-12 h-12 mx-auto text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <span class="font-bold block text-slate-500">{{ 'procurement.purchase_requests.no_records' | translate }}</span>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
+
+  <!-- DETAILS DRAWER MODAL -->
+  @if (selectedPR()) {
+    <div class="fixed inset-0 z-50 flex justify-end animate-fade-in text-xs">
+      <!-- Backdrop -->
+      <div 
+        (click)="closeDetails()" 
+        class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+      ></div>
+
+      <!-- Drawer Panel -->
+      <div class="relative w-full max-w-xl bg-white h-full shadow-2xl flex flex-col p-6 overflow-y-auto animate-slide-left z-10 border-l border-slate-200">
+        
+        <!-- Drawer Header -->
+        <div class="flex items-center justify-between pb-4 mb-4 border-b border-slate-150">
+          <div>
+            <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Requisition Details</span>
+            <h2 class="text-base font-bold text-slate-800 mt-0.5">{{ selectedPR()?.requestNumber }}</h2>
+          </div>
+          <button (click)="closeDetails()" class="text-slate-400 hover:text-slate-600 transition-colors p-1.5 rounded-lg hover:bg-slate-50">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <!-- Information Fields -->
+        <div class="grid grid-cols-2 gap-4 pb-4 mb-4 border-b border-slate-100 font-semibold text-slate-600">
+          <div>
+            <span class="block text-[10px] text-slate-400 uppercase">Department</span>
+            <span class="text-slate-800">{{ selectedPR()?.department }}</span>
+          </div>
+          <div>
+            <span class="block text-[10px] text-slate-400 uppercase">Cost Center</span>
+            <span class="text-slate-800 font-mono">{{ selectedPR()?.costCenter }}</span>
+          </div>
+          <div>
+            <span class="block text-[10px] text-slate-400 uppercase">Requested By</span>
+            <span class="text-slate-800">{{ selectedPR()?.requestedBy }}</span>
+          </div>
+          <div>
+            <span class="block text-[10px] text-slate-400 uppercase">Required Date</span>
+            <span class="text-slate-800">{{ selectedPR()?.requiredDate }}</span>
+          </div>
+        </div>
+
+        <!-- Purpose text -->
+        <div class="pb-4 mb-4 border-b border-slate-100 text-slate-600 font-semibold">
+          <span class="block text-[10px] text-slate-400 uppercase mb-1">Purpose / Scope</span>
+          <p class="bg-slate-50 p-3 rounded-lg border border-slate-100 leading-relaxed text-slate-800">{{ selectedPR()?.description }}</p>
+        </div>
+
+        <!-- Itemized list -->
+        <div class="flex-1 space-y-3">
+          <h3 class="text-xs font-black text-slate-400 uppercase tracking-widest pb-1 border-b border-slate-100">Itemized Material List</h3>
+          
+          <div class="space-y-2">
+            @for (item of selectedPR()?.items; track item.id) {
+              <div class="p-3 bg-slate-50 border border-slate-150 rounded-lg flex items-center justify-between">
+                <div class="space-y-1">
+                  <p class="font-bold text-slate-800">{{ item.itemName }}</p>
+                  <p class="text-[10px] text-slate-400 font-mono">{{ item.itemCode }}</p>
+                  @if (item.notes) {
+                    <p class="text-[10px] text-accent italic">Note: {{ item.notes }}</p>
+                  }
+                </div>
+                <div class="text-right shrink-0">
+                  <span class="text-base font-black text-slate-850">{{ item.quantity }}</span>
+                  <span class="text-[10px] text-slate-400 font-bold ml-1">{{ item.uom }}</span>
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+
+        <!-- Action inside drawer -->
+        <div class="pt-4 border-t border-slate-150 flex justify-end">
+          @if (selectedPR()?.status === 'Approved') {
+            <button 
+              (click)="createRFQForPR(selectedPR()!)"
+              class="w-full py-2.5 bg-accent text-primary font-bold rounded-lg hover:bg-amber-400 transition-colors shadow-sm"
+            >
+              Generate Invitation to Bid (RFQ)
+            </button>
+          } @else {
+            <button 
+              (click)="closeDetails()" 
+              class="w-full py-2.5 border border-slate-200 rounded-lg hover:bg-slate-50 text-slate-600 font-bold text-xs transition-colors"
+            >
+              Close Panel
+            </button>
+          }
+        </div>
+
+      </div>
+    </div>
+  }
+
+</div>

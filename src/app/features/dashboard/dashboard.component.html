@@ -1,0 +1,474 @@
+<div class="space-y-6">
+
+  <!-- Header Area -->
+  <div class="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
+    <div class="text-left rtl:text-right">
+      <h1 class="text-2xl font-black text-slate-800 tracking-tight">{{ 'dashboard.title' | translate }}</h1>
+      <p class="text-xs text-slate-500 font-semibold mt-1">{{ 'dashboard.subtitle' | translate }}</p>
+    </div>
+    <div class="flex items-center space-x-2.5 rtl:space-x-reverse text-xs font-bold text-slate-500 bg-white px-3 py-2 rounded-xl border border-slate-100 shadow-sm shrink-0">
+      <span class="w-2 h-2 rounded-full bg-success"></span>
+      <span>{{ 'dashboard.live_updates' | translate }}</span>
+    </div>
+  </div>
+
+  <!-- KPI Cards Grid -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+    <app-kpi-card 
+      title="dashboard.kpi_prs" 
+      [value]="stats().totalPRs" 
+      trendText="dashboard.trend_prs" 
+      trendType="up" 
+      icon="pr"
+    ></app-kpi-card>
+
+    <app-kpi-card 
+      title="dashboard.kpi_rfqs" 
+      [value]="stats().openRFQs" 
+      trendText="dashboard.trend_rfqs" 
+      trendType="neutral" 
+      icon="rfq"
+    ></app-kpi-card>
+
+    <app-kpi-card 
+      title="dashboard.kpi_pos" 
+      [value]="stats().activePOs" 
+      trendText="dashboard.trend_pos" 
+      trendType="up" 
+      icon="po"
+    ></app-kpi-card>
+
+    <app-kpi-card 
+      title="dashboard.kpi_vendors" 
+      [value]="stats().vendorsCount" 
+      trendText="dashboard.trend_vendors" 
+      trendType="neutral" 
+      icon="vendor"
+    ></app-kpi-card>
+
+    <app-kpi-card 
+      title="dashboard.kpi_equipment" 
+      [value]="stats().equipmentCount" 
+      trendText="dashboard.trend_equipment" 
+      trendType="neutral" 
+      icon="equipment"
+    ></app-kpi-card>
+
+    <app-kpi-card 
+      title="dashboard.kpi_hours" 
+      [value]="stats().monthlyOperatingHours" 
+      trendText="dashboard.trend_hours" 
+      trendType="up" 
+      icon="hours"
+    ></app-kpi-card>
+  </div>
+
+  <!-- Charts & Analytics Section -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 text-left rtl:text-right">
+
+    <!-- Procurement Trend (Bar Chart SVG) -->
+    <div class="lg:col-span-2 bg-white p-5 rounded-xl border border-slate-100 shadow-sm flex flex-col justify-between">
+      <div class="flex items-center justify-between pb-4 border-b border-slate-50">
+        <div>
+          <h3 class="text-sm font-bold text-slate-800">{{ 'dashboard.expenditures_title' | translate }}</h3>
+          <p class="text-[10px] text-slate-400 font-semibold mt-0.5">{{ 'dashboard.expenditures_subtitle' | translate }}</p>
+        </div>
+        <div class="flex items-center space-x-3 rtl:space-x-reverse text-[10px] font-bold text-slate-500">
+          <span class="flex items-center"><span class="w-2.5 h-2.5 bg-primary rounded-sm mr-1 rtl:ml-1 rtl:mr-0"></span> {{ 'dashboard.dept_drilling' | translate }}</span>
+          <span class="flex items-center"><span class="w-2.5 h-2.5 bg-accent rounded-sm mr-1 rtl:ml-1 rtl:mr-0"></span> {{ 'dashboard.dept_maintenance' | translate }}</span>
+        </div>
+      </div>
+
+      <!-- SVG Bar Chart -->
+      <div class="h-60 mt-4 relative flex items-end justify-between px-2 pt-6">
+        <!-- Grid lines background -->
+        <div class="absolute inset-x-0 bottom-6 top-6 flex flex-col justify-between pointer-events-none">
+          <div class="border-t border-slate-100 w-full text-[9px] text-slate-300 pt-0.5">$50K</div>
+          <div class="border-t border-slate-100 w-full text-[9px] text-slate-300 pt-0.5">$25K</div>
+          <div class="border-t border-slate-100 w-full text-[9px] text-slate-300 pt-0.5">$10K</div>
+          <div class="border-b border-slate-200 w-full"></div>
+        </div>
+
+        <!-- Bars (Values are styled inline for the mockup) -->
+        <div class="flex-1 flex justify-around items-end z-10 h-full pb-6">
+          
+          <!-- Jan -->
+          <div class="flex flex-col items-center group relative">
+            <div class="flex space-x-1 items-end">
+              <div class="w-6 bg-primary rounded-t-sm h-28 group-hover:bg-slate-700 transition-colors" title="Drilling: $35,000"></div>
+              <div class="w-6 bg-accent rounded-t-sm h-16 group-hover:bg-amber-400 transition-colors" title="Maint: $20,000"></div>
+            </div>
+            <span class="text-[10px] text-slate-400 font-semibold mt-2">{{ 'common.jan' | translate }}</span>
+          </div>
+
+          <!-- Feb -->
+          <div class="flex flex-col items-center group relative">
+            <div class="flex space-x-1 items-end">
+              <div class="w-6 bg-primary rounded-t-sm h-36 group-hover:bg-slate-700 transition-colors" title="Drilling: $45,000"></div>
+              <div class="w-6 bg-accent rounded-t-sm h-24 group-hover:bg-amber-400 transition-colors" title="Maint: $30,000"></div>
+            </div>
+            <span class="text-[10px] text-slate-400 font-semibold mt-2">{{ 'common.feb' | translate }}</span>
+          </div>
+
+          <!-- Mar -->
+          <div class="flex flex-col items-center group relative">
+            <div class="flex space-x-1 items-end">
+              <div class="w-6 bg-primary rounded-t-sm h-20 group-hover:bg-slate-700 transition-colors" title="Drilling: $25,000"></div>
+              <div class="w-6 bg-accent rounded-t-sm h-12 group-hover:bg-amber-400 transition-colors" title="Maint: $15,000"></div>
+            </div>
+            <span class="text-[10px] text-slate-400 font-semibold mt-2">{{ 'common.mar' | translate }}</span>
+          </div>
+
+          <!-- Apr -->
+          <div class="flex flex-col items-center group relative">
+            <div class="flex space-x-1 items-end">
+              <div class="w-6 bg-primary rounded-t-sm h-44 group-hover:bg-slate-700 transition-colors" title="Drilling: $55,000"></div>
+              <div class="w-6 bg-accent rounded-t-sm h-28 group-hover:bg-amber-400 transition-colors" title="Maint: $35,000"></div>
+            </div>
+            <span class="text-[10px] text-slate-400 font-semibold mt-2">{{ 'common.apr' | translate }}</span>
+          </div>
+
+          <!-- May -->
+          <div class="flex flex-col items-center group relative">
+            <div class="flex space-x-1 items-end">
+              <div class="w-6 bg-primary rounded-t-sm h-32 group-hover:bg-slate-700 transition-colors" title="Drilling: $40,000"></div>
+              <div class="w-6 bg-accent rounded-t-sm h-36 group-hover:bg-amber-400 transition-colors" title="Maint: $45,000"></div>
+            </div>
+            <span class="text-[10px] text-slate-400 font-semibold mt-2">{{ 'common.may' | translate }}</span>
+          </div>
+
+          <!-- Jun (Current) -->
+          <div class="flex flex-col items-center group relative">
+            <div class="flex space-x-1 items-end">
+              <div class="w-6 bg-primary rounded-t-sm h-48 group-hover:bg-slate-700 transition-colors" title="Drilling: $60,000"></div>
+              <div class="w-6 bg-accent rounded-t-sm h-16 group-hover:bg-amber-400 transition-colors" title="Maint: $20,000"></div>
+            </div>
+            <span class="text-[10px] text-slate-400 font-bold mt-2 text-primary">{{ 'common.jun' | translate }}</span>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- RFQ Status (Donut Chart representation) -->
+    <div class="bg-white p-5 rounded-xl border border-slate-100 shadow-sm flex flex-col justify-between">
+      <div class="pb-3 border-b border-slate-50">
+        <h3 class="text-sm font-bold text-slate-800">{{ 'dashboard.rfq_dist_title' | translate }}</h3>
+        <p class="text-[10px] text-slate-400 font-semibold mt-0.5">{{ 'dashboard.rfq_dist_subtitle' | translate }}</p>
+      </div>
+
+      <div class="py-4 flex justify-center items-center">
+        <!-- SVG Donut Chart -->
+        <div class="relative w-36 h-36">
+          <svg viewBox="0 0 36 36" class="w-full h-full transform -rotate-90">
+            <!-- Background circle -->
+            <circle cx="18" cy="18" r="15.915" fill="none" stroke="#F1F5F9" stroke-width="3"></circle>
+            <!-- Sent (40%) -->
+            <circle cx="18" cy="18" r="15.915" fill="none" stroke="#F59E0B" stroke-width="3.2" stroke-dasharray="40 60" stroke-dashoffset="0"></circle>
+            <!-- Quotations Received (35%) -->
+            <circle cx="18" cy="18" r="15.915" fill="none" stroke="#22C55E" stroke-width="3.2" stroke-dasharray="35 65" stroke-dashoffset="-40"></circle>
+            <!-- PO Created (25%) -->
+            <circle cx="18" cy="18" r="15.915" fill="none" stroke="#0F172A" stroke-width="3.2" stroke-dasharray="25 75" stroke-dashoffset="-75"></circle>
+          </svg>
+          <!-- Center Text -->
+          <div class="absolute inset-0 flex flex-col items-center justify-center">
+            <span class="text-2xl font-black text-slate-800">100%</span>
+            <span class="text-[8px] text-slate-400 font-bold uppercase tracking-wider">{{ 'dashboard.active_run' | translate }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Donut Legend -->
+      <div class="grid grid-cols-3 gap-2 text-center text-[10px] font-bold text-slate-500 pt-3 border-t border-slate-50">
+        <div class="flex flex-col items-center">
+          <span class="w-2.5 h-2.5 rounded-full bg-accent mb-1"></span>
+          <span>{{ 'dashboard.legend_sent' | translate }} (40%)</span>
+        </div>
+        <div class="flex flex-col items-center">
+          <span class="w-2.5 h-2.5 rounded-full bg-success mb-1"></span>
+          <span>{{ 'dashboard.legend_bidded' | translate }} (35%)</span>
+        </div>
+        <div class="flex flex-col items-center">
+          <span class="w-2.5 h-2.5 rounded-full bg-primary mb-1"></span>
+          <span>{{ 'dashboard.legend_issued' | translate }} (25%)</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Second Analytics Row -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 text-left rtl:text-right">
+
+    <!-- Equipment Status & Stock Health -->
+    <div class="bg-white p-5 rounded-xl border border-slate-100 shadow-sm">
+      <div class="pb-3 border-b border-slate-50">
+        <h3 class="text-sm font-bold text-slate-800">{{ 'dashboard.stock_health_title' | translate }}</h3>
+        <p class="text-[10px] text-slate-400 font-semibold mt-0.5">{{ 'dashboard.stock_health_subtitle' | translate }}</p>
+      </div>
+
+      <div class="space-y-4 mt-5">
+        
+        <!-- In Stock -->
+        <div>
+          <div class="flex justify-between text-xs font-semibold mb-1">
+            <span class="text-slate-600 flex items-center"><span class="w-2 h-2 rounded-full bg-success mr-2 rtl:ml-2 rtl:mr-0"></span>{{ 'dashboard.stock_in' | translate }}</span>
+            <span class="text-slate-800 font-bold">60%</span>
+          </div>
+          <div class="w-full bg-slate-100 rounded-full h-2">
+            <div class="bg-success h-2 rounded-full" style="width: 60%"></div>
+          </div>
+        </div>
+
+        <!-- Low Stock -->
+        <div>
+          <div class="flex justify-between text-xs font-semibold mb-1">
+            <span class="text-slate-600 flex items-center"><span class="w-2 h-2 rounded-full bg-accent mr-2 rtl:ml-2 rtl:mr-0"></span>{{ 'dashboard.stock_low' | translate }}</span>
+            <span class="text-slate-800 font-bold">30%</span>
+          </div>
+          <div class="w-full bg-slate-100 rounded-full h-2">
+            <div class="bg-accent h-2 rounded-full" style="width: 30%"></div>
+          </div>
+        </div>
+
+        <!-- Out Of Stock -->
+        <div>
+          <div class="flex justify-between text-xs font-semibold mb-1">
+            <span class="text-slate-600 flex items-center"><span class="w-2 h-2 rounded-full bg-danger mr-2 rtl:ml-2 rtl:mr-0"></span>{{ 'dashboard.stock_out' | translate }}</span>
+            <span class="text-slate-800 font-bold">10%</span>
+          </div>
+          <div class="w-full bg-slate-100 rounded-full h-2">
+            <div class="bg-danger h-2 rounded-full" style="width: 10%"></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Active Rig Utilization Metrics -->
+    <div class="lg:col-span-2 bg-white p-5 rounded-xl border border-slate-100 shadow-sm flex flex-col justify-between">
+      <div class="pb-3 border-b border-slate-50 flex justify-between items-center">
+        <div>
+          <h3 class="text-sm font-bold text-slate-800">{{ 'dashboard.rig_status_title' | translate }}</h3>
+          <p class="text-[10px] text-slate-400 font-semibold mt-0.5">{{ 'dashboard.rig_status_subtitle' | translate }}</p>
+        </div>
+        <a routerLink="/operations/rigs" class="text-xs text-slate-900 hover:text-slate-700 font-bold hover:underline shrink-0">{{ 'dashboard.view_all_rigs' | translate }}</a>
+      </div>
+
+      <div class="overflow-x-auto mt-4">
+        <table class="w-full text-left rtl:text-right border-collapse text-xs">
+          <thead>
+            <tr class="text-slate-400 font-bold border-b border-slate-100">
+              <th class="py-2.5 pb-2">{{ 'dashboard.rig_name' | translate }}</th>
+              <th class="py-2.5 pb-2">{{ 'dashboard.location' | translate }}</th>
+              <th class="py-2.5 pb-2">{{ 'dashboard.status' | translate }}</th>
+              <th class="py-2.5 pb-2 text-right rtl:text-left">{{ 'dashboard.drilled_depth' | translate }}</th>
+              <th class="py-2.5 pb-2 text-right rtl:text-left">{{ 'dashboard.crew' | translate }}</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-50 font-medium text-slate-700">
+            @for (rig of activeRigs(); track rig.id) {
+              <tr class="hover:bg-slate-50/50 transition-colors">
+                <td class="py-3 font-bold text-slate-800">{{ rig.rigName }}</td>
+                <td class="py-3 text-slate-500">{{ rig.location }}</td>
+                <td class="py-3">
+                  <span 
+                    class="px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider"
+                    [class.bg-green-50]="rig.status === 'Active'"
+                    [class.text-success]="rig.status === 'Active'"
+                    [class.bg-amber-50]="rig.status === 'Maintenance'"
+                    [class.text-accent]="rig.status === 'Maintenance'"
+                    [class.bg-slate-50]="rig.status === 'Standby'"
+                    [class.text-slate-500]="rig.status === 'Standby'"
+                  >
+                    {{ 'dashboard.status_' + rig.status.toLowerCase() | translate }}
+                  </span>
+                </td>
+                <td class="py-3 text-right rtl:text-left font-mono">{{ rig.drillDepthFt | number }} {{ 'dashboard.ft' | translate }}</td>
+                <td class="py-3 text-right rtl:text-left font-mono">{{ rig.crewCount }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Recent Procurement Activity / Pipeline Status -->
+  <div class="bg-white p-5 rounded-xl border border-slate-100 shadow-sm text-left rtl:text-right">
+    <div class="pb-4 border-b border-slate-50 flex items-center justify-between">
+      <div>
+        <h3 class="text-sm font-bold text-slate-800">{{ 'dashboard.proc_timeline_title' | translate }}</h3>
+        <p class="text-[10px] text-slate-400 font-semibold mt-0.5">{{ 'dashboard.proc_timeline_subtitle' | translate }}</p>
+      </div>
+      <span class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-slate-100 text-slate-600">{{ 'dashboard.action_items_pending' | translate }}</span>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-5">
+      
+      <!-- Pending Requisitions Column -->
+      <div class="space-y-3">
+        <h4 class="text-xs font-black text-slate-400 uppercase tracking-widest pb-1 border-b border-slate-100 flex justify-between items-center">
+          <span>{{ 'dashboard.pr_approvals' | translate }}</span>
+          <span class="px-1.5 py-0.5 text-[9px] bg-slate-100 text-slate-600 rounded">{{ pendingPRs().length }}</span>
+        </h4>
+        <div class="space-y-2 max-h-60 overflow-y-auto pr-1 rtl:pl-1 rtl:pr-0">
+          @for (pr of pendingPRs(); track pr.id) {
+            <div class="p-3 rounded-lg border border-slate-100 hover:border-slate-300 transition-colors bg-slate-50/50">
+              <div class="flex justify-between items-start">
+                <span class="text-xs font-bold text-slate-800">{{ pr.requestNumber }}</span>
+                <span class="px-1.5 py-0.5 rounded text-[8px] font-extrabold uppercase bg-amber-50 text-accent">{{ 'dashboard.status_pending' | translate }}</span>
+              </div>
+              <p class="text-[10px] text-slate-500 font-semibold mt-1 truncate">{{ pr.description }}</p>
+              <div class="flex justify-between items-center mt-2.5 text-[9px] text-slate-400 font-medium">
+                <span>{{ 'dashboard.by' | translate }}: {{ pr.requestedBy }}</span>
+                <span>{{ 'dashboard.date' | translate }}: {{ pr.requestDate }}</span>
+              </div>
+            </div>
+          } @empty {
+            <p class="text-center text-[11px] py-4 text-slate-400">{{ 'dashboard.all_prs_cleared' | translate }}</p>
+          }
+        </div>
+      </div>
+
+      <!-- Quotations Received / RFQ Column -->
+      <div class="space-y-3">
+        <h4 class="text-xs font-black text-slate-400 uppercase tracking-widest pb-1 border-b border-slate-100 flex justify-between items-center">
+          <span>{{ 'dashboard.active_rfq_bids' | translate }}</span>
+          <span class="px-1.5 py-0.5 text-[9px] bg-slate-100 text-slate-600 rounded">{{ biddedRFQs().length }}</span>
+        </h4>
+        <div class="space-y-2 max-h-60 overflow-y-auto pr-1 rtl:pl-1 rtl:pr-0">
+          @for (rfq of biddedRFQs(); track rfq.id) {
+            <div class="p-3 rounded-lg border border-slate-100 hover:border-slate-300 transition-colors bg-slate-50/50">
+              <div class="flex justify-between items-start">
+                <span class="text-xs font-bold text-slate-800">{{ rfq.rfqNumber }}</span>
+                <span class="px-1.5 py-0.5 rounded text-[8px] font-extrabold uppercase bg-green-50 text-success">{{ 'dashboard.status_bids_in' | translate }}</span>
+              </div>
+              <p class="text-[10px] text-slate-500 font-semibold mt-1 truncate">{{ rfq.title }}</p>
+              <div class="flex justify-between items-center mt-2.5 text-[9px] text-slate-400 font-medium">
+                <span>{{ 'dashboard.quotes' | translate }}: {{ rfq.quotations.length }} {{ 'dashboard.submitted' | translate }}</span>
+                <a [routerLink]="['/procurement/quotation-comparison']" [queryParams]="{ rfqId: rfq.id }" class="text-accent font-extrabold hover:underline">{{ 'dashboard.compare' | translate }}</a>
+              </div>
+            </div>
+          } @empty {
+            <p class="text-center text-[11px] py-4 text-slate-400">{{ 'dashboard.no_open_bids' | translate }}</p>
+          }
+        </div>
+      </div>
+
+      <!-- PO Approval Workflows Column -->
+      <div class="space-y-3">
+        <h4 class="text-xs font-black text-slate-400 uppercase tracking-widest pb-1 border-b border-slate-100 flex justify-between items-center">
+          <span>{{ 'dashboard.po_sign_offs' | translate }}</span>
+          <span class="px-1.5 py-0.5 text-[9px] bg-slate-100 text-slate-600 rounded">{{ pendingPOs().length }}</span>
+        </h4>
+        <div class="space-y-2 max-h-60 overflow-y-auto pr-1 rtl:pl-1 rtl:pr-0">
+          @for (po of pendingPOs(); track po.id) {
+            <div class="p-3 rounded-lg border border-slate-100 hover:border-slate-300 transition-colors bg-slate-50/50">
+              <div class="flex justify-between items-start">
+                <span class="text-xs font-bold text-slate-800">{{ po.poNumber }}</span>
+                <span class="px-1.5 py-0.5 rounded text-[8px] font-extrabold uppercase bg-blue-50 text-blue-600">{{ 'dashboard.status_approval_pending' | translate }}</span>
+              </div>
+              <p class="text-[10px] text-slate-500 font-semibold mt-1">{{ 'dashboard.vendor' | translate }}: {{ po.vendorName }}</p>
+              <p class="text-[10px] font-bold text-slate-800 mt-0.5">{{ 'dashboard.value' | translate }}: ${{ po.totalAmount | number }}</p>
+              <div class="flex justify-between items-center mt-2 text-[9px] text-slate-400 font-medium">
+                <span>{{ 'dashboard.cc' | translate }}: {{ po.costCenter }}</span>
+                <a [routerLink]="['/procurement/purchase-orders']" [queryParams]="{ poId: po.id }" class="text-primary font-extrabold hover:underline">{{ 'dashboard.sign_po' | translate }}</a>
+              </div>
+            </div>
+          } @empty {
+            <p class="text-center text-[11px] py-4 text-slate-400">{{ 'dashboard.no_pos_awaiting' | translate }}</p>
+          }
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Activity Monitor Widget -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 text-left rtl:text-right">
+    
+    <!-- Live Activity Feed -->
+    <div class="lg:col-span-2 bg-white p-5 rounded-xl border border-slate-100 shadow-sm">
+      <div class="pb-4 border-b border-slate-50 flex items-center justify-between">
+        <div>
+          <h3 class="text-sm font-bold text-slate-800 flex items-center space-x-2 rtl:space-x-reverse">
+            <svg class="w-4 h-4 text-blue-500 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+            <span>{{ 'dashboard.sys_activity_title' | translate }}</span>
+          </h3>
+          <p class="text-[10px] text-slate-400 font-semibold mt-0.5">{{ 'dashboard.sys_activity_subtitle' | translate }}</p>
+        </div>
+        <a routerLink="/activity-logs" class="text-xs text-slate-900 hover:text-slate-700 font-bold hover:underline shrink-0">{{ 'dashboard.view_all_logs' | translate }}</a>
+      </div>
+      <div class="mt-4">
+        <app-activity-timeline [limit]="5"></app-activity-timeline>
+      </div>
+    </div>
+
+    <!-- Quick Access Panel -->
+    <div class="bg-white p-5 rounded-xl border border-slate-100 shadow-sm">
+      <div class="pb-3 border-b border-slate-50">
+        <h3 class="text-sm font-bold text-slate-800">{{ 'dashboard.compliance_title' | translate }}</h3>
+        <p class="text-[10px] text-slate-400 font-semibold mt-0.5">{{ 'dashboard.compliance_subtitle' | translate }}</p>
+      </div>
+
+      <div class="space-y-3 mt-4">
+        <a routerLink="/activity-logs" class="flex items-center justify-between p-3.5 bg-slate-50 hover:bg-slate-100 rounded-lg border border-slate-100 transition-colors group">
+          <div class="flex items-center space-x-3 rtl:space-x-reverse">
+            <div class="p-2 bg-blue-50 rounded-lg">
+              <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+            </div>
+            <div class="text-left rtl:text-right">
+              <p class="text-xs font-bold text-slate-800">{{ 'common.activity_logs' | translate }}</p>
+              <p class="text-[10px] text-slate-400 font-medium">{{ recentLogCount() }} {{ 'dashboard.total_events_logged' | translate }}</p>
+            </div>
+          </div>
+          <svg class="w-4 h-4 text-slate-400 group-hover:translate-x-0.5 rtl:group-hover:-translate-x-0.5 transition-transform animate-direction" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+          </svg>
+        </a>
+
+        <a routerLink="/audit-trail" class="flex items-center justify-between p-3.5 bg-slate-50 hover:bg-slate-100 rounded-lg border border-slate-100 transition-colors group">
+          <div class="flex items-center space-x-3 rtl:space-x-reverse">
+            <div class="p-2 bg-indigo-50 rounded-lg">
+              <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+              </svg>
+            </div>
+            <div class="text-left rtl:text-right">
+              <p class="text-xs font-bold text-slate-800">{{ 'common.security_audit_trail' | translate }}</p>
+              <p class="text-[10px] text-slate-400 font-medium">{{ 'dashboard.inspect_diffs' | translate }}</p>
+            </div>
+          </div>
+          <svg class="w-4 h-4 text-slate-400 group-hover:translate-x-0.5 rtl:group-hover:-translate-x-0.5 transition-transform animate-direction" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+          </svg>
+        </a>
+
+        <a routerLink="/settings" class="flex items-center justify-between p-3.5 bg-slate-50 hover:bg-slate-100 rounded-lg border border-slate-100 transition-colors group">
+          <div class="flex items-center space-x-3 rtl:space-x-reverse">
+            <div class="p-2 bg-amber-50 rounded-lg">
+              <svg class="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+            </div>
+            <div class="text-left rtl:text-right">
+              <p class="text-xs font-bold text-slate-800">{{ 'dashboard.account_prefs' | translate }}</p>
+              <p class="text-[10px] text-slate-400 font-medium">{{ 'dashboard.profile_timezone_notifs' | translate }}</p>
+            </div>
+          </div>
+          <svg class="w-4 h-4 text-slate-400 group-hover:translate-x-0.5 rtl:group-hover:-translate-x-0.5 transition-transform animate-direction" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+          </svg>
+        </a>
+      </div>
+    </div>
+  </div>
+
+</div>

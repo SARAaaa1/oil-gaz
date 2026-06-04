@@ -1,0 +1,580 @@
+import { Component, OnInit, inject, signal, computed, ChangeDetectionStrategy } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { WorkflowService } from '../../../core/services/workflow.service';
+import { BreadcrumbService } from '../../../core/services/breadcrumb.service';
+import { AuthService } from '../../../core/services/auth.service';
+import { Invoice, WCC, Contract } from '../../../shared/interfaces/workflow.interface';
+import { ActivityTimelineComponent } from '../../../shared/components/activity-timeline/activity-timeline.component';
+
+@Component({
+  selector: 'app-invoices',
+  standalone: true,
+  imports: [CommonModule, FormsModule, ActivityTimelineComponent, TranslateModule],
+  template: `
+    <div class="space-y-6 animate-fade-in text-xs font-semibold text-slate-500">
+      <!-- Header -->
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-5 rounded-xl border border-slate-100 shadow-sm">
+        <div>
+          <h1 class="text-2xl font-black text-slate-800 tracking-tight">Commercial Invoicing</h1>
+          <p class="text-xs text-slate-500 font-semibold mt-1">Generate tax invoices from certified work logs with automatic retention and withholding tax (WHT) calculations</p>
+        </div>
+        <button 
+          *ngIf="canCreate()"
+          (click)="openCreateModal()"
+          class="px-4 py-2.5 bg-primary hover:bg-slate-800 text-white rounded-lg font-bold transition-all shadow-sm flex items-center space-x-2"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <span>Create Invoice</span>
+        </button>
+      </div>
+
+      <!-- Main Layout -->
+      <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        
+        <!-- Invoices List (Left Columns) -->
+        <div class="xl:col-span-2 space-y-4">
+          <!-- Filters -->
+          <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-sm flex flex-col md:flex-row gap-3">
+            <div class="flex-1 relative">
+              <input 
+                type="text" 
+                [(ngModel)]="searchQuery" 
+                placeholder="Search Invoice #, WCC, client, or contract..." 
+                class="w-full bg-slate-50 border border-slate-200 rounded-lg pl-8 pr-3 py-2 text-slate-800 focus:outline-none focus:border-indigo-500/50"
+              />
+              <svg class="w-4 h-4 text-slate-400 absolute left-2.5 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
+            
+            <div>
+              <select 
+                [(ngModel)]="statusFilter" 
+                class="bg-slate-50 border border-slate-200 rounded-lg p-2 text-slate-700 font-bold focus:outline-none"
+              >
+                <option value="ALL">All Statuses</option>
+                <option value="Draft">Draft</option>
+                <option value="Approved">Approved / Ready</option>
+                <option value="Sent">Sent / Outstanding</option>
+                <option value="Paid">Fully Paid</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Invoice table list -->
+          <div class="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden">
+            <div class="overflow-x-auto">
+              <table class="w-full text-left border-collapse text-xs font-semibold text-slate-600">
+                <thead>
+                  <tr class="text-slate-400 font-bold border-b border-slate-100 bg-slate-50/20 text-[10px] uppercase tracking-wider">
+                    <th class="p-4 py-3">Invoice Details</th>
+                    <th class="p-4 py-3">Source Cert / WCC</th>
+                    <th class="p-4 py-3">Dates</th>
+                    <th class="p-4 py-3">Payment Status</th>
+                    <th class="p-4 py-3 text-right">Net Payable</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-50 font-medium text-slate-700">
+                  @for (inv of filteredInvoices(); track inv.id) {
+                    <tr 
+                      (click)="selectInvoice(inv)"
+                      class="hover:bg-indigo-50/25 transition-colors cursor-pointer"
+                      [class.bg-indigo-50]="selectedInvoice()?.id === inv.id"
+                    >
+                      <td class="p-4">
+                        <div class="font-bold text-slate-900 font-mono text-[11px]">{{ inv.invoiceNumber }}</div>
+                        <div class="text-[9px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">{{ inv.clientName }}</div>
+                      </td>
+                      <td class="p-4">
+                        <div class="font-bold text-slate-800">{{ inv.wccNumber }}</div>
+                        <div class="text-[9px] text-slate-450 mt-0.5">Contract: {{ inv.contractNumber }}</div>
+                      </td>
+                      <td class="p-4">
+                        <div class="font-semibold text-slate-700">Issued: {{ inv.issueDate | date:'d MMM y' }}</div>
+                        <div class="text-[9px] text-slate-400 font-bold mt-0.5">Due: {{ inv.dueDate | date:'d MMM y' }}</div>
+                      </td>
+                      <td class="p-4">
+                        <span 
+                          class="px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider"
+                          [class.bg-green-50]="inv.status === 'Paid'"
+                          [class.text-success]="inv.status === 'Paid'"
+                          [class.bg-blue-50]="inv.status === 'Sent' || inv.status === 'Partially Paid'"
+                          [class.text-blue-600]="inv.status === 'Sent' || inv.status === 'Partially Paid'"
+                          [class.bg-amber-50]="inv.status === 'Draft'"
+                          [class.text-accent]="inv.status === 'Draft'"
+                          [class.bg-slate-100]="inv.status === 'Approved'"
+                          [class.text-slate-650]="inv.status === 'Approved'"
+                        >
+                          {{ inv.status }}
+                        </span>
+                      </td>
+                      <td class="p-4 text-right">
+                        <span class="text-sm font-black text-slate-800">
+                          {{ inv.netPayable | currency:inv.currency:'symbol':'1.0-0' }}
+                        </span>
+                        <div class="text-[9px] text-slate-400 font-bold mt-0.5" *ngIf="inv.paidAmount > 0">
+                          Paid: {{ inv.paidAmount | currency:inv.currency:'symbol':'1.0-0' }}
+                        </div>
+                      </td>
+                    </tr>
+                  } @empty {
+                    <tr>
+                      <td colspan="5" class="p-8 text-center text-slate-400 font-bold">
+                        No commercial invoices registered.
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Details / Action panel (Right Column) -->
+        <div class="xl:col-span-1 space-y-6">
+          @if (selectedInvoice(); as inv) {
+            <div class="bg-white rounded-xl border border-slate-100 shadow-sm p-6 space-y-5 sticky top-6">
+              
+              <!-- Title summary -->
+              <div class="pb-4 border-b border-slate-100">
+                <div class="flex items-center justify-between mb-2">
+                  <span class="font-mono text-[10px] font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded">{{ inv.invoiceNumber }}</span>
+                  <div class="flex items-center space-x-1.5">
+                    @if (inv.status === 'Draft' && canApprove()) {
+                      <button (click)="approveInvoice(inv.id)" class="px-2 py-1 bg-green-50 hover:bg-green-100 text-success text-[10px] font-bold rounded border border-green-200 transition-colors">Approve</button>
+                    }
+                    @if (inv.status === 'Approved' && canCreate()) {
+                      <button (click)="sendInvoice(inv.id)" class="px-2.5 py-1 bg-blue-50 hover:bg-blue-100 text-blue-650 text-[10px] font-bold rounded border border-blue-200 transition-colors uppercase tracking-wider">Send Client</button>
+                    }
+                  </div>
+                </div>
+                <h2 class="text-base font-black text-slate-800 tracking-tight">{{ inv.clientName }}</h2>
+                <p class="text-[10px] text-slate-450 mt-1 font-semibold">Payment terms: <span class="font-bold text-slate-700">{{ inv.paymentTerms }}</span></p>
+              </div>
+
+              <!-- Financial breakdown values -->
+              <div class="space-y-2.5 bg-slate-50 p-4 rounded-xl border border-slate-150 text-xs text-slate-650">
+                <div class="flex justify-between">
+                  <span>WCC Subtotal</span>
+                  <span class="font-bold text-slate-800">{{ inv.subtotal | currency:inv.currency }}</span>
+                </div>
+                
+                <div class="flex justify-between text-slate-600">
+                  <span>VAT (+{{ inv.vatPercent }}%)</span>
+                  <span class="font-semibold text-green-700">+{{ inv.vatAmount | currency:inv.currency }}</span>
+                </div>
+
+                <div class="flex justify-between text-slate-600">
+                  <span>Retention Deductible (-{{ inv.retentionPercent }}%)</span>
+                  <span class="font-semibold text-red-600">-{{ inv.retentionAmount | currency:inv.currency }}</span>
+                </div>
+
+                <div class="flex justify-between text-slate-600">
+                  <span>Withholding Tax WHT (-{{ inv.withholdingTaxPercent }}%)</span>
+                  <span class="font-semibold text-red-600">-{{ inv.withholdingTaxAmount | currency:inv.currency }}</span>
+                </div>
+
+                <div class="pt-2 border-t border-slate-200 flex justify-between items-center text-slate-900">
+                  <span class="font-black text-sm">Net Cash Payable</span>
+                  <span class="text-base font-black text-primary">
+                    {{ inv.netPayable | currency:inv.currency }}
+                  </span>
+                </div>
+              </div>
+
+              <!-- General Date info -->
+              <div class="grid grid-cols-2 gap-3 text-[11px] font-bold text-slate-600 p-2.5 bg-slate-50/50 rounded border border-slate-100">
+                <div>
+                  <span class="text-[8px] text-slate-400 uppercase tracking-wider block">Issue Date</span>
+                  <span class="text-slate-800 block mt-0.5">{{ inv.issueDate | date:'d MMM y' }}</span>
+                </div>
+                <div>
+                  <span class="text-[8px] text-slate-400 uppercase tracking-wider block">Due Date</span>
+                  <span class="text-slate-800 block mt-0.5">{{ inv.dueDate | date:'d MMM y' }}</span>
+                </div>
+              </div>
+
+              <!-- Remarks / Notes -->
+              @if (inv.notes) {
+                <div>
+                  <h3 class="text-xs font-black text-slate-750 uppercase tracking-wider mb-1">Invoice Notes</h3>
+                  <p class="p-2.5 bg-slate-50/60 border border-slate-100 rounded text-slate-700 leading-normal text-[11px]">
+                    {{ inv.notes }}
+                  </p>
+                </div>
+              }
+
+              <!-- Multistage Approval Workflow status -->
+              @if (inv.approvalWorkflow[0]?.approverName) {
+                <div class="pt-4 border-t border-slate-100 text-[10px]">
+                  <h3 class="text-xs font-black text-slate-750 uppercase tracking-wider mb-2">Finance Audit Gate</h3>
+                  <div class="p-3 bg-slate-50 rounded-lg border border-slate-100 font-bold">
+                    <div class="flex justify-between items-center text-slate-750">
+                      <span>Certified: {{ inv.approvalWorkflow[0].approverName }}</span>
+                      <span class="text-slate-450">{{ inv.approvalWorkflow[0].actionDate }}</span>
+                    </div>
+                    <div class="mt-1 text-slate-500 font-medium italic">"{{ inv.approvalWorkflow[0].comments }}"</div>
+                  </div>
+                </div>
+              }
+
+              <!-- Activity Log specific to this Invoice -->
+              <div class="pt-4 border-t border-slate-100">
+                <h3 class="text-xs font-black text-slate-750 uppercase tracking-wider mb-2.5 flex items-center space-x-1.5">
+                  <svg class="w-3.5 h-3.5 text-slate-550" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span>Invoice Audit Trail</span>
+                </h3>
+                <div class="max-h-52 overflow-y-auto">
+                  <app-activity-timeline moduleFilter="Invoices" [limit]="3"></app-activity-timeline>
+                </div>
+              </div>
+
+            </div>
+          } @else {
+            <div class="bg-white rounded-xl border border-slate-100 shadow-sm p-8 text-center text-slate-400 flex flex-col items-center justify-center space-y-3 sticky top-6">
+              <svg class="w-8 h-8 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" />
+              </svg>
+              <p class="text-xs font-bold">Select any invoice ledger item to review tax metrics, approve vouchers, or transmit to the billing collection portal.</p>
+            </div>
+          }
+        </div>
+
+      </div>
+
+      <!-- CREATE INVOICE MODAL -->
+      @if (isModalOpen()) {
+        <div class="fixed inset-0 z-50 overflow-hidden flex justify-end">
+          <div (click)="closeModal()" class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity"></div>
+          
+          <div class="relative w-full max-w-xl bg-white h-full shadow-2xl flex flex-col z-10 animate-slide-left">
+            <!-- Header -->
+            <div class="px-6 py-4.5 border-b border-slate-100 flex items-center justify-between">
+              <div>
+                <h2 class="text-base font-black text-slate-800">Generate Tax Invoice</h2>
+                <p class="text-[10px] text-slate-400 font-semibold mt-0.5">Select approved Work Certificate and apply tax deductibles</p>
+              </div>
+              <button (click)="closeModal()" class="p-1 rounded-lg text-slate-450 hover:bg-slate-50 transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <!-- Content -->
+            <div class="flex-1 overflow-y-auto p-6 space-y-4">
+              
+              <!-- Source WCC Selector -->
+              <div>
+                <label class="block text-[10px] uppercase font-bold tracking-wider text-slate-400 mb-1">Source Work Completion Certificate</label>
+                <select 
+                  [(ngModel)]="selectedWccId" 
+                  (change)="onWccChange()"
+                  class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-slate-850 font-bold focus:outline-none"
+                >
+                  <option value="">Select Certificate...</option>
+                  @for (w of approvedWccs(); track w.id) {
+                    <option [value]="w.id">{{ w.wccNumber }} - {{ w.clientName }} (Subtotal: {{ w.subtotal | currency:'USD':'symbol':'1.0-0' }})</option>
+                  }
+                </select>
+              </div>
+
+              @if (selectedWccId) {
+                <div class="space-y-4.5 pt-2">
+                  
+                  <div class="grid grid-cols-2 gap-3">
+                    <div>
+                      <label class="block text-[10px] uppercase font-bold tracking-wider text-slate-400 mb-1">Issue Date</label>
+                      <input type="date" [(ngModel)]="formModel.issueDate" (change)="onDateChange()" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-850 focus:outline-none" />
+                    </div>
+                    <div>
+                      <label class="block text-[10px] uppercase font-bold tracking-wider text-slate-400 mb-1">Due Date</label>
+                      <input type="date" [(ngModel)]="formModel.dueDate" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-850 focus:outline-none" />
+                    </div>
+                  </div>
+
+                  <!-- Automatic tax rates inputs -->
+                  <div class="bg-slate-50 p-4 rounded-xl border border-slate-200/60 space-y-3.5">
+                    <span class="block text-[10px] uppercase font-black tracking-wider text-slate-450">Tax & Deduction parameters</span>
+                    
+                    <div class="grid grid-cols-3 gap-3">
+                      <div>
+                        <label class="block text-[8px] uppercase tracking-wider text-slate-400 mb-1">VAT Rate (%)</label>
+                        <input type="number" [(ngModel)]="formModel.vatPercent" (change)="recalculateAmounts()" class="w-full bg-white border border-slate-200 rounded p-1.5 text-center font-bold text-slate-850 focus:outline-none" />
+                      </div>
+                      <div>
+                        <label class="block text-[8px] uppercase tracking-wider text-slate-400 mb-1">Retention Rate (%)</label>
+                        <input type="number" [(ngModel)]="formModel.retentionPercent" (change)="recalculateAmounts()" class="w-full bg-white border border-slate-200 rounded p-1.5 text-center font-bold text-slate-850 focus:outline-none" />
+                      </div>
+                      <div>
+                        <label class="block text-[8px] uppercase tracking-wider text-slate-400 mb-1">Withholding Tax (%)</label>
+                        <input type="number" [(ngModel)]="formModel.withholdingTaxPercent" (change)="recalculateAmounts()" class="w-full bg-white border border-slate-200 rounded p-1.5 text-center font-bold text-slate-850 focus:outline-none" />
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Calculated Preview -->
+                  <div class="space-y-2 bg-indigo-50 border border-indigo-150 p-4 rounded-xl text-indigo-950 font-bold">
+                    <div class="flex justify-between text-xs">
+                      <span>WCC Base subtotal:</span>
+                      <span>{{ formModel.subtotal | currency:formModel.currency }}</span>
+                    </div>
+                    <div class="flex justify-between text-[11px] text-indigo-650">
+                      <span>VAT Amount:</span>
+                      <span>+{{ formModel.vatAmount | currency:formModel.currency }}</span>
+                    </div>
+                    <div class="flex justify-between text-[11px] text-indigo-650">
+                      <span>Retention Deducted:</span>
+                      <span class="text-red-700">-{{ formModel.retentionAmount | currency:formModel.currency }}</span>
+                    </div>
+                    <div class="flex justify-between text-[11px] text-indigo-650">
+                      <span>WHT Deducted:</span>
+                      <span class="text-red-700">-{{ formModel.withholdingTaxAmount | currency:formModel.currency }}</span>
+                    </div>
+                    <div class="pt-2.5 border-t border-indigo-200 flex justify-between items-center text-sm">
+                      <span class="font-black text-indigo-900">Net Receivable Value:</span>
+                      <span class="text-base font-black text-primary">{{ formModel.netPayable | currency:formModel.currency }}</span>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label class="block text-[10px] uppercase font-bold tracking-wider text-slate-400 mb-1">Invoice Remarks</label>
+                    <textarea [(ngModel)]="formModel.notes" rows="2" placeholder="Add bank account details or invoice references..." class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-800 focus:outline-none focus:border-indigo-500/50"></textarea>
+                  </div>
+
+                </div>
+              }
+
+            </div>
+
+            <!-- Footer -->
+            <div class="px-6 py-4 border-t border-slate-100 flex items-center justify-end space-x-3 bg-slate-50">
+              <button (click)="closeModal()" class="px-4 py-2 bg-white hover:bg-slate-100 text-slate-650 border border-slate-200 rounded-lg text-xs font-bold transition-colors">Cancel</button>
+              <button 
+                (click)="saveInvoice()" 
+                [disabled]="!selectedWccId"
+                class="px-4.5 py-2 bg-primary hover:bg-slate-800 text-white rounded-lg text-xs font-bold transition-colors shadow-sm disabled:opacity-50"
+              >
+                Generate Invoice
+              </button>
+            </div>
+
+          </div>
+        </div>
+      }
+
+    </div>
+  `,
+  changeDetection: ChangeDetectionStrategy.OnPush
+})
+export class InvoicesComponent implements OnInit {
+  private readonly workflowService = inject(WorkflowService);
+  private readonly breadcrumbService = inject(BreadcrumbService);
+  private readonly authService = inject(AuthService);
+  private readonly translate = inject(TranslateService);
+
+  readonly invoices = this.workflowService.invoices;
+  readonly wccs = this.workflowService.wccs;
+  readonly contracts = this.workflowService.contracts;
+  readonly selectedInvoice = signal<Invoice | null>(null);
+
+  // Filters
+  searchQuery = '';
+  statusFilter = 'ALL';
+
+  // Form states
+  isModalOpen = signal(false);
+  selectedWccId = '';
+  formModel: any = {
+    contractId: '',
+    contractNumber: '',
+    wccId: '',
+    wccNumber: '',
+    clientName: '',
+    clientContact: '',
+    issueDate: '',
+    dueDate: '',
+    subtotal: 0,
+    vatPercent: 15,
+    vatAmount: 0,
+    retentionPercent: 10,
+    retentionAmount: 0,
+    withholdingTaxPercent: 2,
+    withholdingTaxAmount: 0,
+    totalAmount: 0,
+    netPayable: 0,
+    currency: 'USD',
+    paymentTerms: 'Net 30',
+    notes: ''
+  };
+
+  readonly approvedWccs = computed(() => 
+    this.wccs().filter(w => w.status === 'Approved')
+  );
+
+  readonly filteredInvoices = computed(() => {
+    let list = this.invoices();
+    const query = this.searchQuery.trim().toLowerCase();
+    const status = this.statusFilter;
+
+    if (status !== 'ALL') {
+      list = list.filter(i => i.status === status);
+    }
+
+    if (query) {
+      list = list.filter(i => 
+        i.invoiceNumber.toLowerCase().includes(query) ||
+        i.wccNumber.toLowerCase().includes(query) ||
+        i.clientName.toLowerCase().includes(query) ||
+        i.contractNumber.toLowerCase().includes(query)
+      );
+    }
+
+    // Sort by issueDate desc
+    return [...list].sort((a, b) => b.issueDate.localeCompare(a.issueDate));
+  });
+
+  ngOnInit() {
+    this.breadcrumbService.setBreadcrumbs([
+      { label: this.translate.instant('navigation.workflow'), url: '/workflow' },
+      { label: this.translate.instant('workflow.invoices.breadcrumb') }
+    ]);
+
+    const list = this.filteredInvoices();
+    if (list.length > 0) {
+      this.selectedInvoice.set(list[0]);
+    }
+  }
+
+  selectInvoice(inv: Invoice) {
+    this.selectedInvoice.set(inv);
+  }
+
+  // --- Role Check Permissions ---
+  canCreate() {
+    const role = this.authService.currentUser()?.role;
+    // Finance Manager or Admin can create Invoices
+    return role === 'Super Admin' || role === 'Finance Manager' || role === 'General Manager';
+  }
+
+  canApprove() {
+    const role = this.authService.currentUser()?.role;
+    return role === 'Super Admin' || role === 'Finance Manager' || role === 'General Manager';
+  }
+
+  approveInvoice(id: string) {
+    const name = this.authService.currentUser()?.fullName || 'Finance Auditor';
+    this.workflowService.approveInvoice(id, name, 'Calculated taxes & retention verified against contract rate card.');
+    
+    const updated = this.invoices().find(i => i.id === id);
+    if (updated) this.selectedInvoice.set(updated);
+  }
+
+  sendInvoice(id: string) {
+    this.workflowService.sendInvoice(id);
+    const updated = this.invoices().find(i => i.id === id);
+    if (updated) this.selectedInvoice.set(updated);
+  }
+
+  // --- Modal Form Actions ---
+  openCreateModal() {
+    this.selectedWccId = '';
+    this.formModel = {
+      contractId: '',
+      contractNumber: '',
+      wccId: '',
+      wccNumber: '',
+      clientName: '',
+      clientContact: '',
+      issueDate: new Date().toISOString().split('T')[0],
+      dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      subtotal: 0,
+      vatPercent: 15,
+      vatAmount: 0,
+      retentionPercent: 10,
+      retentionAmount: 0,
+      withholdingTaxPercent: 2,
+      withholdingTaxAmount: 0,
+      totalAmount: 0,
+      netPayable: 0,
+      currency: 'USD',
+      paymentTerms: 'Net 30',
+      notes: ''
+    };
+    this.isModalOpen.set(true);
+  }
+
+  closeModal() {
+    this.isModalOpen.set(false);
+  }
+
+  onWccChange() {
+    const id = this.selectedWccId;
+    const wcc = this.wccs().find(w => w.id === id);
+    if (wcc) {
+      // Find original contract for retention percent & payment terms
+      const contract = this.contracts().find(c => c.contractNumber === wcc.contractNumber);
+
+      this.formModel.contractId = wcc.contractId;
+      this.formModel.contractNumber = wcc.contractNumber;
+      this.formModel.wccId = wcc.id;
+      this.formModel.wccNumber = wcc.wccNumber;
+      this.formModel.clientName = wcc.clientName;
+      this.formModel.subtotal = wcc.subtotal;
+      this.formModel.retentionPercent = contract ? contract.retentionPercent : 10;
+      this.formModel.paymentTerms = contract ? contract.paymentTerms : 'Net 30';
+      this.formModel.clientContact = contract ? contract.clientContact : 'Representative';
+      
+      this.onDateChange();
+      this.recalculateAmounts();
+    }
+  }
+
+  onDateChange() {
+    if (this.formModel.issueDate) {
+      // parse terms e.g. "Net 30" -> add 30 days
+      const days = this.formModel.paymentTerms.toLowerCase().includes('45') ? 45 : 
+                   this.formModel.paymentTerms.toLowerCase().includes('15') ? 15 : 30;
+      
+      const issue = new Date(this.formModel.issueDate);
+      issue.setDate(issue.getDate() + days);
+      this.formModel.dueDate = issue.toISOString().split('T')[0];
+    }
+  }
+
+  recalculateAmounts() {
+    const sub = Number(this.formModel.subtotal) || 0;
+    const vatRate = Number(this.formModel.vatPercent) || 0;
+    const retRate = Number(this.formModel.retentionPercent) || 0;
+    const whtRate = Number(this.formModel.withholdingTaxPercent) || 0;
+
+    const vat = Math.round(sub * (vatRate / 100));
+    const ret = Math.round(sub * (retRate / 100));
+    const wht = Math.round(sub * (whtRate / 100));
+
+    this.formModel.vatAmount = vat;
+    this.formModel.retentionAmount = ret;
+    this.formModel.withholdingTaxAmount = wht;
+    this.formModel.totalAmount = sub + vat; // Subtotal + VAT
+    this.formModel.netPayable = sub + vat - ret - wht; // Net cash flow
+  }
+
+  saveInvoice() {
+    if (!this.selectedWccId) return;
+
+    this.workflowService.createInvoice(this.formModel);
+    this.isModalOpen.set(false);
+
+    // Select the new Invoice
+    const list = this.invoices();
+    if (list.length > 0) {
+      this.selectedInvoice.set(list[list.length - 1]);
+    }
+  }
+}

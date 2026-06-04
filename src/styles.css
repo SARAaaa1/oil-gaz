@@ -1,0 +1,60 @@
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: 'Inter', sans-serif;
+  --color-primary: #0F172A;
+  --color-secondary: #1E293B;
+  --color-accent: #F59E0B;
+  --color-success: #22C55E;
+  --color-danger: #EF4444;
+  --color-bg-custom: #F8FAFC;
+  --color-cards: #FFFFFF;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--color-bg-custom);
+  color: var(--color-primary);
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+}
+
+/* Premium RTL Typography override */
+html[dir="rtl"] body {
+  font-family: 'Cairo', var(--font-sans);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideLeft {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+@keyframes scaleUp {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.2s ease-out forwards;
+}
+
+.animate-slide-left {
+  animation: slideLeft 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-scale-up {
+  animation: scaleUp 0.15s ease-out forwards;
+}
+
+/* RTL Icon Mirroring Helper */
+html[dir="rtl"] .animate-direction {
+  transform: scaleX(-1);
+}
+

@@ -1,0 +1,138 @@
+<div class="space-y-6">
+
+  <!-- Header -->
+  <div>
+    <h1 class="text-2xl font-black text-slate-800 tracking-tight">{{ 'inventory.title' | translate }}</h1>
+    <p class="text-xs text-slate-500 font-semibold mt-1">{{ 'inventory.subtitle' | translate }}</p>
+  </div>
+
+  <!-- KPI Summaries -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+    
+    <!-- Total Items -->
+    <div class="bg-white p-5 rounded-xl border border-slate-100 shadow-sm flex items-center justify-between">
+      <div class="space-y-1">
+        <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">{{ 'inventory.master_registry_count' | translate }}</span>
+        <h2 class="text-2xl font-black text-slate-850">{{ 'inventory.items_count' | translate:{count: inventory().length} }}</h2>
+      </div>
+      <div class="p-3 bg-slate-100 rounded-xl">
+        <svg class="w-6 h-6 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+        </svg>
+      </div>
+    </div>
+
+    <!-- Low Stock warning -->
+    <div class="bg-white p-5 rounded-xl border border-slate-100 shadow-sm flex items-center justify-between">
+      <div class="space-y-1">
+        <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">{{ 'inventory.low_stock_indicators' | translate }}</span>
+        <h2 class="text-2xl font-black text-accent">{{ 'inventory.warnings_count' | translate:{count: lowStockCount()} }}</h2>
+      </div>
+      <div class="p-3 bg-amber-50 rounded-xl">
+        <svg class="w-6 h-6 text-amber-505" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+        </svg>
+      </div>
+    </div>
+
+    <!-- Out of Stock -->
+    <div class="bg-white p-5 rounded-xl border border-slate-100 shadow-sm flex items-center justify-between">
+      <div class="space-y-1">
+        <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">{{ 'inventory.out_of_stock_depleted' | translate }}</span>
+        <h2 class="text-2xl font-black text-danger">{{ 'inventory.items_count' | translate:{count: outOfStockCount()} }}</h2>
+      </div>
+      <div class="p-3 bg-red-50 rounded-xl">
+        <svg class="w-6 h-6 text-red-505" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- INVENTORY LEDGER -->
+  <div class="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden animate-fade-in">
+    
+    <!-- Filter Toolbar -->
+    <div class="p-4 bg-slate-50/50 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-xs">
+      <div class="flex items-center space-x-2 w-full max-w-sm">
+        <div class="relative w-full">
+          <input 
+            type="text" 
+            [placeholder]="'inventory.search_placeholder' | translate" 
+            (input)="searchQuery.set($any($event.target).value)"
+            class="w-full bg-white border border-slate-200 rounded-lg pl-8 pr-3 py-2 text-slate-800 focus:outline-none"
+          >
+          <svg class="w-4 h-4 text-slate-400 absolute left-2.5 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+        </div>
+      </div>
+
+      <div class="flex items-center space-x-2 font-semibold">
+        <span class="text-slate-400">{{ 'inventory.warehouse_loc' | translate }}</span>
+        <select 
+          (change)="locationFilter.set($any($event.target).value)"
+          class="bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-700 focus:outline-none"
+        >
+          <option value="ALL">{{ 'inventory.all_warehouses' | translate }}</option>
+          <option value="Warehouse A">{{ 'inventory.warehouses.Warehouse A' | translate }}</option>
+          <option value="Warehouse B">{{ 'inventory.warehouses.Warehouse B' | translate }}</option>
+          <option value="Pipe Yard 1">{{ 'inventory.warehouses.Pipe Yard 1' | translate }}</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Table -->
+    <div class="overflow-x-auto">
+      <table class="w-full text-left border-collapse text-xs">
+        <thead>
+          <tr class="text-slate-400 font-bold border-b border-slate-100 bg-slate-50/20">
+            <th class="p-4 py-3">{{ 'inventory.item_code' | translate }}</th>
+            <th class="p-4 py-3">{{ 'inventory.material_name' | translate }}</th>
+            <th class="p-4 py-3">{{ 'inventory.category' | translate }}</th>
+            <th class="p-4 py-3">{{ 'inventory.warehouse_location' | translate }}</th>
+            <th class="p-4 py-3 text-right">{{ 'inventory.available_qty' | translate }}</th>
+            <th class="p-4 py-3 text-center">{{ 'inventory.uom' | translate }}</th>
+            <th class="p-4 py-3 text-right">{{ 'inventory.unit_price' | translate }}</th>
+            <th class="p-4 py-3 text-center">{{ 'inventory.status' | translate }}</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-50 font-medium text-slate-700">
+          @for (item of filteredInventory(); track item.id) {
+            <tr class="hover:bg-slate-50/50 transition-colors">
+              <td class="p-4 font-mono font-bold text-slate-500">{{ item.itemCode }}</td>
+              <td class="p-4 font-bold text-slate-900">{{ item.itemName }}</td>
+              <td class="p-4 text-slate-650">{{ 'inventory.categories.' + item.category | translate }}</td>
+              <td class="p-4 text-slate-500">{{ 'inventory.warehouses.' + item.location | translate }}</td>
+              <td class="p-4 text-right font-mono font-bold text-slate-800">{{ item.quantity | number }}</td>
+              <td class="p-4 text-center text-slate-400 font-bold">{{ item.uom }}</td>
+              <td class="p-4 text-right font-mono text-slate-600">${{ item.unitPrice | number }}</td>
+              <td class="p-4 text-center">
+                <span 
+                  class="px-2.5 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider"
+                  [class.bg-green-50]="item.status === 'In Stock'"
+                  [class.text-success]="item.status === 'In Stock'"
+                  [class.bg-amber-50]="item.status === 'Low Stock'"
+                  [class.text-accent]="item.status === 'Low Stock'"
+                  [class.bg-red-50]="item.status === 'Out of Stock'"
+                  [class.text-danger]="item.status === 'Out of Stock'"
+                >
+                  {{ 'inventory.statuses.' + item.status | translate }}
+                </span>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="8" class="p-8 text-center text-slate-400">
+                <span class="font-bold">{{ 'inventory.no_matches' | translate }}</span>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+
+</div>

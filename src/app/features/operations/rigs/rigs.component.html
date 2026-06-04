@@ -1,0 +1,148 @@
+<div class="space-y-6">
+
+  <!-- Header -->
+  <div>
+    <h1 class="text-2xl font-black text-slate-800 tracking-tight">{{ 'operations.rigs.title' | translate }}</h1>
+    <p class="text-xs text-slate-500 font-semibold mt-1">{{ 'operations.rigs.subtitle' | translate }}</p>
+  </div>
+
+  <!-- Rig Status Summary Cards -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+
+    <!-- Total Fleet -->
+    <div class="bg-white p-5 rounded-xl border border-slate-100 shadow-sm flex items-center justify-between">
+      <div>
+        <span class="text-xs font-bold text-slate-400 uppercase tracking-wider block">{{ 'operations.rigs.fleet_strength' | translate }}</span>
+        <span class="text-2xl font-black text-slate-800">{{ rigs().length }} {{ 'operations.rigs.units' | translate }}</span>
+      </div>
+      <div class="p-3 bg-slate-100 rounded-xl text-slate-700">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+        </svg>
+      </div>
+    </div>
+
+    <!-- Active Rigs -->
+    <div class="bg-white p-5 rounded-xl border border-slate-100 shadow-sm flex items-center justify-between">
+      <div>
+        <span class="text-xs font-bold text-slate-400 uppercase tracking-wider block">{{ 'operations.rigs.operational_rigs' | translate }}</span>
+        <span class="text-2xl font-black text-success">{{ activeCount() }} {{ 'operations.rigs.status_active' | translate }}</span>
+      </div>
+      <div class="p-3 bg-green-50 rounded-xl text-success">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+        </svg>
+      </div>
+    </div>
+
+    <!-- Maintenance Rigs -->
+    <div class="bg-white p-5 rounded-xl border border-slate-100 shadow-sm flex items-center justify-between">
+      <div>
+        <span class="text-xs font-bold text-slate-400 uppercase tracking-wider block">{{ 'operations.rigs.under_overhaul' | translate }}</span>
+        <span class="text-2xl font-black text-accent">{{ maintenanceCount() }} {{ 'operations.rigs.status_maintenance' | translate }}</span>
+      </div>
+      <div class="p-3 bg-amber-50 rounded-xl text-accent">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+        </svg>
+      </div>
+    </div>
+
+    <!-- Standby Rigs -->
+    <div class="bg-white p-5 rounded-xl border border-slate-100 shadow-sm flex items-center justify-between">
+      <div>
+        <span class="text-xs font-bold text-slate-400 uppercase tracking-wider block">{{ 'operations.rigs.standby_idle' | translate }}</span>
+        <span class="text-2xl font-black text-slate-500">{{ standbyCount() }} {{ 'operations.rigs.status_standby' | translate }}</span>
+      </div>
+      <div class="p-3 bg-slate-105 rounded-xl text-slate-550">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- Rigs Table -->
+  <div class="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden animate-fade-in">
+    <div class="p-4 bg-slate-50/50 border-b border-slate-100 flex items-center justify-between text-xs">
+      <div class="relative w-full max-w-sm">
+        <input
+          type="text"
+          [placeholder]="'operations.rigs.search_placeholder' | translate"
+          (input)="searchQuery.set($any($event.target).value)"
+          class="w-full bg-white border border-slate-200 rounded-lg pl-8 pr-3 py-2 text-slate-800 focus:outline-none"
+        >
+        <svg class="w-4 h-4 text-slate-400 absolute left-2.5 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+        </svg>
+      </div>
+
+      <div class="flex items-center space-x-2 font-semibold">
+        <span class="text-slate-400">{{ 'operations.rigs.status_label' | translate }}</span>
+        <select
+          (change)="statusFilter.set($any($event.target).value)"
+          class="bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-700 focus:outline-none"
+        >
+          <option value="ALL">{{ 'operations.rigs.all_statuses' | translate }}</option>
+          <option value="Active">{{ 'operations.rigs.status_active' | translate }}</option>
+          <option value="Maintenance">{{ 'operations.rigs.status_maintenance' | translate }}</option>
+          <option value="Standby">{{ 'operations.rigs.status_standby' | translate }}</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Table -->
+    <div class="overflow-x-auto">
+      <table class="w-full text-left border-collapse text-xs">
+        <thead>
+          <tr class="text-slate-400 font-bold border-b border-slate-100 bg-slate-50/20">
+            <th class="p-4 py-3">{{ 'operations.rigs.col_identifier' | translate }}</th>
+            <th class="p-4 py-3">{{ 'operations.rigs.col_location' | translate }}</th>
+            <th class="p-4 py-3 text-right">{{ 'operations.rigs.col_depth' | translate }}</th>
+            <th class="p-4 py-3 text-center">{{ 'operations.rigs.col_crew' | translate }}</th>
+            <th class="p-4 py-3">{{ 'operations.rigs.col_manager' | translate }}</th>
+            <th class="p-4 py-3 text-center">{{ 'operations.rigs.col_status' | translate }}</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-50 font-medium text-slate-700">
+          @for (rig of filteredRigs(); track rig.id) {
+            <tr class="hover:bg-slate-50/50 transition-colors">
+              <td class="p-4 font-bold text-slate-900">{{ rig.rigName }}</td>
+              <td class="p-4 text-slate-650">{{ rig.location }}</td>
+              <td class="p-4 text-right font-mono font-bold text-slate-800">
+                @if (rig.drillDepthFt > 0) {
+                  {{ rig.drillDepthFt | number }} {{ 'operations.rigs.ft' | translate }}
+                } @else {
+                  <span class="text-slate-350">-</span>
+                }
+              </td>
+              <td class="p-4 text-center font-mono font-bold text-slate-750">{{ rig.crewCount }}</td>
+              <td class="p-4 text-slate-700 font-bold">{{ rig.managerName }}</td>
+              <td class="p-4 text-center">
+                <span
+                  class="px-2.5 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider"
+                  [class.bg-green-50]="rig.status === 'Active'"
+                  [class.text-success]="rig.status === 'Active'"
+                  [class.bg-amber-50]="rig.status === 'Maintenance'"
+                  [class.text-accent]="rig.status === 'Maintenance'"
+                  [class.bg-slate-100]="rig.status === 'Standby'"
+                  [class.text-slate-555]="rig.status === 'Standby'"
+                >
+                  {{ rig.status }}
+                </span>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="6" class="p-8 text-center text-slate-400">
+                <span class="font-bold">{{ 'operations.rigs.no_records' | translate }}</span>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>

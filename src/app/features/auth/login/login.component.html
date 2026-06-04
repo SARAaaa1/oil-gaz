@@ -1,0 +1,255 @@
+<div class="min-h-screen bg-slate-950 flex flex-col lg:flex-row text-xs font-semibold text-slate-350 select-none">
+  
+  <!-- Left Side: Branding and Stats Presentation -->
+  <div class="lg:w-7/12 bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950/80 p-8 lg:p-16 flex flex-col justify-between border-b lg:border-b-0 lg:border-r border-slate-800/80 relative overflow-hidden">
+    <!-- Ambient glowing lights -->
+    <div class="absolute -top-40 -left-40 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl"></div>
+    <div class="absolute -bottom-40 -right-40 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl"></div>
+
+    <!-- Header / Brand -->
+    <div class="flex items-center space-x-3.5 relative z-10">
+      <div class="flex items-center justify-center w-11 h-11 rounded-xl bg-gradient-to-tr from-amber-500 to-amber-600 text-slate-950 font-black text-2xl shadow-lg shadow-amber-500/25">
+        O&G
+      </div>
+      <div>
+        <span class="text-white font-extrabold text-lg tracking-wider block leading-none">{{ 'common.petroflow' | translate }} ERP</span>
+        <span class="text-[9px] text-amber-500 font-bold tracking-widest uppercase">{{ 'auth.footer_secure' | translate }}</span>
+      </div>
+    </div>
+
+    <!-- Centerpiece Pitch -->
+    <div class="my-16 lg:my-0 space-y-6 relative z-10 max-w-xl">
+      <span class="px-2.5 py-1 bg-amber-500/10 border border-amber-500/20 text-amber-500 rounded-full text-[10px] font-bold uppercase tracking-widest inline-block">
+        {{ 'auth.pitch_badge' | translate }}
+      </span>
+      <h1 class="text-2xl lg:text-4xl font-black text-white tracking-tight leading-none">
+        {{ 'auth.pitch_title' | translate }}
+      </h1>
+      <p class="text-xs text-slate-400 font-semibold leading-relaxed">
+        {{ 'auth.pitch_desc' | translate }}
+      </p>
+
+      <!-- System Highlights Grid -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4">
+        <div class="p-4 bg-slate-900/60 border border-slate-800/60 rounded-xl flex items-start space-x-3 backdrop-blur-sm">
+          <span class="p-2 bg-slate-800 text-amber-500 rounded-lg shrink-0">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+            </svg>
+          </span>
+          <div>
+            <h4 class="font-bold text-slate-200">{{ 'auth.rbac_title' | translate }}</h4>
+            <p class="text-[10px] text-slate-500 font-medium leading-normal mt-0.5">{{ 'auth.rbac_desc' | translate }}</p>
+          </div>
+        </div>
+
+        <div class="p-4 bg-slate-900/60 border border-slate-800/60 rounded-xl flex items-start space-x-3 backdrop-blur-sm">
+          <span class="p-2 bg-slate-800 text-indigo-400 rounded-lg shrink-0">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            </svg>
+          </span>
+          <div>
+            <h4 class="font-bold text-slate-200">{{ 'auth.jwt_title' | translate }}</h4>
+            <p class="text-[10px] text-slate-500 font-medium leading-normal mt-0.5">{{ 'auth.jwt_desc' | translate }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer Information -->
+    <div class="text-[10px] text-slate-500 font-medium relative z-10 flex items-center justify-between">
+      <span>{{ 'auth.footer_copy' | translate }}</span>
+      <div class="flex items-center space-x-2">
+        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+        <span>{{ 'auth.footer_secure' | translate }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right Side: Interactive Forms Card & Demo Accounts -->
+  <div class="lg:w-5/12 bg-slate-900 p-8 lg:p-16 flex flex-col justify-center relative">
+    <div class="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(99,102,241,0.05),transparent_40%)] pointer-events-none"></div>
+    
+    <!-- Language Switcher -->
+    <div class="absolute top-4 right-4 rtl:left-4 rtl:right-auto z-20">
+      <app-language-switcher></app-language-switcher>
+    </div>
+
+    <div class="max-w-md w-full mx-auto space-y-8 relative z-10">
+      
+      <!-- Mode 1: LOGIN FORM -->
+      @if (mode() === 'login') {
+        <div>
+          <h2 class="text-xl lg:text-2xl font-black text-white tracking-tight">{{ 'auth.title' | translate }}</h2>
+          <p class="text-[11px] text-slate-400 font-semibold mt-1">{{ 'auth.subtitle' | translate }}</p>
+        </div>
+
+        <form (submit)="handleLogin($event)" class="space-y-4">
+          <!-- Alert Blocks -->
+          @if (errorMessage()) {
+            <div class="p-3 bg-red-500/10 border border-red-500/20 text-red-400 rounded-lg font-medium leading-normal text-[10px] animate-fade-in flex items-start space-x-2">
+              <svg class="w-4 h-4 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+              <span>{{ errorMessage() | translate }}</span>
+            </div>
+          }
+
+          <div>
+            <label class="block text-slate-400 mb-1.5 font-bold">{{ 'auth.username_label' | translate }}</label>
+            <input 
+              type="text" 
+              name="username"
+              [(ngModel)]="loginForm.username"
+              [placeholder]="'auth.username_placeholder' | translate"
+              class="w-full bg-slate-950 border border-slate-800 hover:border-slate-700 focus:border-amber-500/50 rounded-xl p-3 text-white focus:outline-none transition-all placeholder-slate-600 font-semibold"
+              required
+            >
+          </div>
+
+          <div>
+            <div class="flex justify-between items-center mb-1.5">
+              <label class="block text-slate-400 font-bold">{{ 'auth.password_label' | translate }}</label>
+              <button 
+                type="button" 
+                (click)="setMode('forgot')" 
+                class="text-amber-500 hover:text-amber-400 transition-colors font-extrabold hover:underline"
+              >
+                {{ 'auth.forgot_link' | translate }}
+              </button>
+            </div>
+            <input 
+              type="password" 
+              name="password"
+              [(ngModel)]="loginForm.password"
+              [placeholder]="'auth.password_placeholder' | translate"
+              class="w-full bg-slate-950 border border-slate-800 hover:border-slate-700 focus:border-amber-500/50 rounded-xl p-3 text-white focus:outline-none transition-all placeholder-slate-600 font-semibold"
+              required
+            >
+          </div>
+
+          <!-- Remember Me -->
+          <div class="flex items-center space-x-2 select-none">
+            <input 
+              type="checkbox" 
+              id="rememberMe" 
+              name="rememberMe"
+              [(ngModel)]="loginForm.rememberMe"
+              class="rounded border-slate-800 text-amber-500 focus:ring-amber-500/20 bg-slate-950 w-4 h-4 cursor-pointer"
+            >
+            <label for="rememberMe" class="text-slate-400 text-[10px] font-bold cursor-pointer hover:text-slate-350">
+              {{ 'auth.remember_me' | translate }}
+            </label>
+          </div>
+
+          <!-- Submit Button -->
+          <button 
+            type="submit" 
+            [disabled]="isLoading()"
+            class="w-full py-3 bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 font-black rounded-xl hover:from-amber-600 hover:to-amber-700 transition-all shadow-md shadow-amber-500/10 hover:shadow-amber-500/20 flex items-center justify-center space-x-2"
+          >
+            @if (isLoading()) {
+              <svg class="animate-spin h-4 w-4 text-slate-950" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              <span>{{ 'auth.btn_logging_in' | translate }}</span>
+            } @else {
+              <span>{{ 'auth.btn_login' | translate }}</span>
+            }
+          </button>
+        </form>
+      }
+
+      <!-- Mode 2: FORGOT PASSWORD -->
+      @if (mode() === 'forgot') {
+        <div>
+          <h2 class="text-xl lg:text-2xl font-black text-white tracking-tight">{{ 'auth.recover_title' | translate }}</h2>
+          <p class="text-[11px] text-slate-400 font-semibold mt-1">{{ 'auth.recover_subtitle' | translate }}</p>
+        </div>
+
+        <form (submit)="handleForgotPassword($event)" class="space-y-4">
+          <!-- Alert Blocks -->
+          @if (errorMessage()) {
+            <div class="p-3 bg-red-500/10 border border-red-500/20 text-red-400 rounded-lg font-medium leading-normal text-[10px]">
+              {{ errorMessage() | translate }}
+            </div>
+          }
+          @if (successMessage()) {
+            <div class="p-3 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-lg font-medium leading-normal text-[10px]">
+              {{ successMessage() | translate }}
+            </div>
+          }
+
+          <div>
+            <label class="block text-slate-400 mb-1.5 font-bold">{{ 'auth.email_label' | translate }}</label>
+            <input 
+              type="email" 
+              name="email"
+              [(ngModel)]="forgotForm.email"
+              [placeholder]="'auth.email_placeholder' | translate"
+              class="w-full bg-slate-950 border border-slate-800 hover:border-slate-700 focus:border-amber-500/50 rounded-xl p-3 text-white focus:outline-none transition-all placeholder-slate-600 font-semibold"
+              required
+            >
+          </div>
+
+          <!-- Submit recovery -->
+          <button 
+            type="submit" 
+            [disabled]="isLoading()"
+            class="w-full py-3 bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 font-black rounded-xl hover:from-amber-600 hover:to-amber-700 transition-all shadow-md flex items-center justify-center space-x-2"
+          >
+            @if (isLoading()) {
+              <svg class="animate-spin h-4 w-4 text-slate-950" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              <span>{{ 'auth.btn_recovering' | translate }}</span>
+            } @else {
+              <span>{{ 'auth.btn_recover' | translate }}</span>
+            }
+          </button>
+
+          <!-- Back to login link -->
+          <div class="text-center pt-2">
+            <button 
+              type="button" 
+              (click)="setMode('login')"
+              class="text-slate-400 hover:text-white transition-colors font-bold flex items-center justify-center space-x-1.5 mx-auto hover:underline"
+            >
+              <svg class="w-4 h-4 animate-direction" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              </svg>
+              <span>{{ 'auth.back_to_login' | translate }}</span>
+            </button>
+          </div>
+        </form>
+      }
+
+      <!-- DEMO ROLE SIMULATION GATEWAYS -->
+      <div class="pt-6 border-t border-slate-800/80 space-y-3">
+        <h4 class="text-[10px] font-black text-slate-500 uppercase tracking-widest">
+          {{ 'auth.demo_title' | translate }}
+        </h4>
+        <div class="grid grid-cols-2 gap-2">
+          @for (role of demoRoles; track role.username) {
+            <div 
+              (click)="autofill(role.username, role.pass)"
+              class="p-2 bg-slate-950/40 hover:bg-slate-950 border border-slate-800/50 hover:border-amber-500/30 rounded-lg cursor-pointer transition-all hover:scale-[1.02] flex flex-col group text-left rtl:text-right"
+            >
+              <span class="text-[9px] font-bold text-slate-350 group-hover:text-amber-500 transition-colors">
+                {{ 'auth.demo_roles.' + role.username + '_label' | translate }}
+              </span>
+              <span class="text-[8px] text-slate-500 mt-0.5 italic font-medium leading-none">
+                {{ 'auth.demo_roles.' + role.username + '_desc' | translate }}
+              </span>
+            </div>
+          }
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>

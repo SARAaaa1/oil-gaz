@@ -1,0 +1,826 @@
+<!-- Root Layout Wrapper -->
+<div class="flex h-screen bg-bg-custom text-primary font-sans overflow-hidden">
+
+  <!-- COLLAPSIBLE DARK SIDEBAR -->
+  <aside 
+    [class.w-64]="!isSidebarCollapsed()" 
+    [class.w-20]="isSidebarCollapsed()" 
+    [class.-translate-x-full]="isMobileOpen() === false && !langService.isRtl()"
+    [class.translate-x-full]="isMobileOpen() === false && langService.isRtl()"
+    class="fixed inset-y-0 left-0 rtl:right-0 rtl:left-auto z-30 flex flex-col bg-primary text-slate-300 transition-all duration-300 ease-in-out md:static md:translate-x-0 border-r rtl:border-l rtl:border-r-0 border-slate-800 shadow-xl"
+  >
+    <!-- Brand / Logo Area -->
+    <div class="flex items-center justify-between h-16 px-4 bg-secondary border-b border-slate-800">
+      <div class="flex items-center space-x-3 overflow-hidden">
+        <div class="flex items-center justify-center w-10 h-10 rounded-lg bg-accent text-primary font-black text-xl shrink-0 shadow-md shadow-amber-500/20">
+          O&G
+        </div>
+        <div class="flex flex-col transition-all duration-300" [class.opacity-0]="isSidebarCollapsed()" [class.w-0]="isSidebarCollapsed()">
+          <span class="text-white font-bold text-sm tracking-wider uppercase whitespace-nowrap">{{ 'common.petroflow' | translate }} ERP</span>
+          <span class="text-[10px] text-accent font-semibold tracking-widest whitespace-nowrap">ENTERPRISE MVP</span>
+        </div>
+      </div>
+      <!-- Toggle collapse button (Desktop) -->
+      <button 
+        (click)="toggleSidebar()" 
+        class="hidden md:flex items-center justify-center w-8 h-8 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition-colors"
+      >
+        <svg class="w-5 h-5 animate-direction" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          @if (isSidebarCollapsed()) {
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+          } @else {
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7M19 19l-7-7 7-7" />
+          }
+        </svg>
+      </button>
+    </div>
+
+    <!-- Navigation Scroll Container -->
+    <nav class="flex-1 overflow-y-auto py-4 px-3 space-y-1">
+      
+      <!-- SECTION: GENERAL -->
+      <div class="space-y-1">
+        @if (!isSidebarCollapsed()) {
+          <div class="text-[9px] font-bold text-slate-500 uppercase tracking-widest px-3 pt-2 pb-1 select-none animate-fade-in">
+            {{ 'navigation.general' | translate }}
+          </div>
+        }
+        
+        <!-- Dashboard Link -->
+        @if (authService.hasPermission('view:dashboard')) {
+          <a 
+            routerLink="/dashboard" 
+            routerLinkActive="bg-accent text-primary font-semibold"
+            [routerLinkActiveOptions]="{ exact: true }"
+            class="flex items-center space-x-3 px-3 py-2.5 rounded-lg hover:bg-slate-800 hover:text-white transition-all group animate-fade-in"
+          >
+            <svg class="w-5 h-5 shrink-0 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2v-4zM14 16a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 01-2-2v-4z" />
+            </svg>
+            <span class="transition-all duration-300" [class.opacity-0]="isSidebarCollapsed()" [class.w-0]="isSidebarCollapsed()" [class.hidden]="isSidebarCollapsed()">
+              {{ 'navigation.dashboard' | translate }}
+            </span>
+          </a>
+        }
+      </div>
+
+      <!-- SECTION: CORE BUSINESS -->
+      <div class="space-y-1">
+        @if (!isSidebarCollapsed()) {
+          <div class="text-[9px] font-bold text-slate-500 uppercase tracking-widest px-3 pt-4 pb-1 select-none animate-fade-in">
+            {{ 'navigation.core_business' | translate }}
+          </div>
+        }
+
+        <!-- Operations Group (collapsible) -->
+        <div *appRole="['Super Admin', 'General Manager', 'Operations Manager', 'Project Manager', 'Employee', 'Finance Manager']" class="space-y-1 animate-fade-in">
+          <button 
+            (click)="toggleOperationsMenu()"
+            class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-slate-800 hover:text-white transition-all group"
+          >
+            <div class="flex items-center space-x-3">
+              <!-- O&G Tower/Rig Icon -->
+              <svg class="w-5 h-5 shrink-0 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+              </svg>
+              <span class="transition-all duration-300" [class.opacity-0]="isSidebarCollapsed()" [class.w-0]="isSidebarCollapsed()" [class.hidden]="isSidebarCollapsed()">
+                {{ 'navigation.operations' | translate }}
+              </span>
+            </div>
+            @if (!isSidebarCollapsed()) {
+              <svg 
+                [class.rotate-180]="isOperationsOpen()"
+                class="w-4 h-4 transition-transform duration-200" 
+                fill="none" stroke="currentColor" viewBox="0 0 24 24"
+              >
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            }
+          </button>
+
+          <!-- Reorganized flow with visual connector dots & down-arrows -->
+          @if (isOperationsOpen() && !isSidebarCollapsed()) {
+            <div class="pl-6 ml-5 border-l border-slate-700/60 space-y-1.5 transition-all duration-300 relative mt-1 mb-2">
+              
+              <!-- 1. Contracts -->
+              <a 
+                routerLink="/workflow/contracts" 
+                routerLinkActive="text-accent font-semibold"
+                #rlaContracts="routerLinkActive"
+                class="group/item flex items-center py-1 text-xs text-slate-400 hover:text-white transition-colors relative"
+              >
+                <span class="absolute -left-[30px] flex items-center justify-center w-3.5 h-3.5 bg-primary rounded-full">
+                  <span 
+                    class="w-1.5 h-1.5 rounded-full transition-all duration-300"
+                    [class.bg-accent]="rlaContracts.isActive"
+                    [class.scale-125]="rlaContracts.isActive"
+                    [class.bg-slate-600]="!rlaContracts.isActive"
+                  ></span>
+                </span>
+                {{ 'navigation.contracts' | translate }}
+              </a>
+
+              <!-- Flow Arrow -->
+              <div class="flex items-center h-1 select-none pointer-events-none relative">
+                <span class="absolute -left-[27px] w-2 h-2 flex items-center justify-center bg-primary text-slate-600">
+                  <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 13l-7 7-7-7" />
+                  </svg>
+                </span>
+              </div>
+
+              <!-- 2. Daily Activity Reports (DAR) -->
+              <a 
+                routerLink="/workflow/dars" 
+                routerLinkActive="text-accent font-semibold"
+                #rlaDars="routerLinkActive"
+                class="group/item flex items-center py-1 text-xs text-slate-400 hover:text-white transition-colors relative"
+              >
+                <span class="absolute -left-[30px] flex items-center justify-center w-3.5 h-3.5 bg-primary rounded-full">
+                  <span 
+                    class="w-1.5 h-1.5 rounded-full transition-all duration-300"
+                    [class.bg-accent]="rlaDars.isActive"
+                    [class.scale-125]="rlaDars.isActive"
+                    [class.bg-slate-600]="!rlaDars.isActive"
+                  ></span>
+                </span>
+                {{ 'navigation.dar' | translate }}
+              </a>
+
+              <!-- Flow Arrow -->
+              <div class="flex items-center h-1 select-none pointer-events-none relative">
+                <span class="absolute -left-[27px] w-2 h-2 flex items-center justify-center bg-primary text-slate-600">
+                  <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 13l-7 7-7-7" />
+                  </svg>
+                </span>
+              </div>
+
+              <!-- 3. Monthly Progress Reports / Timesheets -->
+              <a 
+                routerLink="/operations/timesheets" 
+                routerLinkActive="text-accent font-semibold"
+                #rlaTimesheets="routerLinkActive"
+                class="group/item flex items-center py-1 text-xs text-slate-400 hover:text-white transition-colors relative"
+              >
+                <span class="absolute -left-[30px] flex items-center justify-center w-3.5 h-3.5 bg-primary rounded-full">
+                  <span 
+                    class="w-1.5 h-1.5 rounded-full transition-all duration-300"
+                    [class.bg-accent]="rlaTimesheets.isActive"
+                    [class.scale-125]="rlaTimesheets.isActive"
+                    [class.bg-slate-600]="!rlaTimesheets.isActive"
+                  ></span>
+                </span>
+                {{ 'navigation.timesheets' | translate }}
+              </a>
+
+              <!-- Flow Arrow -->
+              <div class="flex items-center h-1 select-none pointer-events-none relative">
+                <span class="absolute -left-[27px] w-2 h-2 flex items-center justify-center bg-primary text-slate-600">
+                  <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 13l-7 7-7-7" />
+                  </svg>
+                </span>
+              </div>
+
+              <!-- 4. Work Completion Certificates (WCC) -->
+              <a 
+                routerLink="/workflow/wccs" 
+                routerLinkActive="text-accent font-semibold"
+                #rlaWccs="routerLinkActive"
+                class="group/item flex items-center py-1 text-xs text-slate-400 hover:text-white transition-colors relative"
+              >
+                <span class="absolute -left-[30px] flex items-center justify-center w-3.5 h-3.5 bg-primary rounded-full">
+                  <span 
+                    class="w-1.5 h-1.5 rounded-full transition-all duration-300"
+                    [class.bg-accent]="rlaWccs.isActive"
+                    [class.scale-125]="rlaWccs.isActive"
+                    [class.bg-slate-600]="!rlaWccs.isActive"
+                  ></span>
+                </span>
+                {{ 'navigation.wcc' | translate }}
+              </a>
+
+              <!-- Flow Arrow -->
+              <div class="flex items-center h-1 select-none pointer-events-none relative">
+                <span class="absolute -left-[27px] w-2 h-2 flex items-center justify-center bg-primary text-slate-600">
+                  <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 13l-7 7-7-7" />
+                  </svg>
+                </span>
+              </div>
+
+              <!-- 5. Invoices -->
+              <a 
+                routerLink="/workflow/invoices" 
+                routerLinkActive="text-accent font-semibold"
+                #rlaInvoices="routerLinkActive"
+                class="group/item flex items-center py-1 text-xs text-slate-400 hover:text-white transition-colors relative"
+              >
+                <span class="absolute -left-[30px] flex items-center justify-center w-3.5 h-3.5 bg-primary rounded-full">
+                  <span 
+                    class="w-1.5 h-1.5 rounded-full transition-all duration-300"
+                    [class.bg-accent]="rlaInvoices.isActive"
+                    [class.scale-125]="rlaInvoices.isActive"
+                    [class.bg-slate-600]="!rlaInvoices.isActive"
+                  ></span>
+                </span>
+                {{ 'navigation.invoices' | translate }}
+              </a>
+
+              <!-- Flow Arrow -->
+              <div class="flex items-center h-1 select-none pointer-events-none relative">
+                <span class="absolute -left-[27px] w-2 h-2 flex items-center justify-center bg-primary text-slate-600">
+                  <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 13l-7 7-7-7" />
+                  </svg>
+                </span>
+              </div>
+
+              <!-- 6. Collections -->
+              <a 
+                routerLink="/workflow/collections" 
+                routerLinkActive="text-accent font-semibold"
+                #rlaCollections="routerLinkActive"
+                class="group/item flex items-center py-1 text-xs text-slate-400 hover:text-white transition-colors relative"
+              >
+                <span class="absolute -left-[30px] flex items-center justify-center w-3.5 h-3.5 bg-primary rounded-full">
+                  <span 
+                    class="w-1.5 h-1.5 rounded-full transition-all duration-300"
+                    [class.bg-accent]="rlaCollections.isActive"
+                    [class.scale-125]="rlaCollections.isActive"
+                    [class.bg-slate-600]="!rlaCollections.isActive"
+                  ></span>
+                </span>
+                {{ 'navigation.collections' | translate }}
+              </a>
+
+            </div>
+          }
+        </div>
+
+        <!-- Procurement Group (collapsible) -->
+        <div *appRole="['Super Admin', 'General Manager', 'Finance Manager', 'Procurement Manager']" class="space-y-1 animate-fade-in">
+          <button 
+            (click)="toggleProcurementMenu()"
+            class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-slate-800 hover:text-white transition-all group"
+          >
+            <div class="flex items-center space-x-3">
+              <svg class="w-5 h-5 shrink-0 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+              </svg>
+              <span class="transition-all duration-300" [class.opacity-0]="isSidebarCollapsed()" [class.w-0]="isSidebarCollapsed()" [class.hidden]="isSidebarCollapsed()">
+                {{ 'navigation.procurement' | translate }}
+              </span>
+            </div>
+            @if (!isSidebarCollapsed()) {
+              <svg 
+                [class.rotate-180]="isProcurementOpen()"
+                class="w-4 h-4 transition-transform duration-200" 
+                fill="none" stroke="currentColor" viewBox="0 0 24 24"
+              >
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            }
+          </button>
+
+          <!-- Submenu links -->
+          @if (isProcurementOpen() && !isSidebarCollapsed()) {
+            <div class="pl-9 space-y-1.5 transition-all duration-300">
+              <a 
+                routerLink="/procurement/purchase-requests" 
+                routerLinkActive="text-accent font-semibold"
+                class="block py-1 text-xs text-slate-400 hover:text-white transition-colors"
+              >
+                {{ 'navigation.purchase_requests' | translate }}
+              </a>
+              <a 
+                routerLink="/procurement/rfqs" 
+                routerLinkActive="text-accent font-semibold"
+                class="block py-1 text-xs text-slate-400 hover:text-white transition-colors"
+              >
+                {{ 'navigation.rfqs' | translate }}
+              </a>
+              <a 
+                routerLink="/procurement/quotation-comparison" 
+                routerLinkActive="text-accent font-semibold"
+                class="block py-1 text-xs text-slate-400 hover:text-white transition-colors"
+              >
+                {{ 'navigation.quotation_comparison' | translate }}
+              </a>
+              <a 
+                routerLink="/procurement/purchase-orders" 
+                routerLinkActive="text-accent font-semibold"
+                class="block py-1 text-xs text-slate-400 hover:text-white transition-colors"
+              >
+                {{ 'navigation.purchase_orders' | translate }}
+              </a>
+            </div>
+          }
+        </div>
+
+        <!-- Inventory Group (collapsible) -->
+        <div *appRole="['Super Admin', 'General Manager', 'Store Keeper', 'Procurement Manager']" class="space-y-1 animate-fade-in">
+          <button 
+            (click)="toggleInventoryMenu()"
+            class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-slate-800 hover:text-white transition-all group"
+          >
+            <div class="flex items-center space-x-3">
+              <svg class="w-5 h-5 shrink-0 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+              </svg>
+              <span class="transition-all duration-300" [class.opacity-0]="isSidebarCollapsed()" [class.w-0]="isSidebarCollapsed()" [class.hidden]="isSidebarCollapsed()">
+                {{ 'navigation.inventory' | translate }}
+              </span>
+            </div>
+            @if (!isSidebarCollapsed()) {
+              <svg 
+                [class.rotate-180]="isInventoryOpen()"
+                class="w-4 h-4 transition-transform duration-200" 
+                fill="none" stroke="currentColor" viewBox="0 0 24 24"
+              >
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            }
+          </button>
+
+          <!-- Submenu links -->
+          @if (isInventoryOpen() && !isSidebarCollapsed()) {
+            <div class="pl-9 space-y-1.5 transition-all duration-300">
+              <a 
+                routerLink="/inventory" 
+                routerLinkActive="text-accent font-semibold"
+                class="block py-1 text-xs text-slate-400 hover:text-white transition-colors"
+              >
+                {{ 'navigation.items' | translate }}
+              </a>
+              <a 
+                routerLink="/inventory" 
+                [queryParams]="{ filter: 'warehouses' }"
+                routerLinkActive="text-accent font-semibold"
+                class="block py-1 text-xs text-slate-400 hover:text-white transition-colors"
+              >
+                {{ 'navigation.warehouses' | translate }}
+              </a>
+              <a 
+                routerLink="/inventory" 
+                [queryParams]="{ filter: 'receipts' }"
+                routerLinkActive="text-accent font-semibold"
+                class="block py-1 text-xs text-slate-400 hover:text-white transition-colors"
+              >
+                {{ 'navigation.goods_receipts' | translate }}
+              </a>
+              <a 
+                routerLink="/inventory" 
+                [queryParams]="{ filter: 'requisitions' }"
+                routerLinkActive="text-accent font-semibold"
+                class="block py-1 text-xs text-slate-400 hover:text-white transition-colors"
+              >
+                {{ 'navigation.material_requisitions' | translate }}
+              </a>
+            </div>
+          }
+        </div>
+
+        <!-- Assets & Equipment Group (collapsible) -->
+        <div *appRole="['Super Admin', 'General Manager', 'Operations Manager']" class="space-y-1 animate-fade-in">
+          <button 
+            (click)="toggleAssetsMenu()"
+            class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-slate-800 hover:text-white transition-all group"
+          >
+            <div class="flex items-center space-x-3">
+              <svg class="w-5 h-5 shrink-0 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+              </svg>
+              <span class="transition-all duration-300" [class.opacity-0]="isSidebarCollapsed()" [class.w-0]="isSidebarCollapsed()" [class.hidden]="isSidebarCollapsed()">
+                {{ 'navigation.assets' | translate }}
+              </span>
+            </div>
+            @if (!isSidebarCollapsed()) {
+              <svg 
+                [class.rotate-180]="isAssetsOpen()"
+                class="w-4 h-4 transition-transform duration-200" 
+                fill="none" stroke="currentColor" viewBox="0 0 24 24"
+              >
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            }
+          </button>
+
+          <!-- Submenu links -->
+          @if (isAssetsOpen() && !isSidebarCollapsed()) {
+            <div class="pl-9 space-y-1.5 transition-all duration-300">
+              <a 
+                routerLink="/operations/rigs" 
+                routerLinkActive="text-accent font-semibold"
+                class="block py-1 text-xs text-slate-400 hover:text-white transition-colors"
+              >
+                {{ 'navigation.equipment_registry' | translate }}
+              </a>
+              <a 
+                routerLink="/operations/timesheets" 
+                routerLinkActive="text-accent font-semibold"
+                class="block py-1 text-xs text-slate-400 hover:text-white transition-colors"
+              >
+                {{ 'navigation.utilization' | translate }}
+              </a>
+              <a 
+                routerLink="/operations/rigs" 
+                [queryParams]="{ tab: 'maintenance' }"
+                routerLinkActive="text-accent font-semibold"
+                class="block py-1 text-xs text-slate-400 hover:text-white transition-colors"
+              >
+                {{ 'navigation.maintenance' | translate }}
+              </a>
+            </div>
+          }
+        </div>
+
+        <!-- Finance Group (collapsible) -->
+        <div *appRole="['Super Admin', 'General Manager', 'Finance Manager']" class="space-y-1 animate-fade-in">
+          <button 
+            (click)="toggleFinanceMenu()"
+            class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-slate-800 hover:text-white transition-all group"
+          >
+            <div class="flex items-center space-x-3">
+              <svg class="w-5 h-5 shrink-0 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span class="transition-all duration-300" [class.opacity-0]="isSidebarCollapsed()" [class.w-0]="isSidebarCollapsed()" [class.hidden]="isSidebarCollapsed()">
+                {{ 'navigation.finance' | translate }}
+              </span>
+            </div>
+            @if (!isSidebarCollapsed()) {
+              <svg 
+                [class.rotate-180]="isFinanceOpen()"
+                class="w-4 h-4 transition-transform duration-200" 
+                fill="none" stroke="currentColor" viewBox="0 0 24 24"
+              >
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            }
+          </button>
+
+          <!-- Submenu links -->
+          @if (isFinanceOpen() && !isSidebarCollapsed()) {
+            <div class="pl-9 space-y-1.5 transition-all duration-300">
+              <a 
+                routerLink="/reports" 
+                [queryParams]="{ view: 'cost-centers' }"
+                routerLinkActive="text-accent font-semibold"
+                class="block py-1 text-xs text-slate-400 hover:text-white transition-colors"
+              >
+                {{ 'navigation.cost_centers' | translate }}
+              </a>
+              <a 
+                routerLink="/workflow/wccs" 
+                routerLinkActive="text-accent font-semibold"
+                class="block py-1 text-xs text-slate-400 hover:text-white transition-colors"
+              >
+                {{ 'navigation.wip' | translate }}
+              </a>
+              <a 
+                routerLink="/workflow/collections" 
+                routerLinkActive="text-accent font-semibold"
+                class="block py-1 text-xs text-slate-400 hover:text-white transition-colors"
+              >
+                {{ 'navigation.accounts_receivable' | translate }}
+              </a>
+              <a 
+                routerLink="/procurement/purchase-orders" 
+                routerLinkActive="text-accent font-semibold"
+                class="block py-1 text-xs text-slate-400 hover:text-white transition-colors"
+              >
+                {{ 'navigation.accounts_payable' | translate }}
+              </a>
+            </div>
+          }
+        </div>
+      </div>
+
+      <!-- SECTION: ANALYTICS & SYSTEM -->
+      <div class="space-y-1">
+        @if (!isSidebarCollapsed()) {
+          <div class="text-[9px] font-bold text-slate-500 uppercase tracking-widest px-3 pt-4 pb-1 select-none animate-fade-in">
+            {{ 'navigation.system_admin' | translate }}
+          </div>
+        }
+
+        <!-- Reports Link -->
+        <a 
+          *appRole="['Super Admin', 'General Manager', 'Finance Manager', 'Procurement Manager', 'Operations Manager']"
+          routerLink="/reports" 
+          routerLinkActive="bg-accent text-primary font-semibold"
+          class="flex items-center space-x-3 px-3 py-2.5 rounded-lg hover:bg-slate-800 hover:text-white transition-all group animate-fade-in"
+        >
+          <svg class="w-5 h-5 shrink-0 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+          <span class="transition-all duration-300" [class.opacity-0]="isSidebarCollapsed()" [class.w-0]="isSidebarCollapsed()" [class.hidden]="isSidebarCollapsed()">
+            {{ 'navigation.reports' | translate }}
+          </span>
+        </a>
+
+        <!-- Administration Group (collapsible) -->
+        <div *appRole="['Super Admin', 'General Manager']" class="space-y-1 animate-fade-in">
+          <button 
+            (click)="toggleAdminMenu()"
+            class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-slate-800 hover:text-white transition-all group"
+          >
+            <div class="flex items-center space-x-3">
+              <svg class="w-5 h-5 shrink-0 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+              </svg>
+              <span class="transition-all duration-300" [class.opacity-0]="isSidebarCollapsed()" [class.w-0]="isSidebarCollapsed()" [class.hidden]="isSidebarCollapsed()">
+                {{ 'navigation.administration' | translate }}
+              </span>
+            </div>
+            @if (!isSidebarCollapsed()) {
+              <svg 
+                [class.rotate-180]="isAdminOpen()"
+                class="w-4 h-4 transition-transform duration-200" 
+                fill="none" stroke="currentColor" viewBox="0 0 24 24"
+              >
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            }
+          </button>
+
+          <!-- Submenu links -->
+          @if (isAdminOpen() && !isSidebarCollapsed()) {
+            <div class="pl-9 space-y-1.5 transition-all duration-300">
+              <a 
+                routerLink="/settings" 
+                [queryParams]="{ tab: 'users' }"
+                routerLinkActive="text-accent font-semibold"
+                class="block py-1 text-xs text-slate-400 hover:text-white transition-colors"
+              >
+                {{ 'navigation.users' | translate }}
+              </a>
+              <a 
+                routerLink="/settings" 
+                [queryParams]="{ tab: 'roles' }"
+                routerLinkActive="text-accent font-semibold"
+                class="block py-1 text-xs text-slate-400 hover:text-white transition-colors"
+              >
+                {{ 'navigation.roles' | translate }}
+              </a>
+              <a 
+                routerLink="/activity-logs" 
+                routerLinkActive="text-accent font-semibold"
+                class="block py-1 text-xs text-slate-400 hover:text-white transition-colors"
+              >
+                {{ 'navigation.audit_logs' | translate }}
+              </a>
+              <a 
+                routerLink="/audit-trail" 
+                routerLinkActive="text-accent font-semibold"
+                class="block py-1 text-xs text-slate-400 hover:text-white transition-colors"
+              >
+                {{ 'navigation.activity_tracking' | translate }}
+              </a>
+            </div>
+          }
+        </div>
+      </div>
+
+    </nav>
+
+    <!-- Sidebar Footer / Collapsed indicator -->
+    <div class="p-4 border-t border-slate-800 bg-secondary flex items-center justify-between text-xs text-slate-500 overflow-hidden shrink-0">
+      <div class="flex items-center space-x-2" [class.justify-center]="isSidebarCollapsed()">
+        <span class="w-2.5 h-2.5 rounded-full bg-success animate-pulse shrink-0"></span>
+        <span [class.hidden]="isSidebarCollapsed()" class="whitespace-nowrap">{{ 'navigation.server_online' | translate }}</span>
+      </div>
+      <span [class.hidden]="isSidebarCollapsed()" class="text-[10px]">v1.0.0</span>
+    </div>
+  </aside>
+
+  <!-- MOBILE OVERLAY -->
+  @if (isMobileOpen()) {
+    <div 
+      (click)="toggleMobileSidebar()"
+      class="fixed inset-0 z-20 bg-slate-900/60 backdrop-blur-sm md:hidden"
+    ></div>
+  }
+
+  <!-- MAIN CONTENT AREA WRAPPER -->
+  <div class="flex-1 flex flex-col h-full overflow-hidden">
+    
+    <!-- TOP NAVBAR -->
+    <header class="flex items-center justify-between h-16 px-4 md:px-6 bg-white border-b border-slate-200 shadow-sm shrink-0">
+      <div class="flex items-center space-x-3">
+        <!-- Mobile menu toggle -->
+        <button 
+          (click)="toggleMobileSidebar()" 
+          class="md:hidden flex items-center justify-center p-2 rounded-lg hover:bg-slate-100 text-slate-600 transition-colors"
+        >
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </button>
+        
+        <!-- Breadcrumbs (Desktop) -->
+        <div class="hidden sm:block">
+          <nav class="flex text-xs font-semibold text-slate-400" aria-label="Breadcrumb">
+            <ol class="inline-flex items-center space-x-1 md:space-x-2">
+              <li class="inline-flex items-center">
+                <a routerLink="/" class="hover:text-primary transition-colors inline-flex items-center text-slate-400">
+                  <svg class="w-3.5 h-3.5 mr-1 rtl:ml-1 rtl:mr-0 text-slate-400" fill="currentColor" viewBox="0 0 20 20"><path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"></path></svg>
+                  {{ 'common.petroflow' | translate }}
+                </a>
+              </li>
+              @for (item of breadcrumbs(); track item.label) {
+                <li class="flex items-center">
+                  <svg class="w-4 h-4 text-slate-300 animate-direction" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path></svg>
+                  @if (item.url) {
+                    <a [routerLink]="item.url" class="ml-1 md:ml-2 rtl:mr-1 rtl:md:mr-2 hover:text-primary transition-colors text-slate-400">{{ item.label | translate }}</a>
+                  } @else {
+                    <span class="ml-1 md:ml-2 rtl:mr-1 rtl:md:mr-2 text-slate-700 font-bold">{{ item.label | translate }}</span>
+                  }
+                </li>
+              }
+            </ol>
+          </nav>
+        </div>
+      </div>
+
+      <!-- Action items: notifications, profile dropdown -->
+      <div class="flex items-center space-x-3 md:space-x-4">
+        
+        <!-- Language Switcher Component -->
+        <app-language-switcher></app-language-switcher>
+
+        <!-- Quick Action Trigger: Create PR -->
+        <a 
+          routerLink="/procurement/purchase-requests" 
+          [queryParams]="{ openForm: 'true' }"
+          class="hidden lg:flex items-center space-x-1 px-3 py-1.5 rounded-lg bg-slate-900 text-white text-xs font-semibold hover:bg-slate-800 transition-colors shadow-sm"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+          </svg>
+          <span>{{ 'common.new_requisition' | translate }}</span>
+        </a>
+
+        <!-- NOTIFICATIONS DROPDOWN CONTAINER -->
+        <div class="relative">
+          <button 
+            (click)="toggleNotifications()"
+            class="relative p-2 rounded-full hover:bg-slate-100 text-slate-600 transition-colors focus:outline-none"
+          >
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+            </svg>
+            @if (activeNotificationCount() > 0) {
+              <span class="absolute top-1.5 right-1.5 rtl:left-1.5 rtl:right-auto flex h-4 w-4 items-center justify-center rounded-full bg-danger text-[9px] font-bold text-white shadow-sm ring-2 ring-white">
+                {{ activeNotificationCount() }}
+              </span>
+            }
+          </button>
+
+          <!-- Dropdown List -->
+          @if (isNotificationsOpen()) {
+            <div class="absolute right-0 rtl:left-0 rtl:right-auto mt-2.5 w-80 bg-white rounded-xl shadow-xl border border-slate-200 py-2 z-50 animate-fade-in divide-y divide-slate-100">
+              <div class="px-4 py-2 flex items-center justify-between font-semibold text-xs text-slate-500 bg-slate-50 uppercase tracking-wider rounded-t-xl">
+                <span>{{ 'common.alerts_and_logs' | translate }}</span>
+                @if (activeNotificationCount() > 0) {
+                  <button (click)="clearNotifications()" class="text-accent hover:underline lowercase normal-case">{{ 'common.dismiss_all' | translate }}</button>
+                }
+              </div>
+              <div class="max-h-72 overflow-y-auto divide-y divide-slate-100">
+                @for (notif of notifications(); track notif.id) {
+                  <div class="p-3.5 hover:bg-slate-50 transition-colors flex items-start space-x-3 text-xs text-left rtl:text-right">
+                    <span [class]="getNotifBadgeClass(notif.type) + ' w-2 h-2 rounded-full mt-1.5 shrink-0'"></span>
+                    <div class="flex-1 space-y-0.5 ml-2 rtl:mr-2 rtl:ml-0">
+                      <p class="font-bold text-slate-800">{{ 'notifications.items.' + notif.id + '_title' | translate }}</p>
+                      <p class="text-slate-500 leading-relaxed">{{ 'notifications.items.' + notif.id + '_message' | translate }}</p>
+                      <p class="text-[10px] text-slate-400 mt-1">{{ 'notifications.items.' + notif.id + '_time' | translate }}</p>
+                    </div>
+                  </div>
+                } @empty {
+                  <div class="p-6 text-center text-slate-400">
+                    <svg class="w-8 h-8 mx-auto mb-2 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                    </svg>
+                    <span class="text-xs">{{ 'common.no_active_notifications' | translate }}</span>
+                  </div>
+                }
+              </div>
+            </div>
+          }
+        </div>
+
+        <!-- USER PROFILE MENU -->
+        <div class="relative">
+          <button 
+            (click)="toggleUserMenu()"
+            class="flex items-center space-x-2 p-1 md:px-2 md:py-1.5 rounded-lg hover:bg-slate-100 text-slate-700 transition-colors focus:outline-none"
+          >
+            <!-- User avatar -->
+            <div class="w-8 h-8 rounded-full bg-secondary text-accent font-bold text-xs flex items-center justify-center shadow-sm">
+              {{ authService.currentUser()?.avatar || 'US' }}
+            </div>
+            <!-- User Info (Desktop) -->
+            <div class="hidden md:flex flex-col items-start text-left rtl:text-right">
+              <span class="text-xs font-bold leading-none text-slate-800">{{ authService.currentUser()?.fullName }}</span>
+              <span class="text-[9px] text-slate-400 mt-0.5">{{ authService.currentUser()?.role }}</span>
+            </div>
+            <svg class="hidden md:block w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+
+          <!-- Profile Dropdown -->
+          @if (isUserMenuOpen()) {
+            <div class="absolute right-0 rtl:left-0 rtl:right-auto mt-2.5 w-52 bg-white rounded-xl shadow-xl border border-slate-200 py-1.5 z-50 animate-fade-in font-medium text-xs">
+              <div class="px-4 py-2.5 border-b border-slate-100 flex flex-col text-left rtl:text-right">
+                <span class="font-bold text-slate-800">{{ authService.currentUser()?.fullName }}</span>
+                <span class="text-[10px] text-slate-500 truncate mt-0.5">{{ authService.currentUser()?.email }}</span>
+                @if (authService.currentUser()?.lastLogin) {
+                  <span class="text-[9px] text-slate-400 mt-1 font-medium italic">
+                    {{ 'common.last_login' | translate }}: {{ authService.currentUser()?.lastLogin | date:'MMM d, HH:mm' }}
+                  </span>
+                }
+              </div>
+              <a routerLink="/settings" (click)="isUserMenuOpen.set(false)" class="block px-4 py-2.5 text-slate-700 hover:bg-slate-50 transition-colors text-left rtl:text-right">{{ 'common.company_profile' | translate }}</a>
+              <a routerLink="/settings" (click)="isUserMenuOpen.set(false)" class="block px-4 py-2.5 text-slate-700 hover:bg-slate-50 transition-colors text-left rtl:text-right">{{ 'common.account_settings' | translate }}</a>
+              <a routerLink="/activity-logs" (click)="isUserMenuOpen.set(false)" class="block px-4 py-2.5 text-slate-700 hover:bg-slate-50 transition-colors text-left rtl:text-right">{{ 'common.activity_logs' | translate }}</a>
+              <a *appRole="['Super Admin', 'General Manager', 'Finance Manager']" routerLink="/audit-trail" (click)="isUserMenuOpen.set(false)" class="block px-4 py-2.5 text-slate-700 hover:bg-slate-50 transition-colors text-left rtl:text-right">{{ 'common.security_audit_trail' | translate }}</a>
+              <hr class="border-slate-100 my-1">
+              <button (click)="logout()" class="w-full px-4 py-2.5 text-danger hover:bg-red-50 transition-colors text-left rtl:text-right">{{ 'common.logout' | translate }}</button>
+            </div>
+          }
+        </div>
+
+      </div>
+    </header>
+
+    <!-- CONTENT WRAPPER -->
+    <main class="flex-1 overflow-y-auto p-4 md:p-6 bg-bg-custom relative">
+      <router-outlet></router-outlet>
+    </main>
+
+  </div>
+
+</div>
+
+<!-- TOASTS CONTAINER -->
+<div class="fixed bottom-5 right-5 rtl:left-5 rtl:right-auto z-50 flex flex-col space-y-3 pointer-events-none w-full max-w-sm">
+  @for (toast of toasts(); track toast.id) {
+    <div 
+      class="p-4 rounded-xl border shadow-xl flex items-start space-x-3 pointer-events-auto bg-white transition-all transform duration-300 translate-y-0 text-left rtl:text-right"
+      [class.border-success]="toast.type === 'success'"
+      [class.border-danger]="toast.type === 'danger'"
+      [class.border-warning]="toast.type === 'warning'"
+      [class.border-slate-200]="toast.type === 'info'"
+    >
+      <!-- Alert Icons -->
+      @switch (toast.type) {
+        @case ('success') {
+          <div class="p-1 rounded-lg bg-green-50 text-success shrink-0">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+        }
+        @case ('danger') {
+          <div class="p-1 rounded-lg bg-red-50 text-danger shrink-0">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+          </div>
+        }
+        @case ('warning') {
+          <div class="p-1 rounded-lg bg-amber-50 text-accent shrink-0">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+          </div>
+        }
+        @default {
+          <div class="p-1 rounded-lg bg-blue-50 text-blue-600 shrink-0">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+        }
+      }
+
+      <div class="flex-1 space-y-0.5 ml-2 rtl:mr-2 rtl:ml-0">
+        <h4 class="text-xs font-bold text-slate-800">{{ toast.title }}</h4>
+        <p class="text-xs text-slate-500 leading-normal">{{ toast.message }}</p>
+      </div>
+
+      <!-- Dismiss Button -->
+      <button 
+        (click)="dismissToast(toast.id)"
+        class="text-slate-400 hover:text-slate-600 transition-colors ml-2 rtl:mr-2 rtl:ml-0 shrink-0"
+      >
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+    </div>
+  }
+</div>
