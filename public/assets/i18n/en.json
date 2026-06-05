@@ -1,4 +1,11 @@
 {
+  "core": {
+    "guards": {
+      "access_denied": "Access Denied",
+      "permission_required": "Your account does not have the '{{requiredPermission}}' permission required to access this resource.",
+      "role_required": "Your current role ({{role}}) does not have permission to view this view."
+    }
+  },
   "navigation": {
     "dashboard": "Dashboard",
     "operations": "Operations",
@@ -101,11 +108,19 @@
       "error_hours_title": "Invalid Log",
       "error_hours_desc": "Daily log hours sum cannot exceed 24 hours (Current: {{hours}} hours).",
       "success_title": "Shift Logs Updated",
-      "success_desc": "Timesheet logs for Day {{day}} of {{rig}} updated successfully."
+      "success_desc": "Timesheet logs for Day {{day}} of {{rig}} updated successfully.",
+      "audit_update": "Updated shift logs for Day {{day}} on Rig: {{rig}}. Total logged hours: {{total}} hrs.",
+      "placeholder_remarks": "E.g. Spud-in, regular casing run"
     }
   },
   "common": {
     "petroflow": "PetroFlow",
+    "petroflow_erp": "PetroFlow ERP",
+    "enterprise_mvp": "ENTERPRISE MVP",
+    "breadcrumb": "Breadcrumb",
+    "chronological_logs": "Chronological Event Logs",
+    "entries": "entries",
+    "na": "N/A",
     "new_requisition": "New Requisition",
     "dismiss_all": "dismiss all",
     "no_active_notifications": "No active notifications",
@@ -271,7 +286,9 @@
     "total_events_logged": "total events logged",
     "inspect_diffs": "Inspect change diffs & mutations",
     "account_prefs": "Account & Preferences",
-    "profile_timezone_notifs": "Profile, timezone, notifications"
+    "profile_timezone_notifs": "Profile, timezone, notifications",
+    "chart_tooltip_drilling": "Drilling: ${{amount}}",
+    "chart_tooltip_maint": "Maint: ${{amount}}"
   },
   "notifications": {
     "cleared_title": "Notifications Cleared",
@@ -444,7 +461,9 @@
     "persistence_title": "Mock Data Persistence",
     "persistence_desc": "This log utilizes standard Angular Signals state, persisted inside local storage. Creating PRs, approving POs, or shifting timesheets will write real-time audit triggers to this board, reflecting the active logged-in user.",
     "schema_title": "Enterprise Database Schema",
-    "schema_desc": "On production, this data-collection interface interfaces directly with audit trail backend brokers (e.g. CDC triggers or NestJS audit intercepts)."
+    "schema_desc": "On production, this data-collection interface interfaces directly with audit trail backend brokers (e.g. CDC triggers or NestJS audit intercepts).",
+    "event_triggered": "{{action}} event triggered on {{entity}}",
+    "no_activity": "No activity logged in this workspace yet."
   },
   "audit_trail": {
     "title": "Security Audit Trail",
@@ -476,7 +495,16 @@
     "no_desc": "No descriptive logs compiled.",
     "pre_state": "- Pre-modification State",
     "post_state": "+ Post-modification State",
-    "select_log_prompt": "Select any transaction row to inspect structural details."
+    "select_log_prompt": "Select any transaction row to inspect structural details.",
+    "actions": {
+      "Create": "Create",
+      "Update": "Update",
+      "Approve": "Approve",
+      "Reject": "Reject",
+      "Login": "Login",
+      "Logout": "Logout",
+      "Status_Change": "Status Change"
+    }
   },
   "workflow": {
     "dars": {
@@ -647,7 +675,33 @@
       "notif_issued_title": "PO Issued to Vendor",
       "notif_issued_desc": "{{po}} has been formally dispatched to {{vendor}}.",
       "notif_delivered_title": "PO Marked as Delivered",
-      "notif_delivered_desc": "{{po}} delivery confirmed. Proceed to invoice matching."
+      "notif_delivered_desc": "{{po}} delivery confirmed. Proceed to invoice matching.",
+      "sig_submitted_title": "Signature Submitted",
+      "sig_submitted_desc": "You have signed off on {{po}} as {{role}}.",
+      "po_finalized_title": "Purchase Order Finalized",
+      "po_finalized_desc": "All approval gates cleared. Order {{po}} is ready for dispatch.",
+      "audit_sign": "Authorized signature step: {{role}} sign-off. Approver: {{approver}}. Comments: {{comments}}",
+      "audit_dispatch": "Purchase order {{po}} fully approved by all delegation thresholds. Sent to vendor.",
+      "vendor_label": "Vendor",
+      "date_label": "Date",
+      "logistics_budgeting": "Logistics & Budgeting",
+      "required_date": "Required Date",
+      "cost_center": "Cost Center",
+      "wht_note_title": "Withholding Tax (WHT) Note",
+      "wht_note_desc": "Pursuant to Section 52 of corporate tax laws, a withholding deduction of {{pct}}% has been retained at source. Net payable value reflects deduction applied to base contract sum.",
+      "wht_retained": "Withholding Retained (-{{pct}}%)",
+      "audit_log_subtitle": "Authorization signatures required to dispatch procurement contract",
+      "signed_by": "Signed by: {{approver}} on {{date}}",
+      "awaiting_signature": "Awaiting Signature",
+      "authorize_po": "Authorize Purchase Order",
+      "authorize_po_desc": "Submit your signature to release this order.",
+      "your_role": "Your Role / Access Level",
+      "approver_name": "Authorized Approver Name",
+      "comments_label": "Approval Signature Comments (Optional)",
+      "comments_placeholder": "E.g. Spares verified, release approved.",
+      "approve_and_sign": "Approve and Sign",
+      "empty_desc": "Select any Purchase Order from the master registry panel on the left to inspect totals, tax detail structures, and authorization status.",
+      "tax_id": "Tax ID"
     },
     "purchase_requests": {
       "breadcrumb": "Purchase Requests",
@@ -681,7 +735,40 @@
       "notif_rejected_title": "PR Rejected",
       "notif_rejected_desc": "{{pr}} has been rejected.",
       "notif_created_title": "Requisition Created",
-      "notif_created_desc": "{{pr}} has been submitted for department review."
+      "notif_created_desc": "{{pr}} has been submitted for department review.",
+      "err_validation_title": "Submission Failed",
+      "err_validation_items": "Please select valid materials and quantities for all lines.",
+      "err_validation_desc": "Please write a purpose/description for this request.",
+      "audit_created": "Created purchase request for department {{dept}}. Target Delivery Date: {{date}}. Description: {{desc}}.",
+      "audit_approved": "Requisition {{pr}} approved. Ready for RFQ matching.",
+      "notif_approved_desc_detailed": "Purchase Request {{pr}} status has been updated to Approved. You can now generate an RFQ.",
+      "back_to_list": "Back to List",
+      "form_subtitle": "Please provide cost allocation details and specify material requirements below.",
+      "cost_center_allocation": "Cost Center Allocation",
+      "target_delivery_date": "Target Delivery Date",
+      "purpose_scope": "Purpose / Scope of Work",
+      "placeholder_purpose": "Explain the operational necessity for this request...",
+      "line_items": "Requisition Line Items",
+      "add_line_item": "Add Line Item",
+      "material_service": "Material / Service",
+      "select_material": "-- Select Material --",
+      "qty": "Qty",
+      "uom": "UOM",
+      "notes": "Notes",
+      "placeholder_notes": "E.g. urgent, grade",
+      "submit_requisition": "Submit Requisition",
+      "cost_center": "Cost Center",
+      "required_date": "Required Date",
+      "details_title": "Requisition Details",
+      "requested_by": "Requested By",
+      "itemized_list": "Itemized Material List",
+      "note_prefix": "Note",
+      "generate_rfq_btn": "Generate Invitation to Bid (RFQ)",
+      "close_panel": "Close Panel",
+      "dept_drilling": "Drilling Operations",
+      "dept_maintenance": "Maintenance & Engineering",
+      "dept_hse": "HSE & Safety",
+      "dept_logistics": "Logistics & Warehousing"
     },
     "rfqs": {
       "breadcrumb": "RFQs",
@@ -732,7 +819,24 @@
       "bid_price_label": "Bid Base Price ($)",
       "bid_weeks_label": "Delivery Time (Weeks)",
       "bid_remarks_label": "Bid Remarks / Terms",
-      "submit_quotation": "Submit Quotation"
+      "submit_quotation": "Submit Quotation",
+      "creating_rfq_for": "Creating RFQ for Approved Requisition",
+      "terms": "Terms",
+      "contact": "Contact",
+      "rfq_title": "RFQ Title",
+      "submit_quotation_for": "Submit price quotation for",
+      "bid_remarks_placeholder": "E.g. Ex-stocks, shipping included",
+      "invited": "Invited",
+      "submitted": "Submitted",
+      "rfq_for_title": "RFQ for {{pr}} - {{dept}}",
+      "err_missing_vendors_title": "Missing Vendors",
+      "err_missing_vendors_desc": "Please select at least one vendor to invite to this RFQ.",
+      "notif_dispatched_title": "RFQ Dispatched",
+      "notif_dispatched_desc": "RFQ {{rfq}} has been published. Invited vendors have been notified to submit quotes.",
+      "err_invalid_price_title": "Invalid Price",
+      "err_invalid_price_desc": "Bid price must be greater than zero.",
+      "notif_bid_logged_title": "Bid Logged",
+      "notif_bid_logged_desc": "Quotation from {{vendor}} submitted for {{rfq}}."
     },
     "quotation_comparison": {
       "breadcrumb": "Quotation Comparison",
@@ -751,6 +855,31 @@
       "weeks": "wks delivery",
       "tax": "Tax",
       "notif_po_title": "Purchase Order Created",
-      "notif_po_desc": "PO issued to {{vendor}} for RFQ {{rfq}}. Routed for approval."
+      "notif_po_desc": "PO issued to {{vendor}} for RFQ {{rfq}}. Routed for approval.",
+      "select_rfq": "Select Request for Quotation (RFQ) to Analyze",
+      "choose_rfq": "-- Choose RFQ from list --",
+      "bids_count_label": "{{count}} Bids",
+      "total_bids": "Total Bids",
+      "items_under_bid": "Requisition Line Items Under Bid",
+      "source": "Source",
+      "rfq_status": "RFQ Status",
+      "items_requested": "Items Requested",
+      "comparison_header": "Commercial & Logistics Comparison",
+      "comparison_subheader": "Evaluated bids sorted by total delivery cost. Recommended vendor highlighted.",
+      "recommendation_badge": "Automatic Contract Recommendation",
+      "vendor_bidder": "Vendor / Bidder",
+      "delivery_time": "Delivery Time",
+      "vat_tax": "VAT Tax (15%)",
+      "score_highlights": "Score Highlights",
+      "contract_action": "Contract Action",
+      "recommended": "Recommended",
+      "awarded": "Awarded",
+      "awaiting_quotes": "Awaiting Quotations",
+      "awaiting_quotes_desc": "This RFQ has not received any bids yet. Navigate to the RFQ list to simulate bids first.",
+      "no_rfq_desc": "Select an active RFQ from the dropdown menu above or click 'Compare Bids' from the RFQ table listing to display side-by-side bid metrics.",
+      "notif_awarded_title": "Contract Awarded",
+      "notif_awarded_desc": "Purchase Order {{po}} has been successfully generated for {{vendor}}.",
+      "err_failed_title": "Action Failed",
+      "err_failed_desc": "Could not create Purchase Order from this quotation. Please try again."
     }
   }

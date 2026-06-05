@@ -70,16 +70,16 @@ import { TranslateModule } from '@ngx-translate/core';
                   class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-slate-700 font-bold focus:outline-none"
                 >
                   <option value="ALL">{{ 'audit_trail.all_actions' | translate }}</option>
-                  <option value="Create">Create</option>
-                  <option value="Update">Update</option>
-                  <option value="Approve">Approve</option>
-                  <option value="Reject">Reject</option>
-                  <option value="Login">Login</option>
-                  <option value="Logout">Logout</option>
-                  <option value="Status Change">Status Change</option>
+                  <option value="Create">{{ 'audit_trail.actions.Create' | translate }}</option>
+                  <option value="Update">{{ 'audit_trail.actions.Update' | translate }}</option>
+                  <option value="Approve">{{ 'audit_trail.actions.Approve' | translate }}</option>
+                  <option value="Reject">{{ 'audit_trail.actions.Reject' | translate }}</option>
+                  <option value="Login">{{ 'audit_trail.actions.Login' | translate }}</option>
+                  <option value="Logout">{{ 'audit_trail.actions.Logout' | translate }}</option>
+                  <option value="Status Change">{{ 'audit_trail.actions.Status_Change' | translate }}</option>
                 </select>
               </div>
-
+ 
               <!-- Role filter -->
               <div>
                 <label class="block mb-1 text-[10px] text-slate-400 uppercase font-bold tracking-wider">{{ 'audit_trail.filter_role' | translate }}</label>
@@ -98,7 +98,7 @@ import { TranslateModule } from '@ngx-translate/core';
               </div>
             </div>
           </div>
-
+ 
           <!-- Tabular view -->
           <div class="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden">
             <div class="overflow-x-auto">
@@ -146,7 +146,7 @@ import { TranslateModule } from '@ngx-translate/core';
                           [class.bg-slate-100]="log.action === 'Login' || log.action === 'Logout'"
                           [class.text-slate-700]="log.action === 'Login' || log.action === 'Logout'"
                         >
-                          {{ log.action }}
+                          {{ 'audit_trail.actions.' + (log.action === 'Status Change' ? 'Status_Change' : log.action) | translate }}
                         </span>
                       </td>
                       <td class="p-4">

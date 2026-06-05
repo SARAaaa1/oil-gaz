@@ -1,4 +1,11 @@
 {
+  "core": {
+    "guards": {
+      "access_denied": "تم رفض الوصول",
+      "permission_required": "حسابك لا يملك صلاحية '{{requiredPermission}}' المطلوبة للوصول إلى هذا المورد.",
+      "role_required": "دورك الحالي ({{role}}) لا يملك صلاحية لعرض هذه الصفحة."
+    }
+  },
   "navigation": {
     "dashboard": "لوحة القيادة",
     "operations": "العمليات",
@@ -101,11 +108,19 @@
       "error_hours_title": "سجل غير صالح",
       "error_hours_desc": "لا يمكن أن يتجاوز مجموع ساعات السجل اليومي 24 ساعة (الحالي: {{hours}} ساعات).",
       "success_title": "تم تحديث سجلات المناوبة",
-      "success_desc": "تم تحديث سجلات الجدول الزمني لليوم {{day}} من {{rig}} بنجاح."
+      "success_desc": "تم تحديث سجلات الجدول الزمني لليوم {{day}} من {{rig}} بنجاح.",
+      "audit_update": "تم تحديث سجلات المناوبة لليوم {{day}} على المنصة: {{rig}}. إجمالي الساعات المسجلة: {{total}} ساعة.",
+      "placeholder_remarks": "على سبيل المثال: بدء الحفر، تشغيل الغلاف العادي"
     }
   },
   "common": {
     "petroflow": "بتروفلو",
+    "petroflow_erp": "نظام بتروفلو",
+    "enterprise_mvp": "نسخة المؤسسة التجريبية",
+    "breadcrumb": "مسار التنقل",
+    "chronological_logs": "سجل الأحداث الزمني",
+    "entries": "إدخالات",
+    "na": "غير متوفر",
     "new_requisition": "طلب شراء جديد",
     "dismiss_all": "تجاهل الكل",
     "no_active_notifications": "لا توجد إشعارات نشطة",
@@ -271,7 +286,9 @@
     "total_events_logged": "إجمالي الأحداث المسجلة",
     "inspect_diffs": "فحص الفروقات والتغييرات",
     "account_prefs": "الحساب والتفضيلات",
-    "profile_timezone_notifs": "الملف الشخصي، المنطقة الزمنية، الإشعارات"
+    "profile_timezone_notifs": "الملف الشخصي، المنطقة الزمنية، الإشعارات",
+    "chart_tooltip_drilling": "الحفر: ${{amount}}",
+    "chart_tooltip_maint": "الصيانة: ${{amount}}"
   },
   "notifications": {
     "cleared_title": "تم مسح الإشعارات",
@@ -444,7 +461,9 @@
     "persistence_title": "حفظ البيانات الوهمية",
     "persistence_desc": "هذا السجل يستخدم إشارة Angular قياسية، مخزنة محلياً. إنشاء طلبات شراء، أو اعتماد أوامر، أو تغيير جداول سيتسبب في كتابة سجلات تدقيق حية هنا، تعكس المستخدم النشط.",
     "schema_title": "مخطط قاعدة البيانات المؤسسية",
-    "schema_desc": "في الإنتاج، هذه الواجهة تتصل بخدمات تدقيق خلفية (مثل CDC أو NestJS)."
+    "schema_desc": "في الإنتاج، هذه الواجهة تتصل بخدمات تدقيق خلفية (مثل CDC أو NestJS).",
+    "event_triggered": "تم إطلاق حدث {{action}} على {{entity}}",
+    "no_activity": "لا يوجد نشاط مسجل في مساحة العمل هذه بعد."
   },
   "audit_trail": {
     "title": "سجل تدقيق الأمان",
@@ -476,7 +495,16 @@
     "no_desc": "لا توجد سجلات وصفية مجمعة.",
     "pre_state": "- الحالة قبل التعديل",
     "post_state": "+ الحالة بعد التعديل",
-    "select_log_prompt": "اختر صفاً لتفقد التفاصيل الهيكلية."
+    "select_log_prompt": "اختر صفاً لتفقد التفاصيل الهيكلية.",
+    "actions": {
+      "Create": "إنشاء",
+      "Update": "تحديث",
+      "Approve": "موافقة",
+      "Reject": "رفض",
+      "Login": "تسجيل دخول",
+      "Logout": "تسجيل خروج",
+      "Status_Change": "تغيير الحالة"
+    }
   },
   "workflow": {
     "dars": {
@@ -647,7 +675,33 @@
       "notif_issued_title": "تم إرسال أمر الشراء للمورد",
       "notif_issued_desc": "تم إرسال أمر الشراء {{po}} رسمياً إلى {{vendor}}.",
       "notif_delivered_title": "تم تحديد أمر الشراء كمستلم",
-      "notif_delivered_desc": "تأكيد تسليم {{po}}. يرجى المتابعة لمطابقة الفاتورة."
+      "notif_delivered_desc": "تأكيد تسليم {{po}}. يرجى المتابعة لمطابقة الفاتورة.",
+      "sig_submitted_title": "تم تقديم التوقيع",
+      "sig_submitted_desc": "لقد قمت بالتوقيع والموافقة على {{po}} بصفتك {{role}}.",
+      "po_finalized_title": "اكتمل أمر الشراء",
+      "po_finalized_desc": "تم مسح جميع بوابات الاعتماد. أمر الشراء {{po}} جاهز للإرسال.",
+      "audit_sign": "خطوة توقيع معتمدة: موافقة {{role}}. الموقع: {{approver}}. الملاحظات: {{comments}}",
+      "audit_dispatch": "أمر الشراء {{po}} معتمد بالكامل من قبل جميع مستويات التفويض. تم الإرسال إلى المورد.",
+      "vendor_label": "المورد",
+      "date_label": "التاريخ",
+      "logistics_budgeting": "الخدمات اللوجستية والميزانية",
+      "required_date": "التاريخ المطلوب",
+      "cost_center": "مركز التكلفة",
+      "wht_note_title": "ملاحظة ضريبة الاستقطاع (WHT)",
+      "wht_note_desc": "وفقاً للمادة 52 من قوانين ضريبة الشركات، تم اقتطاع ضريبة استقطاع بنسبة {{pct}}% عند المصدر. يعكس صافي القيمة المستحقة الدفع الخصم المطبق على مبلغ العقد الأساسي.",
+      "wht_retained": "ضريبة الاستقطاع المحتجزة (-{{pct}}%)",
+      "audit_log_subtitle": "التوقيعات المطلوبة لإصدار عقد المشتريات",
+      "signed_by": "تم التوقيع من قبل: {{approver}} في {{date}}",
+      "awaiting_signature": "في انتظار التوقيع",
+      "authorize_po": "اعتماد أمر الشراء",
+      "authorize_po_desc": "قدم توقيعك لإصدار هذا الأمر.",
+      "your_role": "دورك / مستوى الوصول",
+      "approver_name": "اسم المعتمد المخول",
+      "comments_label": "ملاحظات توقيع الاعتماد (اختياري)",
+      "comments_placeholder": "مثال: تم التحقق من قطع الغيار، تمت الموافقة على الإصدار.",
+      "approve_and_sign": "اعتماد وتوقيع",
+      "empty_desc": "اختر أي أمر شراء من لوحة السجل الرئيسية على اليسار لفحص الإجماليات وتفاصيل الضرائب وحالة الاعتماد.",
+      "tax_id": "الرقم الضريبي"
     },
     "purchase_requests": {
       "breadcrumb": "طلبات الشراء",
@@ -681,7 +735,40 @@
       "notif_rejected_title": "تم رفض طلب الشراء",
       "notif_rejected_desc": "تم رفض طلب الشراء {{pr}}.",
       "notif_created_title": "تم إنشاء طلب التوريد",
-      "notif_created_desc": "تم تقديم {{pr}} لمراجعة القسم."
+      "notif_created_desc": "تم تقديم {{pr}} لمراجعة القسم.",
+      "err_validation_title": "فشل التقديم",
+      "err_validation_items": "يرجى تحديد مواد وكميات صالحة لجميع البنود.",
+      "err_validation_desc": "يرجى كتابة الغرض/الوصف لهذا الطلب.",
+      "audit_created": "تم إنشاء طلب الشراء لقسم {{dept}}. تاريخ التسليم المستهدف: {{date}}. الوصف: {{desc}}.",
+      "audit_approved": "تم اعتماد طلب الشراء {{pr}}. جاهز لمطابقة طلب التسعير.",
+      "notif_approved_desc_detailed": "تم تحديث حالة طلب الشراء {{pr}} إلى معتمد. يمكنك الآن إنشاء طلب تسعير (RFQ).",
+      "back_to_list": "العودة إلى القائمة",
+      "form_subtitle": "يرجى تقديم تفاصيل تخصيص التكلفة وتحديد متطلبات المواد أدناه.",
+      "cost_center_allocation": "تخصيص مركز التكلفة",
+      "target_delivery_date": "تاريخ التسليم المستهدف",
+      "purpose_scope": "الغرض / نطاق العمل",
+      "placeholder_purpose": "اشرح الضرورة التشغيلية لهذا الطلب...",
+      "line_items": "بنود طلب التوريد",
+      "add_line_item": "إضافة بند",
+      "material_service": "المادة / الخدمة",
+      "select_material": "-- اختر المادة --",
+      "qty": "الكمية",
+      "uom": "وحدة القياس",
+      "notes": "ملاحظات",
+      "placeholder_notes": "مثال: عاجل، درجة الجودة",
+      "submit_requisition": "تقديم طلب التوريد",
+      "cost_center": "مركز التكلفة",
+      "required_date": "التاريخ المطلوب",
+      "details_title": "تفاصيل طلب التوريد",
+      "requested_by": "مقدم الطلب",
+      "itemized_list": "قائمة المواد المفصلة",
+      "note_prefix": "ملاحظة",
+      "generate_rfq_btn": "إنشاء دعوة للمناقصة (RFQ)",
+      "close_panel": "إغلاق اللوحة",
+      "dept_drilling": "عمليات الحفر",
+      "dept_maintenance": "الصيانة والهندسة",
+      "dept_hse": "الصحة والسلامة والبيئة",
+      "dept_logistics": "الخدمات اللوجستية والتخزين"
     },
     "rfqs": {
       "breadcrumb": "طلبات عروض الأسعار",
@@ -732,7 +819,24 @@
       "bid_price_label": "السعر الأساسي المقدم ($)",
       "bid_weeks_label": "مدة التسليم (أسابيع)",
       "bid_remarks_label": "ملاحظات / شروط العرض",
-      "submit_quotation": "تقديم عرض السعر"
+      "submit_quotation": "تقديم عرض السعر",
+      "creating_rfq_for": "إنشاء طلب تسعير لطلب الشراء المعتمد",
+      "terms": "الشروط",
+      "contact": "جهة الاتصال",
+      "rfq_title": "عنوان طلب التسعير",
+      "submit_quotation_for": "تقديم عرض أسعار لطلب التسعير",
+      "bid_remarks_placeholder": "مثال: متوفر في المخازن، الشحن متضمن",
+      "invited": "تمت دعوته",
+      "submitted": "تم التقديم",
+      "rfq_for_title": "طلب تسعير لـ {{pr}} - {{dept}}",
+      "err_missing_vendors_title": "موردون مفقودون",
+      "err_missing_vendors_desc": "يرجى اختيار مورد واحد على الأقل لدعوته لطلب التسعير هذا.",
+      "notif_dispatched_title": "تم إرسال طلب التسعير",
+      "notif_dispatched_desc": "تم نشر طلب التسعير {{rfq}}. تم إخطار الموردين المدعوين لتقديم عروض الأسعار.",
+      "err_invalid_price_title": "سعر غير صالح",
+      "err_invalid_price_desc": "يجب أن يكون سعر عرض السعر أكبر من الصفر.",
+      "notif_bid_logged_title": "تم تسجيل عرض السعر",
+      "notif_bid_logged_desc": "تم تقديم عرض سعر من {{vendor}} لطلب التسعير {{rfq}}."
     },
     "quotation_comparison": {
       "breadcrumb": "مقارنة عروض الأسعار",
@@ -751,7 +855,32 @@
       "weeks": "أسابيع للتسليم",
       "tax": "الضريبة",
       "notif_po_title": "تم إنشاء أمر الشراء",
-      "notif_po_desc": "تم إصدار أمر الشراء إلى {{vendor}} لطلب التسعير {{rfq}}. قيد المراجعة للموافقة."
+      "notif_po_desc": "تم إصدار أمر الشراء إلى {{vendor}} لطلب التسعير {{rfq}}. قيد المراجعة للموافقة.",
+      "select_rfq": "اختر طلب تقديم عروض الأسعار (RFQ) للتحليل",
+      "choose_rfq": "-- اختر طلب تسعير من القائمة --",
+      "bids_count_label": "{{count}} عروض",
+      "total_bids": "إجمالي العروض",
+      "items_under_bid": "بنود طلب التوريد قيد التسعير",
+      "source": "المصدر",
+      "rfq_status": "حالة طلب التسعير",
+      "items_requested": "البنود المطلوبة",
+      "comparison_header": "المقارنة التجارية واللوجستية",
+      "comparison_subheader": "يتم فرز العروض التي تم تقييمها حسب التكلفة الإجمالية للتسليم. تم تمييز المورد الموصى به.",
+      "recommendation_badge": "التوصية التلقائية بالعقد",
+      "vendor_bidder": "المورد / مقدم العرض",
+      "delivery_time": "وقت التسليم",
+      "vat_tax": "ضريبة القيمة المضافة (15٪)",
+      "score_highlights": "أبرز النتائج والتقييم",
+      "contract_action": "إجراء العقد",
+      "recommended": "موصى به",
+      "awarded": "تم الترسية",
+      "awaiting_quotes": "بانتظار عروض الأسعار",
+      "awaiting_quotes_desc": "لم يتلق طلب التسعير هذا أي عروض أسعار حتى الآن. انتقل إلى قائمة طلبات التسعير لمحاكاة العروض أولاً.",
+      "no_rfq_desc": "اختر طلب تسعير نشط من القائمة المنسدلة أعلاه أو انقر فوق 'مقارنة عروض الأسعار' من قائمة جدول طلبات التسعير لعرض مقاييس العرض جنباً إلى جنب.",
+      "notif_awarded_title": "تم ترسية العقد",
+      "notif_awarded_desc": "تم إنشاء أمر الشراء {{po}} بنجاح للمورد {{vendor}}.",
+      "err_failed_title": "فشل الإجراء",
+      "err_failed_desc": "تعذر إنشاء أمر شراء من عرض السعر هذا. يرجى المحاولة مرة أخرى."
     }
   }
 }

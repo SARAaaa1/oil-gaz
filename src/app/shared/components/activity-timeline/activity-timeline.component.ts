@@ -2,17 +2,18 @@ import { Component, OnInit, Input, computed, inject, ChangeDetectionStrategy } f
 import { CommonModule } from '@angular/common';
 import { AuditService } from '../../../core/services/audit.service';
 import { AuditLog } from '../../interfaces/audit.interface';
+import { TranslateModule } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-activity-timeline',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, TranslateModule],
   template: `
     <div class="space-y-4">
       <div class="flex items-center justify-between mb-2">
-        <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400">Chronological Event Logs</h4>
+        <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400">{{ 'common.chronological_logs' | translate }}</h4>
         <span class="text-[10px] bg-slate-100 text-slate-650 px-2 py-0.5 rounded-full font-bold">
-          {{ displayedLogs().length }} entries
+          {{ displayedLogs().length }} {{ 'common.entries' | translate }}
         </span>
       </div>
 
@@ -34,7 +35,7 @@ import { AuditLog } from '../../interfaces/audit.interface';
                 <div class="flex items-center space-x-2">
                   <span class="font-extrabold text-slate-800 text-xs">{{ log.user }}</span>
                   <span class="text-[9px] bg-slate-200/60 text-slate-550 px-1.5 py-0.2 rounded font-bold uppercase tracking-wider">
-                    {{ log.role }}
+                    {{ 'roles.' + log.role | translate }}
                   </span>
                 </div>
                 <span class="text-[9px] text-slate-400 font-bold font-mono">
@@ -46,15 +47,15 @@ import { AuditLog } from '../../interfaces/audit.interface';
                 <span class="font-bold text-slate-900 bg-slate-100 px-1 rounded-md text-[10px] border border-slate-200/50 mr-1.5">
                   {{ log.module }}
                 </span>
-                {{ log.details || (log.action + ' event triggered on ' + log.entityName) }}
+                {{ log.details || ('activity_logs.event_triggered' | translate:{action: ('audit_trail.actions.' + (log.action === 'Status Change' ? 'Status_Change' : log.action) | translate), entity: log.entityName}) }}
               </p>
 
               <!-- Optional micro metadata summary -->
               <div class="mt-2 flex items-center space-x-3 text-[10px] text-slate-400 font-bold">
-                <span>ID: <code class="font-mono text-slate-500 bg-white px-1 border border-slate-100 rounded">{{ log.entityId }}</code></span>
+                <span>{{ 'common.id' | translate }}: <code class="font-mono text-slate-500 bg-white px-1 border border-slate-100 rounded">{{ log.entityId }}</code></span>
                 <span>•</span>
                 <span class="uppercase tracking-wider font-extrabold" [class]="getTextClass(log.action)">
-                  {{ log.action }}
+                  {{ 'audit_trail.actions.' + (log.action === 'Status Change' ? 'Status_Change' : log.action) | translate }}
                 </span>
               </div>
             </div>
@@ -62,7 +63,7 @@ import { AuditLog } from '../../interfaces/audit.interface';
           </div>
         } @empty {
           <div class="text-center py-6 text-slate-400 text-xs font-semibold">
-            No activity logged in this workspace yet.
+            {{ 'activity_logs.no_activity' | translate }}
           </div>
         }
       </div>

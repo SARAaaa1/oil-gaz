@@ -20,8 +20,9 @@ export const permissionGuard: CanActivateFn = (route, state) => {
   const requiredPermission = route.data['permission'] as Permission | undefined;
   if (requiredPermission && !authService.hasPermission(requiredPermission)) {
     notificationService.danger(
-      'Access Denied',
-      `Your account does not have the '${requiredPermission}' permission required to access this resource.`
+      'core.guards.access_denied',
+      'core.guards.permission_required',
+      { requiredPermission }
     );
     return router.createUrlTree(['/dashboard']);
   }
@@ -30,8 +31,9 @@ export const permissionGuard: CanActivateFn = (route, state) => {
   const requiredRoles = route.data['roles'] as UserRole[] | undefined;
   if (requiredRoles && !authService.hasAnyRole(requiredRoles)) {
     notificationService.danger(
-      'Access Denied',
-      `Your current role (${authService.userRole()}) does not have permission to view this view.`
+      'core.guards.access_denied',
+      'core.guards.role_required',
+      { role: authService.userRole() }
     );
     return router.createUrlTree(['/dashboard']);
   }

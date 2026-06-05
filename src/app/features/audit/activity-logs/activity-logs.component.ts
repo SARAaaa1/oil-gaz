@@ -50,7 +50,7 @@ import { TranslateModule } from '@ngx-translate/core';
         <div class="bg-white p-5 rounded-xl border border-slate-100 shadow-sm flex items-center justify-between">
           <div class="space-y-1">
             <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">{{ 'activity_logs.top_module' | translate }}</span>
-            <h2 class="text-xl font-black text-indigo-850 uppercase">{{ topModule() }}</h2>
+            <h2 class="text-xl font-black text-indigo-850 uppercase">{{ topModule() === 'N/A' ? ('common.na' | translate) : ('activity_logs.modules.' + topModule() | translate) }}</h2>
           </div>
           <div class="p-3 bg-indigo-50 rounded-xl">
             <svg class="w-6 h-6 text-indigo-650" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -58,12 +58,12 @@ import { TranslateModule } from '@ngx-translate/core';
             </svg>
           </div>
         </div>
-
+ 
         <!-- Latest Event Time -->
         <div class="bg-white p-5 rounded-xl border border-slate-100 shadow-sm flex items-center justify-between">
           <div class="space-y-1">
             <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">{{ 'activity_logs.last_activity' | translate }}</span>
-            <h2 class="text-xs font-extrabold text-slate-800 mt-1.5">{{ lastLogTime() || 'N/A' }}</h2>
+            <h2 class="text-xs font-extrabold text-slate-800 mt-1.5">{{ lastLogTime() || ('common.na' | translate) }}</h2>
           </div>
           <div class="p-3 bg-amber-50 rounded-xl">
             <svg class="w-6 h-6 text-amber-505" fill="none" stroke="currentColor" viewBox="0 0 24 24">

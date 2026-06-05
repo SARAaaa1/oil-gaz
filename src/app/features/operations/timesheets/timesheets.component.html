@@ -175,7 +175,7 @@
 
           <div>
             <label class="block mb-1">{{ 'operations.timesheets.label_remarks' | translate }}</label>
-            <input type="text" name="comments" [(ngModel)]="editDayForm.comments" placeholder="E.g. Spud-in, regular casing run" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-slate-800 text-xs focus:outline-none font-medium">
+            <input type="text" name="comments" [(ngModel)]="editDayForm.comments" [placeholder]="'operations.timesheets.placeholder_remarks' | translate" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-slate-800 text-xs focus:outline-none font-medium">
           </div>
 
           <div class="pt-3 border-t border-slate-100 flex items-center justify-end space-x-2">

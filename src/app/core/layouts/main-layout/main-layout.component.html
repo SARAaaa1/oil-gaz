@@ -16,8 +16,8 @@
           O&G
         </div>
         <div class="flex flex-col transition-all duration-300" [class.opacity-0]="isSidebarCollapsed()" [class.w-0]="isSidebarCollapsed()">
-          <span class="text-white font-bold text-sm tracking-wider uppercase whitespace-nowrap">{{ 'common.petroflow' | translate }} ERP</span>
-          <span class="text-[10px] text-accent font-semibold tracking-widest whitespace-nowrap">ENTERPRISE MVP</span>
+          <span class="text-white font-bold text-sm tracking-wider uppercase whitespace-nowrap">{{ 'common.petroflow_erp' | translate }}</span>
+          <span class="text-[10px] text-accent font-semibold tracking-widest whitespace-nowrap">{{ 'common.enterprise_mvp' | translate }}</span>
         </div>
       </div>
       <!-- Toggle collapse button (Desktop) -->
@@ -622,7 +622,7 @@
         
         <!-- Breadcrumbs (Desktop) -->
         <div class="hidden sm:block">
-          <nav class="flex text-xs font-semibold text-slate-400" aria-label="Breadcrumb">
+          <nav class="flex text-xs font-semibold text-slate-400" [attr.aria-label]="'common.breadcrumb' | translate">
             <ol class="inline-flex items-center space-x-1 md:space-x-2">
               <li class="inline-flex items-center">
                 <a routerLink="/" class="hover:text-primary transition-colors inline-flex items-center text-slate-400">

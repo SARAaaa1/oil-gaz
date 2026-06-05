@@ -76,8 +76,8 @@ export class QuotationComparisonComponent implements OnInit {
     const newPO = this.mockDataService.createPOFromRFQ(rfq.id, quote.vendorId);
     if (newPO) {
       this.notificationService.success(
-        'Contract Awarded',
-        `Purchase Order ${newPO.poNumber} has been successfully generated for ${quote.vendorName}.`
+        this.translate.instant('procurement.quotation_comparison.notif_awarded_title'),
+        this.translate.instant('procurement.quotation_comparison.notif_awarded_desc', { po: newPO.poNumber, vendor: quote.vendorName })
       );
 
       // Redirect to Purchase Orders with newly created PO highlighted
@@ -86,8 +86,8 @@ export class QuotationComparisonComponent implements OnInit {
       });
     } else {
       this.notificationService.danger(
-        'Action Failed',
-        'Could not create Purchase Order from this quotation. Please try again.'
+        this.translate.instant('procurement.quotation_comparison.err_failed_title'),
+        this.translate.instant('procurement.quotation_comparison.err_failed_desc')
       );
     }
   }

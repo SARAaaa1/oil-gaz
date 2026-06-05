@@ -13,7 +13,7 @@
     <div class="bg-white rounded-xl border border-slate-100 shadow-sm p-6 max-w-4xl mx-auto animate-fade-in text-xs font-semibold text-slate-600">
       <div class="pb-4 mb-6 border-b border-slate-150">
         <h2 class="text-sm font-bold text-slate-800">{{ 'procurement.rfqs.form_title' | translate }}</h2>
-        <p class="text-[10px] text-slate-400 font-semibold mt-0.5">Creating RFQ for Approved Requisition: {{ selectedPRSource()?.requestNumber }}</p>
+        <p class="text-[10px] text-slate-400 font-semibold mt-0.5">{{ 'procurement.rfqs.creating_rfq_for' | translate }}: {{ selectedPRSource()?.requestNumber }}</p>
       </div>
 
       <form (submit)="submitRFQ($event)" class="space-y-6">
@@ -64,7 +64,7 @@
                 >
                 <div class="space-y-0.5">
                   <p class="font-bold text-slate-800">{{ vend.vendorName }}</p>
-                  <p class="text-[10px] text-slate-400">Terms: {{ vend.paymentTerms }} | Contact: {{ vend.contactPerson }}</p>
+                  <p class="text-[10px] text-slate-400">{{ 'procurement.rfqs.terms' | translate }}: {{ vend.paymentTerms }} | {{ 'procurement.rfqs.contact' | translate }}: {{ vend.contactPerson }}</p>
                 </div>
               </div>
             }
@@ -132,14 +132,14 @@
             class="bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-700 focus:outline-none"
           >
             <option value="ALL">{{ 'procurement.rfqs.all_stages' | translate }}</option>
-            <option value="Sent">Sent (Bidding Open)</option>
-            <option value="Quotations Received">Quotations Received</option>
-            <option value="PO Created">PO Created</option>
-            <option value="Closed">Closed</option>
+            <option value="Sent">{{ 'procurement.rfqs.status_sent' | translate }}</option>
+            <option value="Quotations Received">{{ 'procurement.rfqs.status_received' | translate }}</option>
+            <option value="PO Created">{{ 'procurement.rfqs.status_po_created' | translate }}</option>
+            <option value="Closed">{{ 'procurement.rfqs.status_closed' | translate }}</option>
           </select>
         </div>
       </div>
-
+ 
       <!-- RFQ Table -->
       <div class="overflow-x-auto">
         <table class="w-full text-left border-collapse text-xs">
@@ -178,7 +178,17 @@
                     [class.bg-slate-100]="rfq.status === 'Closed'"
                     [class.text-slate-500]="rfq.status === 'Closed'"
                   >
-                    {{ rfq.status === 'Sent' ? 'Bidding Open' : rfq.status }}
+                    @if (rfq.status === 'Sent') {
+                      {{ 'procurement.rfqs.status_sent' | translate }}
+                    } @else if (rfq.status === 'Quotations Received') {
+                      {{ 'procurement.rfqs.status_received' | translate }}
+                    } @else if (rfq.status === 'PO Created') {
+                      {{ 'procurement.rfqs.status_po_created' | translate }}
+                    } @else if (rfq.status === 'Closed') {
+                      {{ 'procurement.rfqs.status_closed' | translate }}
+                    } @else {
+                      {{ rfq.status }}
+                    }
                   </span>
                 </td>
                 <td class="p-4 text-right">
@@ -251,7 +261,7 @@
 
         <div class="space-y-4 font-semibold text-slate-600">
           <div>
-            <span class="block text-[10px] text-slate-400 uppercase">RFQ Title</span>
+            <span class="block text-[10px] text-slate-400 uppercase">{{ 'procurement.rfqs.rfq_title' | translate }}</span>
             <span class="text-slate-800 font-bold text-sm">{{ selectedRFQ()?.title }}</span>
           </div>
 
@@ -280,7 +290,13 @@
                     [class.bg-green-100]="v.status === 'Submitted'"
                     [class.text-success]="v.status === 'Submitted'"
                   >
-                    {{ v.status }}
+                    @if (v.status === 'Invited') {
+                      {{ 'procurement.rfqs.invited' | translate }}
+                    } @else if (v.status === 'Submitted') {
+                      {{ 'procurement.rfqs.submitted' | translate }}
+                    } @else {
+                      {{ v.status }}
+                    }
                   </span>
                 </div>
               }
@@ -295,11 +311,11 @@
                 <div class="p-3 bg-slate-50 border border-slate-150 rounded-lg flex justify-between items-center">
                   <div>
                     <p class="font-bold text-slate-800">{{ q.vendorName }}</p>
-                    <p class="text-[10px] text-slate-400">Delivery: {{ q.deliveryWeeks }} weeks | Notes: {{ q.notes }}</p>
+                    <p class="text-[10px] text-slate-400">{{ 'procurement.rfqs.delivery_weeks' | translate: {weeks: q.deliveryWeeks, notes: q.notes} }}</p>
                   </div>
                   <div class="text-right">
                     <p class="text-sm font-black text-slate-900">${{ q.totalAmount | number }}</p>
-                    <span class="text-[9px] text-slate-400 font-bold">Incl. {{ q.taxPercent }}% Tax</span>
+                    <span class="text-[9px] text-slate-400 font-bold">{{ 'procurement.rfqs.incl_tax' | translate: {pct: q.taxPercent} }}</span>
                   </div>
                 </div>
               } @empty {
@@ -350,7 +366,7 @@
         <div class="pb-3 mb-4 border-b border-slate-100 flex items-center justify-between">
           <div>
             <h2 class="text-sm font-bold text-slate-800">{{ 'procurement.rfqs.bid_modal_title' | translate }}</h2>
-            <p class="text-[10px] text-slate-400 font-semibold mt-0.5">Submit price quotation for: {{ biddingRFQ()?.rfqNumber }}</p>
+            <p class="text-[10px] text-slate-400 font-semibold mt-0.5">{{ 'procurement.rfqs.submit_quotation_for' | translate }}: {{ biddingRFQ()?.rfqNumber }}</p>
           </div>
           <button (click)="closeBiddingModal()" class="text-slate-400 hover:text-slate-600 transition-colors p-1 hover:bg-slate-50 rounded">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -411,7 +427,7 @@
               type="text" 
               name="bidNotes" 
               [(ngModel)]="bidForm.notes" 
-              placeholder="E.g. Ex-stocks, shipping included"
+              placeholder="{{ 'procurement.rfqs.bid_remarks_placeholder' | translate }}"
               class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-slate-800 focus:outline-none"
             >
           </div>

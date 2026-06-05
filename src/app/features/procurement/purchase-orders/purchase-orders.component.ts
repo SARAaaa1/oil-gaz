@@ -69,8 +69,8 @@ export class PurchaseOrdersComponent implements OnInit {
 
   ngOnInit() {
     this.breadcrumbService.setBreadcrumbs([
-      { label: this.translate.instant('navigation.procurement'), url: '/procurement' },
-      { label: this.translate.instant('procurement.purchase_orders.breadcrumb') }
+      { label: 'navigation.procurement', url: '/procurement' },
+      { label: 'procurement.purchase_orders.breadcrumb' }
     ]);
 
     // Check query params
@@ -125,12 +125,16 @@ export class PurchaseOrdersComponent implements OnInit {
       po.id,
       `Status: ${po.status}`,
       `Signed by ${this.approvalForm.role}`,
-      `Authorized signature step: ${this.approvalForm.role} sign-off. Approver: ${this.approvalForm.approverName}. Comments: ${this.approvalForm.comments || 'None'}`
+      this.translate.instant('procurement.purchase_orders.audit_sign', {
+        role: this.approvalForm.role,
+        approver: this.approvalForm.approverName,
+        comments: this.approvalForm.comments || 'None'
+      })
     );
-
+ 
     this.notificationService.success(
-      'Signature Submitted',
-      `You have signed off on ${po.poNumber} as ${this.approvalForm.role}.`
+      this.translate.instant('procurement.purchase_orders.sig_submitted_title'),
+      this.translate.instant('procurement.purchase_orders.sig_submitted_desc', { po: po.poNumber, role: this.approvalForm.role })
     );
 
     // Refresh signature panel or check if next step is available
@@ -152,13 +156,13 @@ export class PurchaseOrdersComponent implements OnInit {
           po.id,
           'Status: Pending Final approval',
           'Status: Approved & Dispatched',
-          `Purchase order ${po.poNumber} fully approved by all delegation thresholds. Sent to vendor.`
+          this.translate.instant('procurement.purchase_orders.audit_dispatch', { po: po.poNumber })
         );
 
         // All approved, trigger info toast
         this.notificationService.success(
-          'Purchase Order Finalized',
-          `All approval gates cleared. Contract ${po.poNumber} is ready for dispatch.`
+          this.translate.instant('procurement.purchase_orders.po_finalized_title'),
+          this.translate.instant('procurement.purchase_orders.po_finalized_desc', { po: po.poNumber })
         );
       }
     }

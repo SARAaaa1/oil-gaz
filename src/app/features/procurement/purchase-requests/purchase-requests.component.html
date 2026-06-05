@@ -16,7 +16,7 @@
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
           </svg>
-          <span>Back to List</span>
+          <span>{{ 'procurement.purchase_requests.back_to_list' | translate }}</span>
         } @else {
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
@@ -32,7 +32,7 @@
     <div class="bg-white rounded-xl border border-slate-100 shadow-sm p-6 max-w-4xl mx-auto animate-fade-in">
       <div class="pb-4 mb-6 border-b border-slate-150">
         <h2 class="text-sm font-bold text-slate-800">{{ 'procurement.purchase_requests.new_request' | translate }}</h2>
-        <p class="text-[10px] text-slate-400 font-semibold mt-0.5">Please provide cost allocation details and specify material requirements below.</p>
+        <p class="text-[10px] text-slate-400 font-semibold mt-0.5">{{ 'procurement.purchase_requests.form_subtitle' | translate }}</p>
       </div>
 
       <form (submit)="submitPR($event)" class="space-y-6">
@@ -47,15 +47,15 @@
               class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-slate-800 focus:outline-none focus:border-accent"
               required
             >
-              <option value="Drilling Operations">Drilling Operations</option>
-              <option value="Maintenance & Engineering">Maintenance & Engineering</option>
-              <option value="HSE & Safety">HSE & Safety</option>
-              <option value="Logistics & Warehousing">Logistics & Warehousing</option>
+              <option value="Drilling Operations">{{ 'procurement.purchase_requests.dept_drilling' | translate }}</option>
+              <option value="Maintenance & Engineering">{{ 'procurement.purchase_requests.dept_maintenance' | translate }}</option>
+              <option value="HSE & Safety">{{ 'procurement.purchase_requests.dept_hse' | translate }}</option>
+              <option value="Logistics & Warehousing">{{ 'procurement.purchase_requests.dept_logistics' | translate }}</option>
             </select>
           </div>
 
           <div>
-            <label class="block mb-1.5" for="cc">Cost Center Allocation</label>
+            <label class="block mb-1.5" for="cc">{{ 'procurement.purchase_requests.cost_center_allocation' | translate }}</label>
             <select 
               id="cc" 
               name="costCenter" 
@@ -71,7 +71,7 @@
           </div>
 
           <div>
-            <label class="block mb-1.5" for="reqDate">Target Delivery Date</label>
+            <label class="block mb-1.5" for="reqDate">{{ 'procurement.purchase_requests.target_delivery_date' | translate }}</label>
             <input 
               id="reqDate" 
               type="date" 
@@ -84,14 +84,14 @@
         </div>
 
         <div class="text-xs font-semibold text-slate-600">
-          <label class="block mb-1.5" for="desc">Purpose / Scope of Work</label>
+          <label class="block mb-1.5" for="desc">{{ 'procurement.purchase_requests.purpose_scope' | translate }}</label>
           <textarea 
             id="desc" 
             name="description" 
             [(ngModel)]="formPR.description" 
             rows="3"
             class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-slate-800 focus:outline-none focus:border-accent leading-relaxed"
-            placeholder="Explain the operational necessity for this request..."
+            [placeholder]="'procurement.purchase_requests.placeholder_purpose' | translate"
             required
           ></textarea>
         </div>
@@ -99,7 +99,7 @@
         <!-- Items Grid -->
         <div class="space-y-3">
           <div class="flex justify-between items-center pb-2 border-b border-slate-100">
-            <h3 class="text-xs font-black text-slate-400 uppercase tracking-widest">Requisition Line Items</h3>
+            <h3 class="text-xs font-black text-slate-400 uppercase tracking-widest">{{ 'procurement.purchase_requests.line_items' | translate }}</h3>
             <button 
               type="button" 
               (click)="addItemRow()" 
@@ -108,7 +108,7 @@
               <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4" />
               </svg>
-              Add Line Item
+              {{ 'procurement.purchase_requests.add_line_item' | translate }}
             </button>
           </div>
 
@@ -117,7 +117,7 @@
               
               <!-- Material Selection -->
               <div class="md:col-span-5 font-semibold text-slate-600">
-                <label class="block mb-1">Material / Service</label>
+                <label class="block mb-1">{{ 'procurement.purchase_requests.material_service' | translate }}</label>
                 <select 
                   [name]="'itemSelect_' + $index" 
                   [(ngModel)]="item.itemCode"
@@ -125,7 +125,7 @@
                   class="w-full bg-white border border-slate-200 rounded-md p-2 text-slate-800 focus:outline-none focus:border-accent"
                   required
                 >
-                  <option value="">-- Select Material --</option>
+                  <option value="">{{ 'procurement.purchase_requests.select_material' | translate }}</option>
                   @for (inv of inventory(); track inv.id) {
                     <option [value]="inv.itemCode">{{ inv.itemName }} ({{ inv.itemCode }})</option>
                   }
@@ -134,7 +134,7 @@
 
               <!-- Quantity -->
               <div class="md:col-span-2 font-semibold text-slate-600">
-                <label class="block mb-1">Qty</label>
+                <label class="block mb-1">{{ 'procurement.purchase_requests.qty' | translate }}</label>
                 <input 
                   type="number" 
                   [name]="'itemQty_' + $index" 
@@ -147,7 +147,7 @@
 
               <!-- Unit of Measure -->
               <div class="md:col-span-1.5 font-semibold text-slate-600">
-                <label class="block mb-1">UOM</label>
+                <label class="block mb-1">{{ 'procurement.purchase_requests.uom' | translate }}</label>
                 <input 
                   type="text" 
                   [name]="'itemUom_' + $index" 
@@ -159,13 +159,13 @@
 
               <!-- Notes -->
               <div class="md:col-span-3.5 font-semibold text-slate-600">
-                <label class="block mb-1">Notes</label>
+                <label class="block mb-1">{{ 'procurement.purchase_requests.notes' | translate }}</label>
                 <div class="flex items-center space-x-2">
                   <input 
                     type="text" 
                     [name]="'itemNotes_' + $index" 
                     [(ngModel)]="item.notes" 
-                    placeholder="E.g. urgent, grade"
+                    [placeholder]="'procurement.purchase_requests.placeholder_notes' | translate"
                     class="w-full bg-white border border-slate-200 rounded-md p-2 text-slate-800 focus:outline-none"
                   >
                   <!-- Delete button -->
@@ -195,13 +195,13 @@
             (click)="toggleViewMode()" 
             class="px-4 py-2 border border-slate-200 rounded-lg hover:bg-slate-50 text-slate-600 font-bold text-xs transition-colors"
           >
-            Cancel
+            {{ 'common.cancel' | translate }}
           </button>
           <button 
             type="submit" 
             class="px-5 py-2 bg-slate-900 text-white rounded-lg hover:bg-slate-800 font-bold text-xs transition-colors shadow-sm"
           >
-            Submit Requisition
+            {{ 'procurement.purchase_requests.submit_requisition' | translate }}
           </button>
         </div>
 
@@ -234,15 +234,15 @@
             class="bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-700 focus:outline-none"
           >
             <option value="ALL">{{ 'procurement.purchase_requests.all_stages' | translate }}</option>
-            <option value="Draft">Draft</option>
-            <option value="Pending Approval">Pending Approval</option>
-            <option value="Approved">Approved</option>
-            <option value="RFQ Created">RFQ Created</option>
-            <option value="Rejected">Rejected</option>
+            <option value="Draft">{{ 'procurement.purchase_requests.status_draft' | translate }}</option>
+            <option value="Pending Approval">{{ 'procurement.purchase_requests.status_pending' | translate }}</option>
+            <option value="Approved">{{ 'procurement.purchase_requests.status_approved' | translate }}</option>
+            <option value="RFQ Created">{{ 'procurement.purchase_requests.status_rfq_issued' | translate }}</option>
+            <option value="Rejected">{{ 'procurement.purchase_requests.status_rejected' | translate }}</option>
           </select>
         </div>
       </div>
-
+ 
       <!-- Table Body -->
       <div class="overflow-x-auto">
         <table class="w-full text-left border-collapse text-xs">
@@ -250,9 +250,9 @@
             <tr class="text-slate-400 font-bold border-b border-slate-100 bg-slate-50/20">
               <th class="p-4 py-3">{{ 'procurement.purchase_requests.col_pr_number' | translate }}</th>
               <th class="p-4 py-3">{{ 'procurement.purchase_requests.col_dept' | translate }}</th>
-              <th class="p-4 py-3">Cost Center</th>
+              <th class="p-4 py-3">{{ 'procurement.purchase_requests.cost_center' | translate }}</th>
               <th class="p-4 py-3">{{ 'procurement.purchase_requests.col_date' | translate }}</th>
-              <th class="p-4 py-3">Required Date</th>
+              <th class="p-4 py-3">{{ 'procurement.purchase_requests.required_date' | translate }}</th>
               <th class="p-4 py-3 text-center">{{ 'procurement.purchase_requests.col_status' | translate }}</th>
               <th class="p-4 py-3 text-right">{{ 'procurement.purchase_requests.col_actions' | translate }}</th>
             </tr>
@@ -279,7 +279,19 @@
                     [class.bg-red-50]="pr.status === 'Rejected'"
                     [class.text-danger]="pr.status === 'Rejected'"
                   >
-                    {{ pr.status }}
+                    @if (pr.status === 'Draft') {
+                      {{ 'procurement.purchase_requests.status_draft' | translate }}
+                    } @else if (pr.status === 'Pending Approval') {
+                      {{ 'procurement.purchase_requests.status_pending' | translate }}
+                    } @else if (pr.status === 'Approved') {
+                      {{ 'procurement.purchase_requests.status_approved' | translate }}
+                    } @else if (pr.status === 'RFQ Created') {
+                      {{ 'procurement.purchase_requests.status_rfq_issued' | translate }}
+                    } @else if (pr.status === 'Rejected') {
+                      {{ 'procurement.purchase_requests.status_rejected' | translate }}
+                    } @else {
+                      {{ pr.status }}
+                    }
                   </span>
                 </td>
                 <td class="p-4 text-right">
@@ -342,7 +354,7 @@
         <!-- Drawer Header -->
         <div class="flex items-center justify-between pb-4 mb-4 border-b border-slate-150">
           <div>
-            <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Requisition Details</span>
+            <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">{{ 'procurement.purchase_requests.details_title' | translate }}</span>
             <h2 class="text-base font-bold text-slate-800 mt-0.5">{{ selectedPR()?.requestNumber }}</h2>
           </div>
           <button (click)="closeDetails()" class="text-slate-400 hover:text-slate-600 transition-colors p-1.5 rounded-lg hover:bg-slate-50">
@@ -355,32 +367,32 @@
         <!-- Information Fields -->
         <div class="grid grid-cols-2 gap-4 pb-4 mb-4 border-b border-slate-100 font-semibold text-slate-600">
           <div>
-            <span class="block text-[10px] text-slate-400 uppercase">Department</span>
+            <span class="block text-[10px] text-slate-400 uppercase">{{ 'procurement.purchase_requests.col_dept' | translate }}</span>
             <span class="text-slate-800">{{ selectedPR()?.department }}</span>
           </div>
           <div>
-            <span class="block text-[10px] text-slate-400 uppercase">Cost Center</span>
+            <span class="block text-[10px] text-slate-400 uppercase">{{ 'procurement.purchase_requests.cost_center' | translate }}</span>
             <span class="text-slate-800 font-mono">{{ selectedPR()?.costCenter }}</span>
           </div>
           <div>
-            <span class="block text-[10px] text-slate-400 uppercase">Requested By</span>
+            <span class="block text-[10px] text-slate-400 uppercase">{{ 'procurement.purchase_requests.requested_by' | translate }}</span>
             <span class="text-slate-800">{{ selectedPR()?.requestedBy }}</span>
           </div>
           <div>
-            <span class="block text-[10px] text-slate-400 uppercase">Required Date</span>
+            <span class="block text-[10px] text-slate-400 uppercase">{{ 'procurement.purchase_requests.required_date' | translate }}</span>
             <span class="text-slate-800">{{ selectedPR()?.requiredDate }}</span>
           </div>
         </div>
 
         <!-- Purpose text -->
         <div class="pb-4 mb-4 border-b border-slate-100 text-slate-600 font-semibold">
-          <span class="block text-[10px] text-slate-400 uppercase mb-1">Purpose / Scope</span>
+          <span class="block text-[10px] text-slate-400 uppercase mb-1">{{ 'procurement.purchase_requests.purpose_scope' | translate }}</span>
           <p class="bg-slate-50 p-3 rounded-lg border border-slate-100 leading-relaxed text-slate-800">{{ selectedPR()?.description }}</p>
         </div>
 
         <!-- Itemized list -->
         <div class="flex-1 space-y-3">
-          <h3 class="text-xs font-black text-slate-400 uppercase tracking-widest pb-1 border-b border-slate-100">Itemized Material List</h3>
+          <h3 class="text-xs font-black text-slate-400 uppercase tracking-widest pb-1 border-b border-slate-100">{{ 'procurement.purchase_requests.itemized_list' | translate }}</h3>
           
           <div class="space-y-2">
             @for (item of selectedPR()?.items; track item.id) {
@@ -389,7 +401,7 @@
                   <p class="font-bold text-slate-800">{{ item.itemName }}</p>
                   <p class="text-[10px] text-slate-400 font-mono">{{ item.itemCode }}</p>
                   @if (item.notes) {
-                    <p class="text-[10px] text-accent italic">Note: {{ item.notes }}</p>
+                    <p class="text-[10px] text-accent italic">{{ 'procurement.purchase_requests.note_prefix' | translate }}: {{ item.notes }}</p>
                   }
                 </div>
                 <div class="text-right shrink-0">
@@ -408,14 +420,14 @@
               (click)="createRFQForPR(selectedPR()!)"
               class="w-full py-2.5 bg-accent text-primary font-bold rounded-lg hover:bg-amber-400 transition-colors shadow-sm"
             >
-              Generate Invitation to Bid (RFQ)
+              {{ 'procurement.purchase_requests.generate_rfq_btn' | translate }}
             </button>
           } @else {
             <button 
               (click)="closeDetails()" 
               class="w-full py-2.5 border border-slate-200 rounded-lg hover:bg-slate-50 text-slate-600 font-bold text-xs transition-colors"
             >
-              Close Panel
+              {{ 'procurement.purchase_requests.close_panel' | translate }}
             </button>
           }
         </div>

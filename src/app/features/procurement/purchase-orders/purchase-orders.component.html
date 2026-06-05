@@ -42,10 +42,10 @@
             </span>
           </div>
           
-          <p class="text-slate-600 mt-1.5 truncate">Vendor: {{ po.vendorName }}</p>
+          <p class="text-slate-600 mt-1.5 truncate">{{ 'procurement.purchase_orders.vendor_label' | translate }}: {{ po.vendorName }}</p>
           
           <div class="flex justify-between items-center mt-3 text-[10px] text-slate-400">
-            <span>Date: {{ po.date }}</span>
+            <span>{{ 'procurement.purchase_orders.date_label' | translate }}: {{ po.date }}</span>
             <span class="font-bold text-slate-800 text-xs">${{ po.totalAmount | number }}</span>
           </div>
         </div>
@@ -105,19 +105,19 @@
               <span class="block text-[10px] text-slate-400 uppercase mb-1.5 tracking-wider font-bold">{{ 'procurement.purchase_orders.winning_vendor' | translate }}</span>
               <p class="text-slate-850 font-bold text-sm">{{ activePO()?.vendorName }}</p>
               <p class="text-[10px] text-slate-500 leading-normal mt-1">{{ activePO()?.vendorAddress }}</p>
-              <p class="text-[10px] text-slate-500 mt-1.5 font-mono">Tax ID: {{ activePO()?.vendorTaxNumber }}</p>
+              <p class="text-[10px] text-slate-500 mt-1.5 font-mono">{{ 'procurement.purchase_orders.tax_id' | translate }}: {{ activePO()?.vendorTaxNumber }}</p>
             </div>
 
             <!-- Delivery / Reference details -->
             <div class="bg-slate-50/50 p-4 rounded-lg border border-slate-100 space-y-2">
-              <span class="block text-[10px] text-slate-400 uppercase mb-1 tracking-wider font-bold">Logistics & Budgeting</span>
+              <span class="block text-[10px] text-slate-400 uppercase mb-1 tracking-wider font-bold">{{ 'procurement.purchase_orders.logistics_budgeting' | translate }}</span>
               <div class="grid grid-cols-2 gap-2 text-[10px]">
                 <div>
-                  <span class="text-slate-400 block">Required Date</span>
+                  <span class="text-slate-400 block">{{ 'procurement.purchase_orders.required_date' | translate }}</span>
                   <span class="text-slate-800 font-bold">{{ activePO()?.deliveryDate }}</span>
                 </div>
                 <div>
-                  <span class="text-slate-400 block">Cost Center</span>
+                  <span class="text-slate-400 block">{{ 'procurement.purchase_orders.cost_center' | translate }}</span>
                   <span class="text-slate-850 font-mono font-bold">{{ activePO()?.costCenter }}</span>
                 </div>
                 <div>
@@ -165,8 +165,8 @@
           <div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 pt-4 border-t border-slate-150">
             <!-- Tax & WHT Note -->
             <div class="text-[10px] text-slate-450 leading-relaxed max-w-sm">
-              <span class="font-bold text-slate-500 uppercase tracking-wider block mb-1">Withholding Tax (WHT) Note</span>
-              Pursuant to Section 52 of corporate tax laws, a withholding deduction of <span class="font-bold text-slate-650">{{ activePO()?.withholdingTaxPercent }}%</span> has been retained at source. Net payable value reflects deduction applied to base contract sum.
+              <span class="font-bold text-slate-500 uppercase tracking-wider block mb-1">{{ 'procurement.purchase_orders.wht_note_title' | translate }}</span>
+              {{ 'procurement.purchase_orders.wht_note_desc' | translate: {pct: activePO()?.withholdingTaxPercent} }}
             </div>
 
             <!-- Calculation Grid -->
@@ -180,7 +180,7 @@
                 <span class="font-mono text-slate-700">${{ activePO()?.taxAmount | number }}</span>
               </div>
               <div class="flex justify-between pb-1.5 border-b border-slate-100 text-danger">
-                <span>Withholding Retained (-{{ activePO()?.withholdingTaxPercent }}%)</span>
+                <span>{{ 'procurement.purchase_orders.wht_retained' | translate: {pct: activePO()?.withholdingTaxPercent} }}</span>
                 <span class="font-mono">-${{ activePO()?.withholdingTaxAmount | number }}</span>
               </div>
               <div class="flex justify-between text-base font-black text-slate-900 pt-1.5">
@@ -196,7 +196,7 @@
         <div class="bg-white rounded-xl border border-slate-100 shadow-sm p-6 space-y-6">
           <div class="pb-3 border-b border-slate-50">
             <h3 class="text-sm font-bold text-slate-800">{{ 'procurement.purchase_orders.audit_log' | translate }}</h3>
-            <p class="text-[10px] text-slate-400 font-semibold mt-0.5">Authorization signatures required to dispatch procurement contract</p>
+            <p class="text-[10px] text-slate-400 font-semibold mt-0.5">{{ 'procurement.purchase_orders.audit_log_subtitle' | translate }}</p>
           </div>
 
           <!-- Vertical Stepper -->
@@ -220,9 +220,9 @@
                     <h4 class="font-bold text-slate-800">{{ step.role }}</h4>
                     <p class="text-[10px] text-slate-450 mt-0.5">
                       @if (step.status === 'Approved') {
-                        Signed by: <span class="font-bold text-slate-700">{{ step.approverName }}</span> on {{ step.actionDate }}
+                        {{ 'procurement.purchase_orders.signed_by' | translate: {approver: step.approverName, date: step.actionDate} }}
                       } @else {
-                        Awaiting Signature
+                        {{ 'procurement.purchase_orders.awaiting_signature' | translate }}
                       }
                     </p>
                   </div>
@@ -250,13 +250,13 @@
           @if (isNextApprover()) {
             <div class="bg-slate-50 p-4 border border-slate-200 rounded-xl space-y-4 font-semibold text-slate-650">
               <div>
-                <h4 class="text-xs font-bold text-slate-800">Authorize Purchase Order</h4>
-                <p class="text-[10px] text-slate-400 font-semibold mt-0.5">Submit your signature to release this order.</p>
+                <h4 class="text-xs font-bold text-slate-800">{{ 'procurement.purchase_orders.authorize_po' | translate }}</h4>
+                <p class="text-[10px] text-slate-400 font-semibold mt-0.5">{{ 'procurement.purchase_orders.authorize_po_desc' | translate }}</p>
               </div>
 
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label class="block mb-1">Your Role / Access Level</label>
+                  <label class="block mb-1">{{ 'procurement.purchase_orders.your_role' | translate }}</label>
                   <select 
                     name="signRole" 
                     [(ngModel)]="approvalForm.role"
@@ -270,7 +270,7 @@
                   </select>
                 </div>
                 <div>
-                  <label class="block mb-1">Authorized Approver Name</label>
+                  <label class="block mb-1">{{ 'procurement.purchase_orders.approver_name' | translate }}</label>
                   <input 
                     type="text" 
                     name="signName" 
@@ -281,12 +281,12 @@
               </div>
 
               <div>
-                <label class="block mb-1">Approval Signature Comments (Optional)</label>
+                <label class="block mb-1">{{ 'procurement.purchase_orders.comments_label' | translate }}</label>
                 <input 
                   type="text" 
                   name="signComments" 
                   [(ngModel)]="approvalForm.comments"
-                  placeholder="E.g. Spares verified, release approved."
+                  [placeholder]="'procurement.purchase_orders.comments_placeholder' | translate"
                   class="w-full bg-white border border-slate-200 rounded-lg p-2 text-slate-800 focus:outline-none"
                 >
               </div>
@@ -296,7 +296,7 @@
                   (click)="submitApproval()"
                   class="px-5 py-2 rounded-lg bg-green-600 hover:bg-green-500 text-white font-bold text-xs shadow-sm transition-all"
                 >
-                  Approve and Sign
+                  {{ 'procurement.purchase_orders.approve_and_sign' | translate }}
                 </button>
               </div>
             </div>
@@ -312,7 +312,7 @@
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
         </svg>
         <h3 class="text-sm font-bold text-slate-800">{{ 'procurement.purchase_orders.drawer_title' | translate }}</h3>
-        <p class="text-xs text-slate-400 mt-1 max-w-xs mx-auto">Select any Purchase Order from the master registry panel on the left to inspect totals, tax detail structures, and authorization status.</p>
+        <p class="text-xs text-slate-400 mt-1 max-w-xs mx-auto">{{ 'procurement.purchase_orders.empty_desc' | translate }}</p>
       </div>
     }
   </div>

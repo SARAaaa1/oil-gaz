@@ -45,8 +45,8 @@ export class TimesheetsComponent implements OnInit {
 
   ngOnInit() {
     this.breadcrumbService.setBreadcrumbs([
-      { label: this.translate.instant('navigation.operations'), url: '/operations' },
-      { label: this.translate.instant('navigation.timesheets') }
+      { label: 'navigation.operations', url: '/operations' },
+      { label: 'navigation.timesheets' }
     ]);
 
     const sheets = this.timesheets();
@@ -105,7 +105,7 @@ export class TimesheetsComponent implements OnInit {
       'Update', 'Operations', 'Timesheet', sheet.id,
       JSON.stringify({ day: day.day, operatingHours: day.operatingHours, standbyHours: day.standbyHours, repairHours: day.repairHours, downtimeHours: day.downtimeHours, rigMoveHours: day.rigMoveHours, comments: day.comments }),
       JSON.stringify({ day: day.day, ...this.editDayForm }),
-      `Updated shift logs for Day ${day.day} on Rig: ${sheet.rigName}. Total logged hours: ${total} hrs.`
+      this.translate.instant('operations.timesheets.audit_update', { day: day.day, rig: sheet.rigName, total: total })
     );
 
     this.notificationService.success(

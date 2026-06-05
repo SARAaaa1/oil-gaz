@@ -92,7 +92,7 @@ export class RfqsComponent implements OnInit {
         const pr = this.purchaseRequests().find(p => p.id === prId);
         if (pr && pr.status === 'Approved') {
           this.selectedPRSource.set(pr);
-          this.formRFQ.title = `RFQ for ${pr.requestNumber} - ${pr.department}`;
+          this.formRFQ.title = this.translate.instant('procurement.rfqs.rfq_for_title', { pr: pr.requestNumber, dept: pr.department });
           this.formRFQ.invitedVendorIds.clear();
           this.isFormView.set(true);
         } else {
@@ -129,7 +129,10 @@ export class RfqsComponent implements OnInit {
     if (!pr) return;
 
     if (this.formRFQ.invitedVendorIds.size === 0) {
-      this.notificationService.danger('Missing Vendors', 'Please select at least one vendor to invite to this RFQ.');
+      this.notificationService.danger(
+        this.translate.instant('procurement.rfqs.err_missing_vendors_title'),
+        this.translate.instant('procurement.rfqs.err_missing_vendors_desc')
+      );
       return;
     }
 
@@ -153,8 +156,8 @@ export class RfqsComponent implements OnInit {
     });
 
     this.notificationService.success(
-      'RFQ Dispatched',
-      `RFQ ${newRfq.rfqNumber} has been published. Invited vendors have been notified to submit quotes.`
+      this.translate.instant('procurement.rfqs.notif_dispatched_title'),
+      this.translate.instant('procurement.rfqs.notif_dispatched_desc', { rfq: newRfq.rfqNumber })
     );
 
     this.cancelRFQForm();
@@ -201,7 +204,10 @@ export class RfqsComponent implements OnInit {
     if (!rfq || !this.bidForm.vendorId) return;
 
     if (this.bidForm.price <= 0) {
-      this.notificationService.danger('Invalid Price', 'Bid price must be greater than zero.');
+      this.notificationService.danger(
+        this.translate.instant('procurement.rfqs.err_invalid_price_title'),
+        this.translate.instant('procurement.rfqs.err_invalid_price_desc')
+      );
       return;
     }
 
@@ -228,8 +234,8 @@ export class RfqsComponent implements OnInit {
     );
 
     this.notificationService.success(
-      'Bid Logged',
-      `Quotation from ${vendor.vendorName} submitted for ${rfq.rfqNumber}.`
+      this.translate.instant('procurement.rfqs.notif_bid_logged_title'),
+      this.translate.instant('procurement.rfqs.notif_bid_logged_desc', { vendor: vendor.vendorName, rfq: rfq.rfqNumber })
     );
 
     this.closeBiddingModal();

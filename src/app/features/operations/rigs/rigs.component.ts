@@ -56,8 +56,8 @@ export class RigsComponent implements OnInit {
 
   ngOnInit() {
     this.breadcrumbService.setBreadcrumbs([
-      { label: this.translate.instant('navigation.operations'), url: '/operations' },
-      { label: this.translate.instant('navigation.rigs') }
+      { label: 'navigation.operations', url: '/operations' },
+      { label: 'navigation.rigs' }
     ]);
   }
 }

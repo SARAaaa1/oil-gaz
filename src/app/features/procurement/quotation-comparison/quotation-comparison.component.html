@@ -10,16 +10,16 @@
   <div class="bg-white p-5 rounded-xl border border-slate-100 shadow-sm text-xs font-semibold text-slate-600">
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
       <div class="md:col-span-2">
-        <label class="block mb-1.5">Select Request for Quotation (RFQ) to Analyze</label>
+        <label class="block mb-1.5">{{ 'procurement.quotation_comparison.select_rfq' | translate }}</label>
         <select 
           (change)="onRFQChange($any($event.target).value)"
           [value]="selectedRFQId() || ''"
           class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-slate-850 text-xs focus:outline-none"
         >
-          <option value="">-- Choose RFQ from list --</option>
+          <option value="">{{ 'procurement.quotation_comparison.choose_rfq' | translate }}</option>
           @for (r of rfqs(); track r.id) {
             @if (r.status === 'Quotations Received' || r.status === 'PO Created' || r.status === 'Closed') {
-              <option [value]="r.id">{{ r.rfqNumber }} - {{ r.title }} ({{ r.quotations.length }} Bids)</option>
+              <option [value]="r.id">{{ r.rfqNumber }} - {{ r.title }} ({{ 'procurement.quotation_comparison.bids_count_label' | translate: {count: r.quotations.length} }})</option>
             }
           }
         </select>
@@ -28,21 +28,21 @@
         <!-- Stats indicator of selected RFQ -->
         @if (activeRFQ()) {
           <div class="p-2.5 bg-slate-50 border border-slate-100 rounded-lg flex items-center justify-between shrink-0">
-            <span class="text-slate-400">Total Bids:</span>
+            <span class="text-slate-400">{{ 'procurement.quotation_comparison.total_bids' | translate }}:</span>
             <span class="font-bold text-slate-800">{{ activeRFQ()?.quotations?.length }}</span>
           </div>
         }
       </div>
     </div>
   </div>
-
+ 
   @if (activeRFQ()) {
     <!-- SOURCE PR DETAILS SUMMARY -->
     <div class="bg-white p-5 rounded-xl border border-slate-100 shadow-sm animate-fade-in text-xs font-semibold text-slate-600">
       <div class="flex flex-col md:flex-row md:items-center md:justify-between pb-3 mb-4 border-b border-slate-100 gap-2">
         <div>
-          <h3 class="text-xs font-black text-slate-400 uppercase tracking-widest">Requisition Line Items Under Bid</h3>
-          <p class="text-[10px] text-slate-400 font-semibold mt-0.5">Source: {{ activeRFQ()?.purchaseRequestNumber }}</p>
+          <h3 class="text-xs font-black text-slate-400 uppercase tracking-widest">{{ 'procurement.quotation_comparison.items_under_bid' | translate }}</h3>
+          <p class="text-[10px] text-slate-400 font-semibold mt-0.5">{{ 'procurement.quotation_comparison.source' | translate }}: {{ activeRFQ()?.purchaseRequestNumber }}</p>
         </div>
         <span 
           class="px-2 py-0.5 text-[9px] font-extrabold uppercase rounded"
@@ -51,17 +51,17 @@
           [class.bg-slate-900]="activeRFQ()?.status === 'PO Created'"
           [class.text-white]="activeRFQ()?.status === 'PO Created'"
         >
-          RFQ Status: {{ activeRFQ()?.status }}
+          {{ 'procurement.quotation_comparison.rfq_status' | translate }}: {{ activeRFQ()?.status }}
         </span>
       </div>
-
+ 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <span class="block text-[10px] text-slate-400 uppercase">{{ 'procurement.rfqs.col_title' | translate }}</span>
           <span class="text-slate-800 text-sm font-bold">{{ activeRFQ()?.title }}</span>
         </div>
         <div>
-          <span class="block text-[10px] text-slate-400 uppercase mb-1">Items Requested</span>
+          <span class="block text-[10px] text-slate-400 uppercase mb-1">{{ 'procurement.quotation_comparison.items_requested' | translate }}</span>
           <div class="space-y-1">
             @for (item of sourcePRItems(); track item.id) {
               <div class="flex justify-between items-center bg-slate-50 p-2 rounded border border-slate-100">
@@ -78,24 +78,24 @@
     <div class="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden animate-fade-in">
       <div class="p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
         <div>
-          <h3 class="text-sm font-bold text-slate-800">Commercial & Logistics Comparison</h3>
-          <p class="text-[10px] text-slate-450 font-semibold mt-0.5">Evaluated bids sorted by total delivery cost. Recommended vendor highlighted.</p>
+          <h3 class="text-sm font-bold text-slate-800">{{ 'procurement.quotation_comparison.comparison_header' | translate }}</h3>
+          <p class="text-[10px] text-slate-450 font-semibold mt-0.5">{{ 'procurement.quotation_comparison.comparison_subheader' | translate }}</p>
         </div>
-        <span class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-amber-50 text-accent">Automatic Contract Recommendation</span>
+        <span class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-amber-50 text-accent">{{ 'procurement.quotation_comparison.recommendation_badge' | translate }}</span>
       </div>
-
+ 
       <!-- Advanced Table -->
       <div class="overflow-x-auto">
         <table class="w-full text-left border-collapse text-xs">
           <thead>
             <tr class="text-slate-400 font-bold border-b border-slate-100 bg-slate-50/20">
-              <th class="p-4 py-3">Vendor / Bidder</th>
+              <th class="p-4 py-3">{{ 'procurement.quotation_comparison.vendor_bidder' | translate }}</th>
               <th class="p-4 py-3 text-right">{{ 'procurement.rfqs.bid_price_label' | translate }}</th>
-              <th class="p-4 py-3 text-center">Delivery Time</th>
-              <th class="p-4 py-3 text-right">VAT Tax (15%)</th>
+              <th class="p-4 py-3 text-center">{{ 'procurement.quotation_comparison.delivery_time' | translate }}</th>
+              <th class="p-4 py-3 text-right">{{ 'procurement.quotation_comparison.vat_tax' | translate }}</th>
               <th class="p-4 py-3 text-right">{{ 'procurement.quotation_comparison.total' | translate }}</th>
-              <th class="p-4 py-3 text-center">Score Highlights</th>
-              <th class="p-4 py-3 text-right">Contract Action</th>
+              <th class="p-4 py-3 text-center">{{ 'procurement.quotation_comparison.score_highlights' | translate }}</th>
+              <th class="p-4 py-3 text-right">{{ 'procurement.quotation_comparison.contract_action' | translate }}</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-50 font-medium text-slate-700">
@@ -141,7 +141,7 @@
                     }
                     @if (quote.isRecommended) {
                       <span class="px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase bg-accent text-primary border border-amber-300">
-                        Recommended
+                        {{ 'procurement.quotation_comparison.recommended' | translate }}
                       </span>
                     }
                   </div>
@@ -157,7 +157,7 @@
                       {{ 'procurement.quotation_comparison.create_po' | translate }}
                     </button>
                   } @else {
-                    <span class="text-[10px] text-slate-400 font-bold">Awarded</span>
+                    <span class="text-[10px] text-slate-400 font-bold">{{ 'procurement.quotation_comparison.awarded' | translate }}</span>
                   }
                 </td>
               </tr>
@@ -168,8 +168,8 @@
                     <svg class="w-12 h-12 mx-auto text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                     </svg>
-                    <span class="font-bold block text-slate-500">Awaiting Quotations</span>
-                    <span class="text-[11px] block">This RFQ has not received any bids yet. Navigate to the RFQ list to simulate bids first.</span>
+                    <span class="font-bold block text-slate-500">{{ 'procurement.quotation_comparison.awaiting_quotes' | translate }}</span>
+                    <span class="text-[11px] block">{{ 'procurement.quotation_comparison.awaiting_quotes_desc' | translate }}</span>
                   </div>
                 </td>
               </tr>
@@ -187,7 +187,7 @@
         </svg>
         <div>
           <h3 class="text-sm font-bold text-slate-800">{{ 'procurement.quotation_comparison.no_rfq' | translate }}</h3>
-          <p class="text-xs text-slate-400 mt-1">Select an active RFQ from the dropdown menu above or click 'Compare Bids' from the RFQ table listing to display side-by-side bid metrics.</p>
+          <p class="text-xs text-slate-400 mt-1">{{ 'procurement.quotation_comparison.no_rfq_desc' | translate }}</p>
         </div>
       </div>
     </div>

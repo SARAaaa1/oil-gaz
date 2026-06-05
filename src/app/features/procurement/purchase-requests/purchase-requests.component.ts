@@ -66,8 +66,8 @@ export class PurchaseRequestsComponent implements OnInit {
 
   ngOnInit() {
     this.breadcrumbService.setBreadcrumbs([
-      { label: this.translate.instant('navigation.procurement'), url: '/procurement' },
-      { label: this.translate.instant('procurement.purchase_requests.breadcrumb') }
+      { label: 'navigation.procurement', url: '/procurement' },
+      { label: 'procurement.purchase_requests.breadcrumb' }
     ]);
 
     // Check query parameters to open form directly (e.g. from quick button)
@@ -128,12 +128,18 @@ export class PurchaseRequestsComponent implements OnInit {
     // Basic Validation
     const invalidItems = this.formPR.items.some(item => !item.itemCode || item.quantity <= 0);
     if (invalidItems) {
-      this.notificationService.danger('Submission Failed', 'Please select valid materials and quantities for all lines.');
+      this.notificationService.danger(
+        this.translate.instant('procurement.purchase_requests.err_validation_title'),
+        this.translate.instant('procurement.purchase_requests.err_validation_items')
+      );
       return;
     }
 
     if (!this.formPR.description.trim()) {
-      this.notificationService.danger('Submission Failed', 'Please write a purpose/description for this request.');
+      this.notificationService.danger(
+        this.translate.instant('procurement.purchase_requests.err_validation_title'),
+        this.translate.instant('procurement.purchase_requests.err_validation_desc')
+      );
       return;
     }
 
@@ -161,12 +167,16 @@ export class PurchaseRequestsComponent implements OnInit {
       newPr.id,
       'N/A',
       `PR Number: ${newPr.requestNumber}`,
-      `Created purchase request for department ${newPr.department}. Target Delivery Date: ${newPr.requiredDate}. Description: ${newPr.description}.`
+      this.translate.instant('procurement.purchase_requests.audit_created', {
+        dept: newPr.department,
+        date: newPr.requiredDate,
+        desc: newPr.description
+      })
     );
 
     this.notificationService.success(
-      'Requisition Logged', 
-      `Requisition ${newPr.requestNumber} has been successfully created and sent for approval.`
+      this.translate.instant('procurement.purchase_requests.notif_created_title'),
+      this.translate.instant('procurement.purchase_requests.notif_created_desc', { pr: newPr.requestNumber })
     );
 
     // Reset and return
@@ -193,13 +203,13 @@ export class PurchaseRequestsComponent implements OnInit {
         pr.id,
         'Status: PR Logged',
         'Status: Approved',
-        `Requisition ${pr.requestNumber} approved. Ready for RFQ matching.`
+        this.translate.instant('procurement.purchase_requests.audit_approved', { pr: pr.requestNumber })
       );
     }
 
     this.notificationService.success(
-      'Requisition Approved', 
-      `Purchase Request ${pr?.requestNumber} status has been updated to Approved. You can now generate an RFQ.`
+      this.translate.instant('procurement.purchase_requests.notif_approved_title'),
+      this.translate.instant('procurement.purchase_requests.notif_approved_desc_detailed', { pr: pr?.requestNumber })
     );
   }
 

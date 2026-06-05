@@ -54,7 +54,7 @@ export class InventoryComponent implements OnInit {
 
   ngOnInit() {
     this.breadcrumbService.setBreadcrumbs([
-      { label: 'Inventory' }
+      { label: 'navigation.inventory' }
     ]);
   }
 }

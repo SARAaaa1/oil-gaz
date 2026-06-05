@@ -129,7 +129,7 @@
                   [class.bg-slate-100]="rig.status === 'Standby'"
                   [class.text-slate-555]="rig.status === 'Standby'"
                 >
-                  {{ rig.status }}
+                  {{ 'operations.rigs.status_' + rig.status.toLowerCase() | translate }}
                 </span>
               </td>
             </tr>
