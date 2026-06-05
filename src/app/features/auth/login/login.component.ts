@@ -7,11 +7,12 @@ import { NotificationService } from '../../../core/services/notification.service
 import { UserRole } from '../../../shared/interfaces/auth.interface';
 import { TranslateModule } from '@ngx-translate/core';
 import { LanguageSwitcherComponent } from '../../../shared/components/language-switcher/language-switcher.component';
+import { DascoLogoComponent } from '../../../shared/components/dasco-logo/dasco-logo.component';
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [CommonModule, FormsModule, TranslateModule, LanguageSwitcherComponent],
+  imports: [CommonModule, FormsModule, TranslateModule, LanguageSwitcherComponent, DascoLogoComponent],
   templateUrl: './login.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush
 })

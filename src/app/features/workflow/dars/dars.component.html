@@ -1,0 +1,415 @@
+<div class="space-y-6 animate-fade-in text-xs font-semibold text-slate-500">
+  <!-- Header -->
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-5 rounded-xl border border-slate-100 shadow-sm">
+    <div>
+      <h1 class="text-2xl font-black text-slate-800 tracking-tight">{{ 'workflow.dars.title' | translate }}</h1>
+      <p class="text-xs text-slate-500 font-semibold mt-1">{{ 'workflow.dars.subtitle' | translate }}</p>
+    </div>
+    <button 
+      *ngIf="canCreate()"
+      (click)="openCreateModal()"
+      class="px-4 py-2.5 bg-primary hover:bg-slate-800 text-white rounded-lg font-bold transition-all shadow-sm flex items-center space-x-2"
+    >
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+      </svg>
+      <span>{{ 'workflow.dars.new_report' | translate }}</span>
+    </button>
+  </div>
+
+  <!-- Main Layout Grid -->
+  <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+    
+    <!-- DARs Ledger (Left Columns) -->
+    <div class="xl:col-span-2 space-y-4">
+      <!-- Filters -->
+      <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-sm flex flex-col md:flex-row gap-3">
+        <div class="flex-1 relative">
+          <input 
+            type="text" 
+            [(ngModel)]="searchQuery" 
+            [placeholder]="'workflow.dars.search_placeholder' | translate" 
+            class="w-full bg-slate-50 border border-slate-200 rounded-lg pl-8 pr-3 py-2 text-slate-800 focus:outline-none focus:border-indigo-500/50"
+          />
+          <svg class="w-4 h-4 text-slate-400 absolute left-2.5 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+        </div>
+        
+        <div class="flex gap-2">
+          <select 
+            [(ngModel)]="statusFilter" 
+            class="bg-slate-50 border border-slate-200 rounded-lg p-2 text-slate-700 font-bold focus:outline-none"
+          >
+            <option value="ALL">{{ 'workflow.dars.all_statuses' | translate }}</option>
+            <option value="Draft">{{ 'workflow.dars.status_draft' | translate }}</option>
+            <option value="Submitted">{{ 'workflow.dars.status_submitted' | translate }}</option>
+            <option value="Approved">{{ 'workflow.dars.status_approved' | translate }}</option>
+            <option value="Rejected">{{ 'workflow.dars.status_rejected' | translate }}</option>
+          </select>
+
+          <select 
+            [(ngModel)]="rigFilter" 
+            class="bg-slate-50 border border-slate-200 rounded-lg p-2 text-slate-700 font-bold focus:outline-none"
+          >
+            <option value="ALL">{{ 'workflow.dars.all_rigs' | translate }}</option>
+            <option value="rig1">{{ 'workflow.dars.rig_alpha' | translate }}</option>
+            <option value="rig2">{{ 'workflow.dars.rig_beta' | translate }}</option>
+            <option value="rig3">{{ 'workflow.dars.rig_gamma' | translate }}</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Cards list -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        @for (dar of filteredDars(); track dar.id) {
+          <div 
+            (click)="selectDar(dar)"
+            class="bg-white p-5 rounded-xl border transition-all cursor-pointer shadow-sm hover:border-slate-350 relative group"
+            [class.border-indigo-500]="selectedDar()?.id === dar.id"
+            [class.border-slate-100]="selectedDar()?.id !== dar.id"
+            [class.bg-indigo-50]="selectedDar()?.id === dar.id"
+          >
+            <div class="flex justify-between items-start">
+              <div>
+                <span class="font-mono font-bold text-slate-400 bg-slate-150 px-2 py-0.5 rounded">
+                  {{ dar.darNumber }}
+                </span>
+                <h3 class="text-sm font-bold text-slate-800 mt-2.5 group-hover:text-primary transition-colors">
+                  {{ dar.rigName }}
+                </h3>
+                <p class="text-[10px] text-slate-450 mt-1">{{ 'workflow.dars.contract_label' | translate }}: {{ dar.contractNumber }}</p>
+              </div>
+              <span 
+                class="px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider shrink-0"
+                [class.bg-green-50]="dar.status === 'Approved'"
+                [class.text-success]="dar.status === 'Approved'"
+                [class.bg-blue-50]="dar.status === 'Submitted'"
+                [class.text-blue-600]="dar.status === 'Submitted'"
+                [class.bg-amber-50]="dar.status === 'Draft'"
+                [class.text-accent]="dar.status === 'Draft'"
+                [class.bg-red-50]="dar.status === 'Rejected'"
+                [class.text-danger]="dar.status === 'Rejected'"
+              >
+                {{ dar.status }}
+              </span>
+            </div>
+
+            <!-- Hours Breakdown visual bar -->
+            <div class="mt-4 space-y-1.5">
+              <div class="flex justify-between text-[9px] text-slate-400 uppercase tracking-wider font-bold">
+                <span>{{ 'workflow.dars.col_hours' | translate }}</span>
+                <span class="text-slate-800">{{ dar.operatingHours }}h / 24h</span>
+              </div>
+              <div class="w-full bg-slate-100 rounded-full h-1.5 flex overflow-hidden">
+                <div class="bg-success h-full" [style.width.%]="(dar.operatingHours/24)*100" [title]="'workflow.dars.operating' | translate"></div>
+                <div class="bg-amber-400 h-full" [style.width.%]="(dar.standbyHours/24)*100" [title]="'workflow.dars.standby' | translate"></div>
+                <div class="bg-blue-400 h-full" [style.width.%]="(dar.repairHours/24)*100" [title]="'workflow.dars.repair' | translate"></div>
+                <div class="bg-red-500 h-full" [style.width.%]="(dar.downtimeHours/24)*100" [title]="'workflow.dars.downtime' | translate"></div>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-3 gap-2 mt-4 pt-3 border-t border-slate-50 text-[10px] font-bold text-slate-400">
+              <div>
+                <span class="block uppercase tracking-wider text-[8px] text-slate-350">{{ 'workflow.dars.col_date' | translate }}</span>
+                <span class="text-slate-700 font-bold block mt-0.5">{{ dar.reportDate | date:'d MMM y' }} ({{ dar.shift }})</span>
+              </div>
+              <div>
+                <span class="block uppercase tracking-wider text-[8px] text-slate-350">{{ 'workflow.dars.fuel_consumption' | translate }}</span>
+                <span class="text-slate-700 font-bold block mt-0.5">{{ dar.fuelConsumption | number }} L</span>
+              </div>
+              <div>
+                <span class="block uppercase tracking-wider text-[8px] text-slate-350">{{ 'workflow.dars.materials_used' | translate }}</span>
+                <span class="text-slate-700 font-bold block mt-0.5">{{ dar.materialsUsed.length }} {{ 'workflow.dars.items' | translate }}</span>
+              </div>
+            </div>
+          </div>
+        } @empty {
+          <div class="col-span-2 bg-white p-12 text-center rounded-xl border border-slate-100 shadow-sm text-slate-450">
+            <p class="font-bold">{{ 'workflow.dars.no_records' | translate }}</p>
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- Detail Inspector (Right Column) -->
+    <div class="xl:col-span-1 space-y-6">
+      @if (selectedDar(); as dar) {
+        <div class="bg-white rounded-xl border border-slate-100 shadow-sm p-6 space-y-5 sticky top-6">
+          
+          <!-- Header info -->
+          <div class="pb-4 border-b border-slate-100">
+            <div class="flex items-center justify-between mb-2">
+              <span class="font-mono text-[10px] font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded">{{ dar.darNumber }}</span>
+              <div class="flex items-center space-x-1.5">
+                @if (dar.status === 'Draft') {
+                  <button (click)="submitDAR(dar.id)" class="px-2 py-1 bg-blue-50 hover:bg-blue-100 text-blue-600 text-[10px] font-bold rounded uppercase tracking-wider transition-colors border border-blue-200">{{ 'common.submit' | translate }}</button>
+                  <button (click)="openEditModal(dar)" class="px-2 py-1 bg-slate-50 hover:bg-slate-100 text-slate-650 text-[10px] font-bold rounded uppercase tracking-wider transition-colors border border-slate-200">{{ 'common.edit' | translate }}</button>
+                }
+                @if (dar.status === 'Submitted' && canApprove()) {
+                  <button (click)="approveDAR(dar.id)" class="px-2 py-1 bg-green-50 hover:bg-green-100 text-success text-[10px] font-bold rounded uppercase tracking-wider transition-colors border border-green-200">{{ 'workflow.dars.approve' | translate }}</button>
+                  <button (click)="rejectDAR(dar.id)" class="px-2 py-1 bg-red-50 hover:bg-red-100 text-danger text-[10px] font-bold rounded uppercase tracking-wider transition-colors border border-red-200">{{ 'workflow.dars.reject' | translate }}</button>
+                }
+              </div>
+            </div>
+            <h2 class="text-base font-black text-slate-800 tracking-tight">{{ dar.rigName }}</h2>
+            <p class="text-[10px] text-slate-400 font-semibold mt-1">{{ 'workflow.dars.contract_label' | translate }}: <span class="font-bold text-slate-700">{{ dar.contractNumber }}</span></p>
+          </div>
+
+          <!-- Shift Details list -->
+          <div class="space-y-2.5 text-xs text-slate-600">
+            <div class="flex justify-between">
+              <span class="text-slate-400 font-semibold">{{ 'workflow.dars.col_date' | translate }}</span>
+              <span class="font-bold text-slate-800">{{ dar.reportDate }} ({{ dar.shift }} {{ 'workflow.dars.label_shift' | translate }})</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-slate-400 font-semibold">{{ 'workflow.dars.prepared_by' | translate }}</span>
+              <span class="font-bold text-slate-800">{{ dar.preparedBy }}</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-slate-400 font-semibold">{{ 'workflow.dars.fuel_consumption' | translate }}</span>
+              <span class="font-bold text-slate-800">{{ dar.fuelConsumption }} {{ 'workflow.dars.liters' | translate }}</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-slate-400 font-semibold">{{ 'workflow.dars.weather_conditions' | translate }}</span>
+              <span class="font-bold text-slate-850">{{ dar.weatherConditions || ('common.na' | translate) }}</span>
+            </div>
+          </div>
+
+          <!-- Time breakdown details -->
+          <div class="bg-slate-50 p-4 rounded-xl border border-slate-100">
+            <h4 class="text-[10px] text-slate-400 uppercase font-black tracking-wider mb-2.5">{{ 'workflow.dars.timesheet_allocation_title' | translate }}</h4>
+            <div class="grid grid-cols-4 gap-2 text-center text-[10px]">
+              <div class="bg-green-50 p-2 rounded border border-green-100">
+                <span class="block text-success font-black text-sm">{{ dar.operatingHours }}h</span>
+                <span class="text-slate-400 font-bold uppercase text-[8px] tracking-wider mt-0.5 block">{{ 'workflow.dars.operating' | translate }}</span>
+              </div>
+              <div class="bg-amber-50 p-2 rounded border border-amber-100">
+                <span class="block text-accent font-black text-sm">{{ dar.standbyHours }}h</span>
+                <span class="text-slate-400 font-bold uppercase text-[8px] tracking-wider mt-0.5 block">{{ 'workflow.dars.standby' | translate }}</span>
+              </div>
+              <div class="bg-blue-50 p-2 rounded border border-blue-100">
+                <span class="block text-blue-600 font-black text-sm">{{ dar.repairHours }}h</span>
+                <span class="text-slate-400 font-bold uppercase text-[8px] tracking-wider mt-0.5 block">{{ 'workflow.dars.repair' | translate }}</span>
+              </div>
+              <div class="bg-red-50 p-2 rounded border border-red-100">
+                <span class="block text-danger font-black text-sm">{{ dar.downtimeHours }}h</span>
+                <span class="text-slate-400 font-bold uppercase text-[8px] tracking-wider mt-0.5 block">{{ 'workflow.dars.downtime' | translate }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Activities Description -->
+          <div>
+            <h3 class="text-xs font-black text-slate-750 uppercase tracking-wider mb-1.5">{{ 'workflow.dars.summary' | translate }}</h3>
+            <p class="p-3 bg-slate-50/70 border border-slate-100 rounded-lg text-slate-755 font-bold leading-relaxed text-[11px]">
+              {{ dar.activitiesPerformed }}
+            </p>
+          </div>
+
+          <!-- Materials Spares consumed -->
+          @if (dar.materialsUsed.length > 0) {
+            <div>
+              <h3 class="text-xs font-black text-slate-750 uppercase tracking-wider mb-2">{{ 'workflow.dars.materials' | translate }}</h3>
+              <div class="space-y-1.5 max-h-36 overflow-y-auto pr-1">
+                @for (m of dar.materialsUsed; track m.id) {
+                  <div class="flex justify-between items-center p-2 bg-slate-50 rounded border border-slate-100 text-[11px] font-bold text-slate-700">
+                    <span>{{ m.itemName }}</span>
+                    <span class="text-slate-900 shrink-0 font-mono">{{ m.quantity }} {{ m.uom }}</span>
+                  </div>
+                }
+              </div>
+            </div>
+          }
+
+          <!-- HSE / Safe Report -->
+          <div>
+            <h3 class="text-xs font-black text-slate-750 uppercase tracking-wider mb-1">{{ 'workflow.dars.hse' | translate }}</h3>
+            <div class="p-2.5 bg-green-50/30 rounded border border-green-100/50 flex items-center space-x-2 text-green-800">
+              <span class="w-2 h-2 rounded-full bg-success animate-pulse shrink-0"></span>
+              <span class="text-[10px] font-bold">{{ dar.hseIncidents || ('workflow.dars.no_incidents' | translate) }}</span>
+            </div>
+          </div>
+
+          <!-- Workflow Approver Steps -->
+          @if (dar.approvalWorkflow[0].approverName) {
+            <div class="pt-4 border-t border-slate-100">
+              <h3 class="text-xs font-black text-slate-750 uppercase tracking-wider mb-2">{{ 'workflow.dars.approval_signoff' | translate }}</h3>
+              <div class="p-3 bg-slate-50 rounded-lg border border-slate-100 text-[10px]">
+                <div class="flex justify-between items-center font-bold">
+                  <span class="text-slate-700">{{ 'workflow.dars.signed_by_label' | translate }}: {{ dar.approvalWorkflow[0].approverName }}</span>
+                  <span class="text-slate-400">{{ dar.approvalWorkflow[0].actionDate }}</span>
+                </div>
+                <div class="mt-1 text-slate-500 font-medium italic">"{{ dar.approvalWorkflow[0].comments }}"</div>
+              </div>
+            </div>
+          }
+
+          <!-- Activity Log specific to this DAR -->
+          <div class="pt-4 border-t border-slate-100">
+            <h3 class="text-xs font-black text-slate-750 uppercase tracking-wider mb-2.5 flex items-center space-x-1.5">
+              <svg class="w-3.5 h-3.5 text-slate-550" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span>{{ 'workflow.dars.modification_logs' | translate }}</span>
+            </h3>
+            <div class="max-h-52 overflow-y-auto">
+              <app-activity-timeline moduleFilter="DAR" [limit]="3"></app-activity-timeline>
+            </div>
+          </div>
+
+        </div>
+      } @else {
+        <div class="bg-white rounded-xl border border-slate-100 shadow-sm p-8 text-center text-slate-400 flex flex-col items-center justify-center space-y-3 sticky top-6">
+          <svg class="w-8 h-8 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" />
+          </svg>
+          <p class="text-xs font-bold">{{ 'workflow.dars.empty_hint' | translate }}</p>
+        </div>
+      }
+    </div>
+
+  </div>
+
+  <!-- CREATE/EDIT DAR DRAWER MODAL -->
+  @if (isModalOpen()) {
+    <div class="fixed inset-0 z-50 overflow-hidden flex justify-end">
+      <div (click)="closeModal()" class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity"></div>
+      
+      <div class="relative w-full max-w-xl bg-white h-full shadow-2xl flex flex-col z-10 animate-slide-left text-xs font-semibold text-slate-500">
+        <!-- Modal Header -->
+        <div class="px-6 py-4.5 border-b border-slate-100 flex items-center justify-between">
+          <div>
+            <h2 class="text-base font-black text-slate-800">{{ (isEditMode() ? 'workflow.dars.edit_dar' : 'workflow.dars.create_dar') | translate }}</h2>
+            <p class="text-[10px] text-slate-400 font-semibold mt-0.5">{{ 'workflow.dars.modal_subtitle' | translate }}</p>
+          </div>
+          <button (click)="closeModal()" class="p-1 rounded-lg text-slate-450 hover:bg-slate-50 transition-colors">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <!-- Modal Content -->
+        <div class="flex-1 overflow-y-auto p-6 space-y-4">
+          
+          <!-- Form Fields -->
+          <div class="space-y-3">
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-[10px] uppercase font-bold tracking-wider text-slate-400 mb-1">{{ 'workflow.dars.label_contract' | translate }}</label>
+                <select [(ngModel)]="formModel.contractId" (change)="onContractChange()" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-slate-850 font-bold focus:outline-none">
+                  @for (c of contracts(); track c.id) {
+                    <option [value]="c.id">{{ c.contractNumber }} ({{ c.title }})</option>
+                  }
+                </select>
+              </div>
+              <div>
+                <label class="block text-[10px] uppercase font-bold tracking-wider text-slate-400 mb-1">{{ 'workflow.dars.label_shift' | translate }}</label>
+                <select [(ngModel)]="formModel.shift" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-slate-850 font-bold focus:outline-none">
+                  <option value="Day">{{ 'workflow.dars.shift_day' | translate }}</option>
+                  <option value="Night">{{ 'workflow.dars.shift_night' | translate }}</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-[10px] uppercase font-bold tracking-wider text-slate-400 mb-1">{{ 'workflow.dars.col_date' | translate }}</label>
+                <input type="date" [(ngModel)]="formModel.reportDate" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-850 focus:outline-none" />
+              </div>
+              <div>
+                <label class="block text-[10px] uppercase font-bold tracking-wider text-slate-400 mb-1">{{ 'workflow.dars.prepared_by' | translate }}</label>
+                <input type="text" [(ngModel)]="formModel.preparedBy" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-800 focus:outline-none focus:border-indigo-500/50" />
+              </div>
+            </div>
+
+            <!-- Hours breakdown input -->
+            <div class="bg-slate-50 p-4 rounded-xl border border-slate-200/60">
+              <span class="block text-[10px] uppercase font-black tracking-wider text-slate-450 mb-3">{{ 'workflow.dars.timesheet_allocation' | translate }}</span>
+              <div class="grid grid-cols-4 gap-2">
+                <div>
+                  <label class="block text-[8px] uppercase tracking-wider text-slate-400 mb-1">{{ 'workflow.dars.operating' | translate }}</label>
+                  <input type="number" [(ngModel)]="formModel.operatingHours" class="w-full bg-white border border-slate-200 rounded p-1.5 text-center font-bold text-slate-850 focus:outline-none" />
+                </div>
+                <div>
+                  <label class="block text-[8px] uppercase tracking-wider text-slate-400 mb-1">{{ 'workflow.dars.standby' | translate }}</label>
+                  <input type="number" [(ngModel)]="formModel.standbyHours" class="w-full bg-white border border-slate-200 rounded p-1.5 text-center font-bold text-slate-850 focus:outline-none" />
+                </div>
+                <div>
+                  <label class="block text-[8px] uppercase tracking-wider text-slate-400 mb-1">{{ 'workflow.dars.repair' | translate }}</label>
+                  <input type="number" [(ngModel)]="formModel.repairHours" class="w-full bg-white border border-slate-200 rounded p-1.5 text-center font-bold text-slate-850 focus:outline-none" />
+                </div>
+                <div>
+                  <label class="block text-[8px] uppercase tracking-wider text-slate-400 mb-1">{{ 'workflow.dars.downtime' | translate }}</label>
+                  <input type="number" [(ngModel)]="formModel.downtimeHours" class="w-full bg-white border border-slate-200 rounded p-1.5 text-center font-bold text-slate-850 focus:outline-none" />
+                </div>
+              </div>
+              <div class="mt-2 text-right text-[10px] font-bold" [class.text-red-500]="(formModel.operatingHours + formModel.standbyHours + formModel.repairHours + formModel.downtimeHours) !== 24" [class.text-green-600]="(formModel.operatingHours + formModel.standbyHours + formModel.repairHours + formModel.downtimeHours) === 24">
+                {{ 'workflow.dars.total_hours_label' | translate }}: {{ formModel.operatingHours + formModel.standbyHours + formModel.repairHours + formModel.downtimeHours }}h / 24h
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-[10px] uppercase font-bold tracking-wider text-slate-400 mb-1">{{ 'workflow.dars.fuel_consumption_liters' | translate }}</label>
+                <input type="number" [(ngModel)]="formModel.fuelConsumption" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-800 focus:outline-none focus:border-indigo-500/50" />
+              </div>
+              <div>
+                <label class="block text-[10px] uppercase font-bold tracking-wider text-slate-400 mb-1">{{ 'workflow.dars.weather_conditions' | translate }}</label>
+                <input type="text" [(ngModel)]="formModel.weatherConditions" [placeholder]="'workflow.dars.placeholder_weather' | translate" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-800 focus:outline-none focus:border-indigo-500/50" />
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-[10px] uppercase font-bold tracking-wider text-slate-400 mb-1">{{ 'workflow.dars.hse_logs' | translate }}</label>
+              <input type="text" [(ngModel)]="formModel.hseIncidents" [placeholder]="'workflow.dars.placeholder_hse' | translate" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-800 focus:outline-none focus:border-indigo-500/50" />
+            </div>
+
+            <div>
+              <label class="block text-[10px] uppercase font-bold tracking-wider text-slate-400 mb-1">{{ 'workflow.dars.activities_summary' | translate }}</label>
+              <textarea [(ngModel)]="formModel.activitiesPerformed" rows="3" [placeholder]="'workflow.dars.placeholder_activities' | translate" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-800 focus:outline-none focus:border-indigo-500/50"></textarea>
+            </div>
+
+            <div>
+              <label class="block text-[10px] uppercase font-bold tracking-wider text-slate-400 mb-1">{{ 'workflow.dars.remarks' | translate }}</label>
+              <input type="text" [(ngModel)]="formModel.remarks" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-800 focus:outline-none focus:border-indigo-500/50" />
+            </div>
+          </div>
+
+          <!-- Materials Spares consumed Editor -->
+          <div class="pt-4 border-t border-slate-100">
+            <div class="flex justify-between items-center mb-2">
+              <h3 class="text-xs font-black text-slate-800 uppercase tracking-wider">{{ 'workflow.dars.materials_spares' | translate }}</h3>
+              <button type="button" (click)="addMaterialRow()" class="text-xs text-primary hover:underline font-bold">{{ 'workflow.dars.add_item' | translate }}</button>
+            </div>
+            
+            <div class="space-y-2">
+              @for (m of formModel.materialsUsed; track $index) {
+                <div class="flex items-center space-x-2 bg-slate-50 p-2.5 rounded-lg border border-slate-200/60">
+                  <input type="text" [(ngModel)]="m.itemName" [placeholder]="'workflow.dars.placeholder_mat_name' | translate" class="flex-1 bg-white border border-slate-200 rounded px-2 py-1 text-slate-850 focus:outline-none" />
+                  <input type="text" [(ngModel)]="m.uom" [placeholder]="'workflow.dars.placeholder_uom' | translate" class="w-16 bg-white border border-slate-200 rounded px-2 py-1 text-slate-850 text-center focus:outline-none" />
+                  <input type="number" [(ngModel)]="m.quantity" [placeholder]="'workflow.dars.placeholder_qty' | translate" class="w-16 bg-white border border-slate-200 rounded px-2 py-1 text-slate-850 text-right focus:outline-none" />
+                  <button (click)="removeMaterialRow($index)" class="text-red-500 hover:text-red-655 p-1 shrink-0">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </button>
+                </div>
+              }
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Modal Footer -->
+        <div class="px-6 py-4 border-t border-slate-100 flex items-center justify-end space-x-3 bg-slate-50">
+          <button (click)="closeModal()" class="px-4 py-2 bg-white hover:bg-slate-100 text-slate-650 border border-slate-200 rounded-lg text-xs font-bold transition-colors">{{ 'common.cancel' | translate }}</button>
+          <button (click)="saveDAR()" class="px-4.5 py-2 bg-primary hover:bg-slate-800 text-white rounded-lg text-xs font-bold transition-colors shadow-sm">{{ 'workflow.dars.save_report' | translate }}</button>
+        </div>
+
+      </div>
+    </div>
+  }
+
+</div>

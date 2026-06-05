@@ -10,22 +10,29 @@
     class="fixed inset-y-0 left-0 rtl:right-0 rtl:left-auto z-30 flex flex-col bg-primary text-slate-300 transition-all duration-300 ease-in-out md:static md:translate-x-0 border-r rtl:border-l rtl:border-r-0 border-slate-800 shadow-xl"
   >
     <!-- Brand / Logo Area -->
-    <div class="flex items-center justify-between h-16 px-4 bg-secondary border-b border-slate-800">
-      <div class="flex items-center space-x-3 overflow-hidden">
-        <div class="flex items-center justify-center w-10 h-10 rounded-lg bg-accent text-primary font-black text-xl shrink-0 shadow-md shadow-amber-500/20">
-          O&G
+    <div class="flex items-center justify-between h-16 px-3 bg-secondary border-b border-slate-800">
+
+      <!-- Compact icon-only (collapsed) -->
+      @if (isSidebarCollapsed()) {
+        <div class="flex items-center justify-center w-full animate-fade-in">
+          <app-dasco-logo [compact]="true" [size]="38" />
         </div>
-        <div class="flex flex-col transition-all duration-300" [class.opacity-0]="isSidebarCollapsed()" [class.w-0]="isSidebarCollapsed()">
-          <span class="text-white font-bold text-sm tracking-wider uppercase whitespace-nowrap">{{ 'common.petroflow_erp' | translate }}</span>
-          <span class="text-[10px] text-accent font-semibold tracking-widest whitespace-nowrap">{{ 'common.enterprise_mvp' | translate }}</span>
+      }
+
+      <!-- Full logo (expanded) -->
+      @if (!isSidebarCollapsed()) {
+        <div class="flex-1 overflow-hidden animate-fade-in">
+          <app-dasco-logo [compact]="false" />
         </div>
-      </div>
+      }
+
       <!-- Toggle collapse button (Desktop) -->
-      <button 
-        (click)="toggleSidebar()" 
-        class="hidden md:flex items-center justify-center w-8 h-8 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition-colors"
+      <button
+        (click)="toggleSidebar()"
+        class="hidden md:flex shrink-0 items-center justify-center w-7 h-7 rounded-lg hover:bg-slate-700 text-slate-500 hover:text-white transition-all duration-200 ml-2"
+        [title]="isSidebarCollapsed() ? 'Expand sidebar' : 'Collapse sidebar'"
       >
-        <svg class="w-5 h-5 animate-direction" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg class="w-4 h-4 animate-direction" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           @if (isSidebarCollapsed()) {
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7" />
           } @else {
@@ -36,7 +43,8 @@
     </div>
 
     <!-- Navigation Scroll Container -->
-    <nav class="flex-1 overflow-y-auto py-4 px-3 space-y-1">
+    <div class="sidebar-scroll-container flex-1 min-h-0">
+    <nav class="sidebar-nav h-full overflow-y-auto py-4 px-3 space-y-1">
       
       <!-- SECTION: GENERAL -->
       <div class="space-y-1">
@@ -585,6 +593,7 @@
       </div>
 
     </nav>
+    </div>
 
     <!-- Sidebar Footer / Collapsed indicator -->
     <div class="p-4 border-t border-slate-800 bg-secondary flex items-center justify-between text-xs text-slate-500 overflow-hidden shrink-0">

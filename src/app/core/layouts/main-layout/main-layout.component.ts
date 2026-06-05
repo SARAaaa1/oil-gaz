@@ -8,6 +8,7 @@ import { RoleDirective } from '../../../shared/directives/role.directive';
 import { TranslateModule } from '@ngx-translate/core';
 import { LanguageSwitcherComponent } from '../../../shared/components/language-switcher/language-switcher.component';
 import { LanguageService } from '../../services/language.service';
+import { DascoLogoComponent } from '../../../shared/components/dasco-logo/dasco-logo.component';
 
 interface NotificationItem {
   id: string;
@@ -20,7 +21,7 @@ interface NotificationItem {
 @Component({
   selector: 'app-main-layout',
   standalone: true,
-  imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive, RoleDirective, TranslateModule, LanguageSwitcherComponent],
+  imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive, RoleDirective, TranslateModule, LanguageSwitcherComponent, DascoLogoComponent],
   templateUrl: './main-layout.component.html',
   styleUrls: [],
   changeDetection: ChangeDetectionStrategy.OnPush

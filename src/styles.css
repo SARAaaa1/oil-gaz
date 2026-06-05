@@ -58,3 +58,108 @@ html[dir="rtl"] .animate-direction {
   transform: scaleX(-1);
 }
 
+/* =============================================================
+   SIDEBAR PREMIUM SCROLLBAR
+   Matches petroleum ERP dark theme. Inspired by Linear / Notion.
+   ============================================================= */
+
+/* --- Webkit (Chrome, Edge, Safari) --- */
+.sidebar-nav::-webkit-scrollbar {
+  width: 4px;
+}
+
+.sidebar-nav::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar-nav::-webkit-scrollbar-thumb {
+  background-color: rgba(148, 163, 184, 0.15); /* slate-400 at 15% */
+  border-radius: 9999px;
+  transition: background-color 0.2s ease;
+}
+
+.sidebar-nav::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(245, 158, 11, 0.45); /* accent amber at 45% */
+}
+
+.sidebar-nav::-webkit-scrollbar-thumb:active {
+  background-color: rgba(245, 158, 11, 0.75); /* accent amber at 75% */
+}
+
+.sidebar-nav::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* --- Firefox --- */
+.sidebar-nav {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148, 163, 184, 0.15) transparent;
+  scroll-behavior: smooth;
+}
+
+.sidebar-nav:hover {
+  scrollbar-color: rgba(245, 158, 11, 0.4) transparent;
+}
+
+/* --- Sidebar scroll fade-mask (top & bottom overflow indicators) --- */
+.sidebar-scroll-container {
+  position: relative;
+}
+
+.sidebar-scroll-container::before,
+.sidebar-scroll-container::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 28px;
+  pointer-events: none;
+  z-index: 10;
+  transition: opacity 0.2s ease;
+}
+
+/* Top fade — fades into the dark sidebar bg */
+.sidebar-scroll-container::before {
+  top: 0;
+  background: linear-gradient(to bottom, #0F172A 0%, transparent 100%);
+}
+
+/* Bottom fade — fades into the dark sidebar bg */
+.sidebar-scroll-container::after {
+  bottom: 0;
+  background: linear-gradient(to top, #0F172A 0%, transparent 100%);
+}
+
+/* =============================================================
+   GLOBAL PAGE SCROLLBAR (content area)
+   Subtle, matches light bg-custom surface.
+   ============================================================= */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: rgba(148, 163, 184, 0.3);
+  border-radius: 9999px;
+  transition: background-color 0.2s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(245, 158, 11, 0.5);
+}
+
+::-webkit-scrollbar-thumb:active {
+  background-color: rgba(245, 158, 11, 0.8);
+}
+
+/* Firefox global */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148, 163, 184, 0.3) transparent;
+}
+

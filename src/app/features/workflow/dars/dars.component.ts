@@ -12,423 +12,7 @@ import { ActivityTimelineComponent } from '../../../shared/components/activity-t
   selector: 'app-dars',
   standalone: true,
   imports: [CommonModule, FormsModule, ActivityTimelineComponent, TranslateModule],
-  template: `
-    <div class="space-y-6 animate-fade-in text-xs font-semibold text-slate-500">
-      <!-- Header -->
-      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-5 rounded-xl border border-slate-100 shadow-sm">
-        <div>
-          <h1 class="text-2xl font-black text-slate-800 tracking-tight">Daily Activity Reports (DAR)</h1>
-          <p class="text-xs text-slate-500 font-semibold mt-1">Track daily operating hours, standby, repairs, material usage, and fuel consumption at drill sites</p>
-        </div>
-        <button 
-          *ngIf="canCreate()"
-          (click)="openCreateModal()"
-          class="px-4 py-2.5 bg-primary hover:bg-slate-800 text-white rounded-lg font-bold transition-all shadow-sm flex items-center space-x-2"
-        >
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-          </svg>
-          <span>New Daily Report</span>
-        </button>
-      </div>
-
-      <!-- Main Layout Grid -->
-      <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
-        
-        <!-- DARs Ledger (Left Columns) -->
-        <div class="xl:col-span-2 space-y-4">
-          <!-- Filters -->
-          <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-sm flex flex-col md:flex-row gap-3">
-            <div class="flex-1 relative">
-              <input 
-                type="text" 
-                [(ngModel)]="searchQuery" 
-                placeholder="Search by DAR #, Rig, contract, or details..." 
-                class="w-full bg-slate-50 border border-slate-200 rounded-lg pl-8 pr-3 py-2 text-slate-800 focus:outline-none focus:border-indigo-500/50"
-              />
-              <svg class="w-4 h-4 text-slate-400 absolute left-2.5 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-            </div>
-            
-            <div class="flex gap-2">
-              <select 
-                [(ngModel)]="statusFilter" 
-                class="bg-slate-50 border border-slate-200 rounded-lg p-2 text-slate-700 font-bold focus:outline-none"
-              >
-                <option value="ALL">All Statuses</option>
-                <option value="Draft">Draft</option>
-                <option value="Submitted">Submitted</option>
-                <option value="Approved">Approved</option>
-                <option value="Rejected">Rejected</option>
-              </select>
-
-              <select 
-                [(ngModel)]="rigFilter" 
-                class="bg-slate-50 border border-slate-200 rounded-lg p-2 text-slate-700 font-bold focus:outline-none"
-              >
-                <option value="ALL">All Rigs</option>
-                <option value="rig1">Rig Alpha</option>
-                <option value="rig2">Rig Beta</option>
-                <option value="rig3">Rig Gamma</option>
-              </select>
-            </div>
-          </div>
-
-          <!-- Cards list -->
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            @for (dar of filteredDars(); track dar.id) {
-              <div 
-                (click)="selectDar(dar)"
-                class="bg-white p-5 rounded-xl border transition-all cursor-pointer shadow-sm hover:border-slate-350 relative group"
-                [class.border-indigo-500]="selectedDar()?.id === dar.id"
-                [class.border-slate-100]="selectedDar()?.id !== dar.id"
-                [class.bg-indigo-50]="selectedDar()?.id === dar.id"
-              >
-                <div class="flex justify-between items-start">
-                  <div>
-                    <span class="font-mono font-bold text-slate-400 bg-slate-150 px-2 py-0.5 rounded">
-                      {{ dar.darNumber }}
-                    </span>
-                    <h3 class="text-sm font-bold text-slate-800 mt-2.5 group-hover:text-primary transition-colors">
-                      {{ dar.rigName }}
-                    </h3>
-                    <p class="text-[10px] text-slate-450 mt-1">Contract: {{ dar.contractNumber }}</p>
-                  </div>
-                  <span 
-                    class="px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider shrink-0"
-                    [class.bg-green-50]="dar.status === 'Approved'"
-                    [class.text-success]="dar.status === 'Approved'"
-                    [class.bg-blue-50]="dar.status === 'Submitted'"
-                    [class.text-blue-600]="dar.status === 'Submitted'"
-                    [class.bg-amber-50]="dar.status === 'Draft'"
-                    [class.text-accent]="dar.status === 'Draft'"
-                    [class.bg-red-50]="dar.status === 'Rejected'"
-                    [class.text-danger]="dar.status === 'Rejected'"
-                  >
-                    {{ dar.status }}
-                  </span>
-                </div>
-
-                <!-- Hours Breakdown visual bar -->
-                <div class="mt-4 space-y-1.5">
-                  <div class="flex justify-between text-[9px] text-slate-400 uppercase tracking-wider font-bold">
-                    <span>Operating Hours</span>
-                    <span class="text-slate-800">{{ dar.operatingHours }}h / 24h</span>
-                  </div>
-                  <div class="w-full bg-slate-100 rounded-full h-1.5 flex overflow-hidden">
-                    <div class="bg-success h-full" [style.width.%]="(dar.operatingHours/24)*100" title="Operating"></div>
-                    <div class="bg-amber-400 h-full" [style.width.%]="(dar.standbyHours/24)*100" title="Standby"></div>
-                    <div class="bg-blue-400 h-full" [style.width.%]="(dar.repairHours/24)*100" title="Repair"></div>
-                    <div class="bg-red-500 h-full" [style.width.%]="(dar.downtimeHours/24)*100" title="Downtime"></div>
-                  </div>
-                </div>
-
-                <div class="grid grid-cols-3 gap-2 mt-4 pt-3 border-t border-slate-50 text-[10px] font-bold text-slate-400">
-                  <div>
-                    <span class="block uppercase tracking-wider text-[8px] text-slate-350">Date / Shift</span>
-                    <span class="text-slate-700 font-bold block mt-0.5">{{ dar.reportDate | date:'d MMM y' }} ({{ dar.shift }})</span>
-                  </div>
-                  <div>
-                    <span class="block uppercase tracking-wider text-[8px] text-slate-350">Fuel Consumption</span>
-                    <span class="text-slate-700 font-bold block mt-0.5">{{ dar.fuelConsumption | number }} L</span>
-                  </div>
-                  <div>
-                    <span class="block uppercase tracking-wider text-[8px] text-slate-350">Materials Used</span>
-                    <span class="text-slate-700 font-bold block mt-0.5">{{ dar.materialsUsed.length }} Items</span>
-                  </div>
-                </div>
-              </div>
-            } @empty {
-              <div class="col-span-2 bg-white p-12 text-center rounded-xl border border-slate-100 shadow-sm text-slate-450">
-                <p class="font-bold">No Daily Activity Reports found</p>
-              </div>
-            }
-          </div>
-        </div>
-
-        <!-- Detail Inspector (Right Column) -->
-        <div class="xl:col-span-1 space-y-6">
-          @if (selectedDar(); as dar) {
-            <div class="bg-white rounded-xl border border-slate-100 shadow-sm p-6 space-y-5 sticky top-6">
-              
-              <!-- Header info -->
-              <div class="pb-4 border-b border-slate-100">
-                <div class="flex items-center justify-between mb-2">
-                  <span class="font-mono text-[10px] font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded">{{ dar.darNumber }}</span>
-                  <div class="flex items-center space-x-1.5">
-                    @if (dar.status === 'Draft') {
-                      <button (click)="submitDAR(dar.id)" class="px-2 py-1 bg-blue-50 hover:bg-blue-100 text-blue-600 text-[10px] font-bold rounded uppercase tracking-wider transition-colors border border-blue-200">Submit</button>
-                      <button (click)="openEditModal(dar)" class="px-2 py-1 bg-slate-50 hover:bg-slate-100 text-slate-650 text-[10px] font-bold rounded uppercase tracking-wider transition-colors border border-slate-200">Edit</button>
-                    }
-                    @if (dar.status === 'Submitted' && canApprove()) {
-                      <button (click)="approveDAR(dar.id)" class="px-2 py-1 bg-green-50 hover:bg-green-100 text-success text-[10px] font-bold rounded uppercase tracking-wider transition-colors border border-green-200">Approve</button>
-                      <button (click)="rejectDAR(dar.id)" class="px-2 py-1 bg-red-50 hover:bg-red-100 text-danger text-[10px] font-bold rounded uppercase tracking-wider transition-colors border border-red-200">Reject</button>
-                    }
-                  </div>
-                </div>
-                <h2 class="text-base font-black text-slate-800 tracking-tight">{{ dar.rigName }}</h2>
-                <p class="text-[10px] text-slate-400 font-semibold mt-1">Contract ref: <span class="font-bold text-slate-700">{{ dar.contractNumber }}</span></p>
-              </div>
-
-              <!-- Shift Details list -->
-              <div class="space-y-2.5 text-xs text-slate-600">
-                <div class="flex justify-between">
-                  <span class="text-slate-400 font-semibold">Report Date / Shift</span>
-                  <span class="font-bold text-slate-800">{{ dar.reportDate }} ({{ dar.shift }} Shift)</span>
-                </div>
-                <div class="flex justify-between">
-                  <span class="text-slate-400 font-semibold">Prepared By</span>
-                  <span class="font-bold text-slate-800">{{ dar.preparedBy }}</span>
-                </div>
-                <div class="flex justify-between">
-                  <span class="text-slate-400 font-semibold">Fuel Consumption</span>
-                  <span class="font-bold text-slate-800">{{ dar.fuelConsumption }} Liters</span>
-                </div>
-                <div class="flex justify-between">
-                  <span class="text-slate-400 font-semibold">Weather Conditions</span>
-                  <span class="font-bold text-slate-850">{{ dar.weatherConditions || 'N/A' }}</span>
-                </div>
-              </div>
-
-              <!-- Time breakdown details -->
-              <div class="bg-slate-50 p-4 rounded-xl border border-slate-100">
-                <h4 class="text-[10px] text-slate-400 uppercase font-black tracking-wider mb-2.5">Operating Hours breakdown</h4>
-                <div class="grid grid-cols-4 gap-2 text-center text-[10px]">
-                  <div class="bg-green-50 p-2 rounded border border-green-100">
-                    <span class="block text-success font-black text-sm">{{ dar.operatingHours }}h</span>
-                    <span class="text-slate-400 font-bold uppercase text-[8px] tracking-wider mt-0.5 block">Operating</span>
-                  </div>
-                  <div class="bg-amber-50 p-2 rounded border border-amber-100">
-                    <span class="block text-accent font-black text-sm">{{ dar.standbyHours }}h</span>
-                    <span class="text-slate-400 font-bold uppercase text-[8px] tracking-wider mt-0.5 block">Standby</span>
-                  </div>
-                  <div class="bg-blue-50 p-2 rounded border border-blue-100">
-                    <span class="block text-blue-600 font-black text-sm">{{ dar.repairHours }}h</span>
-                    <span class="text-slate-400 font-bold uppercase text-[8px] tracking-wider mt-0.5 block">Repair</span>
-                  </div>
-                  <div class="bg-red-50 p-2 rounded border border-red-100">
-                    <span class="block text-danger font-black text-sm">{{ dar.downtimeHours }}h</span>
-                    <span class="text-slate-400 font-bold uppercase text-[8px] tracking-wider mt-0.5 block">Downtime</span>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Activities Description -->
-              <div>
-                <h3 class="text-xs font-black text-slate-750 uppercase tracking-wider mb-1.5">Operations Activity Summary</h3>
-                <p class="p-3 bg-slate-50/70 border border-slate-100 rounded-lg text-slate-750 font-bold leading-relaxed text-[11px]">
-                  {{ dar.activitiesPerformed }}
-                </p>
-              </div>
-
-              <!-- Materials Spares consumed -->
-              @if (dar.materialsUsed.length > 0) {
-                <div>
-                  <h3 class="text-xs font-black text-slate-750 uppercase tracking-wider mb-2">Materials & Mud Consumed</h3>
-                  <div class="space-y-1.5 max-h-36 overflow-y-auto pr-1">
-                    @for (m of dar.materialsUsed; track m.id) {
-                      <div class="flex justify-between items-center p-2 bg-slate-50 rounded border border-slate-100 text-[11px] font-bold text-slate-700">
-                        <span>{{ m.itemName }}</span>
-                        <span class="text-slate-900 shrink-0 font-mono">{{ m.quantity }} {{ m.uom }}</span>
-                      </div>
-                    }
-                  </div>
-                </div>
-              }
-
-              <!-- HSE / Safe Report -->
-              <div>
-                <h3 class="text-xs font-black text-slate-750 uppercase tracking-wider mb-1">HSE & Incidents Report</h3>
-                <div class="p-2.5 bg-green-50/30 rounded border border-green-100/50 flex items-center space-x-2 text-green-800">
-                  <span class="w-2 h-2 rounded-full bg-success animate-pulse shrink-0"></span>
-                  <span class="text-[10px] font-bold">{{ dar.hseIncidents || 'No incidents reported.' }}</span>
-                </div>
-              </div>
-
-              <!-- Workflow Approver Steps -->
-              @if (dar.approvalWorkflow[0]?.approverName) {
-                <div class="pt-4 border-t border-slate-100">
-                  <h3 class="text-xs font-black text-slate-750 uppercase tracking-wider mb-2">Approval Sign-off</h3>
-                  <div class="p-3 bg-slate-50 rounded-lg border border-slate-100 text-[10px]">
-                    <div class="flex justify-between items-center font-bold">
-                      <span class="text-slate-700">Signed: {{ dar.approvalWorkflow[0].approverName }}</span>
-                      <span class="text-slate-400">{{ dar.approvalWorkflow[0].actionDate }}</span>
-                    </div>
-                    <div class="mt-1 text-slate-500 font-medium italic">"{{ dar.approvalWorkflow[0].comments }}"</div>
-                  </div>
-                </div>
-              }
-
-              <!-- Activity Log specific to this DAR -->
-              <div class="pt-4 border-t border-slate-100">
-                <h3 class="text-xs font-black text-slate-750 uppercase tracking-wider mb-2.5 flex items-center space-x-1.5">
-                  <svg class="w-3.5 h-3.5 text-slate-550" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  <span>DAR Modification logs</span>
-                </h3>
-                <div class="max-h-52 overflow-y-auto">
-                  <app-activity-timeline moduleFilter="DAR" [limit]="3"></app-activity-timeline>
-                </div>
-              </div>
-
-            </div>
-          } @else {
-            <div class="bg-white rounded-xl border border-slate-100 shadow-sm p-8 text-center text-slate-400 flex flex-col items-center justify-center space-y-3 sticky top-6">
-              <svg class="w-8 h-8 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" />
-              </svg>
-              <p class="text-xs font-bold">Select any report from the ledger to inspect daily operating logs, fuel audits, and material utilization.</p>
-            </div>
-          }
-        </div>
-
-      </div>
-
-      <!-- CREATE/EDIT DAR DRAWER MODAL -->
-      @if (isModalOpen()) {
-        <div class="fixed inset-0 z-50 overflow-hidden flex justify-end">
-          <div (click)="closeModal()" class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity"></div>
-          
-          <div class="relative w-full max-w-xl bg-white h-full shadow-2xl flex flex-col z-10 animate-slide-left text-xs font-semibold text-slate-500">
-            <!-- Modal Header -->
-            <div class="px-6 py-4.5 border-b border-slate-100 flex items-center justify-between">
-              <div>
-                <h2 class="text-base font-black text-slate-800">{{ isEditMode() ? 'Edit DAR' : 'Create DAR' }}</h2>
-                <p class="text-[10px] text-slate-400 font-semibold mt-0.5">Record daily active hours, mud chemicals consumed, and fuel replenishment</p>
-              </div>
-              <button (click)="closeModal()" class="p-1 rounded-lg text-slate-450 hover:bg-slate-50 transition-colors">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-
-            <!-- Modal Content -->
-            <div class="flex-1 overflow-y-auto p-6 space-y-4">
-              
-              <!-- Form Fields -->
-              <div class="space-y-3">
-                <div class="grid grid-cols-2 gap-3">
-                  <div>
-                    <label class="block text-[10px] uppercase font-bold tracking-wider text-slate-400 mb-1">Contract Service</label>
-                    <select [(ngModel)]="formModel.contractId" (change)="onContractChange()" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-slate-850 font-bold focus:outline-none">
-                      @for (c of contracts(); track c.id) {
-                        <option [value]="c.id">{{ c.contractNumber }} ({{ c.title }})</option>
-                      }
-                    </select>
-                  </div>
-                  <div>
-                    <label class="block text-[10px] uppercase font-bold tracking-wider text-slate-400 mb-1">Shift</label>
-                    <select [(ngModel)]="formModel.shift" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-slate-850 font-bold focus:outline-none">
-                      <option value="Day">Day Shift</option>
-                      <option value="Night">Night Shift</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div class="grid grid-cols-2 gap-3">
-                  <div>
-                    <label class="block text-[10px] uppercase font-bold tracking-wider text-slate-400 mb-1">Report Date</label>
-                    <input type="date" [(ngModel)]="formModel.reportDate" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-850 focus:outline-none" />
-                  </div>
-                  <div>
-                    <label class="block text-[10px] uppercase font-bold tracking-wider text-slate-400 mb-1">Prepared By</label>
-                    <input type="text" [(ngModel)]="formModel.preparedBy" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-800 focus:outline-none focus:border-indigo-500/50" />
-                  </div>
-                </div>
-
-                <!-- Hours breakdown input -->
-                <div class="bg-slate-50 p-4 rounded-xl border border-slate-200/60">
-                  <span class="block text-[10px] uppercase font-black tracking-wider text-slate-450 mb-3">Operating Timesheet Allocation (Sum must equal 24h)</span>
-                  <div class="grid grid-cols-4 gap-2">
-                    <div>
-                      <label class="block text-[8px] uppercase tracking-wider text-slate-400 mb-1">Operating</label>
-                      <input type="number" [(ngModel)]="formModel.operatingHours" class="w-full bg-white border border-slate-200 rounded p-1.5 text-center font-bold text-slate-850 focus:outline-none" />
-                    </div>
-                    <div>
-                      <label class="block text-[8px] uppercase tracking-wider text-slate-400 mb-1">Standby</label>
-                      <input type="number" [(ngModel)]="formModel.standbyHours" class="w-full bg-white border border-slate-200 rounded p-1.5 text-center font-bold text-slate-850 focus:outline-none" />
-                    </div>
-                    <div>
-                      <label class="block text-[8px] uppercase tracking-wider text-slate-400 mb-1">Repair</label>
-                      <input type="number" [(ngModel)]="formModel.repairHours" class="w-full bg-white border border-slate-200 rounded p-1.5 text-center font-bold text-slate-850 focus:outline-none" />
-                    </div>
-                    <div>
-                      <label class="block text-[8px] uppercase tracking-wider text-slate-400 mb-1">Downtime</label>
-                      <input type="number" [(ngModel)]="formModel.downtimeHours" class="w-full bg-white border border-slate-200 rounded p-1.5 text-center font-bold text-slate-850 focus:outline-none" />
-                    </div>
-                  </div>
-                  <div class="mt-2 text-right text-[10px] font-bold" [class.text-red-500]="(formModel.operatingHours + formModel.standbyHours + formModel.repairHours + formModel.downtimeHours) !== 24" [class.text-green-600]="(formModel.operatingHours + formModel.standbyHours + formModel.repairHours + formModel.downtimeHours) === 24">
-                    Total: {{ formModel.operatingHours + formModel.standbyHours + formModel.repairHours + formModel.downtimeHours }}h / 24h
-                  </div>
-                </div>
-
-                <div class="grid grid-cols-2 gap-3">
-                  <div>
-                    <label class="block text-[10px] uppercase font-bold tracking-wider text-slate-400 mb-1">Fuel Consumption (Liters)</label>
-                    <input type="number" [(ngModel)]="formModel.fuelConsumption" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-800 focus:outline-none focus:border-indigo-500/50" />
-                  </div>
-                  <div>
-                    <label class="block text-[10px] uppercase font-bold tracking-wider text-slate-400 mb-1">Weather Conditions</label>
-                    <input type="text" [(ngModel)]="formModel.weatherConditions" placeholder="e.g. Swells 1m, clear" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-800 focus:outline-none focus:border-indigo-500/50" />
-                  </div>
-                </div>
-
-                <div>
-                  <label class="block text-[10px] uppercase font-bold tracking-wider text-slate-400 mb-1">HSE & Safework logs</label>
-                  <input type="text" [(ngModel)]="formModel.hseIncidents" placeholder="e.g. Clean safety record. Shift startup toolbox talk complete." class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-800 focus:outline-none focus:border-indigo-500/50" />
-                </div>
-
-                <div>
-                  <label class="block text-[10px] uppercase font-bold tracking-wider text-slate-400 mb-1">Activities Performed Summary</label>
-                  <textarea [(ngModel)]="formModel.activitiesPerformed" rows="3" placeholder="Describe depth reached, casings run, circulation, etc..." class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-800 focus:outline-none focus:border-indigo-500/50"></textarea>
-                </div>
-
-                <div>
-                  <label class="block text-[10px] uppercase font-bold tracking-wider text-slate-400 mb-1">Remarks / Notes</label>
-                  <input type="text" [(ngModel)]="formModel.remarks" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-800 focus:outline-none focus:border-indigo-500/50" />
-                </div>
-              </div>
-
-              <!-- Materials Spares consumed Editor -->
-              <div class="pt-4 border-t border-slate-100">
-                <div class="flex justify-between items-center mb-2">
-                  <h3 class="text-xs font-black text-slate-800 uppercase tracking-wider">Materials & Spares consumed</h3>
-                  <button type="button" (click)="addMaterialRow()" class="text-xs text-primary hover:underline font-bold">+ Add Item</button>
-                </div>
-                
-                <div class="space-y-2">
-                  @for (m of formModel.materialsUsed; track $index) {
-                    <div class="flex items-center space-x-2 bg-slate-50 p-2.5 rounded-lg border border-slate-200/60">
-                      <input type="text" [(ngModel)]="m.itemName" placeholder="Material Name" class="flex-1 bg-white border border-slate-200 rounded px-2 py-1 text-slate-850 focus:outline-none" />
-                      <input type="text" [(ngModel)]="m.uom" placeholder="UOM" class="w-16 bg-white border border-slate-200 rounded px-2 py-1 text-slate-850 text-center focus:outline-none" />
-                      <input type="number" [(ngModel)]="m.quantity" placeholder="Qty" class="w-16 bg-white border border-slate-200 rounded px-2 py-1 text-slate-850 text-right focus:outline-none" />
-                      <button (click)="removeMaterialRow($index)" class="text-red-500 hover:text-red-655 p-1 shrink-0">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
-                      </button>
-                    </div>
-                  }
-                </div>
-              </div>
-
-            </div>
-
-            <!-- Modal Footer -->
-            <div class="px-6 py-4 border-t border-slate-100 flex items-center justify-end space-x-3 bg-slate-50">
-              <button (click)="closeModal()" class="px-4 py-2 bg-white hover:bg-slate-100 text-slate-650 border border-slate-200 rounded-lg text-xs font-bold transition-colors">Cancel</button>
-              <button (click)="saveDAR()" class="px-4.5 py-2 bg-primary hover:bg-slate-800 text-white rounded-lg text-xs font-bold transition-colors shadow-sm">Save Report</button>
-            </div>
-
-          </div>
-        </div>
-      }
-
-    </div>
-  `,
+  templateUrl: './dars.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class DarsComponent implements OnInit {
@@ -451,52 +35,26 @@ export class DarsComponent implements OnInit {
   isEditMode = signal(false);
   editingDarId = '';
   formModel: any = {
-    contractId: '',
-    contractNumber: '',
-    rigId: '',
-    rigName: '',
-    reportDate: '',
-    shift: 'Day',
-    preparedBy: '',
-    operatingHours: 24,
-    standbyHours: 0,
-    repairHours: 0,
-    downtimeHours: 0,
-    totalHours: 24,
-    fuelConsumption: 0,
-    fuelUnit: 'LITERS',
-    materialsUsed: [],
-    activitiesPerformed: '',
-    hseIncidents: '',
-    weatherConditions: '',
-    remarks: '',
-    attachments: []
+    contractId: '', contractNumber: '', rigId: '', rigName: '',
+    reportDate: '', shift: 'Day', preparedBy: '',
+    operatingHours: 24, standbyHours: 0, repairHours: 0, downtimeHours: 0,
+    totalHours: 24, fuelConsumption: 0, fuelUnit: 'LITERS',
+    materialsUsed: [], activitiesPerformed: '', hseIncidents: '',
+    weatherConditions: '', remarks: '', attachments: []
   };
 
   readonly filteredDars = computed(() => {
     let list = this.dars();
     const query = this.searchQuery.trim().toLowerCase();
-    const status = this.statusFilter;
-    const rig = this.rigFilter;
-
-    if (status !== 'ALL') {
-      list = list.filter(d => d.status === status);
-    }
-    if (rig !== 'ALL') {
-      list = list.filter(d => d.rigId === rig);
-    }
-
-    if (query) {
-      list = list.filter(d => 
-        d.darNumber.toLowerCase().includes(query) ||
-        d.rigName.toLowerCase().includes(query) ||
-        d.contractNumber.toLowerCase().includes(query) ||
-        d.activitiesPerformed.toLowerCase().includes(query) ||
-        d.preparedBy.toLowerCase().includes(query)
-      );
-    }
-
-    // Sort by reportDate desc
+    if (this.statusFilter !== 'ALL') list = list.filter(d => d.status === this.statusFilter);
+    if (this.rigFilter !== 'ALL') list = list.filter(d => d.rigId === this.rigFilter);
+    if (query) list = list.filter(d =>
+      d.darNumber.toLowerCase().includes(query) ||
+      d.rigName.toLowerCase().includes(query) ||
+      d.contractNumber.toLowerCase().includes(query) ||
+      d.activitiesPerformed.toLowerCase().includes(query) ||
+      d.preparedBy.toLowerCase().includes(query)
+    );
     return [...list].sort((a, b) => b.reportDate.localeCompare(a.reportDate));
   });
 
@@ -505,21 +63,14 @@ export class DarsComponent implements OnInit {
       { label: this.translate.instant('navigation.workflow'), url: '/workflow' },
       { label: this.translate.instant('workflow.dars.breadcrumb') }
     ]);
-
     const list = this.filteredDars();
-    if (list.length > 0) {
-      this.selectedDar.set(list[0]);
-    }
+    if (list.length > 0) this.selectedDar.set(list[0]);
   }
 
-  selectDar(dar: DAR) {
-    this.selectedDar.set(dar);
-  }
+  selectDar(dar: DAR) { this.selectedDar.set(dar); }
 
-  // --- Permissions Check ---
   canCreate() {
     const role = this.authService.currentUser()?.role;
-    // Employees, Ops Managers, Super Admin can create DARs
     return role === 'Super Admin' || role === 'Operations Manager' || role === 'Employee' || role === 'Project Manager';
   }
 
@@ -528,7 +79,6 @@ export class DarsComponent implements OnInit {
     return role === 'Super Admin' || role === 'General Manager' || role === 'Operations Manager';
   }
 
-  // --- Mutator Actions ---
   submitDAR(id: string) {
     this.workflowService.submitDAR(id);
     const updated = this.dars().find(d => d.id === id);
@@ -536,26 +86,24 @@ export class DarsComponent implements OnInit {
   }
 
   approveDAR(id: string) {
-    const name = this.authService.currentUser()?.fullName || 'Manager';
-    this.workflowService.approveDAR(id, name, 'Checked & approved daily log entries.');
+    const name = this.authService.currentUser()?.fullName || this.translate.instant('roles.Operations Manager');
+    this.workflowService.approveDAR(id, name, this.translate.instant('workflow.dars.default_approve_comments'));
     const updated = this.dars().find(d => d.id === id);
     if (updated) this.selectedDar.set(updated);
   }
 
   rejectDAR(id: string) {
-    const reason = prompt('Please enter rejection remarks / correction requested:');
-    if (reason === null) return; // cancelled
-    const name = this.authService.currentUser()?.fullName || 'Manager';
-    this.workflowService.rejectDAR(id, name, reason || 'Re-verify timesheet hours.');
+    const reason = prompt(this.translate.instant('workflow.dars.prompt_reject_remarks'));
+    if (reason === null) return;
+    const name = this.authService.currentUser()?.fullName || this.translate.instant('roles.Operations Manager');
+    this.workflowService.rejectDAR(id, name, reason || this.translate.instant('workflow.dars.default_reject_remarks'));
     const updated = this.dars().find(d => d.id === id);
     if (updated) this.selectedDar.set(updated);
   }
 
-  // --- Modal Form Actions ---
   openCreateModal() {
     const activeContracts = this.contracts().filter(c => c.status === 'Active');
     const defaultContract = activeContracts.length > 0 ? activeContracts[0] : this.contracts()[0];
-
     this.isEditMode.set(false);
     this.editingDarId = '';
     this.formModel = {
@@ -565,22 +113,14 @@ export class DarsComponent implements OnInit {
       rigName: defaultContract?.rigName || '',
       reportDate: new Date().toISOString().split('T')[0],
       shift: 'Day',
-      preparedBy: this.authService.currentUser()?.fullName || 'Operations specialist',
-      operatingHours: 24,
-      standbyHours: 0,
-      repairHours: 0,
-      downtimeHours: 0,
-      totalHours: 24,
-      fuelConsumption: 1200,
-      fuelUnit: 'LITERS',
-      materialsUsed: [
-        { id: `mat_${Date.now()}`, itemName: 'Drill collar lubricants', quantity: 2, uom: 'EA' }
-      ],
+      preparedBy: this.authService.currentUser()?.fullName || this.translate.instant('workflow.dars.default_prepared_by'),
+      operatingHours: 24, standbyHours: 0, repairHours: 0, downtimeHours: 0,
+      totalHours: 24, fuelConsumption: 1200, fuelUnit: 'LITERS',
+      materialsUsed: [{ id: `mat_${Date.now()}`, itemName: 'Drill collar lubricants', quantity: 2, uom: 'EA' }],
       activitiesPerformed: '',
-      hseIncidents: 'No safety incidents reported.',
-      weatherConditions: 'Clear, wind speed under 10 knots',
-      remarks: '',
-      attachments: []
+      hseIncidents: this.translate.instant('workflow.dars.default_hse'),
+      weatherConditions: this.translate.instant('workflow.dars.default_weather'),
+      remarks: '', attachments: []
     };
     this.isModalOpen.set(true);
   }
@@ -592,13 +132,10 @@ export class DarsComponent implements OnInit {
     this.isModalOpen.set(true);
   }
 
-  closeModal() {
-    this.isModalOpen.set(false);
-  }
+  closeModal() { this.isModalOpen.set(false); }
 
   onContractChange() {
-    const id = this.formModel.contractId;
-    const con = this.contracts().find(c => c.id === id);
+    const con = this.contracts().find(c => c.id === this.formModel.contractId);
     if (con) {
       this.formModel.contractNumber = con.contractNumber;
       this.formModel.rigId = con.rigId || '';
@@ -607,36 +144,23 @@ export class DarsComponent implements OnInit {
   }
 
   addMaterialRow() {
-    this.formModel.materialsUsed.push({
-      id: `mat_${Date.now()}`,
-      itemName: '',
-      quantity: 1,
-      uom: 'EA'
-    });
+    this.formModel.materialsUsed.push({ id: `mat_${Date.now()}`, itemName: '', quantity: 1, uom: 'EA' });
   }
 
-  removeMaterialRow(index: number) {
-    this.formModel.materialsUsed.splice(index, 1);
-  }
+  removeMaterialRow(index: number) { this.formModel.materialsUsed.splice(index, 1); }
 
   saveDAR() {
-    const totalHours = Number(this.formModel.operatingHours) + 
-                       Number(this.formModel.standbyHours) + 
-                       Number(this.formModel.repairHours) + 
-                       Number(this.formModel.downtimeHours);
-    
+    const totalHours = Number(this.formModel.operatingHours) + Number(this.formModel.standbyHours) +
+                       Number(this.formModel.repairHours) + Number(this.formModel.downtimeHours);
     if (totalHours !== 24) {
       alert(this.translate.instant('workflow.dars.alert_hours', { hours: totalHours }));
       return;
     }
-
     if (!this.formModel.activitiesPerformed) {
       alert(this.translate.instant('workflow.dars.alert_activities'));
       return;
     }
-
     this.formModel.totalHours = totalHours;
-
     if (this.isEditMode()) {
       this.workflowService.updateDAR(this.editingDarId, this.formModel);
       const updated = this.dars().find(d => d.id === this.editingDarId);
@@ -645,7 +169,6 @@ export class DarsComponent implements OnInit {
       const created = this.workflowService.createDAR(this.formModel);
       this.selectedDar.set(created);
     }
-
     this.isModalOpen.set(false);
   }
 }

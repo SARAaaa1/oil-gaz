@@ -5,6 +5,7 @@ import { PurchaseOrder, POItem, PurchaseOrderStatus } from '../../shared/interfa
 import { InventoryItem } from '../../shared/interfaces/inventory.interface';
 import { Vendor } from '../../shared/interfaces/vendor.interface';
 import { Rig, RigTimesheet, TimesheetDayRow } from '../../shared/interfaces/operations.interface';
+import { Equipment, AssetHistory, BulkImportRecord } from '../../shared/interfaces/assets.interface';
 
 @Injectable({
   providedIn: 'root'
@@ -18,6 +19,9 @@ export class MockDataService {
   readonly vendors = signal<Vendor[]>([]);
   readonly rigs = signal<Rig[]>([]);
   readonly timesheets = signal<RigTimesheet[]>([]);
+  readonly equipment = signal<Equipment[]>([]);
+  readonly assetHistories = signal<AssetHistory[]>([]);
+  readonly bulkImportHistories = signal<BulkImportRecord[]>([]);
 
   constructor() {
     this.initializeMockData();
@@ -378,6 +382,178 @@ export class MockDataService {
       this.generateMockTimesheet('rig4', 'Rig Delta (Land)', '2026-05')
     ];
     this.timesheets.set(mockTimesheets);
+
+    // 8. Assets & Equipment
+    const mockEquipment: Equipment[] = [
+      {
+        id: 'eq1',
+        assetNumber: 'AT-10023',
+        equipmentCode: 'EQ-RIG-001',
+        equipmentName: 'Rig Alpha Drill Mast',
+        category: 'Rig',
+        manufacturer: 'NOV',
+        model: 'Mast-X3000',
+        serialNumber: 'SN-NOV-44211',
+        purchaseDate: '2021-03-15',
+        purchaseCost: 12000000,
+        currentValue: 9500000,
+        depreciationMethod: 'Straight Line',
+        location: 'Warehouse A',
+        projectAssignment: 'Deepwater Horizon',
+        costCenter: 'CC-DRL-001',
+        department: 'Drilling',
+        status: 'Active',
+        operatingHours: 12500,
+        lastMaintenanceDate: '2026-05-10',
+        nextMaintenanceDate: '2026-08-10'
+      },
+      {
+        id: 'eq2',
+        assetNumber: 'AT-20054',
+        equipmentCode: 'EQ-GEN-002',
+        equipmentName: 'Generator Aux A',
+        category: 'Generator',
+        manufacturer: 'Caterpillar',
+        model: 'CAT-3512',
+        serialNumber: 'SN-CAT-88992',
+        purchaseDate: '2023-08-20',
+        purchaseCost: 150000,
+        currentValue: 110000,
+        depreciationMethod: 'Straight Line',
+        location: 'Warehouse A',
+        projectAssignment: 'Permian Overland',
+        costCenter: 'CC-MNT-002',
+        department: 'Maintenance',
+        status: 'Standby',
+        operatingHours: 450,
+        lastMaintenanceDate: '2026-04-15',
+        nextMaintenanceDate: '2026-10-15'
+      },
+      {
+        id: 'eq3',
+        assetNumber: 'AT-30043',
+        equipmentCode: 'EQ-CRN-003',
+        equipmentName: 'Main Rig Crane',
+        category: 'Crane',
+        manufacturer: 'Liebherr',
+        model: 'LR-1150',
+        serialNumber: 'SN-LBH-10049',
+        purchaseDate: '2022-01-10',
+        purchaseCost: 850000,
+        currentValue: 720000,
+        depreciationMethod: 'Double Declining Balance',
+        location: 'Warehouse B',
+        projectAssignment: 'Permian Overland',
+        costCenter: 'CC-MNT-002',
+        department: 'Operations',
+        status: 'Maintenance',
+        operatingHours: 3200,
+        lastMaintenanceDate: '2026-05-25',
+        nextMaintenanceDate: '2026-06-25'
+      },
+      {
+        id: 'eq4',
+        assetNumber: 'AT-40092',
+        equipmentCode: 'EQ-TRK-004',
+        equipmentName: 'Crew Rig Transport',
+        category: 'Truck',
+        manufacturer: 'Kenworth',
+        model: 'T880',
+        serialNumber: 'SN-KW-55012',
+        purchaseDate: '2024-05-01',
+        purchaseCost: 180000,
+        currentValue: 140000,
+        depreciationMethod: 'Straight Line',
+        location: 'Pipe Yard 1',
+        projectAssignment: 'Logistics Feed',
+        costCenter: 'CC-LOG-004',
+        department: 'Logistics',
+        status: 'Active',
+        operatingHours: 850,
+        lastMaintenanceDate: '2026-02-14',
+        nextMaintenanceDate: '2026-08-14'
+      },
+      {
+        id: 'eq5',
+        assetNumber: 'AT-50022',
+        equipmentCode: 'EQ-PMP-005',
+        equipmentName: 'Mud Pump Auxiliary',
+        category: 'Pump',
+        manufacturer: 'Gardner Denver',
+        model: 'PZ-9',
+        serialNumber: 'SN-GD-00384',
+        purchaseDate: '2022-11-12',
+        purchaseCost: 95000,
+        currentValue: 65000,
+        depreciationMethod: 'Straight Line',
+        location: 'Warehouse B',
+        projectAssignment: 'Rig Beta Overhaul',
+        costCenter: 'CC-DRL-001',
+        department: 'Drilling',
+        status: 'Out Of Service',
+        operatingHours: 4200,
+        lastMaintenanceDate: '2025-12-01',
+        nextMaintenanceDate: '2026-06-01'
+      }
+    ];
+    this.equipment.set(mockEquipment);
+
+    const mockHistory: AssetHistory[] = [
+      {
+        id: 'h1',
+        assetId: 'eq3',
+        equipmentCode: 'EQ-CRN-003',
+        changeType: 'Status Change',
+        oldValue: 'Active',
+        newValue: 'Maintenance',
+        changedBy: 'Sarah Jenkins',
+        date: '2026-05-25',
+        notes: 'Scheduled 500-hour hydraulic service.'
+      },
+      {
+        id: 'h2',
+        assetId: 'eq1',
+        equipmentCode: 'EQ-RIG-001',
+        changeType: 'Location Change',
+        oldValue: 'Pipe Yard 1',
+        newValue: 'Warehouse A',
+        changedBy: 'System Scheduler',
+        date: '2026-05-10',
+        notes: 'Transferred drill mast from yard to primary warehouse storage.'
+      },
+      {
+        id: 'h3',
+        assetId: 'eq2',
+        equipmentCode: 'EQ-GEN-002',
+        changeType: 'Project Assignment',
+        oldValue: 'None',
+        newValue: 'Permian Overland',
+        changedBy: 'Robert Vance',
+        date: '2026-04-15',
+        notes: 'Assigned standby power generator for drilling pad B.'
+      }
+    ];
+    this.assetHistories.set(mockHistory);
+
+    const mockImportHistories: BulkImportRecord[] = [
+      {
+        id: 'b1',
+        importedBy: 'Sarah Jenkins',
+        date: '2026-05-20',
+        numberOfRecords: 12,
+        status: 'Success',
+        module: 'Inventory'
+      },
+      {
+        id: 'b2',
+        importedBy: 'Robert Vance',
+        date: '2026-05-18',
+        numberOfRecords: 5,
+        status: 'Success',
+        module: 'Assets'
+      }
+    ];
+    this.bulkImportHistories.set(mockImportHistories);
   }
 
   private generateMockTimesheet(rigId: string, rigName: string, month: string): RigTimesheet {
@@ -689,5 +865,69 @@ export class MockDataService {
         };
       })
     );
+  }
+
+  // --- INVENTORY MUTATORS ---
+  addInventoryItem(item: Omit<InventoryItem, 'id'>) {
+    const items = this.inventoryItems();
+    const newItem: InventoryItem = {
+      ...item,
+      id: `inv${items.length + 1}`
+    };
+    this.inventoryItems.update(val => [...val, newItem]);
+    return newItem;
+  }
+
+  updateInventoryItem(id: string, updated: Partial<InventoryItem>) {
+    this.inventoryItems.update(items =>
+      items.map(item => item.id === id ? { ...item, ...updated } : item)
+    );
+  }
+
+  deleteInventoryItem(id: string) {
+    this.inventoryItems.update(items => items.filter(item => item.id !== id));
+  }
+
+  // --- ASSETS & EQUIPMENT MUTATORS ---
+  addEquipment(eq: Omit<Equipment, 'id'>) {
+    const eqs = this.equipment();
+    const newEq: Equipment = {
+      ...eq,
+      id: `eq${eqs.length + 1}`
+    };
+    this.equipment.update(val => [...val, newEq]);
+    return newEq;
+  }
+
+  updateEquipment(id: string, updated: Partial<Equipment>) {
+    this.equipment.update(eqs =>
+      eqs.map(eq => eq.id === id ? { ...eq, ...updated } : eq)
+    );
+  }
+
+  deleteEquipment(id: string) {
+    this.equipment.update(eqs => eqs.filter(eq => eq.id !== id));
+  }
+
+  addAssetHistory(history: Omit<AssetHistory, 'id' | 'date'>) {
+    const histories = this.assetHistories();
+    const newHistory: AssetHistory = {
+      ...history,
+      id: `h${histories.length + 1}`,
+      date: new Date().toISOString().split('T')[0]
+    };
+    this.assetHistories.update(val => [newHistory, ...val]);
+    return newHistory;
+  }
+
+  addBulkImportHistory(record: Omit<BulkImportRecord, 'id' | 'date'>) {
+    const histories = this.bulkImportHistories();
+    const newRecord: BulkImportRecord = {
+      ...record,
+      id: `b${histories.length + 1}`,
+      date: new Date().toISOString().split('T')[0]
+    };
+    this.bulkImportHistories.update(val => [newRecord, ...val]);
+    return newRecord;
   }
 }

@@ -5,4 +5,6 @@ export * from './inventory.interface';
 export * from './vendor.interface';
 export * from './operations.interface';
 export * from './workflow.interface';
+export * from './assets.interface';
+
 
