@@ -23,7 +23,12 @@ export type Permission =
   | 'edit:timesheets'
   | 'view:reports'
   | 'view:settings'
-  | 'edit:settings';
+  | 'edit:settings'
+  | 'view:projects'
+  | 'edit:projects'
+  | 'approve:projects'
+  | 'view:finance'
+  | 'edit:finance';
 
 export interface User {
   id: string;

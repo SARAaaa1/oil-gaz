@@ -1,0 +1,1418 @@
+<div class="space-y-6 animate-fade-in text-xs font-semibold text-slate-600">
+  <!-- Header -->
+  <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-4 rounded-xl border border-slate-150 shadow-sm">
+    <div>
+      <h1 class="text-2xl font-black text-slate-800 tracking-tight flex items-center gap-2">
+        <svg class="w-7 h-7 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+        </svg>
+        <span>{{ 'projects.title' | translate }}</span>
+      </h1>
+      <p class="text-slate-500 font-semibold mt-1 text-[11px]">{{ 'projects.subtitle' | translate }}</p>
+    </div>
+    
+    <div class="flex items-center gap-3">
+      @if (selectedProjectCode()) {
+        <button 
+          (click)="clearSelection()" 
+          class="px-4 py-2 border border-slate-350 hover:bg-slate-50 text-slate-700 font-bold rounded-lg transition-all flex items-center gap-2"
+        >
+          <svg class="w-4 h-4 rtl:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
+          <span>{{ 'projects.back_to_list' | translate }}</span>
+        </button>
+      }
+      
+      <button 
+        *appRole="['Super Admin', 'General Manager', 'Operations Manager']"
+        (click)="openCreateProjectModal()" 
+        class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg transition-all flex items-center gap-2 shadow-sm"
+      >
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+        </svg>
+        <span>{{ 'projects.new_project' | translate }}</span>
+      </button>
+    </div>
+  </div>
+
+  @if (!selectedProjectCode()) {
+    <!-- KPI SUMMARY GRID (List Mode) -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+      <!-- Card 1 -->
+      <div class="bg-white p-4 rounded-xl border border-slate-150 shadow-sm flex items-center gap-3.5 relative overflow-hidden group hover:border-indigo-500/30 transition-all duration-300">
+        <div class="absolute -right-2 -bottom-2 text-indigo-50 opacity-[0.08] group-hover:scale-110 transition-transform duration-300">
+          <svg class="w-20 h-20" fill="currentColor" viewBox="0 0 24 24"><path d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+        </div>
+        <div class="w-10 h-10 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+          </svg>
+        </div>
+        <div>
+          <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{{ 'projects.kpis.total' | translate }}</p>
+          <p class="text-xl font-black text-slate-800 mt-0.5">{{ totalProjectsCount() }}</p>
+        </div>
+      </div>
+
+      <!-- Card 2 -->
+      <div class="bg-white p-4 rounded-xl border border-slate-150 shadow-sm flex items-center gap-3.5 relative overflow-hidden group hover:border-emerald-500/30 transition-all duration-300">
+        <div class="absolute -right-2 -bottom-2 text-emerald-50 opacity-[0.08] group-hover:scale-110 transition-transform duration-300">
+          <svg class="w-20 h-20" fill="currentColor" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        </div>
+        <div class="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+          </svg>
+        </div>
+        <div>
+          <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{{ 'projects.kpis.active' | translate }}</p>
+          <p class="text-xl font-black text-slate-800 mt-0.5">{{ activeProjectsCount() }}</p>
+        </div>
+      </div>
+
+      <!-- Card 3 -->
+      <div class="bg-white p-4 rounded-xl border border-slate-150 shadow-sm flex items-center gap-3.5 relative overflow-hidden group hover:border-amber-500/30 transition-all duration-300">
+        <div class="absolute -right-2 -bottom-2 text-amber-50 opacity-[0.08] group-hover:scale-110 transition-transform duration-300">
+          <svg class="w-20 h-20" fill="currentColor" viewBox="0 0 24 24"><path d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        </div>
+        <div class="w-10 h-10 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </div>
+        <div>
+          <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{{ 'projects.kpis.budget' | translate }}</p>
+          <p class="text-xl font-black text-slate-800 mt-0.5">${{ totalBudgetSum() | number:'1.0-0' }}</p>
+        </div>
+      </div>
+
+      <!-- Card 4 -->
+      <div class="bg-white p-4 rounded-xl border border-slate-150 shadow-sm flex items-center gap-3.5 relative overflow-hidden group hover:border-rose-500/30 transition-all duration-300">
+        <div class="absolute -right-2 -bottom-2 text-rose-50 opacity-[0.08] group-hover:scale-110 transition-transform duration-300">
+          <svg class="w-20 h-20" fill="currentColor" viewBox="0 0 24 24"><path d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        </div>
+        <div class="w-10 h-10 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center shrink-0">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+          </svg>
+        </div>
+        <div>
+          <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{{ 'projects.kpis.consumed' | translate }}</p>
+          <p class="text-xl font-black text-slate-800 mt-0.5">${{ totalConsumedSum() | number:'1.0-0' }}</p>
+        </div>
+      </div>
+
+      <!-- Card 5 -->
+      <div class="bg-white p-4 rounded-xl border border-slate-150 shadow-sm flex items-center gap-3.5 relative overflow-hidden group hover:border-violet-500/30 transition-all duration-300">
+        <div class="absolute -right-2 -bottom-2 text-violet-50 opacity-[0.08] group-hover:scale-110 transition-transform duration-300">
+          <svg class="w-20 h-20" fill="currentColor" viewBox="0 0 24 24"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+        </div>
+        <div class="w-10 h-10 rounded-lg bg-violet-50 text-violet-600 flex items-center justify-center shrink-0">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+          </svg>
+        </div>
+        <div>
+          <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{{ 'projects.kpis.avg_progress' | translate }}</p>
+          <p class="text-xl font-black text-slate-800 mt-0.5">{{ avgProgress() }}%</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- FILTER BAR -->
+    <div class="bg-white p-4 rounded-xl border border-slate-150 shadow-sm flex flex-col md:flex-row gap-4 items-center justify-between">
+      <div class="relative w-full md:w-80">
+        <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+        </span>
+        <input 
+          type="text" 
+          [placeholder]="'projects.search_placeholder' | translate" 
+          [value]="searchQuery()"
+          (input)="searchQuery.set($any($event.target).value)"
+          class="w-full bg-slate-50 border border-slate-200 rounded-lg pl-9 pr-3 py-2 text-slate-800 focus:outline-none focus:border-indigo-500/50"
+        />
+      </div>
+
+      <div class="flex flex-wrap items-center gap-3 w-full md:w-auto justify-end">
+        <div class="flex items-center gap-2">
+          <label class="text-slate-400 text-[10px] uppercase font-bold tracking-wider">{{ 'common.status' | translate }}</label>
+          <select 
+            [value]="statusFilter()" 
+            (change)="statusFilter.set($any($event.target).value)"
+            class="bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-700 font-bold focus:outline-none focus:border-indigo-500/50"
+          >
+            <option value="All">All Statuses</option>
+            <option value="Active">Active</option>
+            <option value="Completed">Completed</option>
+            <option value="Suspended">Suspended</option>
+            <option value="Delayed">Delayed</option>
+          </select>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <label class="text-slate-400 text-[10px] uppercase font-bold tracking-wider">Customer</label>
+          <select 
+            [value]="customerFilter()" 
+            (change)="customerFilter.set($any($event.target).value)"
+            class="bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-700 font-bold focus:outline-none focus:border-indigo-500/50"
+          >
+            <option value="All">All Customers</option>
+            @for (cust of uniqueCustomers(); track cust) {
+              <option [value]="cust">{{ cust }}</option>
+            }
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- MAIN PROJECTS TABLE -->
+    <div class="bg-white rounded-xl border border-slate-150 shadow-sm overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="w-full text-left rtl:text-right border-collapse">
+          <thead>
+            <tr class="bg-slate-50 border-b border-slate-150 text-[10px] text-slate-400 uppercase tracking-wider select-none">
+              <th class="p-3.5 font-bold">Project Code</th>
+              <th class="p-3.5 font-bold">Project Name</th>
+              <th class="p-3.5 font-bold">Customer</th>
+              <th class="p-3.5 font-bold">Site / Location</th>
+              <th class="p-3.5 font-bold">Cost Center</th>
+              <th class="p-3.5 font-bold text-right">Contract Value</th>
+              <th class="p-3.5 font-bold text-right">Consumed Value</th>
+              <th class="p-3.5 font-bold text-center">Progress</th>
+              <th class="p-3.5 font-bold text-center">Status</th>
+              <th class="p-3.5 font-bold text-center">Actions</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100 text-[11px] text-slate-700">
+            @for (proj of filteredProjects(); track proj.code) {
+              <tr class="hover:bg-slate-50 transition-colors">
+                <td class="p-3.5 font-bold font-mono text-indigo-600">{{ proj.code }}</td>
+                <td class="p-3.5 text-slate-900 font-bold">{{ proj.name }}</td>
+                <td class="p-3.5 font-medium">{{ proj.customer }}</td>
+                <td class="p-3.5 font-medium">
+                  <div class="flex items-center gap-1.5">
+                    <svg class="w-3.5 h-3.5 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    <span>{{ proj.siteName }} ({{ proj.region }})</span>
+                  </div>
+                </td>
+                <td class="p-3.5 font-semibold font-mono text-slate-500">{{ proj.costCenterCode }}</td>
+                <td class="p-3.5 text-right font-black text-slate-800 font-mono">${{ proj.contractValue | number:'1.2-2' }}</td>
+                <td class="p-3.5 text-right font-bold font-mono" [class.text-rose-600]="(proj.consumedValue || 0) > proj.contractValue" [class.text-slate-600]="(proj.consumedValue || 0) <= proj.contractValue">
+                  ${{ (proj.consumedValue || 0) | number:'1.2-2' }}
+                </td>
+                <td class="p-3.5 text-center">
+                  <div class="flex items-center justify-center gap-2 max-w-[120px] mx-auto">
+                    <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+                      <div 
+                        class="bg-indigo-600 h-full rounded-full transition-all duration-500" 
+                        [style.width.%]="proj.progressPercent || 0"
+                      ></div>
+                    </div>
+                    <span class="font-bold text-[10px] shrink-0 font-mono">{{ proj.progressPercent || 0 }}%</span>
+                  </div>
+                </td>
+                <td class="p-3.5 text-center">
+                  <span 
+                    class="px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider"
+                    [class.bg-emerald-50]="proj.status === 'Active'"
+                    [class.text-emerald-700]="proj.status === 'Active'"
+                    [class.bg-blue-50]="proj.status === 'Completed'"
+                    [class.text-blue-700]="proj.status === 'Completed'"
+                    [class.bg-amber-50]="proj.status === 'Delayed'"
+                    [class.text-amber-700]="proj.status === 'Delayed'"
+                    [class.bg-rose-50]="proj.status === 'Suspended'"
+                    [class.text-rose-700]="proj.status === 'Suspended'"
+                  >
+                    {{ proj.status }}
+                  </span>
+                </td>
+                <td class="p-3.5 text-center">
+                  <button 
+                    (click)="selectProject(proj.code)"
+                    class="px-3 py-1.5 bg-slate-100 hover:bg-indigo-600 hover:text-white text-slate-700 font-bold rounded-lg transition-all"
+                  >
+                    {{ 'common.view' | translate }} ➔
+                  </button>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="10" class="p-8 text-center text-slate-400">
+                  <svg class="w-12 h-12 mx-auto mb-2 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                  </svg>
+                  <p class="text-sm font-bold">{{ 'common.no_data' | translate }}</p>
+                  <p class="text-xs mt-1 text-slate-400">No project records matching the filter settings.</p>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  } @else {
+    <!-- DETAIL VIEW (ACTIVE) -->
+    @if (selectedProject(); as proj) {
+      <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        
+        <!-- Left Side: Project General Profile Info & Actions -->
+        <div class="lg:col-span-1 space-y-6">
+          <div class="bg-white rounded-xl border border-slate-150 shadow-sm p-5 space-y-4">
+            <!-- Project Identification Card -->
+            <div class="border-b border-slate-100 pb-4">
+              <span class="text-[9px] font-black text-indigo-600 uppercase tracking-widest bg-indigo-50 px-2.5 py-1 rounded-full font-mono">{{ proj.code }}</span>
+              <h2 class="text-lg font-black text-slate-800 mt-2.5 leading-tight">{{ proj.name }}</h2>
+              <p class="text-slate-400 font-semibold text-[10px] mt-0.5">{{ proj.customer }}</p>
+            </div>
+
+            <!-- Basic Stats List -->
+            <div class="space-y-3 font-medium">
+              <div>
+                <span class="text-slate-400 block text-[9px] uppercase tracking-wider font-bold">Status</span>
+                <div class="flex items-center justify-between mt-1.5">
+                  <span 
+                    class="px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider"
+                    [class.bg-emerald-50]="proj.status === 'Active'"
+                    [class.text-emerald-700]="proj.status === 'Active'"
+                    [class.bg-blue-50]="proj.status === 'Completed'"
+                    [class.text-blue-700]="proj.status === 'Completed'"
+                    [class.bg-amber-50]="proj.status === 'Delayed'"
+                    [class.text-amber-700]="proj.status === 'Delayed'"
+                    [class.bg-rose-50]="proj.status === 'Suspended'"
+                    [class.text-rose-700]="proj.status === 'Suspended'"
+                  >
+                    {{ proj.status }}
+                  </span>
+                </div>
+              </div>
+
+              <!-- Dual Currency Contract Value -->
+              <div class="p-2.5 bg-gradient-to-br from-amber-50 to-orange-50 rounded-lg border border-amber-200/60">
+                <span class="text-slate-400 block text-[9px] uppercase tracking-wider font-bold mb-1.5">Contract Value</span>
+                <div class="flex items-baseline justify-between">
+                  <div>
+                    <span class="text-xs font-black text-slate-800 font-mono">${{ proj.contractValue | number:'1.0-0' }}</span>
+                    <span class="text-[9px] text-slate-400 font-semibold ml-1">USD</span>
+                  </div>
+                </div>
+                @if (proj.contractValueEGP) {
+                  <div class="mt-1.5 pt-1.5 border-t border-amber-200/50">
+                    <span class="text-sm font-black text-emerald-700 font-mono">{{ proj.contractValueEGP | number:'1.0-0' }}</span>
+                    <span class="text-[9px] text-slate-500 font-semibold ml-1">EGP</span>
+                  </div>
+                  @if (proj.exchangeRateUSDtoEGP) {
+                    <div class="flex items-center justify-between mt-1 text-[8px]">
+                      <span class="text-amber-600 font-bold">Rate Snapshot</span>
+                      <span class="text-amber-700 font-black font-mono">1 USD = {{ proj.exchangeRateUSDtoEGP | number:'1.2-4' }} EGP</span>
+                    </div>
+                    <div class="text-[8px] text-slate-400 font-semibold text-right">{{ proj.rateSnapshotDate | date:'d MMM y' }}</div>
+                  }
+                }
+              </div>
+
+              <div>
+                <span class="text-slate-400 block text-[9px] uppercase tracking-wider font-bold">Actual Spent / Consumed</span>
+                <span class="text-sm font-black text-slate-800 font-mono">${{ (proj.consumedValue || 0) | number:'1.2-2' }}</span>
+              </div>
+
+              <div>
+                <span class="text-slate-400 block text-[9px] uppercase tracking-wider font-bold">Cost Progress</span>
+                <div class="flex items-center gap-2 mt-1">
+                  <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+                    <div 
+                      class="bg-indigo-600 h-full rounded-full transition-all duration-500" 
+                      [style.width.%]="proj.progressPercent || 0"
+                    ></div>
+                  </div>
+                  <span class="text-[10px] font-black font-mono shrink-0">{{ proj.progressPercent || 0 }}%</span>
+                </div>
+              </div>
+
+              <div class="border-t border-slate-100 pt-3">
+                <span class="text-slate-400 block text-[9px] uppercase tracking-wider font-bold">Linked Cost Center</span>
+                <span class="text-slate-800 font-bold font-mono text-[10px] block mt-1.5 bg-slate-50 border border-slate-150 p-2 rounded">{{ proj.costCenterCode }}</span>
+              </div>
+            </div>
+
+            <!-- Transition Actions -->
+            <div 
+              *appRole="['Super Admin', 'General Manager', 'Operations Manager']"
+              class="border-t border-slate-100 pt-4"
+            >
+              <span class="text-slate-400 block text-[9px] uppercase tracking-wider font-bold mb-2">Change Operations Gate</span>
+              <div class="grid grid-cols-2 gap-2">
+                <button 
+                  [disabled]="proj.status === 'Active'"
+                  (click)="updateProjectStatus('Active')" 
+                  class="px-2 py-1.5 border border-slate-250 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-250 text-slate-700 font-bold rounded text-[10px] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Set Active
+                </button>
+                <button 
+                  [disabled]="proj.status === 'Completed'"
+                  (click)="updateProjectStatus('Completed')" 
+                  class="px-2 py-1.5 border border-slate-250 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-250 text-slate-700 font-bold rounded text-[10px] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Set Completed
+                </button>
+                <button 
+                  [disabled]="proj.status === 'Delayed'"
+                  (click)="updateProjectStatus('Delayed')" 
+                  class="px-2 py-1.5 border border-slate-250 hover:bg-amber-50 hover:text-amber-700 hover:border-amber-250 text-slate-700 font-bold rounded text-[10px] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Set Delayed
+                </button>
+                <button 
+                  [disabled]="proj.status === 'Suspended'"
+                  (click)="updateProjectStatus('Suspended')" 
+                  class="px-2 py-1.5 border border-slate-250 hover:bg-rose-50 hover:text-rose-700 hover:border-rose-250 text-slate-700 font-bold rounded text-[10px] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Suspend
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Side: Multi-tab content -->
+        <div class="lg:col-span-3 space-y-6">
+          <!-- Navigation Tabs -->
+          <div class="bg-white rounded-xl border border-slate-150 shadow-sm p-1.5 flex flex-wrap gap-1 font-bold">
+            @for (tab of ['overview', 'equipment', 'assets', 'materials', 'labor', 'transfers', 'cost-tracking', 'history']; track tab) {
+              <button 
+                (click)="setTab(tab)"
+                class="px-3.5 py-2 rounded-lg text-[10px] uppercase tracking-wider transition-all"
+                [class.bg-indigo-600]="activeTab() === tab"
+                [class.text-white]="activeTab() === tab"
+                [class.text-slate-500]="activeTab() !== tab"
+                [class.hover:bg-slate-50]="activeTab() !== tab"
+              >
+                {{ 'projects.tabs.' + tab | translate }}
+              </button>
+            }
+          </div>
+
+          <!-- TAB CONTENTS -->
+          
+          <!-- 1. OVERVIEW TAB -->
+          @if (activeTab() === 'overview') {
+            <div class="bg-white rounded-xl border border-slate-150 shadow-sm p-6 space-y-6">
+              <h3 class="text-sm font-bold text-slate-800 pb-2 border-b border-slate-50 flex items-center gap-2">
+                <svg class="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span>Project General Details & Logistics</span>
+              </h3>
+
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Location Info -->
+                <div class="bg-slate-50 border border-slate-100 rounded-xl p-4.5 space-y-3.5">
+                  <h4 class="text-slate-800 font-bold border-b border-slate-200/60 pb-1.5 text-[10.5px] uppercase tracking-wide">Location Metadata</h4>
+                  <div class="grid grid-cols-2 gap-4">
+                    <div>
+                      <span class="text-slate-400 block text-[9px] uppercase tracking-wider">Country</span>
+                      <span class="text-slate-800 font-bold block mt-0.5">{{ proj.country }}</span>
+                    </div>
+                    <div>
+                      <span class="text-slate-400 block text-[9px] uppercase tracking-wider">Region</span>
+                      <span class="text-slate-800 font-bold block mt-0.5">{{ proj.region }}</span>
+                    </div>
+                    <div>
+                      <span class="text-slate-400 block text-[9px] uppercase tracking-wider">Site Name</span>
+                      <span class="text-slate-800 font-bold block mt-0.5">{{ proj.siteName }}</span>
+                    </div>
+                    <div>
+                      <span class="text-slate-400 block text-[9px] uppercase tracking-wider">GPS Coordinates</span>
+                      <span class="text-slate-800 font-bold block mt-0.5 font-mono">{{ proj.gpsCoordinates }}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Logistics parameters -->
+                <div class="bg-slate-50 border border-slate-100 rounded-xl p-4.5 space-y-3.5">
+                  <h4 class="text-slate-800 font-bold border-b border-slate-200/60 pb-1.5 text-[10.5px] uppercase tracking-wide">Supply Logistics</h4>
+                  <div class="grid grid-cols-2 gap-4">
+                    <div>
+                      <span class="text-slate-400 block text-[9px] uppercase tracking-wider">Dispatch Warehouse</span>
+                      <span class="text-slate-800 font-bold block mt-0.5">{{ proj.preferredWarehouse }}</span>
+                    </div>
+                    <div>
+                      <span class="text-slate-400 block text-[9px] uppercase tracking-wider">Nearest Hub</span>
+                      <span class="text-slate-800 font-bold block mt-0.5">{{ proj.nearestWarehouse }}</span>
+                    </div>
+                    <div>
+                      <span class="text-slate-400 block text-[9px] uppercase tracking-wider">Distance (Km)</span>
+                      <span class="text-slate-800 font-bold block mt-0.5 font-mono">{{ proj.distanceKm }} km</span>
+                    </div>
+                    <div>
+                      <span class="text-slate-400 block text-[9px] uppercase tracking-wider">Est. Mobilization Cost</span>
+                      <span class="text-slate-800 font-bold block mt-0.5 font-mono">${{ proj.estimatedTransportationCost | number }}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Contract metadata -->
+              <div class="bg-slate-50 border border-slate-100 rounded-xl p-4.5 space-y-3">
+                <h4 class="text-slate-800 font-bold border-b border-slate-200/60 pb-1.5 text-[10.5px] uppercase tracking-wide">Contract Summary</h4>
+                <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                  <div>
+                    <span class="text-slate-400 block text-[9px] uppercase tracking-wider">Contract Reference</span>
+                    <span class="text-slate-800 font-bold block mt-0.5 font-mono">{{ proj.contractNumber || 'N/A' }}</span>
+                  </div>
+                  <div>
+                    <span class="text-slate-400 block text-[9px] uppercase tracking-wider">Execution Dates</span>
+                    <span class="text-slate-800 font-bold block mt-0.5">{{ proj.startDate }} to {{ proj.endDate }}</span>
+                  </div>
+                  <div>
+                    <span class="text-slate-400 block text-[9px] uppercase tracking-wider">Budget Pool</span>
+                    <span class="text-slate-800 font-black block mt-0.5 font-mono">${{ proj.contractValue | number }}</span>
+                  </div>
+                  <div>
+                    <span class="text-slate-400 block text-[9px] uppercase tracking-wider">Authorized PM</span>
+                    <span class="text-slate-800 font-bold block mt-0.5">Robert Vance</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          }
+
+          <!-- 2. EQUIPMENT TAB -->
+          @if (activeTab() === 'equipment') {
+            <div class="bg-white rounded-xl border border-slate-150 shadow-sm p-6 space-y-5">
+              <div class="flex justify-between items-center pb-2 border-b border-slate-50">
+                <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+                  <svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                  </svg>
+                  <span>Project Rig Equipment Assignment</span>
+                </h3>
+                
+                <button 
+                  *appRole="['Super Admin', 'General Manager', 'Operations Manager', 'Project Manager']"
+                  (click)="openAssignEquipmentModal()"
+                  class="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg transition-all flex items-center gap-1.5 shadow-sm"
+                >
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                  </svg>
+                  <span>Assign Equipment Unit</span>
+                </button>
+              </div>
+
+              <!-- Equipment Table -->
+              <div class="overflow-hidden border border-slate-100 rounded-xl">
+                <table class="w-full text-left rtl:text-right border-collapse">
+                  <thead>
+                    <tr class="bg-slate-50 border-b border-slate-100 text-[10px] text-slate-400 uppercase tracking-wider select-none">
+                      <th class="p-3 font-bold">Equipment Unit</th>
+                      <th class="p-3 font-bold">Serial Number</th>
+                      <th class="p-3 font-bold text-center">Assigned Date</th>
+                      <th class="p-3 font-bold text-center">Returned Date</th>
+                      <th class="p-3 font-bold text-right">Hours Logged</th>
+                      <th class="p-3 font-bold text-center">Operational Status</th>
+                      <th class="p-3 font-bold text-center">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-slate-50 text-[11px] text-slate-700">
+                    @for (item of projectEquipmentAssignments(); track item.id) {
+                      <tr class="hover:bg-slate-50 transition-all">
+                        <td class="p-3 font-bold text-slate-800">{{ item.equipmentName }}</td>
+                        <td class="p-3 font-mono font-bold text-slate-500">{{ item.serialNumber }}</td>
+                        <td class="p-3 text-center font-mono">{{ item.assignedDate }}</td>
+                        <td class="p-3 text-center font-mono">{{ item.returnedDate || 'Active Deployment' }}</td>
+                        <td class="p-3 text-right font-mono font-bold">{{ item.hoursUsed }} hrs</td>
+                        <td class="p-3 text-center">
+                          <span 
+                            class="px-2 py-0.5 rounded-full text-[8.5px] font-black uppercase tracking-wider"
+                            [class.bg-emerald-50]="item.status === 'Assigned'"
+                            [class.text-emerald-700]="item.status === 'Assigned'"
+                            [class.bg-blue-50]="item.status === 'Returned'"
+                            [class.text-blue-700]="item.status === 'Returned'"
+                            [class.bg-amber-50]="item.status === 'In Transit'"
+                            [class.text-amber-700]="item.status === 'In Transit'"
+                            [class.bg-rose-50]="item.status === 'Under Maintenance'"
+                            [class.text-rose-700]="item.status === 'Under Maintenance'"
+                          >
+                            {{ item.status }}
+                          </span>
+                        </td>
+                        <td class="p-3 text-center">
+                          @if (item.status === 'Assigned' && authService.hasPermission('edit:projects')) {
+                            <button 
+                              (click)="returnEquipment(item)"
+                              class="px-2.5 py-1 border border-slate-200 hover:bg-slate-900 hover:text-white rounded text-[10px] transition-all font-bold"
+                            >
+                              Release & Return
+                            </button>
+                          } @else {
+                            <span class="text-slate-400 font-semibold italic">Released</span>
+                          }
+                        </td>
+                      </tr>
+                    } @empty {
+                      <tr>
+                        <td colspan="7" class="p-6 text-center text-slate-400">No equipment currently assigned to this project pad.</td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          }
+
+          <!-- 3. ASSETS TAB -->
+          @if (activeTab() === 'assets') {
+            <div class="bg-white rounded-xl border border-slate-150 shadow-sm p-6 space-y-5">
+              <div class="flex justify-between items-center pb-2 border-b border-slate-50">
+                <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+                  <svg class="w-4 h-4 text-violet-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2M14 0h-4v4" />
+                  </svg>
+                  <span>Project Associated Assets & Vehicles</span>
+                </h3>
+                
+                <button 
+                  *appRole="['Super Admin', 'General Manager', 'Operations Manager', 'Project Manager']"
+                  (click)="openAssignAssetModal()"
+                  class="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg transition-all flex items-center gap-1.5 shadow-sm"
+                >
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                  </svg>
+                  <span>Assign Asset Tag</span>
+                </button>
+              </div>
+
+              <!-- Assets Table -->
+              <div class="overflow-hidden border border-slate-100 rounded-xl">
+                <table class="w-full text-left rtl:text-right border-collapse">
+                  <thead>
+                    <tr class="bg-slate-50 border-b border-slate-100 text-[10px] text-slate-400 uppercase tracking-wider select-none">
+                      <th class="p-3 font-bold">Asset Name</th>
+                      <th class="p-3 font-bold">Serial Number</th>
+                      <th class="p-3 font-bold text-center">Assigned Date</th>
+                      <th class="p-3 font-bold">Assigned Crew Member</th>
+                      <th class="p-3 font-bold">Assigned Location</th>
+                      <th class="p-3 font-bold text-center">Audit Status</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-slate-50 text-[11px] text-slate-700">
+                    @for (item of projectAssetAssignments(); track item.id) {
+                      <tr class="hover:bg-slate-50 transition-all">
+                        <td class="p-3 font-bold text-slate-800">{{ item.assetName }}</td>
+                        <td class="p-3 font-mono font-bold text-slate-500">{{ item.serialNumber }}</td>
+                        <td class="p-3 text-center font-mono">{{ item.assignedDate }}</td>
+                        <td class="p-3 font-medium">{{ item.assignedTo }}</td>
+                        <td class="p-3 font-medium">{{ item.location }}</td>
+                        <td class="p-3 text-center">
+                          <span 
+                            class="px-2 py-0.5 rounded-full text-[8.5px] font-black uppercase tracking-wider"
+                            [class.bg-emerald-50]="item.status === 'Active'"
+                            [class.text-emerald-700]="item.status === 'Active'"
+                            [class.bg-rose-50]="item.status === 'Damaged' || item.status === 'Lost'"
+                            [class.text-rose-700]="item.status === 'Damaged' || item.status === 'Lost'"
+                            [class.bg-amber-50]="item.status === 'Transferred'"
+                            [class.text-amber-700]="item.status === 'Transferred'"
+                          >
+                            {{ item.status }}
+                          </span>
+                        </td>
+                      </tr>
+                    } @empty {
+                      <tr>
+                        <td colspan="6" class="p-6 text-center text-slate-400">No assets currently allocated for this site pad.</td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          }
+
+          <!-- 4. MATERIALS TAB -->
+          @if (activeTab() === 'materials') {
+            <div class="bg-white rounded-xl border border-slate-150 shadow-sm p-6 space-y-5">
+              <div class="flex justify-between items-center pb-2 border-b border-slate-50">
+                <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+                  <svg class="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                  </svg>
+                  <span>Project Chemical & Material Consumption Logs</span>
+                </h3>
+                
+                <button 
+                  *appRole="['Super Admin', 'General Manager', 'Operations Manager', 'Project Manager', 'Store Keeper']"
+                  (click)="openRecordMaterialModal()"
+                  class="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg transition-all flex items-center gap-1.5 shadow-sm"
+                >
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                  </svg>
+                  <span>Record Consumption</span>
+                </button>
+              </div>
+
+              <!-- Materials Table -->
+              <div class="overflow-hidden border border-slate-100 rounded-xl">
+                <table class="w-full text-left rtl:text-right border-collapse">
+                  <thead>
+                    <tr class="bg-slate-50 border-b border-slate-100 text-[10px] text-slate-400 uppercase tracking-wider select-none">
+                      <th class="p-3 font-bold">Material Item</th>
+                      <th class="p-3 font-bold">Item Code</th>
+                      <th class="p-3 font-bold">Issued From</th>
+                      <th class="p-3 font-bold text-right">Qty Issued</th>
+                      <th class="p-3 font-bold text-right">Qty Consumed</th>
+                      <th class="p-3 font-bold text-right">Remaining Stock</th>
+                      <th class="p-3 font-bold text-right">Unit cost</th>
+                      <th class="p-3 font-bold text-right">Total Cost</th>
+                      <th class="p-3 font-bold text-center">Ref Document</th>
+                      <th class="p-3 font-bold text-center">Consumption Date</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-slate-50 text-[11px] text-slate-700">
+                    @for (item of projectMaterialConsumptions(); track item.id) {
+                      <tr class="hover:bg-slate-50 transition-all">
+                        <td class="p-3 font-bold text-slate-800">{{ item.materialName }}</td>
+                        <td class="p-3 font-mono font-bold text-slate-500">{{ item.materialCode }}</td>
+                        <td class="p-3 font-medium">{{ item.warehouse }}</td>
+                        <td class="p-3 text-right font-mono font-bold">{{ item.issuedQuantity }}</td>
+                        <td class="p-3 text-right font-mono font-bold text-rose-600">{{ item.consumedQuantity }}</td>
+                        <td class="p-3 text-right font-mono font-bold text-slate-500">{{ item.remainingQuantity }}</td>
+                        <td class="p-3 text-right font-mono font-bold">${{ item.unitPrice | number:'1.2-2' }}</td>
+                        <td class="p-3 text-right font-mono font-black text-slate-800">${{ (item.consumedQuantity * item.unitPrice) | number:'1.2-2' }}</td>
+                        <td class="p-3 text-center font-mono font-bold text-slate-500">{{ item.docRef }}</td>
+                        <td class="p-3 text-center font-mono">{{ item.issueDate }}</td>
+                      </tr>
+                    } @empty {
+                      <tr>
+                        <td colspan="10" class="p-6 text-center text-slate-400">No chemicals or items logged consumed on site.</td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          }
+
+          <!-- 5. LABOR TAB -->
+          @if (activeTab() === 'labor') {
+            <div class="bg-white rounded-xl border border-slate-150 shadow-sm p-6 space-y-5">
+              <div class="flex justify-between items-center pb-2 border-b border-slate-50">
+                <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+                  <svg class="w-4 h-4 text-sky-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                  </svg>
+                  <span>Project Field Crew Labor Logging</span>
+                </h3>
+                
+                <button 
+                  *appRole="['Super Admin', 'General Manager', 'Operations Manager', 'Project Manager']"
+                  (click)="openLogLaborModal()"
+                  class="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg transition-all flex items-center gap-1.5 shadow-sm"
+                >
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                  </svg>
+                  <span>Log Labor hours</span>
+                </button>
+              </div>
+
+              <!-- Labor Table -->
+              <div class="overflow-hidden border border-slate-100 rounded-xl">
+                <table class="w-full text-left rtl:text-right border-collapse">
+                  <thead>
+                    <tr class="bg-slate-50 border-b border-slate-100 text-[10px] text-slate-400 uppercase tracking-wider select-none">
+                      <th class="p-3 font-bold">Employee Name</th>
+                      <th class="p-3 font-bold">Assigned Operations Role</th>
+                      <th class="p-3 font-bold text-right">Regular Hours</th>
+                      <th class="p-3 font-bold text-right">Overtime Hours</th>
+                      <th class="p-3 font-bold text-right">Hourly Rate</th>
+                      <th class="p-3 font-bold text-right">Overtime Rate</th>
+                      <th class="p-3 font-bold text-right">Calculated Cost</th>
+                      <th class="p-3 font-bold text-center">Log Date</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-slate-50 text-[11px] text-slate-700">
+                    @for (item of projectLaborRecords(); track item.id) {
+                      <tr class="hover:bg-slate-50 transition-all">
+                        <td class="p-3 font-bold text-slate-800">{{ item.employeeName }}</td>
+                        <td class="p-3 font-medium">{{ item.role }}</td>
+                        <td class="p-3 text-right font-mono font-semibold">{{ item.regularHours }} hrs</td>
+                        <td class="p-3 text-right font-mono font-semibold text-rose-600">{{ item.overtimeHours }} hrs</td>
+                        <td class="p-3 text-right font-mono font-bold">${{ item.hourlyRate }}/h</td>
+                        <td class="p-3 text-right font-mono font-bold">${{ item.overtimeRate }}/h</td>
+                        <td class="p-3 text-right font-mono font-black text-slate-800">${{ item.totalCost | number:'1.2-2' }}</td>
+                        <td class="p-3 text-center font-mono">{{ item.date }}</td>
+                      </tr>
+                    } @empty {
+                      <tr>
+                        <td colspan="8" class="p-6 text-center text-slate-400">No crew labor records logged for this project.</td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          }
+
+          <!-- 6. TRANSFERS TAB -->
+          @if (activeTab() === 'transfers') {
+            <div class="bg-white rounded-xl border border-slate-150 shadow-sm p-6 space-y-5">
+              <div class="flex justify-between items-center pb-2 border-b border-slate-50">
+                <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+                  <svg class="w-4 h-4 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                  </svg>
+                  <span>Inter-Project Equipment Transfers</span>
+                </h3>
+                
+                <button 
+                  *appRole="['Super Admin', 'General Manager', 'Operations Manager']"
+                  (click)="openInitiateTransferModal()"
+                  class="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg transition-all flex items-center gap-1.5 shadow-sm"
+                >
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                  </svg>
+                  <span>Initiate Inter-Transfer</span>
+                </button>
+              </div>
+
+              <!-- Transfers Table -->
+              <div class="overflow-hidden border border-slate-100 rounded-xl">
+                <table class="w-full text-left rtl:text-right border-collapse">
+                  <thead>
+                    <tr class="bg-slate-50 border-b border-slate-100 text-[10px] text-slate-400 uppercase tracking-wider select-none">
+                      <th class="p-3 font-bold">Transfer Code</th>
+                      <th class="p-3 font-bold">Equipment Unit</th>
+                      <th class="p-3 font-bold">From Location</th>
+                      <th class="p-3 font-bold">To Destination</th>
+                      <th class="p-3 font-bold text-center">Departure Date</th>
+                      <th class="p-3 font-bold text-center">Arrival Date</th>
+                      <th class="p-3 font-bold text-right">Transit Hours</th>
+                      <th class="p-3 font-bold text-right">Transfer Cost</th>
+                      <th class="p-3 font-bold text-center">Transit Status</th>
+                      <th class="p-3 font-bold text-center">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-slate-50 text-[11px] text-slate-700">
+                    @for (item of projectTransfers(); track item.transferNumber) {
+                      <tr class="hover:bg-slate-50 transition-all">
+                        <td class="p-3 font-bold font-mono text-indigo-600">{{ item.transferNumber }}</td>
+                        <td class="p-3 font-bold text-slate-800">{{ item.equipmentName }}</td>
+                        <td class="p-3 font-medium">{{ item.fromLocation }}</td>
+                        <td class="p-3 font-medium text-indigo-600">{{ item.toLocation }}</td>
+                        <td class="p-3 text-center font-mono">{{ item.startDate }}</td>
+                        <td class="p-3 text-center font-mono">{{ item.arrivalDate || 'In Transit' }}</td>
+                        <td class="p-3 text-right font-mono font-bold">{{ item.transportationHours }} hrs</td>
+                        <td class="p-3 text-right font-mono font-bold">${{ item.transportationCost | number }}</td>
+                        <td class="p-3 text-center">
+                          <span 
+                            class="px-2 py-0.5 rounded-full text-[8.5px] font-black uppercase tracking-wider"
+                            [class.bg-amber-50]="item.status === 'Requested'"
+                            [class.text-amber-700]="item.status === 'Requested'"
+                            [class.bg-blue-50]="item.status === 'Approved'"
+                            [class.text-blue-700]="item.status === 'Approved'"
+                            [class.bg-emerald-50]="item.status === 'Completed'"
+                            [class.text-emerald-700]="item.status === 'Completed'"
+                          >
+                            {{ item.status }}
+                          </span>
+                        </td>
+                        <td class="p-3 text-center">
+                          @if (item.status !== 'Completed' && authService.hasPermission('edit:projects')) {
+                            <button 
+                              (click)="completeTransfer(item)"
+                              class="px-2.5 py-1 bg-slate-900 text-white hover:bg-slate-800 rounded text-[10px] font-bold transition-all"
+                            >
+                              Complete Transit
+                            </button>
+                          } @else {
+                            <span class="text-emerald-600 font-bold">Delivered</span>
+                          }
+                        </td>
+                      </tr>
+                    } @empty {
+                      <tr>
+                        <td colspan="10" class="p-6 text-center text-slate-400">No inter-project transfers recorded.</td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          }
+
+          <!-- 7. COST TRACKING TAB -->
+          @if (activeTab() === 'cost-tracking') {
+            <div class="bg-white rounded-xl border border-slate-150 shadow-sm p-6 space-y-6">
+              <h3 class="text-sm font-bold text-slate-800 pb-2 border-b border-slate-50 flex items-center gap-2">
+                <svg class="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+                <span>Financial Cost Center Budget Consumption Matrix</span>
+              </h3>
+
+              @if (projectCostMetrics(); as metrics) {
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div class="bg-slate-50 border border-slate-100 p-4 rounded-xl">
+                    <span class="text-slate-400 block text-[9.5px] uppercase tracking-wide font-bold">Total Project Pool</span>
+                    <span class="text-lg font-black text-slate-800 mt-1 block font-mono">${{ proj.contractValue | number:'1.2-2' }}</span>
+                  </div>
+                  <div class="bg-slate-50 border border-slate-100 p-4 rounded-xl">
+                    <span class="text-slate-400 block text-[9.5px] uppercase tracking-wide font-bold">Actual Consumed Costs</span>
+                    <span class="text-lg font-black text-slate-800 mt-1 block font-mono text-indigo-600">${{ metrics.totalActual | number:'1.2-2' }}</span>
+                  </div>
+                  <div class="bg-slate-50 border border-slate-100 p-4 rounded-xl">
+                    <span class="text-slate-400 block text-[9.5px] uppercase tracking-wide font-bold">Remaining Budget Pool</span>
+                    <span class="text-lg font-black mt-1 block font-mono" [class.text-rose-600]="metrics.remaining < 0" [class.text-emerald-600]="metrics.remaining >= 0">
+                      ${{ metrics.remaining | number:'1.2-2' }}
+                    </span>
+                  </div>
+                </div>
+
+                <!-- SVG Grouped Bar Chart -->
+                <div class="border border-slate-100 rounded-xl p-6 bg-slate-50">
+                  <span class="text-slate-700 block text-[10.5px] font-black uppercase tracking-wider mb-4">Budget Utilization comparison (USD)</span>
+                  
+                  <div class="relative w-full h-64 select-none">
+                    <!-- SVG Chart -->
+                    <svg viewBox="0 0 500 220" class="w-full h-full">
+                      <!-- Grid Lines -->
+                      <line x1="40" y1="20" x2="480" y2="20" stroke="#f1f5f9" stroke-width="1.5" />
+                      <line x1="40" y1="70" x2="480" y2="70" stroke="#f1f5f9" stroke-width="1.5" />
+                      <line x1="40" y1="120" x2="480" y2="120" stroke="#f1f5f9" stroke-width="1.5" />
+                      <line x1="40" y1="170" x2="480" y2="170" stroke="#cbd5e1" stroke-width="1.5" />
+
+                      <!-- X Axis Labels -->
+                      <text x="90" y="190" font-size="9" fill="#94a3b8" text-anchor="middle" font-weight="bold">Equipment</text>
+                      <text x="175" y="190" font-size="9" fill="#94a3b8" text-anchor="middle" font-weight="bold">Assets</text>
+                      <text x="260" y="190" font-size="9" fill="#94a3b8" text-anchor="middle" font-weight="bold">Materials</text>
+                      <text x="345" y="190" font-size="9" fill="#94a3b8" text-anchor="middle" font-weight="bold">Labor</text>
+                      <text x="430" y="190" font-size="9" fill="#94a3b8" text-anchor="middle" font-weight="bold">Logistics</text>
+
+                      <!-- Bar Groups: Category 1 (Equipment) -->
+                      <!-- Budgeted (Simulated $150k pool for Eq) -->
+                      <rect x="75" y="90" width="14" height="80" rx="3" fill="#cbd5e1" />
+                      <!-- Actual (metrics.eqCost relative) -->
+                      <rect x="91" y="170" width="14" [attr.height]="getBarHeight(metrics.eqCost)" [attr.y]="170 - getBarHeight(metrics.eqCost)" rx="3" fill="#6366f1" />
+
+                      <!-- Bar Groups: Category 2 (Assets) -->
+                      <rect x="160" y="110" width="14" height="60" rx="3" fill="#cbd5e1" />
+                      <rect x="176" y="170" width="14" [attr.height]="getBarHeight(metrics.assetCost)" [attr.y]="170 - getBarHeight(metrics.assetCost)" rx="3" fill="#6366f1" />
+
+                      <!-- Bar Groups: Category 3 (Materials) -->
+                      <rect x="245" y="60" width="14" height="110" rx="3" fill="#cbd5e1" />
+                      <rect x="261" y="170" width="14" [attr.height]="getBarHeight(metrics.matCost)" [attr.y]="170 - getBarHeight(metrics.matCost)" rx="3" fill="#6366f1" />
+
+                      <!-- Bar Groups: Category 4 (Labor) -->
+                      <rect x="330" y="50" width="14" height="120" rx="3" fill="#cbd5e1" />
+                      <rect x="346" y="170" width="14" [attr.height]="getBarHeight(metrics.laborCost)" [attr.y]="170 - getBarHeight(metrics.laborCost)" rx="3" fill="#6366f1" />
+
+                      <!-- Bar Groups: Category 5 (Transfers/Logistics) -->
+                      <rect x="415" y="130" width="14" height="40" rx="3" fill="#cbd5e1" />
+                      <rect x="431" y="170" width="14" [attr.height]="getBarHeight(metrics.transCost)" [attr.y]="170 - getBarHeight(metrics.transCost)" rx="3" fill="#6366f1" />
+                    </svg>
+
+                    <!-- Chart Legend -->
+                    <div class="absolute bottom-1 left-4 flex gap-4 text-[9px] font-bold text-slate-500">
+                      <div class="flex items-center gap-1.5">
+                        <span class="w-3 h-3 rounded bg-[#cbd5e1]"></span>
+                        <span>Estimated Target Pool</span>
+                      </div>
+                      <div class="flex items-center gap-1.5">
+                        <span class="w-3 h-3 rounded bg-[#6366f1]"></span>
+                        <span>Actual Incurred / Logged Cost</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Cost details table -->
+                <div class="overflow-hidden border border-slate-100 rounded-xl">
+                  <table class="w-full text-left rtl:text-right border-collapse">
+                    <thead>
+                      <tr class="bg-slate-50 border-b border-slate-100 text-[10px] text-slate-400 uppercase tracking-wider select-none">
+                        <th class="p-3 font-bold">Expenditure Category</th>
+                        <th class="p-3 font-bold text-right">Actual Cost incurred</th>
+                      </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-50 text-[11px] text-slate-700">
+                      <tr>
+                        <td class="p-3 font-bold">Equipment Assignment Fees</td>
+                        <td class="p-3 text-right font-mono font-bold text-slate-800">${{ metrics.eqCost | number:'1.2-2' }}</td>
+                      </tr>
+                      <tr>
+                        <td class="p-3 font-bold">Vehicle & Small Asset Allocations</td>
+                        <td class="p-3 text-right font-mono font-bold text-slate-800">${{ metrics.assetCost | number:'1.2-2' }}</td>
+                      </tr>
+                      <tr>
+                        <td class="p-3 font-bold">Muds, Chemicals, and Drilling Consumables</td>
+                        <td class="p-3 text-right font-mono font-bold text-slate-800">${{ metrics.matCost | number:'1.2-2' }}</td>
+                      </tr>
+                      <tr>
+                        <td class="p-3 font-bold">Crew Man-Hour Salaries (Regular & OT)</td>
+                        <td class="p-3 text-right font-mono font-bold text-slate-800">${{ metrics.laborCost | number:'1.2-2' }}</td>
+                      </tr>
+                      <tr>
+                        <td class="p-3 font-bold">Mobilization Inter-Transfers Logistics</td>
+                        <td class="p-3 text-right font-mono font-bold text-slate-800">${{ metrics.transCost | number:'1.2-2' }}</td>
+                      </tr>
+                      <tr class="bg-indigo-50/50">
+                        <td class="p-3 font-black text-indigo-900">Total Actual Costs Incurred</td>
+                        <td class="p-3 text-right font-mono font-black text-indigo-900">${{ metrics.totalActual | number:'1.2-2' }}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                @if (metrics.totalActual > proj.contractValue) {
+                  <div class="p-4 bg-rose-50 border border-rose-200 text-rose-800 font-bold rounded-xl flex items-start gap-2.5">
+                    <svg class="w-5 h-5 shrink-0 text-rose-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                    <div>
+                      <p class="text-[10.5px] uppercase tracking-wide text-rose-900">Cost overrun forecast alert!</p>
+                      <p class="text-[10px] font-semibold text-rose-700 mt-0.5">The current accumulated expenses exceed the contract value ceiling by ${{ (metrics.totalActual - proj.contractValue) | number:'1.2-2' }}. Review crew logistics and spares usage.</p>
+                    </div>
+                  </div>
+                }
+              }
+            </div>
+          }
+
+          <!-- 8. TIMELINE HISTORY TAB -->
+          @if (activeTab() === 'history') {
+            <div class="bg-white rounded-xl border border-slate-150 shadow-sm p-6 space-y-5">
+              <h3 class="text-sm font-bold text-slate-800 pb-2 border-b border-slate-50 flex items-center gap-2">
+                <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span>Audit Tracking Trail</span>
+              </h3>
+
+              <!-- Timeline List -->
+              <div class="space-y-4">
+                @for (log of projectAuditHistory(); track log.id) {
+                  <div class="flex items-start gap-4 p-3 bg-slate-50 border border-slate-100 rounded-xl relative hover:border-slate-350 transition-all duration-300">
+                    <div class="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center font-bold text-slate-600 text-[10px] shrink-0 font-mono">
+                      {{ log.user.substring(0,2).toUpperCase() }}
+                    </div>
+                    <div class="flex-1 space-y-1">
+                      <div class="flex items-center justify-between">
+                        <span class="font-bold text-slate-800 text-[10.5px]">{{ log.user }} ({{ log.role }})</span>
+                        <span class="text-[9.5px] font-bold text-slate-400 font-mono">{{ log.timestamp | date:'yyyy-MM-dd HH:mm:ss' }}</span>
+                      </div>
+                      <p class="text-[10.5px] text-slate-600 font-semibold leading-relaxed">{{ log.details }}</p>
+                      @if (log.action === 'Update' || log.newValue) {
+                        <div class="text-[9px] font-mono text-slate-400 select-all max-h-16 overflow-y-auto mt-1 p-1 bg-white border border-slate-100 rounded leading-tight">
+                          Action: {{ log.action }} | Entity: {{ log.entityName }}
+                        </div>
+                      }
+                    </div>
+                  </div>
+                } @empty {
+                  <div class="p-8 text-center text-slate-400">No chronological modifications logged for this project entity.</div>
+                }
+              </div>
+            </div>
+          }
+
+        </div>
+      </div>
+    }
+  }
+</div>
+
+<!-- ================= MODALS AND POPUPS ================= -->
+
+<!-- 1. CREATE NEW PROJECT MODAL -->
+@if (showCreateProjectModal()) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 font-semibold text-slate-600 text-xs animate-fade-in">
+    <div class="bg-white rounded-xl shadow-2xl border border-slate-200 w-full max-w-2xl overflow-hidden max-h-[90vh] flex flex-col animate-scale-up">
+      <!-- Title -->
+      <div class="px-5 py-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center select-none">
+        <div>
+          <h3 class="text-sm font-black text-slate-800">Launch New Operations Project</h3>
+          <p class="text-[10px] text-slate-400 mt-0.5">Initialize site configurations and cost centers manually</p>
+        </div>
+        <button (click)="showCreateProjectModal.set(false)" class="text-slate-400 hover:text-slate-600 focus:outline-none">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <!-- Form Body -->
+      <div class="p-6 overflow-y-auto space-y-4 flex-1">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block mb-1 text-slate-400 uppercase tracking-wide text-[9px] font-bold">Project Code</label>
+            <input type="text" name="code" [(ngModel)]="newProjectForm.code" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-slate-800 focus:outline-none focus:border-indigo-500 font-mono font-bold" required />
+          </div>
+          
+          <div>
+            <label class="block mb-1 text-slate-400 uppercase tracking-wide text-[9px] font-bold">Project Title / Name</label>
+            <input type="text" name="name" [(ngModel)]="newProjectForm.name" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-slate-800 focus:outline-none focus:border-indigo-500" placeholder="e.g. Basra Rig Rigging Pad C" required />
+          </div>
+
+          <div>
+            <label class="block mb-1 text-slate-400 uppercase tracking-wide text-[9px] font-bold">Customer Name</label>
+            <input type="text" name="customer" [(ngModel)]="newProjectForm.customer" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-slate-800 focus:outline-none focus:border-indigo-500" placeholder="e.g. Chevron Energy" required />
+          </div>
+
+          <div>
+            <label class="block mb-1 text-slate-400 uppercase tracking-wide text-[9px] font-bold">Contract Value Pool (USD)</label>
+            <input type="number" name="contractValue" [(ngModel)]="newProjectForm.contractValue" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-slate-800 focus:outline-none focus:border-indigo-500 font-mono font-bold" required />
+          </div>
+
+          <div>
+            <label class="block mb-1 text-slate-400 uppercase tracking-wide text-[9px] font-bold">Execution Start Date</label>
+            <input type="date" name="startDate" [(ngModel)]="newProjectForm.startDate" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-slate-800 focus:outline-none focus:border-indigo-500 font-mono" />
+          </div>
+
+          <div>
+            <label class="block mb-1 text-slate-400 uppercase tracking-wide text-[9px] font-bold">Expiration End Date</label>
+            <input type="date" name="endDate" [(ngModel)]="newProjectForm.endDate" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-slate-800 focus:outline-none focus:border-indigo-500 font-mono" />
+          </div>
+        </div>
+
+        <div class="border-t border-slate-100 pt-4 space-y-4">
+          <h4 class="text-slate-800 font-bold text-[10px] uppercase tracking-wide border-b border-slate-50 pb-1">Pad Site Location & Coordinates</h4>
+          
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block mb-1 text-slate-400 uppercase tracking-wide text-[9px] font-bold">Country</label>
+              <input type="text" name="country" [(ngModel)]="newProjectForm.country" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-slate-800 focus:outline-none focus:border-indigo-500" />
+            </div>
+            <div>
+              <label class="block mb-1 text-slate-400 uppercase tracking-wide text-[9px] font-bold">Region</label>
+              <input type="text" name="region" [(ngModel)]="newProjectForm.region" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-slate-800 focus:outline-none focus:border-indigo-500" />
+            </div>
+            <div>
+              <label class="block mb-1 text-slate-400 uppercase tracking-wide text-[9px] font-bold">Site / Block Name</label>
+              <input type="text" name="siteName" [(ngModel)]="newProjectForm.siteName" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-slate-800 focus:outline-none focus:border-indigo-500" placeholder="e.g. Block-42A" />
+            </div>
+            <div>
+              <label class="block mb-1 text-slate-400 uppercase tracking-wide text-[9px] font-bold">GPS Coordinate Markers</label>
+              <input type="text" name="gpsCoordinates" [(ngModel)]="newProjectForm.gpsCoordinates" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-slate-800 focus:outline-none focus:border-indigo-500 font-mono" />
+            </div>
+          </div>
+        </div>
+
+        <div class="border-t border-slate-100 pt-4 space-y-4">
+          <h4 class="text-slate-800 font-bold text-[10px] uppercase tracking-wide border-b border-slate-50 pb-1">Associated Financial Cost Center</h4>
+          
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block mb-1 text-slate-400 uppercase tracking-wide text-[9px] font-bold">Cost Center Code</label>
+              <input type="text" name="costCenterCode" [(ngModel)]="newProjectForm.costCenterCode" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-slate-800 focus:outline-none focus:border-indigo-500 font-mono font-bold" placeholder="Auto generated if empty" />
+            </div>
+            <div>
+              <label class="block mb-1 text-slate-400 uppercase tracking-wide text-[9px] font-bold">Cost Center Name</label>
+              <input type="text" name="costCenterName" [(ngModel)]="newProjectForm.costCenterName" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-slate-800 focus:outline-none focus:border-indigo-500" placeholder="Auto generated if empty" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer Buttons -->
+      <div class="px-5 py-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-3 select-none">
+        <button (click)="showCreateProjectModal.set(false)" class="px-4 py-2 border border-slate-300 rounded-lg text-slate-700 font-bold hover:bg-slate-100 transition-all">Cancel</button>
+        <button (click)="saveNewProject()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg transition-all shadow-sm">Initialize Project</button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- 2. ASSIGN EQUIPMENT MODAL -->
+@if (showAssignEquipmentModal()) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 font-semibold text-slate-600 text-xs animate-fade-in">
+    <div class="bg-white rounded-xl shadow-2xl border border-slate-200 w-full max-w-md overflow-hidden animate-scale-up">
+      <div class="px-5 py-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center select-none">
+        <h3 class="text-sm font-black text-slate-800">Deploy Equipment Unit</h3>
+        <button (click)="showAssignEquipmentModal.set(false)" class="text-slate-400 hover:text-slate-600 focus:outline-none">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <div class="p-5 space-y-4">
+        <div>
+          <label class="block mb-1.5 text-slate-400 uppercase tracking-wide text-[9px] font-bold">Select Standby Unit</label>
+          <select name="equipmentId" [(ngModel)]="equipmentForm.equipmentId" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-slate-850 font-bold focus:outline-none focus:border-indigo-500">
+            <option value="">-- Choose Equipment --</option>
+            @for (eq of mockDataService.equipment(); track eq.id) {
+              @if (eq.status !== 'Active') {
+                <option [value]="eq.id">{{ eq.equipmentCode }} - {{ eq.equipmentName }} ({{ eq.location }})</option>
+              }
+            }
+          </select>
+        </div>
+
+        <div>
+          <label class="block mb-1.5 text-slate-400 uppercase tracking-wide text-[9px] font-bold">Site Deployment Location</label>
+          <input type="text" name="siteName" [(ngModel)]="equipmentForm.siteName" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-slate-800 focus:outline-none focus:border-indigo-500" required />
+        </div>
+
+        <div>
+          <label class="block mb-1.5 text-slate-400 uppercase tracking-wide text-[9px] font-bold">Deployment Assigned Date</label>
+          <input type="date" name="assignedDate" [(ngModel)]="equipmentForm.assignedDate" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-slate-800 focus:outline-none focus:border-indigo-500 font-mono" required />
+        </div>
+      </div>
+
+      <div class="px-5 py-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-3 select-none">
+        <button (click)="showAssignEquipmentModal.set(false)" class="px-4 py-2 border border-slate-300 rounded-lg text-slate-700 font-bold hover:bg-slate-100 transition-all">Cancel</button>
+        <button (click)="saveEquipmentAssignment()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg transition-all shadow-sm">Deploy Unit</button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- 3. ASSIGN ASSET MODAL -->
+@if (showAssignAssetModal()) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 font-semibold text-slate-600 text-xs animate-fade-in">
+    <div class="bg-white rounded-xl shadow-2xl border border-slate-200 w-full max-w-md overflow-hidden animate-scale-up">
+      <div class="px-5 py-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center select-none">
+        <h3 class="text-sm font-black text-slate-800">Assign Vehicle / Small Asset</h3>
+        <button (click)="showAssignAssetModal.set(false)" class="text-slate-400 hover:text-slate-600 focus:outline-none">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <div class="p-5 space-y-4">
+        <div>
+          <label class="block mb-1.5 text-slate-400 uppercase tracking-wide text-[9px] font-bold">Select Asset Tag</label>
+          <select name="assetId" [(ngModel)]="assetForm.assetId" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-slate-850 font-bold focus:outline-none focus:border-indigo-500">
+            <option value="">-- Choose Asset --</option>
+            @for (eq of mockDataService.equipment(); track eq.id) {
+              @if (eq.category !== 'Rig') {
+                <option [value]="eq.id">{{ eq.assetNumber }} - {{ eq.equipmentName }} ({{ eq.category }})</option>
+              }
+            }
+          </select>
+        </div>
+
+        <div>
+          <label class="block mb-1.5 text-slate-400 uppercase tracking-wide text-[9px] font-bold">Assign to Crew Member</label>
+          <input type="text" name="assignedTo" [(ngModel)]="assetForm.assignedTo" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-slate-800 focus:outline-none focus:border-indigo-500" placeholder="e.g. Robert Vance" required />
+        </div>
+
+        <div>
+          <label class="block mb-1.5 text-slate-400 uppercase tracking-wide text-[9px] font-bold">Assigned Location</label>
+          <input type="text" name="location" [(ngModel)]="assetForm.location" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-slate-800 focus:outline-none focus:border-indigo-500" required />
+        </div>
+
+        <div>
+          <label class="block mb-1.5 text-slate-400 uppercase tracking-wide text-[9px] font-bold">Assigned Date</label>
+          <input type="date" name="assignedDate" [(ngModel)]="assetForm.assignedDate" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-slate-800 focus:outline-none focus:border-indigo-500 font-mono" required />
+        </div>
+      </div>
+
+      <div class="px-5 py-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-3 select-none">
+        <button (click)="showAssignAssetModal.set(false)" class="px-4 py-2 border border-slate-300 rounded-lg text-slate-700 font-bold hover:bg-slate-100 transition-all">Cancel</button>
+        <button (click)="saveAssetAssignment()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg transition-all shadow-sm">Assign Asset</button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- 4. RECORD MATERIAL CONSUMPTION MODAL -->
+@if (showRecordMaterialModal()) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 font-semibold text-slate-600 text-xs animate-fade-in">
+    <div class="bg-white rounded-xl shadow-2xl border border-slate-200 w-full max-w-md overflow-hidden animate-scale-up">
+      <div class="px-5 py-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center select-none">
+        <h3 class="text-sm font-black text-slate-800">Record Chemicals Consumption</h3>
+        <button (click)="showRecordMaterialModal.set(false)" class="text-slate-400 hover:text-slate-600 focus:outline-none">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <div class="p-5 space-y-4">
+        <div>
+          <label class="block mb-1.5 text-slate-400 uppercase tracking-wide text-[9px] font-bold">Select Material Item</label>
+          <select name="materialCode" [(ngModel)]="materialForm.materialCode" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-slate-850 font-bold focus:outline-none focus:border-indigo-500">
+            <option value="">-- Choose Material --</option>
+            @for (item of mockDataService.inventoryItems(); track item.id) {
+              <option [value]="item.itemCode">{{ item.itemCode }} - {{ item.itemName }} (Qty: {{ item.quantity }})</option>
+            }
+          </select>
+        </div>
+
+        <div>
+          <label class="block mb-1.5 text-slate-400 uppercase tracking-wide text-[9px] font-bold">Warehouse Origin</label>
+          <select name="warehouse" [(ngModel)]="materialForm.warehouse" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-slate-700 focus:outline-none focus:border-indigo-500">
+            <option value="Warehouse A">Warehouse A</option>
+            <option value="Warehouse B">Warehouse B</option>
+            <option value="Pipe Yard 1">Pipe Yard 1</option>
+          </select>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block mb-1.5 text-slate-400 uppercase tracking-wide text-[9px] font-bold">Qty Issued from Storage</label>
+            <input type="number" name="issuedQuantity" [(ngModel)]="materialForm.issuedQuantity" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-slate-800 focus:outline-none focus:border-indigo-500 font-mono font-bold" required />
+          </div>
+          <div>
+            <label class="block mb-1.5 text-slate-400 uppercase tracking-wide text-[9px] font-bold">Qty Consumed on Rig</label>
+            <input type="number" name="consumedQuantity" [(ngModel)]="materialForm.consumedQuantity" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-slate-800 focus:outline-none focus:border-indigo-500 font-mono font-bold" required />
+          </div>
+        </div>
+
+        <div>
+          <label class="block mb-1.5 text-slate-400 uppercase tracking-wide text-[9px] font-bold">Voucher / Doc Reference</label>
+          <input type="text" name="docRef" [(ngModel)]="materialForm.docRef" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-slate-800 focus:outline-none focus:border-indigo-500 font-mono font-bold" required />
+        </div>
+
+        <div>
+          <label class="block mb-1.5 text-slate-400 uppercase tracking-wide text-[9px] font-bold">Issue / Consumption Date</label>
+          <input type="date" name="issueDate" [(ngModel)]="materialForm.issueDate" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-slate-800 focus:outline-none focus:border-indigo-500 font-mono" required />
+        </div>
+      </div>
+
+      <div class="px-5 py-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-3 select-none">
+        <button (click)="showRecordMaterialModal.set(false)" class="px-4 py-2 border border-slate-300 rounded-lg text-slate-700 font-bold hover:bg-slate-100 transition-all">Cancel</button>
+        <button (click)="saveMaterialConsumption()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg transition-all shadow-sm">Record Consumption</button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- 5. LOG LABOR HOURS MODAL -->
+@if (showLogLaborModal()) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 font-semibold text-slate-600 text-xs animate-fade-in">
+    <div class="bg-white rounded-xl shadow-2xl border border-slate-200 w-full max-w-md overflow-hidden animate-scale-up">
+      <div class="px-5 py-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center select-none">
+        <h3 class="text-sm font-black text-slate-800">Log Crew Labor Shift Hours</h3>
+        <button (click)="showLogLaborModal.set(false)" class="text-slate-400 hover:text-slate-600 focus:outline-none">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <div class="p-5 space-y-4">
+        <div>
+          <label class="block mb-1.5 text-slate-400 uppercase tracking-wide text-[9px] font-bold">Crew Employee Name</label>
+          <input type="text" name="employeeName" [(ngModel)]="laborForm.employeeName" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-slate-800 focus:outline-none focus:border-indigo-500" placeholder="e.g. Robert Vance" required />
+        </div>
+
+        <div>
+          <label class="block mb-1.5 text-slate-400 uppercase tracking-wide text-[9px] font-bold">Operations Role</label>
+          <input type="text" name="role" [(ngModel)]="laborForm.role" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-slate-800 focus:outline-none focus:border-indigo-500" placeholder="e.g. Mud Engineer / Rig Mechanic" required />
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block mb-1.5 text-slate-400 uppercase tracking-wide text-[9px] font-bold">Regular Hours Worked</label>
+            <input type="number" name="regularHours" [(ngModel)]="laborForm.regularHours" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-slate-800 focus:outline-none focus:border-indigo-500 font-mono font-bold" required />
+          </div>
+          <div>
+            <label class="block mb-1.5 text-slate-400 uppercase tracking-wide text-[9px] font-bold">Overtime Hours Worked</label>
+            <input type="number" name="overtimeHours" [(ngModel)]="laborForm.overtimeHours" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-slate-800 focus:outline-none focus:border-indigo-500 font-mono font-bold" required />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block mb-1.5 text-slate-400 uppercase tracking-wide text-[9px] font-bold">Regular Hourly Rate (USD)</label>
+            <input type="number" name="hourlyRate" [(ngModel)]="laborForm.hourlyRate" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-slate-800 focus:outline-none focus:border-indigo-500 font-mono font-bold" required />
+          </div>
+          <div>
+            <label class="block mb-1.5 text-slate-400 uppercase tracking-wide text-[9px] font-bold">Overtime Hourly Rate (USD)</label>
+            <input type="number" name="overtimeRate" [(ngModel)]="laborForm.overtimeRate" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-slate-800 focus:outline-none focus:border-indigo-500 font-mono font-bold" required />
+          </div>
+        </div>
+
+        <div>
+          <label class="block mb-1.5 text-slate-400 uppercase tracking-wide text-[9px] font-bold">Timesheet Date</label>
+          <input type="date" name="date" [(ngModel)]="laborForm.date" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-slate-800 focus:outline-none focus:border-indigo-500 font-mono" required />
+        </div>
+      </div>
+
+      <div class="px-5 py-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-3 select-none">
+        <button (click)="showLogLaborModal.set(false)" class="px-4 py-2 border border-slate-300 rounded-lg text-slate-700 font-bold hover:bg-slate-100 transition-all">Cancel</button>
+        <button (click)="saveLaborRecord()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg transition-all shadow-sm">Save Hours</button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- 6. INITIATE TRANSFER MODAL -->
+@if (showInitiateTransferModal()) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 font-semibold text-slate-600 text-xs animate-fade-in">
+    <div class="bg-white rounded-xl shadow-2xl border border-slate-200 w-full max-w-md overflow-hidden animate-scale-up">
+      <div class="px-5 py-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center select-none">
+        <h3 class="text-sm font-black text-slate-800">Initiate Inter-Project Transfer</h3>
+        <button (click)="showInitiateTransferModal.set(false)" class="text-slate-400 hover:text-slate-600 focus:outline-none">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <div class="p-5 space-y-4">
+        <div>
+          <label class="block mb-1.5 text-slate-400 uppercase tracking-wide text-[9px] font-bold">Select Equipment Unit</label>
+          <select name="equipmentId" [(ngModel)]="transferForm.equipmentId" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-slate-850 font-bold focus:outline-none focus:border-indigo-500">
+            <option value="">-- Choose Equipment --</option>
+            @for (eq of mockDataService.equipment(); track eq.id) {
+              <option [value]="eq.id">{{ eq.equipmentCode }} - {{ eq.equipmentName }} ({{ eq.location }})</option>
+            }
+          </select>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block mb-1.5 text-slate-400 uppercase tracking-wide text-[9px] font-bold">From Origin Location</label>
+            <input type="text" name="fromLocation" [(ngModel)]="transferForm.fromLocation" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-slate-800 focus:outline-none focus:border-indigo-500" required />
+          </div>
+          <div>
+            <label class="block mb-1.5 text-slate-400 uppercase tracking-wide text-[9px] font-bold">To Destination Pad</label>
+            <input type="text" name="toLocation" [(ngModel)]="transferForm.toLocation" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-slate-800 focus:outline-none focus:border-indigo-500" required />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block mb-1.5 text-slate-400 uppercase tracking-wide text-[9px] font-bold">Transit Hours</label>
+            <input type="number" name="transportationHours" [(ngModel)]="transferForm.transportationHours" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-slate-800 focus:outline-none focus:border-indigo-500 font-mono font-bold" required />
+          </div>
+          <div>
+            <label class="block mb-1.5 text-slate-400 uppercase tracking-wide text-[9px] font-bold">Transit Cost (USD)</label>
+            <input type="number" name="transportationCost" [(ngModel)]="transferForm.transportationCost" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-slate-800 focus:outline-none focus:border-indigo-500 font-mono font-bold" required />
+          </div>
+        </div>
+
+        <div>
+          <label class="block mb-1.5 text-slate-400 uppercase tracking-wide text-[9px] font-bold">Departure Date</label>
+          <input type="date" name="startDate" [(ngModel)]="transferForm.startDate" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-slate-800 focus:outline-none focus:border-indigo-500 font-mono" required />
+        </div>
+
+        <div>
+          <label class="block mb-1.5 text-slate-400 uppercase tracking-wide text-[9px] font-bold">Transfer Authorization Reason</label>
+          <textarea name="reason" [(ngModel)]="transferForm.reason" rows="2" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-slate-800 focus:outline-none focus:border-indigo-500 resize-none" placeholder="Explain the mobilization operational requirement..."></textarea>
+        </div>
+      </div>
+
+      <div class="px-5 py-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-3 select-none">
+        <button (click)="showInitiateTransferModal.set(false)" class="px-4 py-2 border border-slate-300 rounded-lg text-slate-700 font-bold hover:bg-slate-100 transition-all">Cancel</button>
+        <button (click)="saveEquipmentTransfer()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg transition-all shadow-sm">Initiate Transfer</button>
+      </div>
+    </div>
+  </div>
+}

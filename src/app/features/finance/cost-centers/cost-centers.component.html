@@ -1,0 +1,423 @@
+<div class="space-y-6 animate-fade-in" [dir]="langService.isRtl() ? 'rtl' : 'ltr'">
+  <!-- Header Section -->
+  <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-black text-slate-800 tracking-tight flex items-center space-x-2 rtl:space-x-reverse">
+        <svg class="w-7 h-7 text-amber-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+        </svg>
+        <span>{{ 'cost_centers.title' | translate }}</span>
+      </h1>
+      <p class="text-xs text-slate-500 font-semibold mt-1">{{ 'cost_centers.subtitle' | translate }}</p>
+    </div>
+    
+    <div class="flex items-center space-x-3 rtl:space-x-reverse">
+      <button 
+        *appRole="['Super Admin', 'General Manager', 'Finance Manager']"
+        (click)="openCreateModal()"
+        class="bg-amber-500 hover:bg-amber-600 active:scale-95 text-white font-bold text-xs px-4 py-2.5 rounded-lg shadow-sm hover:shadow transition-all flex items-center space-x-1.5 rtl:space-x-reverse"
+      >
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+        </svg>
+        <span>{{ 'cost_centers.create_title' | translate }}</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Financial KPI Metrics -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    <!-- Card: Total Cost Centers -->
+    <div class="bg-white p-5 rounded-xl border border-slate-100 shadow-sm flex items-center justify-between">
+      <div class="space-y-1">
+        <span class="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Total Nodes</span>
+        <div class="text-2xl font-black text-slate-800">{{ hierarchicalCostCenters().length }}</div>
+        <span class="text-[10px] text-slate-500 font-semibold block">Configured account groups</span>
+      </div>
+      <div class="p-3 bg-slate-50 rounded-lg text-slate-600">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+        </svg>
+      </div>
+    </div>
+
+    <!-- Card: Total Allocated Budget -->
+    <div class="bg-white p-5 rounded-xl border border-slate-100 shadow-sm flex items-center justify-between">
+      <div class="space-y-1">
+        <span class="text-[10px] uppercase font-bold text-slate-400 tracking-wider">{{ 'cost_centers.budget' | translate }}</span>
+        <div class="text-2xl font-black text-slate-800">${{ financeTotals().totalBudget | number:'1.2-2' }}</div>
+        <span class="text-[10px] text-slate-500 font-semibold block">{{ financeTotals().projectsCount }} Active Projects</span>
+      </div>
+      <div class="p-3 bg-emerald-50 text-emerald-600 rounded-lg">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      </div>
+    </div>
+
+    <!-- Card: Total Spent -->
+    <div class="bg-white p-5 rounded-xl border border-slate-100 shadow-sm flex items-center justify-between">
+      <div class="space-y-1">
+        <span class="text-[10px] uppercase font-bold text-slate-400 tracking-wider">{{ 'cost_centers.spent' | translate }}</span>
+        <div class="text-2xl font-black text-slate-800">${{ financeTotals().totalSpent | number:'1.2-2' }}</div>
+        <span class="text-[10px] text-slate-500 font-semibold block">
+          {{ financeTotals().totalBudget > 0 ? ((financeTotals().totalSpent / financeTotals().totalBudget) * 100 | number:'1.0-0') : 0 }}% Pool utilized
+        </span>
+      </div>
+      <div class="p-3 bg-rose-50 text-rose-600 rounded-lg">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+        </svg>
+      </div>
+    </div>
+
+    <!-- Card: Remaining Budget Pool -->
+    <div class="bg-white p-5 rounded-xl border border-slate-100 shadow-sm flex items-center justify-between">
+      <div class="space-y-1">
+        <span class="text-[10px] uppercase font-bold text-slate-400 tracking-wider">{{ 'cost_centers.remaining' | translate }}</span>
+        <div class="text-2xl font-black" [ngClass]="financeTotals().remaining >= 0 ? 'text-emerald-600' : 'text-rose-600'">
+          ${{ financeTotals().remaining | number:'1.2-2' }}
+        </div>
+        <span class="text-[10px] text-slate-500 font-semibold block">Unallocated surplus funds</span>
+      </div>
+      <div class="p-3 rounded-lg" [ngClass]="financeTotals().remaining >= 0 ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- Search and Filtering Toolbar -->
+  <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-sm flex flex-col md:flex-row gap-4 items-center justify-between text-xs font-semibold text-slate-500">
+    <!-- Search Bar -->
+    <div class="w-full md:w-96 relative">
+      <input 
+        type="text" 
+        [placeholder]="'cost_centers.search_placeholder' | translate"
+        [value]="searchQuery()"
+        (input)="searchQuery.set($any($event.target).value)"
+        class="w-full bg-slate-50 border border-slate-200 rounded-lg pl-9 pr-4 py-2.5 text-slate-800 focus:outline-none focus:border-amber-500/50 text-xs"
+      />
+      <svg class="w-4 h-4 absolute left-3 top-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+      </svg>
+    </div>
+
+    <!-- Filters -->
+    <div class="flex flex-wrap items-center gap-4 w-full md:w-auto md:justify-end">
+      <!-- Type Filter -->
+      <div class="flex items-center space-x-2 rtl:space-x-reverse">
+        <span>Type:</span>
+        <select 
+          [value]="typeFilter()"
+          (change)="typeFilter.set($any($event.target).value)"
+          class="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-700 focus:outline-none focus:border-amber-500/50"
+        >
+          <option value="All">All Types</option>
+          <option value="Project">Project</option>
+          <option value="Department">Department</option>
+          <option value="Operational">Operational</option>
+          <option value="Warehouse">Warehouse</option>
+        </select>
+      </div>
+
+      <!-- Status Filter -->
+      <div class="flex items-center space-x-2 rtl:space-x-reverse">
+        <span>Status:</span>
+        <select 
+          [value]="statusFilter()"
+          (change)="statusFilter.set($any($event.target).value)"
+          class="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-700 focus:outline-none focus:border-amber-500/50"
+        >
+          <option value="All">All Statuses</option>
+          <option value="Active">Active</option>
+          <option value="Inactive">Inactive</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- Hierarchical Cost Center Tree Grid -->
+  <div class="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="w-full text-left rtl:text-right border-collapse text-xs">
+        <thead>
+          <tr class="bg-slate-50/75 border-b border-slate-100 text-slate-400 font-bold uppercase tracking-wider select-none">
+            <th class="py-3.5 px-4 font-bold w-48">{{ 'cost_centers.code' | translate }}</th>
+            <th class="py-3.5 px-4 font-bold">{{ 'cost_centers.name' | translate }}</th>
+            <th class="py-3.5 px-4 font-bold w-32">{{ 'cost_centers.type' | translate }}</th>
+            <th class="py-3.5 px-4 font-bold w-24">{{ 'cost_centers.status' | translate }}</th>
+            <th class="py-3.5 px-4 font-bold w-32 text-center">{{ 'cost_centers.projects_count' | translate }}</th>
+            <th class="py-3.5 px-4 font-bold w-36 text-right rtl:text-left">{{ 'cost_centers.budget' | translate }}</th>
+            <th class="py-3.5 px-4 font-bold w-36 text-right rtl:text-left">{{ 'cost_centers.spent' | translate }}</th>
+            <th class="py-3.5 px-4 font-bold w-44">{{ 'cost_centers.remaining' | translate }}</th>
+            <th class="py-3.5 px-4 font-bold w-32 text-center" *appRole="['Super Admin', 'General Manager', 'Finance Manager']">
+              {{ 'common.actions' | translate }}
+            </th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100 text-slate-700">
+          @for (cc of hierarchicalCostCenters(); track cc.code) {
+            <tr class="hover:bg-slate-50/50 transition-colors">
+              <!-- Code -->
+              <td class="py-3 px-4 font-mono font-bold text-slate-600">
+                {{ cc.code }}
+              </td>
+              
+              <!-- Name (Hierarchical Indentation) -->
+              <td class="py-3 px-4 font-semibold">
+                <div 
+                  class="flex items-center" 
+                  [style.padding-left.px]="langService.isRtl() ? 0 : cc.level * 24"
+                  [style.padding-right.px]="langService.isRtl() ? cc.level * 24 : 0"
+                >
+                  @if (cc.level > 0) {
+                    <span class="text-slate-300 font-mono select-none mr-2 rtl:ml-2">↳</span>
+                  }
+                  <span class="truncate" [title]="cc.description || ''">{{ cc.name }}</span>
+                </div>
+              </td>
+
+              <!-- Type -->
+              <td class="py-3 px-4">
+                <span 
+                  class="px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wide"
+                  [ngClass]="{
+                    'bg-sky-50 text-sky-600': cc.type === 'Project',
+                    'bg-purple-50 text-purple-600': cc.type === 'Department',
+                    'bg-indigo-50 text-indigo-600': cc.type === 'Operational',
+                    'bg-amber-50 text-amber-600': cc.type === 'Warehouse'
+                  }"
+                >
+                  {{ cc.type }}
+                </span>
+              </td>
+
+              <!-- Status -->
+              <td class="py-3 px-4">
+                <button 
+                  *appRole="['Super Admin', 'General Manager', 'Finance Manager']"
+                  (click)="toggleStatus(cc)"
+                  class="px-2 py-0.5 rounded-full text-[10px] font-bold transition-all"
+                  [ngClass]="cc.status === 'Active' ? 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100' : 'bg-slate-100 text-slate-400 hover:bg-slate-200'"
+                >
+                  {{ cc.status }}
+                </button>
+                <span 
+                  *ngIf="!authService.hasPermission('edit:finance')"
+                  class="px-2 py-0.5 rounded-full text-[10px] font-bold"
+                  [ngClass]="cc.status === 'Active' ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-100 text-slate-400'"
+                >
+                  {{ cc.status }}
+                </span>
+              </td>
+
+              <!-- Projects Count -->
+              <td class="py-3 px-4 text-center font-bold text-slate-500">
+                {{ cc.projectsCount }}
+              </td>
+
+              <!-- Budget -->
+              <td class="py-3 px-4 text-right rtl:text-left font-bold text-slate-800">
+                ${{ cc.totalBudget | number:'1.2-2' }}
+              </td>
+
+              <!-- Spent -->
+              <td class="py-3 px-4 text-right rtl:text-left font-bold text-slate-800">
+                ${{ cc.totalSpent | number:'1.2-2' }}
+              </td>
+
+              <!-- Remaining / Spent bar -->
+              <td class="py-3 px-4">
+                <div class="space-y-1">
+                  <div class="flex items-center justify-between text-[10px] font-bold">
+                    <span [ngClass]="cc.remaining >= 0 ? 'text-emerald-600' : 'text-rose-600'">
+                      ${{ cc.remaining | number:'1.2-2' }}
+                    </span>
+                    <span class="text-slate-400">
+                      {{ cc.totalBudget > 0 ? ((cc.totalSpent / cc.totalBudget) * 100 | number:'1.0-0') : 0 }}%
+                    </span>
+                  </div>
+                  <!-- Progress Bar -->
+                  <div class="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                    <div 
+                      class="h-full rounded-full transition-all duration-500"
+                      [ngClass]="cc.remaining >= 0 ? 'bg-emerald-500' : 'bg-rose-500'"
+                      [style.width.%]="cc.totalBudget > 0 ? (cc.totalSpent / cc.totalBudget) * 100 : 0"
+                    ></div>
+                  </div>
+                </div>
+              </td>
+
+              <!-- Actions -->
+              <td class="py-3 px-4 text-center" *appRole="['Super Admin', 'General Manager', 'Finance Manager']">
+                <div class="flex items-center justify-center space-x-1.5 rtl:space-x-reverse">
+                  <button 
+                    (click)="openEditModal(cc)"
+                    class="p-1 hover:bg-slate-100 rounded text-slate-500 hover:text-amber-500 transition-colors"
+                    title="Edit"
+                  >
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                    </svg>
+                  </button>
+                  <button 
+                    (click)="deleteCostCenter(cc)"
+                    class="p-1 hover:bg-slate-100 rounded text-slate-500 hover:text-rose-500 transition-colors"
+                    title="Delete"
+                  >
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          }
+          @if (hierarchicalCostCenters().length === 0) {
+            <tr>
+              <td colspan="9" class="py-8 text-center text-slate-400 font-semibold">
+                {{ 'common.no_data' | translate }}
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Create/Edit Modal Dialog -->
+  @if (showModal()) {
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <!-- Backdrop -->
+      <div 
+        (click)="showModal.set(false)"
+        class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity"
+      ></div>
+
+      <!-- Modal Content Body -->
+      <div class="bg-white rounded-xl border border-slate-100 shadow-2xl w-full max-w-lg overflow-hidden z-10 animate-scale-up text-xs font-semibold text-slate-600">
+        <!-- Modal Title -->
+        <div class="px-6 py-4 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
+          <h2 class="text-sm font-bold text-slate-800">
+            {{ (editingCostCenter() ? 'cost_centers.edit_title' : 'cost_centers.create_title') | translate }}
+          </h2>
+          <button 
+            (click)="showModal.set(false)"
+            class="text-slate-400 hover:text-slate-600 transition-colors"
+          >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <form (submit)="saveCostCenter(); $event.preventDefault()" class="p-6 space-y-4">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <!-- Code -->
+            <div>
+              <label class="block mb-1.5">{{ 'cost_centers.code' | translate }} *</label>
+              <input 
+                type="text" 
+                name="code"
+                [(ngModel)]="formCode"
+                [disabled]="editingCostCenter() !== null"
+                class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-slate-800 focus:outline-none focus:border-amber-500/50 uppercase disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed"
+                required
+                placeholder="e.g. CC-DRILL-02"
+              />
+            </div>
+
+            <!-- Name -->
+            <div>
+              <label class="block mb-1.5">{{ 'cost_centers.name' | translate }} *</label>
+              <input 
+                type="text" 
+                name="name"
+                [(ngModel)]="formName"
+                class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-slate-800 focus:outline-none focus:border-amber-500/50"
+                required
+                placeholder="e.g. Rig Gamma Operations"
+              />
+            </div>
+
+            <!-- Type -->
+            <div>
+              <label class="block mb-1.5">{{ 'cost_centers.type' | translate }} *</label>
+              <select 
+                name="type"
+                [(ngModel)]="formType"
+                class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-slate-800 focus:outline-none focus:border-amber-500/50"
+                required
+              >
+                <option value="Project">Project</option>
+                <option value="Department">Department</option>
+                <option value="Operational">Operational</option>
+                <option value="Warehouse">Warehouse</option>
+              </select>
+            </div>
+
+            <!-- Parent Cost Center -->
+            <div>
+              <label class="block mb-1.5">{{ 'cost_centers.parent' | translate }}</label>
+              <select 
+                name="parentCode"
+                [(ngModel)]="formParentCode"
+                class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-slate-800 focus:outline-none focus:border-amber-500/50"
+              >
+                <option value="">-- No Parent (Root Node) --</option>
+                @for (parent of availableParentOptions(); track parent.code) {
+                  <option [value]="parent.code">{{ parent.code }} - {{ parent.name }}</option>
+                }
+              </select>
+            </div>
+
+            <!-- Status -->
+            <div>
+              <label class="block mb-1.5">{{ 'cost_centers.status' | translate }} *</label>
+              <select 
+                name="status"
+                [(ngModel)]="formStatus"
+                class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-slate-800 focus:outline-none focus:border-amber-500/50"
+                required
+              >
+                <option value="Active">Active</option>
+                <option value="Inactive">Inactive</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Description -->
+          <div>
+            <label class="block mb-1.5">{{ 'cost_centers.description' | translate }}</label>
+            <textarea 
+              name="description"
+              [(ngModel)]="formDescription"
+              rows="3"
+              class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-slate-800 focus:outline-none focus:border-amber-500/50 resize-none"
+              placeholder="Provide a description of this cost center's operational purpose..."
+            ></textarea>
+          </div>
+
+          <!-- Actions Footer -->
+          <div class="flex items-center justify-end space-x-3 rtl:space-x-reverse pt-2 border-t border-slate-100">
+            <button 
+              type="button"
+              (click)="showModal.set(false)"
+              class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-4 py-2.5 rounded-lg active:scale-95 transition-all"
+            >
+              {{ 'common.cancel' | translate }}
+            </button>
+            <button 
+              type="submit"
+              class="bg-amber-500 hover:bg-amber-600 text-white font-bold px-5 py-2.5 rounded-lg active:scale-95 transition-all shadow-sm hover:shadow"
+            >
+              {{ 'cost_centers.save' | translate }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+</div>

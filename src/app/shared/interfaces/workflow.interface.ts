@@ -18,6 +18,16 @@ export interface ApprovalStep {
 export type ContractStatus = 'Draft' | 'Active' | 'Completed' | 'Suspended' | 'Terminated';
 export type ContractType = 'Daily Rate' | 'Lump Sum' | 'Unit Rate' | 'Time & Material';
 
+export interface ContractAttachment {
+  id: string;
+  fileName: string;
+  fileSize: number;    // bytes
+  fileType: string;   // MIME type
+  uploadedAt: string; // ISO date
+  uploadedBy: string;
+  dataUrl?: string;   // base64 data URL stored locally (no backend)
+}
+
 export interface RateSheetItem {
   id: string;
   description: string;
@@ -55,8 +65,38 @@ export interface Contract {
   rateSheet: RateSheetItem[];
   milestones: ContractMilestone[];
   retentionPercent: number;
-  paymentTerms: string;
+  paymentTerms?: string;
   createdDate: string;
+  
+  // Project Info
+  customer?: string;
+  projectName?: string;
+  projectCode?: string;
+
+  // Location
+  country?: string;
+  region?: string;
+  siteName?: string;
+  gpsCoordinates?: string;
+
+  // Cost Center
+  costCenterCode?: string;
+  costCenterName?: string;
+  parentCostCenter?: string;
+
+  // Logistics
+  preferredWarehouse?: string;
+  nearestWarehouse?: string;
+  distanceKm?: number;
+  estimatedTransportationCost?: number;
+
+  // File Attachments
+  attachments?: ContractAttachment[];
+
+  // Currency Snapshot (recorded at contract creation time)
+  exchangeRateUSDtoEGP?: number;  // Live rate fetched at creation
+  contractValueEGP?: number;       // value * exchangeRateUSDtoEGP
+  rateSnapshotDate?: string;       // ISO date when rate was fetched
 }
 
 // --- 2. DAILY ACTIVITY REPORTS ---

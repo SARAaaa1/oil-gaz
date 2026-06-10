@@ -80,7 +80,7 @@
           </div>
         }
 
-        <!-- Operations Group (collapsible) -->
+
         <div *appRole="['Super Admin', 'General Manager', 'Operations Manager', 'Project Manager', 'Employee', 'Finance Manager']" class="space-y-1 animate-fade-in">
           <button 
             (click)="toggleOperationsMenu()"
@@ -136,6 +136,35 @@
                   </svg>
                 </span>
               </div>
+
+              <!-- 1b. Projects (auto-created from Contract Approval) -->
+              @if (authService.hasPermission('view:projects')) {
+                <a 
+                  routerLink="/operations/projects" 
+                  routerLinkActive="text-accent font-semibold"
+                  #rlaProjects="routerLinkActive"
+                  class="group/item flex items-center py-1 text-xs text-slate-400 hover:text-white transition-colors relative"
+                >
+                  <span class="absolute -left-[30px] flex items-center justify-center w-3.5 h-3.5 bg-primary rounded-full">
+                    <span 
+                      class="w-1.5 h-1.5 rounded-full transition-all duration-300"
+                      [class.bg-accent]="rlaProjects.isActive"
+                      [class.scale-125]="rlaProjects.isActive"
+                      [class.bg-slate-600]="!rlaProjects.isActive"
+                    ></span>
+                  </span>
+                  {{ 'navigation.projects' | translate }}
+                </a>
+
+                <!-- Flow Arrow -->
+                <div class="flex items-center h-1 select-none pointer-events-none relative">
+                  <span class="absolute -left-[27px] w-2 h-2 flex items-center justify-center bg-primary text-slate-600">
+                    <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 13l-7 7-7-7" />
+                    </svg>
+                  </span>
+                </div>
+              }
 
               <!-- 2. Daily Activity Reports (DAR) -->
               <a 
@@ -473,8 +502,7 @@
           @if (isFinanceOpen() && !isSidebarCollapsed()) {
             <div class="pl-9 space-y-1.5 transition-all duration-300">
               <a 
-                routerLink="/reports" 
-                [queryParams]="{ view: 'cost-centers' }"
+                routerLink="/finance/cost-centers" 
                 routerLinkActive="text-accent font-semibold"
                 class="block py-1 text-xs text-slate-400 hover:text-white transition-colors"
               >

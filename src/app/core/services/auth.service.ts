@@ -22,7 +22,12 @@ const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     'edit:timesheets',
     'view:reports',
     'view:settings',
-    'edit:settings'
+    'edit:settings',
+    'view:projects',
+    'edit:projects',
+    'approve:projects',
+    'view:finance',
+    'edit:finance'
   ],
   'General Manager': [
     'view:dashboard',
@@ -38,14 +43,23 @@ const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     'view:timesheets',
     'edit:timesheets',
     'view:reports',
-    'view:settings'
+    'view:settings',
+    'view:projects',
+    'edit:projects',
+    'approve:projects',
+    'view:finance',
+    'edit:finance'
   ],
   'Finance Manager': [
     'view:dashboard',
     'view:procurement',
     'approve:po',
     'view:reports',
-    'view:settings'
+    'view:settings',
+    'view:projects',
+    'edit:projects',
+    'view:finance',
+    'edit:finance'
   ],
   'Procurement Manager': [
     'view:dashboard',
@@ -61,7 +75,9 @@ const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     'edit:rigs',
     'view:timesheets',
     'edit:timesheets',
-    'view:reports'
+    'view:reports',
+    'view:projects',
+    'edit:projects'
   ],
   'Store Keeper': [
     'view:dashboard',
@@ -72,7 +88,9 @@ const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     'view:dashboard',
     'view:rigs',
     'view:timesheets',
-    'edit:timesheets'
+    'edit:timesheets',
+    'view:projects',
+    'edit:projects'
   ],
   'Employee': [
     'view:dashboard',

@@ -66,6 +66,11 @@ export const routes: Routes = [
             path: 'timesheets',
             loadComponent: () => import('./features/operations/timesheets/timesheets.component').then(m => m.TimesheetsComponent),
             data: { permission: 'view:timesheets' }
+          },
+          {
+            path: 'projects',
+            loadComponent: () => import('./features/projects/projects.component').then(m => m.ProjectsComponent),
+            data: { permission: 'view:projects' }
           }
         ]
       },
@@ -78,6 +83,19 @@ export const routes: Routes = [
         path: 'settings',
         loadComponent: () => import('./features/settings/settings.component').then(m => m.SettingsComponent),
         data: { permission: 'view:settings' }
+      },
+      // Projects is now under /operations/projects — redirect old path for backward compat
+      { path: 'projects', redirectTo: '/operations/projects', pathMatch: 'full' },
+      {
+        path: 'finance',
+        data: { permission: 'view:finance' },
+        children: [
+          { path: '', redirectTo: 'cost-centers', pathMatch: 'full' },
+          {
+            path: 'cost-centers',
+            loadComponent: () => import('./features/finance/cost-centers/cost-centers.component').then(m => m.CostCentersComponent)
+          }
+        ]
       },
       {
         path: 'activity-logs',

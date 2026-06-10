@@ -4,6 +4,10 @@ import {
   ContractStatus, DARStatus, WCCStatus, InvoiceStatus, CollectionStatus,
   RateSheetItem, ContractMilestone, DARMaterialUsed, WCCLineItem, CollectionPayment, ApprovalStep
 } from '../../shared/interfaces/workflow.interface';
+import { 
+  CostCenter, Project, EquipmentAssignment, AssetAssignment, 
+  MaterialConsumption, EquipmentTransfer, LaborRecord 
+} from '../../shared/interfaces/project.interface';
 import { AuditService } from './audit.service';
 import { AuthService } from './auth.service';
 
@@ -20,6 +24,13 @@ export class WorkflowService {
   readonly wccs = signal<WCC[]>([]);
   readonly invoices = signal<Invoice[]>([]);
   readonly collections = signal<Collection[]>([]);
+  readonly projects = signal<Project[]>([]);
+  readonly costCenters = signal<CostCenter[]>([]);
+  readonly equipmentAssignments = signal<EquipmentAssignment[]>([]);
+  readonly assetAssignments = signal<AssetAssignment[]>([]);
+  readonly materialConsumptions = signal<MaterialConsumption[]>([]);
+  readonly equipmentTransfers = signal<EquipmentTransfer[]>([]);
+  readonly laborRecords = signal<LaborRecord[]>([]);
 
   private get auditService(): AuditService {
     return this.injector.get(AuditService);
@@ -35,13 +46,27 @@ export class WorkflowService {
     const cachedWccs = localStorage.getItem('petroflow_wccs');
     const cachedInvoices = localStorage.getItem('petroflow_invoices');
     const cachedCollections = localStorage.getItem('petroflow_collections');
+    const cachedProjects = localStorage.getItem('petroflow_projects');
+    const cachedCostCenters = localStorage.getItem('petroflow_costcenters');
+    const cachedEqAssignments = localStorage.getItem('petroflow_eq_assignments');
+    const cachedAssetAssignments = localStorage.getItem('petroflow_asset_assignments');
+    const cachedMatConsumptions = localStorage.getItem('petroflow_mat_consumptions');
+    const cachedTransfers = localStorage.getItem('petroflow_transfers');
+    const cachedLabor = localStorage.getItem('petroflow_labor');
 
-    if (cachedContracts && cachedDars && cachedWccs && cachedInvoices && cachedCollections) {
+    if (cachedContracts && cachedDars && cachedWccs && cachedInvoices && cachedCollections && cachedProjects) {
       this.contracts.set(JSON.parse(cachedContracts));
       this.dars.set(JSON.parse(cachedDars));
       this.wccs.set(JSON.parse(cachedWccs));
       this.invoices.set(JSON.parse(cachedInvoices));
       this.collections.set(JSON.parse(cachedCollections));
+      this.projects.set(JSON.parse(cachedProjects));
+      this.costCenters.set(cachedCostCenters ? JSON.parse(cachedCostCenters) : []);
+      this.equipmentAssignments.set(cachedEqAssignments ? JSON.parse(cachedEqAssignments) : []);
+      this.assetAssignments.set(cachedAssetAssignments ? JSON.parse(cachedAssetAssignments) : []);
+      this.materialConsumptions.set(cachedMatConsumptions ? JSON.parse(cachedMatConsumptions) : []);
+      this.equipmentTransfers.set(cachedTransfers ? JSON.parse(cachedTransfers) : []);
+      this.laborRecords.set(cachedLabor ? JSON.parse(cachedLabor) : []);
     } else {
       this.initializeMockData();
     }
@@ -53,6 +78,13 @@ export class WorkflowService {
     localStorage.setItem('petroflow_wccs', JSON.stringify(this.wccs()));
     localStorage.setItem('petroflow_invoices', JSON.stringify(this.invoices()));
     localStorage.setItem('petroflow_collections', JSON.stringify(this.collections()));
+    localStorage.setItem('petroflow_projects', JSON.stringify(this.projects()));
+    localStorage.setItem('petroflow_costcenters', JSON.stringify(this.costCenters()));
+    localStorage.setItem('petroflow_eq_assignments', JSON.stringify(this.equipmentAssignments()));
+    localStorage.setItem('petroflow_asset_assignments', JSON.stringify(this.assetAssignments()));
+    localStorage.setItem('petroflow_mat_consumptions', JSON.stringify(this.materialConsumptions()));
+    localStorage.setItem('petroflow_transfers', JSON.stringify(this.equipmentTransfers()));
+    localStorage.setItem('petroflow_labor', JSON.stringify(this.laborRecords()));
   }
 
   resetAllData() {
@@ -61,6 +93,13 @@ export class WorkflowService {
     localStorage.removeItem('petroflow_wccs');
     localStorage.removeItem('petroflow_invoices');
     localStorage.removeItem('petroflow_collections');
+    localStorage.removeItem('petroflow_projects');
+    localStorage.removeItem('petroflow_costcenters');
+    localStorage.removeItem('petroflow_eq_assignments');
+    localStorage.removeItem('petroflow_asset_assignments');
+    localStorage.removeItem('petroflow_mat_consumptions');
+    localStorage.removeItem('petroflow_transfers');
+    localStorage.removeItem('petroflow_labor');
     this.initializeMockData();
     
     const user = this.authService.currentUser();
@@ -73,7 +112,7 @@ export class WorkflowService {
       action: 'Status Change',
       oldValue: 'Active Data',
       newValue: 'Reset to Factory Defaults',
-      details: 'All contracts, daily activity reports, completion certificates, invoices, and collections have been reset to mock template values.'
+      details: 'All contracts, daily activity reports, completion certificates, invoices, collections, projects, and cost centers have been reset to mock template values.'
     });
   }
 
@@ -411,11 +450,244 @@ export class WorkflowService {
       }
     ];
 
+    // --- 6. MOCK COST CENTERS ---
+    const mockCostCenters: CostCenter[] = [
+      { code: 'CC-CORP-01', name: 'Corporate Headquarters', type: 'Department', status: 'Active', description: 'General Corporate Overhead' },
+      { code: 'CC-DRILL-01', name: 'Drilling Operations Dept', type: 'Operational', status: 'Active', description: 'Drilling Fleet Operational Management' },
+      { code: 'CC-WH-A', name: 'Warehouse A Base', type: 'Warehouse', status: 'Active', description: 'Logistics Storage Base Alpha' },
+      { code: 'CC-WH-B', name: 'Warehouse B Land Base', type: 'Warehouse', status: 'Active', description: 'Logistics Storage Base Beta' },
+      { code: 'CC-PROJ-CON-2026-001', name: 'CC Rig Alpha Offshore', type: 'Project', parentCode: 'CC-DRILL-01', status: 'Active', description: 'Cost Center for Rig Alpha Contract' },
+      { code: 'CC-PROJ-CON-2026-002', name: 'CC Rig Beta Overhaul', type: 'Project', parentCode: 'CC-DRILL-01', status: 'Active', description: 'Cost Center for Rig Beta Overhaul Contract' }
+    ];
+
+    // --- 7. MOCK PROJECTS ---
+    const mockProjects: Project[] = [
+      {
+        code: 'PROJ-CON-2026-001',
+        name: 'Rig Alpha Offshore Drilling Services',
+        contractId: 'con1',
+        contractNumber: 'CON-2026-001',
+        customer: 'Chevron Energy Corp',
+        contractValue: 1850000,
+        consumedValue: 420000,
+        remainingValue: 1430000,
+        progressPercent: 23,
+        status: 'Active',
+        startDate: '2026-01-01',
+        endDate: '2026-12-31',
+        country: 'USA',
+        region: 'Gulf of Mexico',
+        siteName: 'Block-A42',
+        gpsCoordinates: '28.3N, 89.6W',
+        costCenterCode: 'CC-PROJ-CON-2026-001',
+        preferredWarehouse: 'Warehouse A',
+        nearestWarehouse: 'Warehouse A',
+        distanceKm: 120,
+        estimatedTransportationCost: 25000
+      },
+      {
+        code: 'PROJ-CON-2026-002',
+        name: 'Rig Beta Overhaul & Land Maintenance',
+        contractId: 'con2',
+        contractNumber: 'CON-2026-002',
+        customer: 'Occidental Petroleum',
+        contractValue: 650000,
+        consumedValue: 185000,
+        remainingValue: 465000,
+        progressPercent: 28,
+        status: 'Active',
+        startDate: '2026-03-01',
+        endDate: '2026-09-30',
+        country: 'USA',
+        region: 'Permian Basin',
+        siteName: 'Pad-12',
+        gpsCoordinates: '31.9N, 102.3W',
+        costCenterCode: 'CC-PROJ-CON-2026-002',
+        preferredWarehouse: 'Warehouse B',
+        nearestWarehouse: 'Warehouse B',
+        distanceKm: 45,
+        estimatedTransportationCost: 8000
+      }
+    ];
+
+    // --- 8. MOCK EQUIPMENT ASSIGNMENTS ---
+    const mockEqAssignments: EquipmentAssignment[] = [
+      {
+        id: 'eqas1',
+        equipmentId: 'eq1',
+        equipmentName: 'Drill Rig Mast Alpha',
+        serialNumber: 'SN-RGM-00123',
+        projectCode: 'PROJ-CON-2026-001',
+        siteName: 'Block-A42',
+        assignedDate: '2026-01-05',
+        status: 'Assigned',
+        hoursUsed: 850,
+        daysUsed: 150,
+        costCenterCode: 'CC-PROJ-CON-2026-001'
+      },
+      {
+        id: 'eqas2',
+        equipmentId: 'eq2',
+        equipmentName: 'Standby Power Gen 400kVA',
+        serialNumber: 'SN-CAT-998822',
+        projectCode: 'PROJ-CON-2026-001',
+        siteName: 'Block-A42',
+        assignedDate: '2026-01-10',
+        status: 'Assigned',
+        hoursUsed: 1200,
+        daysUsed: 145,
+        costCenterCode: 'CC-PROJ-CON-2026-001'
+      },
+      {
+        id: 'eqas3',
+        equipmentId: 'eq3',
+        equipmentName: 'Heavy Overhaul Lift Crane',
+        serialNumber: 'SN-LB-00994',
+        projectCode: 'PROJ-CON-2026-002',
+        siteName: 'Pad-12',
+        assignedDate: '2026-03-05',
+        returnedDate: '2026-05-25',
+        status: 'Returned',
+        hoursUsed: 320,
+        daysUsed: 81,
+        costCenterCode: 'CC-PROJ-CON-2026-002'
+      }
+    ];
+
+    // --- 9. MOCK ASSET ASSIGNMENTS ---
+    const mockAssetAssignments: AssetAssignment[] = [
+      {
+        id: 'as1',
+        assetId: 'eq4',
+        assetName: 'Crew Rig Transport Truck',
+        serialNumber: 'SN-KW-55012',
+        projectCode: 'PROJ-CON-2026-001',
+        assignedDate: '2026-01-05',
+        assignedTo: 'Robert Vance',
+        location: 'Block-A42',
+        costCenterCode: 'CC-PROJ-CON-2026-001',
+        status: 'Active'
+      },
+      {
+        id: 'as2',
+        assetId: 'eq2',
+        assetName: 'Standby Power Gen 400kVA',
+        serialNumber: 'SN-CAT-998822',
+        projectCode: 'PROJ-CON-2026-001',
+        assignedDate: '2026-01-10',
+        assignedTo: 'Robert Vance',
+        location: 'Block-A42',
+        costCenterCode: 'CC-PROJ-CON-2026-001',
+        status: 'Active'
+      }
+    ];
+
+    // --- 10. MOCK MATERIAL CONSUMPTIONS ---
+    const mockMaterialConsumptions: MaterialConsumption[] = [
+      {
+        id: 'mc1',
+        projectCode: 'PROJ-CON-2026-001',
+        materialCode: 'DR-BIT-8.5-PDC',
+        materialName: 'Drill Bit 8.5in PDC Premium',
+        warehouse: 'Warehouse A',
+        issuedQuantity: 2,
+        consumedQuantity: 2,
+        remainingQuantity: 0,
+        costCenterCode: 'CC-PROJ-CON-2026-001',
+        issueDate: '2026-01-15',
+        docRef: 'MIV-0012',
+        unitPrice: 8500
+      },
+      {
+        id: 'mc2',
+        projectCode: 'PROJ-CON-2026-001',
+        materialCode: 'TUB-PIPE-5IN',
+        materialName: 'Steel Pipes 5in Casing joints',
+        warehouse: 'Warehouse A',
+        issuedQuantity: 40,
+        consumedQuantity: 30,
+        remainingQuantity: 10,
+        costCenterCode: 'CC-PROJ-CON-2026-001',
+        issueDate: '2026-02-10',
+        docRef: 'MIV-0028',
+        unitPrice: 950
+      }
+    ];
+
+    // --- 11. MOCK TRANSFERS ---
+    const mockTransfers: EquipmentTransfer[] = [
+      {
+        transferNumber: 'TRF-001',
+        equipmentId: 'eq2',
+        equipmentName: 'Standby Power Gen 400kVA',
+        fromLocation: 'Warehouse A',
+        toLocation: 'Block-A42',
+        projectCode: 'PROJ-CON-2026-001',
+        costCenterCode: 'CC-PROJ-CON-2026-001',
+        startDate: '2026-01-08',
+        arrivalDate: '2026-01-09',
+        transportationHours: 8,
+        transportationCost: 1500,
+        reason: 'Mobilization deployment for Rig Alpha pad standby.',
+        status: 'Completed'
+      },
+      {
+        transferNumber: 'TRF-002',
+        equipmentId: 'eq3',
+        equipmentName: 'Heavy Overhaul Lift Crane',
+        fromLocation: 'Warehouse B',
+        toLocation: 'Pad-12',
+        projectCode: 'PROJ-CON-2026-002',
+        costCenterCode: 'CC-PROJ-CON-2026-002',
+        startDate: '2026-03-02',
+        arrivalDate: '2026-03-04',
+        transportationHours: 6,
+        transportationCost: 2200,
+        reason: 'Deployment for land rig BOP overhaul lift tasks.',
+        status: 'Completed'
+      }
+    ];
+
+    // --- 12. MOCK LABOR RECORDS ---
+    const mockLabor: LaborRecord[] = [
+      {
+        id: 'lab1',
+        projectCode: 'PROJ-CON-2026-001',
+        employeeName: 'Robert Vance',
+        role: 'Project Manager',
+        regularHours: 450,
+        overtimeHours: 60,
+        hourlyRate: 85,
+        overtimeRate: 125,
+        totalCost: 45750,
+        date: '2026-05-01'
+      },
+      {
+        id: 'lab2',
+        projectCode: 'PROJ-CON-2026-001',
+        employeeName: 'Mark Jenkins',
+        role: 'Drilling Specialist',
+        regularHours: 320,
+        overtimeHours: 80,
+        hourlyRate: 65,
+        overtimeRate: 95,
+        totalCost: 28400,
+        date: '2026-05-02'
+      }
+    ];
+
     this.contracts.set(mockContracts);
     this.dars.set(mockDars);
     this.wccs.set(mockWccs);
     this.invoices.set(mockInvoices);
     this.collections.set(mockCollections);
+    this.projects.set(mockProjects);
+    this.costCenters.set(mockCostCenters);
+    this.equipmentAssignments.set(mockEqAssignments);
+    this.assetAssignments.set(mockAssetAssignments);
+    this.materialConsumptions.set(mockMaterialConsumptions);
+    this.equipmentTransfers.set(mockTransfers);
+    this.laborRecords.set(mockLabor);
     this.saveState();
   }
 
@@ -490,6 +762,103 @@ export class WorkflowService {
       newValue: 'Active',
       details: `Approved contract ${old.contractNumber} (Active). Comments: ${comments || 'None'}`
     });
+
+    // Automatically generate project & cost center
+    this.createProjectAndCostCenterFromContract(contractId);
+  }
+
+  private createProjectAndCostCenterFromContract(contractId: string) {
+    const contract = this.contracts().find(c => c.id === contractId);
+    if (!contract) return;
+
+    const projectCode = contract.projectCode || `PROJ-${contract.contractNumber}`;
+    const projectName = contract.projectName || contract.title;
+    
+    // 1. Cost Center
+    const ccCode = contract.costCenterCode || `CC-${projectCode}`;
+    const ccName = contract.costCenterName || `Project ${projectName} CC`;
+    
+    // Check if Cost Center exists
+    const existsCC = this.costCenters().some(cc => cc.code === ccCode);
+    if (!existsCC) {
+      const newCC: CostCenter = {
+        code: ccCode,
+        name: ccName,
+        type: 'Project',
+        parentCode: contract.parentCostCenter || 'CC-DRILL-01',
+        status: 'Active',
+        description: `Cost Center automatically generated from Contract ${contract.contractNumber}`
+      };
+      this.costCenters.update(list => [...list, newCC]);
+      
+      this.auditService.log({
+        user: 'System',
+        role: 'Super Admin',
+        module: 'Finance',
+        entityName: 'Cost Center',
+        entityId: ccCode,
+        action: 'Create',
+        oldValue: '',
+        newValue: JSON.stringify(newCC),
+        details: `Cost Center ${ccCode} automatically created from Contract ${contract.contractNumber}`
+      });
+    }
+
+    // 2. Project Record
+    const existsProj = this.projects().some(p => p.code === projectCode);
+    if (!existsProj) {
+      const newProj: Project = {
+        code: projectCode,
+        name: projectName,
+        contractId: contract.id,
+        contractNumber: contract.contractNumber,
+        customer: contract.clientName || 'Unknown',
+        contractValue: contract.value,
+        consumedValue: 0,
+        remainingValue: contract.value,
+        progressPercent: 0,
+        status: 'Active',
+        startDate: contract.startDate,
+        endDate: contract.endDate,
+        country: contract.country || 'USA',
+        region: contract.region || 'Gulf of Mexico',
+        siteName: contract.siteName || 'Block-A42',
+        gpsCoordinates: contract.gpsCoordinates || '0.0, 0.0',
+        costCenterCode: ccCode,
+        preferredWarehouse: contract.preferredWarehouse || 'Warehouse A',
+        nearestWarehouse: contract.nearestWarehouse || 'Warehouse A',
+        distanceKm: contract.distanceKm || 100,
+        estimatedTransportationCost: contract.estimatedTransportationCost || 5000,
+        // Currency snapshot from contract
+        contractValueUSD: contract.value,
+        contractValueEGP: contract.contractValueEGP,
+        exchangeRateUSDtoEGP: contract.exchangeRateUSDtoEGP,
+        rateSnapshotDate: contract.rateSnapshotDate
+      };
+      
+      this.projects.update(list => [...list, newProj]);
+
+      // Update Contract to link it
+      this.updateContract(contractId, { 
+        projectCode, 
+        costCenterCode: ccCode,
+        customer: contract.clientName,
+        projectName
+      });
+
+      this.auditService.log({
+        user: 'System',
+        role: 'Super Admin',
+        module: 'Operations',
+        entityName: 'Project',
+        entityId: projectCode,
+        action: 'Create',
+        oldValue: '',
+        newValue: JSON.stringify(newProj),
+        details: 'Project automatically generated from Contract'
+      });
+    }
+    this.saveState();
   }
 
   rejectContract(contractId: string, comments?: string) {
@@ -985,5 +1354,312 @@ export class WorkflowService {
       newValue: `Collected: $${totalCollected}`,
       details: `Received payment of $${payment.amount} (Ref: ${payment.reference}, Method: ${payment.method}) for collection ${col.collectionNumber}. Outstanding balance: $${balance}.`
     });
+  }
+
+  // --- PROJECT CRUD ---
+  createProject(project: Project) {
+    this.projects.update(list => [...list, project]);
+    this.saveState();
+    const user = this.authService.currentUser();
+    this.auditService.log({
+      user: user?.fullName || 'System',
+      role: user?.role || 'Super Admin',
+      module: 'Operations',
+      entityName: 'Project',
+      entityId: project.code,
+      action: 'Create',
+      oldValue: '',
+      newValue: JSON.stringify(project),
+      details: `Created new project "${project.name}" with code ${project.code}.`
+    });
+  }
+
+  updateProject(code: string, updated: Partial<Project>) {
+    const old = this.projects().find(p => p.code === code);
+    if (!old) return;
+    this.projects.update(list =>
+      list.map(p => p.code === code ? { ...p, ...updated } : p)
+    );
+    this.saveState();
+    const user = this.authService.currentUser();
+    this.auditService.log({
+      user: user?.fullName || 'System',
+      role: user?.role || 'Super Admin',
+      module: 'Operations',
+      entityName: 'Project',
+      entityId: code,
+      action: 'Update',
+      oldValue: JSON.stringify(old),
+      newValue: JSON.stringify(this.projects().find(p => p.code === code)),
+      details: `Updated project ${code} properties.`
+    });
+  }
+
+  deleteProject(code: string) {
+    const old = this.projects().find(p => p.code === code);
+    if (!old) return;
+    this.projects.update(list => list.filter(p => p.code !== code));
+    this.saveState();
+    const user = this.authService.currentUser();
+    this.auditService.log({
+      user: user?.fullName || 'System',
+      role: user?.role || 'Super Admin',
+      module: 'Operations',
+      entityName: 'Project',
+      entityId: code,
+      action: 'Reject',
+      oldValue: JSON.stringify(old),
+      newValue: '',
+      details: `Deleted project ${code} ("${old.name}").`
+    });
+  }
+
+  // --- COST CENTER CRUD ---
+  createCostCenter(cc: CostCenter) {
+    this.costCenters.update(list => [...list, cc]);
+    this.saveState();
+    const user = this.authService.currentUser();
+    this.auditService.log({
+      user: user?.fullName || 'System',
+      role: user?.role || 'Super Admin',
+      module: 'Finance',
+      entityName: 'CostCenter',
+      entityId: cc.code,
+      action: 'Create',
+      oldValue: '',
+      newValue: JSON.stringify(cc),
+      details: `Created new cost center "${cc.name}" (${cc.code}).`
+    });
+  }
+
+  updateCostCenter(code: string, updated: Partial<CostCenter>) {
+    const old = this.costCenters().find(c => c.code === code);
+    if (!old) return;
+    this.costCenters.update(list =>
+      list.map(c => c.code === code ? { ...c, ...updated } : c)
+    );
+    this.saveState();
+    const user = this.authService.currentUser();
+    this.auditService.log({
+      user: user?.fullName || 'System',
+      role: user?.role || 'Super Admin',
+      module: 'Finance',
+      entityName: 'CostCenter',
+      entityId: code,
+      action: 'Update',
+      oldValue: JSON.stringify(old),
+      newValue: JSON.stringify(this.costCenters().find(c => c.code === code)),
+      details: `Updated cost center ${code} properties.`
+    });
+  }
+
+  deleteCostCenter(code: string) {
+    const old = this.costCenters().find(c => c.code === code);
+    if (!old) return;
+    this.costCenters.update(list => list.filter(c => c.code !== code));
+    this.saveState();
+    const user = this.authService.currentUser();
+    this.auditService.log({
+      user: user?.fullName || 'System',
+      role: user?.role || 'Super Admin',
+      module: 'Finance',
+      entityName: 'CostCenter',
+      entityId: code,
+      action: 'Reject',
+      oldValue: JSON.stringify(old),
+      newValue: '',
+      details: `Deleted cost center ${code} ("${old.name}").`
+    });
+  }
+
+  // --- EQUIPMENT ASSIGNMENT MUTATORS ---
+  createEquipmentAssignment(assignment: Omit<EquipmentAssignment, 'id'>) {
+    const id = `eqas_${Math.random().toString(36).substr(2, 9)}`;
+    const newAss: EquipmentAssignment = { ...assignment, id };
+    this.equipmentAssignments.update(val => [...val, newAss]);
+    this.saveState();
+    const user = this.authService.currentUser();
+    this.auditService.log({
+      user: user?.fullName || 'System',
+      role: user?.role || 'Super Admin',
+      module: 'Operations',
+      entityName: 'EquipmentAssignment',
+      entityId: id,
+      action: 'Create',
+      oldValue: '',
+      newValue: JSON.stringify(newAss),
+      details: `Assigned equipment "${assignment.equipmentName}" to project ${assignment.projectCode}.`
+    });
+    return newAss;
+  }
+
+  updateEquipmentAssignment(id: string, updated: Partial<EquipmentAssignment>) {
+    const old = this.equipmentAssignments().find(a => a.id === id);
+    if (!old) return;
+    this.equipmentAssignments.update(list =>
+      list.map(a => a.id === id ? { ...a, ...updated } : a)
+    );
+    this.saveState();
+    const user = this.authService.currentUser();
+    this.auditService.log({
+      user: user?.fullName || 'System',
+      role: user?.role || 'Super Admin',
+      module: 'Operations',
+      entityName: 'EquipmentAssignment',
+      entityId: id,
+      action: 'Update',
+      oldValue: JSON.stringify(old),
+      newValue: JSON.stringify(this.equipmentAssignments().find(a => a.id === id)),
+      details: `Updated equipment assignment ${id} status/metrics.`
+    });
+  }
+
+  // --- ASSET ASSIGNMENT MUTATORS ---
+  createAssetAssignment(assignment: Omit<AssetAssignment, 'id'>) {
+    const id = `as_${Math.random().toString(36).substr(2, 9)}`;
+    const newAss: AssetAssignment = { ...assignment, id };
+    this.assetAssignments.update(list => [...list, newAss]);
+    this.saveState();
+    const user = this.authService.currentUser();
+    this.auditService.log({
+      user: user?.fullName || 'System',
+      role: user?.role || 'Super Admin',
+      module: 'Operations',
+      entityName: 'AssetAssignment',
+      entityId: id,
+      action: 'Create',
+      oldValue: '',
+      newValue: JSON.stringify(newAss),
+      details: `Assigned asset "${assignment.assetName}" to project ${assignment.projectCode}.`
+    });
+    return newAss;
+  }
+
+  updateAssetAssignment(id: string, updated: Partial<AssetAssignment>) {
+    const old = this.assetAssignments().find(a => a.id === id);
+    if (!old) return;
+    this.assetAssignments.update(list =>
+      list.map(a => a.id === id ? { ...a, ...updated } : a)
+    );
+    this.saveState();
+    const user = this.authService.currentUser();
+    this.auditService.log({
+      user: user?.fullName || 'System',
+      role: user?.role || 'Super Admin',
+      module: 'Operations',
+      entityName: 'AssetAssignment',
+      entityId: id,
+      action: 'Update',
+      oldValue: JSON.stringify(old),
+      newValue: JSON.stringify(this.assetAssignments().find(a => a.id === id)),
+      details: `Updated asset assignment ${id}.`
+    });
+  }
+
+  // --- MATERIAL CONSUMPTION MUTATORS ---
+  createMaterialConsumption(consumption: Omit<MaterialConsumption, 'id'>) {
+    const id = `mc_${Math.random().toString(36).substr(2, 9)}`;
+    const newCons: MaterialConsumption = { ...consumption, id };
+    this.materialConsumptions.update(list => [...list, newCons]);
+    
+    // Auto-update Project consumedValue
+    const cost = consumption.consumedQuantity * consumption.unitPrice;
+    const project = this.projects().find(p => p.code === consumption.projectCode);
+    if (project) {
+      const newConsumed = (project.consumedValue || 0) + cost;
+      this.updateProject(project.code, {
+        consumedValue: newConsumed,
+        remainingValue: project.contractValue - newConsumed,
+        progressPercent: Math.min(100, Math.round((newConsumed / project.contractValue) * 100))
+      });
+    }
+
+    this.saveState();
+    const user = this.authService.currentUser();
+    this.auditService.log({
+      user: user?.fullName || 'System',
+      role: user?.role || 'Super Admin',
+      module: 'Operations',
+      entityName: 'MaterialConsumption',
+      entityId: id,
+      action: 'Create',
+      oldValue: '',
+      newValue: JSON.stringify(newCons),
+      details: `Recorded consumption of ${consumption.consumedQuantity} units of ${consumption.materialName} on project ${consumption.projectCode}.`
+    });
+    return newCons;
+  }
+
+  // --- EQUIPMENT TRANSFER MUTATORS ---
+  createEquipmentTransfer(transfer: EquipmentTransfer) {
+    this.equipmentTransfers.update(list => [...list, transfer]);
+    this.saveState();
+    const user = this.authService.currentUser();
+    this.auditService.log({
+      user: user?.fullName || 'System',
+      role: user?.role || 'Super Admin',
+      module: 'Operations',
+      entityName: 'EquipmentTransfer',
+      entityId: transfer.transferNumber,
+      action: 'Create',
+      oldValue: '',
+      newValue: JSON.stringify(transfer),
+      details: `Initiated transfer of "${transfer.equipmentName}" from ${transfer.fromLocation} to ${transfer.toLocation}.`
+    });
+  }
+
+  updateEquipmentTransfer(transferNumber: string, updated: Partial<EquipmentTransfer>) {
+    const old = this.equipmentTransfers().find(t => t.transferNumber === transferNumber);
+    if (!old) return;
+    this.equipmentTransfers.update(list =>
+      list.map(t => t.transferNumber === transferNumber ? { ...t, ...updated } : t)
+    );
+    this.saveState();
+    const user = this.authService.currentUser();
+    this.auditService.log({
+      user: user?.fullName || 'System',
+      role: user?.role || 'Super Admin',
+      module: 'Operations',
+      entityName: 'EquipmentTransfer',
+      entityId: transferNumber,
+      action: 'Update',
+      oldValue: JSON.stringify(old),
+      newValue: JSON.stringify(this.equipmentTransfers().find(t => t.transferNumber === transferNumber)),
+      details: `Updated transfer ${transferNumber} status.`
+    });
+  }
+
+  // --- LABOR RECORD MUTATORS ---
+  createLaborRecord(labor: Omit<LaborRecord, 'id'>) {
+    const id = `lab_${Math.random().toString(36).substr(2, 9)}`;
+    const totalCost = (labor.regularHours * labor.hourlyRate) + (labor.overtimeHours * labor.overtimeRate);
+    const newLab: LaborRecord = { ...labor, id, totalCost };
+    this.laborRecords.update(list => [...list, newLab]);
+
+    // Auto-update Project consumedValue
+    const project = this.projects().find(p => p.code === labor.projectCode);
+    if (project) {
+      const newConsumed = (project.consumedValue || 0) + totalCost;
+      this.updateProject(project.code, {
+        consumedValue: newConsumed,
+        remainingValue: project.contractValue - newConsumed,
+        progressPercent: Math.min(100, Math.round((newConsumed / project.contractValue) * 100))
+      });
+    }
+
+    this.saveState();
+    const user = this.authService.currentUser();
+    this.auditService.log({
+      user: user?.fullName || 'System',
+      role: user?.role || 'Super Admin',
+      module: 'Operations',
+      entityName: 'LaborRecord',
+      entityId: id,
+      action: 'Create',
+      oldValue: '',
+      newValue: JSON.stringify(newLab),
+      details: `Logged labor hours for ${labor.employeeName} (${labor.role}) on project ${labor.projectCode}.`
+    });
+    return newLab;
   }
 }
