@@ -413,6 +413,14 @@
           </div>
         </div>
 
+        <!-- Approval Timeline -->
+        <div class="my-4 pt-4 border-t border-slate-100">
+          <app-approval-history [workflow]="[
+            { role: 'Department Manager', approverName: 'Sophia Sterling', status: selectedPR()?.status === 'Approved' || selectedPR()?.status === 'RFQ Created' ? 'Approved' : selectedPR()?.status === 'Rejected' ? 'Rejected' : 'Pending', actionDate: selectedPR()?.status === 'Approved' || selectedPR()?.status === 'RFQ Created' ? selectedPR()?.requestDate : undefined, comments: selectedPR()?.status === 'Approved' || selectedPR()?.status === 'RFQ Created' ? 'Requisition specs verified against rig capacity requirements.' : undefined },
+            { role: 'Procurement Specialist', approverName: 'Jane Smith', status: selectedPR()?.status === 'RFQ Created' ? 'Approved' : 'Pending', actionDate: selectedPR()?.status === 'RFQ Created' ? selectedPR()?.requestDate : undefined, comments: selectedPR()?.status === 'RFQ Created' ? 'Bidders assigned and RFQ launched.' : undefined }
+          ]" />
+        </div>
+
         <!-- Action inside drawer -->
         <div class="pt-4 border-t border-slate-150 flex justify-end">
           @if (selectedPR()?.status === 'Approved') {

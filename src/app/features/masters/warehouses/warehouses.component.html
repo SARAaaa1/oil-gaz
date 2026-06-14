@@ -1,0 +1,316 @@
+<div class="space-y-6">
+
+  <!-- Header -->
+  <div>
+    <h1 class="text-2xl font-black text-slate-800 tracking-tight">{{ 'masters.warehouses.title' | translate }}</h1>
+    <p class="text-xs text-slate-500 font-semibold mt-1">{{ 'masters.warehouses.subtitle' | translate }}</p>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 text-xs font-semibold">
+    
+    <!-- Left Sidebar: Warehouse Selector -->
+    <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-sm space-y-3">
+      <h3 class="font-bold text-slate-800 border-b border-slate-100 pb-2 mb-2">{{ 'masters.warehouses.list_title' | translate }}</h3>
+      <div class="space-y-1">
+        @for (wh of warehouses(); track wh.id) {
+          <button 
+            (click)="selectWarehouse(wh)"
+            [class.bg-indigo-50]="selectedWarehouse()?.id === wh.id"
+            [class.text-indigo-700]="selectedWarehouse()?.id === wh.id"
+            [class.hover:bg-slate-50]="selectedWarehouse()?.id !== wh.id"
+            class="w-full text-left p-3 rounded-lg font-bold flex items-center justify-between transition-colors"
+          >
+            <span>{{ wh.name }}</span>
+            <span class="font-mono text-[10px] opacity-60">{{ wh.code }}</span>
+          </button>
+        }
+      </div>
+    </div>
+
+    <!-- Right Side: Drill-Down Inspector -->
+    <div class="lg:col-span-3 space-y-6">
+      
+      @if (selectedWarehouse()) {
+        <!-- ZONES SECTION -->
+        <div class="bg-white p-5 rounded-xl border border-slate-100 shadow-sm space-y-3">
+          <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+            <h4 class="font-bold text-slate-800 text-sm flex items-center space-x-1">
+              <span>{{ 'masters.warehouses.zones_title' | translate }}</span>
+              <span class="text-xs text-slate-400">({{ currentStructure()?.zones?.length || 0 }})</span>
+            </h4>
+            <button 
+              (click)="zoneCode = ''; zoneName = ''; zoneDesc = ''; showZoneModal.set(true)"
+              class="px-2 py-1 bg-indigo-550 hover:bg-indigo-600 text-white rounded text-[10px] font-bold"
+            >
+              + {{ 'masters.warehouses.add_zone' | translate }}
+            </button>
+          </div>
+          
+          <div class="flex flex-wrap gap-2.5 pt-2">
+            @for (z of currentStructure()?.zones; track z.code) {
+              <button 
+                (click)="selectZone(z)"
+                [class.bg-indigo-650]="selectedZone()?.code === z.code"
+                [class.text-white]="selectedZone()?.code === z.code"
+                [class.bg-slate-50]="selectedZone()?.code !== z.code"
+                [class.text-slate-700]="selectedZone()?.code !== z.code"
+                class="px-4 py-2 rounded-lg font-bold border border-slate-150 hover:border-indigo-500 transition-colors"
+              >
+                <div>{{ z.name }}</div>
+                <div class="text-[9px] opacity-60 mt-0.5">{{ z.code }}</div>
+              </button>
+            } @empty {
+              <div class="text-slate-400 py-2">{{ 'masters.warehouses.no_zones' | translate }}</div>
+            }
+          </div>
+        </div>
+
+        <!-- RACKS SECTION -->
+        @if (selectedZone()) {
+          <div class="bg-white p-5 rounded-xl border border-slate-100 shadow-sm space-y-3 animate-fade-in">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+              <h4 class="font-bold text-slate-800 text-sm">
+                {{ 'masters.warehouses.racks_in' | translate: { zone: selectedZone()?.name } }} ({{ currentRacks().length }})
+              </h4>
+              <button 
+                (click)="rackCode = ''; rackName = ''; showRackModal.set(true)"
+                class="px-2 py-1 bg-indigo-550 hover:bg-indigo-600 text-white rounded text-[10px] font-bold"
+              >
+                + {{ 'masters.warehouses.add_rack' | translate }}
+              </button>
+            </div>
+            
+            <div class="flex flex-wrap gap-2.5 pt-2">
+              @for (r of currentRacks(); track r.code) {
+                <button 
+                  (click)="selectRack(r)"
+                  [class.bg-indigo-650]="selectedRack()?.code === r.code"
+                  [class.text-white]="selectedRack()?.code === r.code"
+                  [class.bg-slate-50]="selectedRack()?.code !== r.code"
+                  [class.text-slate-700]="selectedRack()?.code !== r.code"
+                  class="px-4 py-2 rounded-lg font-bold border border-slate-150 hover:border-indigo-500 transition-colors"
+                >
+                  <span>{{ r.name }}</span>
+                  <span class="text-[9px] opacity-65 ml-2 rtl:mr-2 font-mono">{{ r.code }}</span>
+                </button>
+              } @empty {
+                <div class="text-slate-400 py-2">{{ 'masters.warehouses.no_racks' | translate }}</div>
+              }
+            </div>
+          </div>
+        }
+
+        <!-- SHELVES SECTION -->
+        @if (selectedRack()) {
+          <div class="bg-white p-5 rounded-xl border border-slate-100 shadow-sm space-y-3 animate-fade-in">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+              <h4 class="font-bold text-slate-800 text-sm">
+                {{ 'masters.warehouses.shelves_in' | translate: { rack: selectedRack()?.name } }} ({{ currentShelves().length }})
+              </h4>
+              <button 
+                (click)="shelfCode = ''; shelfName = ''; showShelfModal.set(true)"
+                class="px-2 py-1 bg-indigo-550 hover:bg-indigo-600 text-white rounded text-[10px] font-bold"
+              >
+                + {{ 'masters.warehouses.add_shelf' | translate }}
+              </button>
+            </div>
+            
+            <div class="flex flex-wrap gap-2.5 pt-2">
+              @for (s of currentShelves(); track s.code) {
+                <button 
+                  (click)="selectShelf(s)"
+                  [class.bg-indigo-650]="selectedShelf()?.code === s.code"
+                  [class.text-white]="selectedShelf()?.code === s.code"
+                  [class.bg-slate-50]="selectedShelf()?.code !== s.code"
+                  [class.text-slate-700]="selectedShelf()?.code !== s.code"
+                  class="px-4 py-2 rounded-lg font-bold border border-slate-150 hover:border-indigo-500 transition-colors"
+                >
+                  <span>{{ s.name }}</span>
+                  <span class="text-[9px] opacity-65 ml-2 rtl:mr-2 font-mono">{{ s.code }}</span>
+                </button>
+              } @empty {
+                <div class="text-slate-400 py-2">{{ 'masters.warehouses.no_shelves' | translate }}</div>
+              }
+            </div>
+          </div>
+        }
+
+        <!-- BINS GRID -->
+        @if (selectedShelf()) {
+          <div class="bg-white p-5 rounded-xl border border-slate-100 shadow-sm space-y-3 animate-fade-in">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+              <h4 class="font-bold text-slate-800 text-sm">
+                {{ 'masters.warehouses.bins_in' | translate: { shelf: selectedShelf()?.name } }} ({{ currentBins().length }})
+              </h4>
+              <button 
+                (click)="binCode = ''; binName = ''; binWeight = 500; binVolume = 2; showBinModal.set(true)"
+                class="px-2 py-1 bg-indigo-550 hover:bg-indigo-600 text-white rounded text-[10px] font-bold"
+              >
+                + {{ 'masters.warehouses.add_bin' | translate }}
+              </button>
+            </div>
+            
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 pt-2">
+              @for (b of currentBins(); track b.code) {
+                <div class="p-4 bg-slate-50 border border-slate-150 rounded-xl space-y-2">
+                  <div class="flex items-center justify-between border-b border-slate-100 pb-1.5">
+                    <span class="font-bold text-slate-900">{{ b.name }}</span>
+                    <span class="font-mono text-[10px] font-bold text-indigo-650 bg-indigo-50 px-2 py-0.5 rounded">{{ b.code }}</span>
+                  </div>
+                  <div class="text-[10px] text-slate-500 space-y-1">
+                    <div class="flex justify-between">
+                      <span>{{ 'masters.warehouses.max_weight' | translate }}:</span>
+                      <span class="font-bold text-slate-700">{{ b.maxWeightCapacity || 'N/A' }} kg</span>
+                    </div>
+                    <div class="flex justify-between">
+                      <span>{{ 'masters.warehouses.max_volume' | translate }}:</span>
+                      <span class="font-bold text-slate-700">{{ b.maxVolumeCapacity || 'N/A' }} m³</span>
+                    </div>
+                  </div>
+                </div>
+              } @empty {
+                <div class="text-slate-400 py-2 col-span-3">{{ 'masters.warehouses.no_bins' | translate }}</div>
+              }
+            </div>
+          </div>
+        }
+      }
+    </div>
+
+  </div>
+
+</div>
+
+<!-- Zone Add Modal -->
+@if (showZoneModal()) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+    <div class="bg-white rounded-xl shadow-xl border border-slate-150 w-full max-w-md overflow-hidden animate-scale-in">
+      <div class="p-4 bg-slate-50 border-b border-slate-100 flex items-center justify-between text-xs">
+        <h3 class="font-bold text-slate-800">{{ 'masters.warehouses.add_zone' | translate }}</h3>
+        <button (click)="showZoneModal.set(false)" class="text-slate-400 hover:text-slate-600">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      <div class="p-5 space-y-3 text-xs">
+        <div>
+          <label class="block text-slate-500 font-bold mb-1">{{ 'masters.warehouses.zone_code' | translate }} *</label>
+          <input type="text" [(ngModel)]="zoneCode" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-850 focus:outline-none">
+        </div>
+        <div>
+          <label class="block text-slate-500 font-bold mb-1">{{ 'masters.warehouses.zone_name' | translate }} *</label>
+          <input type="text" [(ngModel)]="zoneName" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-850 focus:outline-none">
+        </div>
+        <div>
+          <label class="block text-slate-500 font-bold mb-1">{{ 'masters.warehouses.description' | translate }}</label>
+          <textarea [(ngModel)]="zoneDesc" rows="3" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-850 focus:outline-none"></textarea>
+        </div>
+      </div>
+      <div class="p-4 bg-slate-50 border-t border-slate-100 flex justify-end space-x-2 rtl:space-x-reverse text-xs">
+        <button (click)="showZoneModal.set(false)" class="px-4 py-2 bg-white border border-slate-200 rounded-lg text-slate-650 hover:bg-slate-50 font-bold">{{ 'common.cancel' | translate }}</button>
+        <button (click)="saveZone()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg">{{ 'common.save' | translate }}</button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Rack Add Modal -->
+@if (showRackModal()) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+    <div class="bg-white rounded-xl shadow-xl border border-slate-150 w-full max-w-md overflow-hidden animate-scale-in">
+      <div class="p-4 bg-slate-50 border-b border-slate-100 flex items-center justify-between text-xs">
+        <h3 class="font-bold text-slate-800">{{ 'masters.warehouses.add_rack' | translate }}</h3>
+        <button (click)="showRackModal.set(false)" class="text-slate-400 hover:text-slate-600">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      <div class="p-5 space-y-3 text-xs">
+        <div>
+          <label class="block text-slate-500 font-bold mb-1">{{ 'masters.warehouses.rack_code' | translate }} *</label>
+          <input type="text" [(ngModel)]="rackCode" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-850 focus:outline-none">
+        </div>
+        <div>
+          <label class="block text-slate-500 font-bold mb-1">{{ 'masters.warehouses.rack_name' | translate }} *</label>
+          <input type="text" [(ngModel)]="rackName" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-850 focus:outline-none">
+        </div>
+      </div>
+      <div class="p-4 bg-slate-50 border-t border-slate-100 flex justify-end space-x-2 rtl:space-x-reverse text-xs">
+        <button (click)="showRackModal.set(false)" class="px-4 py-2 bg-white border border-slate-200 rounded-lg text-slate-650 hover:bg-slate-50 font-bold">{{ 'common.cancel' | translate }}</button>
+        <button (click)="saveRack()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg">{{ 'common.save' | translate }}</button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Shelf Add Modal -->
+@if (showShelfModal()) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+    <div class="bg-white rounded-xl shadow-xl border border-slate-150 w-full max-w-md overflow-hidden animate-scale-in">
+      <div class="p-4 bg-slate-50 border-b border-slate-100 flex items-center justify-between text-xs">
+        <h3 class="font-bold text-slate-800">{{ 'masters.warehouses.add_shelf' | translate }}</h3>
+        <button (click)="showShelfModal.set(false)" class="text-slate-400 hover:text-slate-600">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      <div class="p-5 space-y-3 text-xs">
+        <div>
+          <label class="block text-slate-500 font-bold mb-1">{{ 'masters.warehouses.shelf_code' | translate }} *</label>
+          <input type="text" [(ngModel)]="shelfCode" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-850 focus:outline-none">
+        </div>
+        <div>
+          <label class="block text-slate-500 font-bold mb-1">{{ 'masters.warehouses.shelf_name' | translate }} *</label>
+          <input type="text" [(ngModel)]="shelfName" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-850 focus:outline-none">
+        </div>
+      </div>
+      <div class="p-4 bg-slate-50 border-t border-slate-100 flex justify-end space-x-2 rtl:space-x-reverse text-xs">
+        <button (click)="showShelfModal.set(false)" class="px-4 py-2 bg-white border border-slate-200 rounded-lg text-slate-650 hover:bg-slate-50 font-bold">{{ 'common.cancel' | translate }}</button>
+        <button (click)="saveShelf()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg">{{ 'common.save' | translate }}</button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Bin Add Modal -->
+@if (showBinModal()) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+    <div class="bg-white rounded-xl shadow-xl border border-slate-150 w-full max-w-md overflow-hidden animate-scale-in">
+      <div class="p-4 bg-slate-50 border-b border-slate-100 flex items-center justify-between text-xs">
+        <h3 class="font-bold text-slate-800">{{ 'masters.warehouses.add_bin' | translate }}</h3>
+        <button (click)="showBinModal.set(false)" class="text-slate-400 hover:text-slate-600">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      <div class="p-5 space-y-3 text-xs">
+        <div>
+          <label class="block text-slate-500 font-bold mb-1">{{ 'masters.warehouses.bin_code' | translate }} *</label>
+          <input type="text" [(ngModel)]="binCode" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-850 focus:outline-none">
+        </div>
+        <div>
+          <label class="block text-slate-500 font-bold mb-1">{{ 'masters.warehouses.bin_name' | translate }} *</label>
+          <input type="text" [(ngModel)]="binName" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-850 focus:outline-none">
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-slate-500 font-bold mb-1">{{ 'masters.warehouses.max_weight' | translate }} (kg)</label>
+            <input type="number" [(ngModel)]="binWeight" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-850 focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-slate-500 font-bold mb-1">{{ 'masters.warehouses.max_volume' | translate }} (m³)</label>
+            <input type="number" [(ngModel)]="binVolume" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-850 focus:outline-none">
+          </div>
+        </div>
+      </div>
+      <div class="p-4 bg-slate-50 border-t border-slate-100 flex justify-end space-x-2 rtl:space-x-reverse text-xs">
+        <button (click)="showBinModal.set(false)" class="px-4 py-2 bg-white border border-slate-200 rounded-lg text-slate-650 hover:bg-slate-50 font-bold">{{ 'common.cancel' | translate }}</button>
+        <button (click)="saveBin()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg">{{ 'common.save' | translate }}</button>
+      </div>
+    </div>
+  </div>
+}

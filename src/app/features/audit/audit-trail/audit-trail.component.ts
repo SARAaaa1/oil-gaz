@@ -59,6 +59,8 @@ import { TranslateModule } from '@ngx-translate/core';
                   <option value="Operations">{{ 'activity_logs.modules.Operations' | translate }}</option>
                   <option value="Auth">{{ 'activity_logs.modules.Auth' | translate }}</option>
                   <option value="Settings">{{ 'activity_logs.modules.Settings' | translate }}</option>
+                  <option value="Finance">{{ 'activity_logs.modules.Finance' | translate }}</option>
+                  <option value="HSE">{{ 'activity_logs.modules.HSE' | translate }}</option>
                 </select>
               </div>
 

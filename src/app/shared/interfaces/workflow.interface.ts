@@ -207,6 +207,14 @@ export interface Invoice {
   approvalWorkflow: ApprovalStep[];
   createdDate: string;
   notes?: string;
+
+  // Equipment Transfer specific fields
+  isEquipmentTransfer?: boolean;
+  equipmentTransferNumber?: string;
+  equipmentName?: string;
+  costCenterCode?: string;
+  netPayableEGP?: number;
+  exchangeRateUSDtoEGP?: number;
 }
 
 // --- 5. COLLECTIONS ---

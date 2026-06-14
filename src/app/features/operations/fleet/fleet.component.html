@@ -1,0 +1,366 @@
+<div class="space-y-6 p-6">
+  <!-- Header & KPIs -->
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-black text-slate-800 tracking-tight">{{ 'navigation.fleet' | translate }}</h1>
+      <p class="text-xs text-slate-500 mt-1 font-semibold">Monitor company trucks, light vehicles, fuel efficiency, and dispatch logs.</p>
+    </div>
+    <div class="flex items-center gap-3">
+      <button (click)="openAddVehicle()" class="px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all shadow-sm flex items-center gap-1.5">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+        <span>Register Vehicle</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- KPI Cards -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div class="bg-white p-5 rounded-xl border border-slate-100 shadow-sm flex items-center justify-between">
+      <div>
+        <p class="text-xs font-semibold text-slate-400 uppercase">Fleet Size</p>
+        <h3 class="text-2xl font-black text-slate-800 mt-1">{{ vehicles().length }} Vehicles</h3>
+      </div>
+      <div class="w-12 h-12 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1m-6 0a1 1 0 001-1m-6 0H3m2 0h2m10 0h2"/></svg>
+      </div>
+    </div>
+    
+    <div class="bg-white p-5 rounded-xl border border-slate-100 shadow-sm flex items-center justify-between">
+      <div>
+        <p class="text-xs font-semibold text-slate-400 uppercase">Total Mileage Logged</p>
+        <h3 class="text-2xl font-black text-slate-800 mt-1">{{ totalMilesLogged() | number }} Km</h3>
+      </div>
+      <div class="w-12 h-12 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+      </div>
+    </div>
+
+    <div class="bg-white p-5 rounded-xl border border-slate-100 shadow-sm flex items-center justify-between">
+      <div>
+        <p class="text-xs font-semibold text-slate-400 uppercase">Fuel Expenses YTD</p>
+        <h3 class="text-2xl font-black text-slate-800 mt-1">${{ totalFuelExpenses() | number }}</h3>
+      </div>
+      <div class="w-12 h-12 rounded-xl bg-amber-50 flex items-center justify-center text-amber-600">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tab Selectors -->
+  <div class="border-b border-slate-200">
+    <nav class="flex space-x-6 text-xs font-bold">
+      <button 
+        (click)="activeTab.set('vehicles')" 
+        class="pb-3 border-b-2 transition-all px-1"
+        [class.border-slate-850]="activeTab() === 'vehicles'"
+        [class.text-slate-900]="activeTab() === 'vehicles'"
+        [class.border-transparent]="activeTab() !== 'vehicles'"
+        [class.text-slate-400]="activeTab() !== 'vehicles'"
+      >
+        Vehicles Registry
+      </button>
+      <button 
+        (click)="activeTab.set('logs')" 
+        class="pb-3 border-b-2 transition-all px-1"
+        [class.border-slate-850]="activeTab() === 'logs'"
+        [class.text-slate-900]="activeTab() === 'logs'"
+        [class.border-transparent]="activeTab() !== 'logs'"
+        [class.text-slate-400]="activeTab() !== 'logs'"
+      >
+        All Dispatch Logs
+      </button>
+    </nav>
+  </div>
+
+  <!-- VEHICLES VIEW -->
+  @if (activeTab() === 'vehicles') {
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      
+      <!-- Vehicle Table List -->
+      <div class="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden lg:col-span-2">
+        <div class="p-4 bg-slate-50/50 border-b border-slate-100 flex items-center justify-between">
+          <input 
+            type="text" 
+            placeholder="Search vehicles..." 
+            [value]="searchQuery()"
+            (input)="searchQuery.set($any($event.target).value)"
+            class="bg-white border border-slate-200 rounded-lg pl-3 pr-3 py-2 text-xs text-slate-800 focus:outline-none w-64"
+          >
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse text-xs">
+            <thead>
+              <tr class="text-slate-400 font-bold border-b border-slate-100 bg-slate-50/20">
+                <th class="p-4 py-3">Plate Number</th>
+                <th class="p-4 py-3">Manufacturer</th>
+                <th class="p-4 py-3">Model</th>
+                <th class="p-4 py-3">Year</th>
+                <th class="p-4 py-3 text-right">Odometer</th>
+                <th class="p-4 py-3">Driver Assigned</th>
+                <th class="p-4 py-3 text-center">Status</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 font-semibold text-slate-700">
+              @for (veh of filteredVehicles(); track veh.id) {
+                <tr 
+                  (click)="selectVehicle(veh)" 
+                  class="hover:bg-slate-50/50 transition-colors cursor-pointer"
+                  [class.bg-indigo-50]="selectedVehicle()?.id === veh.id"
+                >
+                  <td class="p-4 py-3 font-mono font-bold text-indigo-650">{{ veh.plateNumber }}</td>
+                  <td class="p-4 py-3 font-bold text-slate-800">{{ veh.make }}</td>
+                  <td class="p-4 py-3 text-slate-600">{{ veh.model }}</td>
+                  <td class="p-4 py-3 text-slate-500 font-mono">{{ veh.year }}</td>
+                  <td class="p-4 py-3 text-right font-mono">{{ veh.currentOdometer | number }} Km</td>
+                  <td class="p-4 py-3 text-slate-700">{{ veh.assignedTo || 'Unassigned' }}</td>
+                  <td class="p-4 py-3 text-center">
+                    <span 
+                      class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider"
+                      [class.bg-emerald-50]="veh.status === 'Available'"
+                      [class.text-emerald-700]="veh.status === 'Available'"
+                      [class.bg-indigo-50]="veh.status === 'Assigned'"
+                      [class.text-indigo-700]="veh.status === 'Assigned'"
+                      [class.bg-amber-50]="veh.status === 'Maintenance'"
+                      [class.text-amber-700]="veh.status === 'Maintenance'"
+                      [class.bg-red-50]="veh.status === 'Out Of Service'"
+                      [class.text-red-700]="veh.status === 'Out Of Service'"
+                    >
+                      {{ veh.status }}
+                    </span>
+                  </td>
+                </tr>
+              } @empty {
+                <tr>
+                  <td colspan="7" class="p-6 text-center text-slate-400">No vehicles registered.</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Vehicle details & Logs (Right 1 Column) -->
+      <div class="space-y-6">
+        @if (selectedVehicle()) {
+          <div class="bg-white p-5 rounded-xl border border-slate-100 shadow-sm space-y-5 animate-fade-in">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div>
+                <h3 class="text-sm font-bold text-slate-850">{{ selectedVehicle()?.make }} {{ selectedVehicle()?.model }}</h3>
+                <span class="text-[10px] font-mono text-indigo-600">{{ selectedVehicle()?.plateNumber }}</span>
+              </div>
+              <button (click)="closeVehicleDetails()" class="text-slate-400 hover:text-slate-650">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+              </button>
+            </div>
+
+            <!-- Vehicle Details Stats -->
+            <div class="grid grid-cols-2 gap-4 text-xs font-semibold">
+              <div>
+                <p class="text-slate-400">Fuel Type</p>
+                <p class="text-slate-800 mt-0.5">{{ selectedVehicle()?.fuelType }}</p>
+              </div>
+              <div>
+                <p class="text-slate-400">Current Odometer</p>
+                <p class="text-slate-800 mt-0.5 font-mono">{{ selectedVehicle()?.currentOdometer | number }} Km</p>
+              </div>
+            </div>
+
+            <!-- Trip Logs sublist -->
+            <div class="space-y-3 pt-3 border-t border-slate-100">
+              <div class="flex items-center justify-between">
+                <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Recent Trips</h4>
+                <button (click)="openAddTrip()" class="text-xs text-indigo-605 hover:underline">Log Trip</button>
+              </div>
+
+              <div class="space-y-2 max-h-80 overflow-y-auto pr-1">
+                @for (log of filteredTripLogs(); track log.id) {
+                  <div class="p-3 bg-slate-50 rounded-lg border border-slate-100 text-xs flex flex-col gap-1">
+                    <div class="flex items-center justify-between font-bold text-slate-800">
+                      <span>{{ log.driverName }}</span>
+                      <span class="font-mono text-slate-400 text-[10px]">{{ log.tripDate }}</span>
+                    </div>
+                    <p class="text-slate-500 font-medium leading-tight">{{ log.purpose }}</p>
+                    <div class="flex items-center justify-between text-[10px] font-semibold text-slate-400 mt-1">
+                      <span>🚗 {{ log.endOdometer - log.startOdometer }} Km</span>
+                      @if (log.fuelCost) {
+                        <span class="text-emerald-600 font-bold">${{ log.fuelCost }} ({{ log.fuelAddedLiters }} L)</span>
+                      }
+                    </div>
+                  </div>
+                } @empty {
+                  <p class="text-xs text-slate-400 italic">No trip logs recorded for this vehicle.</p>
+                }
+              </div>
+            </div>
+          </div>
+        } @else {
+          <div class="bg-slate-50 p-6 rounded-xl border border-dashed border-slate-250 text-center text-slate-400">
+            <svg class="w-8 h-8 mx-auto mb-2 text-slate-355" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1m-6 0a1 1 0 001-1m-6 0H3m2 0h2m10 0h2"/></svg>
+            <p class="text-xs font-bold">Select a Vehicle to view specific trip histories.</p>
+          </div>
+        }
+      </div>
+    </div>
+  }
+
+  <!-- DISPATCH LOGS VIEW -->
+  @if (activeTab() === 'logs') {
+    <div class="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden animate-fade-in">
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse text-xs">
+          <thead>
+            <tr class="text-slate-400 font-bold border-b border-slate-100 bg-slate-50/20">
+              <th class="p-4 py-3">Date</th>
+              <th class="p-4 py-3">Vehicle (Plate)</th>
+              <th class="p-4 py-3">Driver Name</th>
+              <th class="p-4 py-3">Purpose</th>
+              <th class="p-4 py-3 text-right">Odometer Start</th>
+              <th class="p-4 py-3 text-right">Odometer End</th>
+              <th class="p-4 py-3 text-right">Fuel Added</th>
+              <th class="p-4 py-3 text-right">Fuel Cost</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100 font-semibold text-slate-700">
+            @for (log of tripLogs(); track log.id) {
+              <tr>
+                <td class="p-4 py-3 font-mono">{{ log.tripDate }}</td>
+                <td class="p-4 py-3 font-mono font-bold text-indigo-650">{{ getVehiclePlate(log.vehicleId) }}</td>
+                <td class="p-4 py-3 text-slate-750 font-bold">{{ log.driverName }}</td>
+                <td class="p-4 py-3 text-slate-500">{{ log.purpose }}</td>
+                <td class="p-4 py-3 text-right font-mono">{{ log.startOdometer | number }} Km</td>
+                <td class="p-4 py-3 text-right font-mono">{{ log.endOdometer | number }} Km</td>
+                <td class="p-4 py-3 text-right font-mono">{{ log.fuelAddedLiters || 'N/A' }} L</td>
+                <td class="p-4 py-3 text-right font-mono text-emerald-650 font-bold">{{ log.fuelCost ? '$' + log.fuelCost : 'N/A' }}</td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="8" class="p-6 text-center text-slate-400">No dispatch logs found.</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
+</div>
+
+<!-- REGISTER VEHICLE MODAL -->
+@if (isVehicleModalOpen()) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm animate-fade-in p-4">
+    <div class="bg-white rounded-xl shadow-xl border border-slate-200 w-full max-w-md overflow-hidden">
+      <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+        <h3 class="text-sm font-bold text-slate-800">Register Fleet Vehicle</h3>
+        <button (click)="isVehicleModalOpen.set(false)" class="text-slate-400 hover:text-slate-650">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <form (submit)="saveVehicle()" class="p-6 space-y-4 text-xs font-semibold text-slate-700">
+        <div>
+          <label class="block text-slate-400 mb-1">Plate Number *</label>
+          <input type="text" [(ngModel)]="vehicleForm.plateNumber" name="plateNumber" placeholder="e.g. TX-OG-102" class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2.5 text-slate-800 focus:outline-none font-mono">
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-slate-400 mb-1">Make *</label>
+            <input type="text" [(ngModel)]="vehicleForm.make" name="make" placeholder="e.g. Ford" class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2.5 text-slate-800 focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-slate-400 mb-1">Model *</label>
+            <input type="text" [(ngModel)]="vehicleForm.model" name="model" placeholder="e.g. F-150" class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2.5 text-slate-800 focus:outline-none">
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-slate-400 mb-1">Year</label>
+            <input type="number" [(ngModel)]="vehicleForm.year" name="year" class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2.5 text-slate-800 focus:outline-none font-mono">
+          </div>
+          <div>
+            <label class="block text-slate-400 mb-1">Fuel Type</label>
+            <select [(ngModel)]="vehicleForm.fuelType" name="fuelType" class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2.5 text-slate-850 focus:outline-none">
+              <option value="Diesel">Diesel</option>
+              <option value="Petrol">Petrol</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label class="block text-slate-400 mb-1">Assigned Driver (Name)</label>
+          <input type="text" [(ngModel)]="vehicleForm.assignedTo" name="assignedTo" placeholder="e.g. Robert Vance" class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2.5 text-slate-800 focus:outline-none">
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-slate-400 mb-1">Starting Odometer (Km)</label>
+            <input type="number" [(ngModel)]="vehicleForm.currentOdometer" name="currentOdometer" class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2.5 text-slate-800 focus:outline-none font-mono">
+          </div>
+          <div>
+            <label class="block text-slate-400 mb-1">Status</label>
+            <select [(ngModel)]="vehicleForm.status" name="status" class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2.5 text-slate-850 focus:outline-none">
+              <option value="Available">Available</option>
+              <option value="Assigned">Assigned</option>
+              <option value="Maintenance">Maintenance</option>
+              <option value="Out Of Service">Out Of Service</option>
+            </select>
+          </div>
+        </div>
+        <button type="submit" class="w-full py-3 bg-slate-900 text-white rounded-lg font-bold hover:bg-slate-800 transition-colors shadow-md mt-6">Save Vehicle</button>
+      </form>
+    </div>
+  </div>
+}
+
+<!-- LOG TRIP MODAL -->
+@if (isTripModalOpen()) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm animate-fade-in p-4">
+    <div class="bg-white rounded-xl shadow-xl border border-slate-200 w-full max-w-md overflow-hidden">
+      <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+        <h3 class="text-sm font-bold text-slate-800">Log Vehicle Dispatch / Trip</h3>
+        <button (click)="isTripModalOpen.set(false)" class="text-slate-400 hover:text-slate-650">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <form (submit)="saveTrip()" class="p-6 space-y-4 text-xs font-semibold text-slate-700">
+        <div>
+          <label class="block text-slate-400 mb-1">Target Vehicle *</label>
+          <select [(ngModel)]="tripForm.vehicleId" name="vehicleId" class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2.5 text-slate-850 focus:outline-none">
+            <option value="">-- Select Vehicle --</option>
+            @for (v of vehicles(); track v.id) {
+              <option [value]="v.id">{{ v.plateNumber }} ({{ v.make }} {{ v.model }})</option>
+            }
+          </select>
+        </div>
+        <div>
+          <label class="block text-slate-400 mb-1">Driver Name *</label>
+          <input type="text" [(ngModel)]="tripForm.driverName" name="driverName" placeholder="Driver full name" class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2.5 text-slate-800 focus:outline-none">
+        </div>
+        <div>
+          <label class="block text-slate-400 mb-1">Purpose of Trip</label>
+          <input type="text" [(ngModel)]="tripForm.purpose" name="purpose" placeholder="e.g. Rig Alpha Inspection" class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2.5 text-slate-800 focus:outline-none">
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-slate-400 mb-1">Odometer Start (Km)</label>
+            <input type="number" [(ngModel)]="tripForm.startOdometer" name="startOdometer" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-slate-550 focus:outline-none font-mono" readonly>
+          </div>
+          <div>
+            <label class="block text-slate-400 mb-1">Odometer End (Km) *</label>
+            <input type="number" [(ngModel)]="tripForm.endOdometer" name="endOdometer" class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2.5 text-slate-800 focus:outline-none font-mono">
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-slate-400 mb-1">Fuel Added (Liters)</label>
+            <input type="number" [(ngModel)]="tripForm.fuelAddedLiters" name="fuelAddedLiters" class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2.5 text-slate-800 focus:outline-none font-mono">
+          </div>
+          <div>
+            <label class="block text-slate-400 mb-1">Fuel Cost ($)</label>
+            <input type="number" [(ngModel)]="tripForm.fuelCost" name="fuelCost" class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2.5 text-slate-800 focus:outline-none font-mono">
+          </div>
+        </div>
+        <div>
+          <label class="block text-slate-400 mb-1">Date of Trip</label>
+          <input type="date" [(ngModel)]="tripForm.tripDate" name="tripDate" class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2.5 text-slate-800 focus:outline-none font-mono">
+        </div>
+        <button type="submit" class="w-full py-3 bg-slate-900 text-white rounded-lg font-bold hover:bg-slate-800 transition-colors shadow-md mt-6">Record Trip Log</button>
+      </form>
+    </div>
+  </div>
+}

@@ -1,0 +1,568 @@
+<div class="space-y-6">
+
+  <!-- Header -->
+  <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-black text-slate-800 tracking-tight">{{ 'finance.ar.title' | translate }}</h1>
+      <p class="text-xs text-slate-500 font-semibold mt-1">{{ 'finance.ar.subtitle' | translate }}</p>
+    </div>
+    <div class="flex items-center space-x-3 rtl:space-x-reverse">
+      <button 
+        (click)="openAddCollectionModal()"
+        class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold shadow-sm transition-all flex items-center space-x-1.5 rtl:space-x-reverse"
+      >
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+        </svg>
+        <span>{{ 'finance.ar.new_collection' | translate }}</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- KPI Cards -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+    <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex items-center space-x-4 rtl:space-x-reverse">
+      <div class="p-3 bg-indigo-50 text-indigo-600 rounded-xl">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      </div>
+      <div>
+        <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">{{ 'finance.ar.kpi_outstanding' | translate }}</p>
+        <h3 class="text-lg font-black text-slate-800 mt-1">${{ kpis().totalOutstanding | number:'1.2-2' }}</h3>
+      </div>
+    </div>
+
+    <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex items-center space-x-4 rtl:space-x-reverse">
+      <div class="p-3 bg-emerald-50 text-emerald-600 rounded-xl">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+        </svg>
+      </div>
+      <div>
+        <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">{{ 'finance.ar.kpi_collected' | translate }}</p>
+        <h3 class="text-lg font-black text-slate-800 mt-1">${{ kpis().totalCollected | number:'1.2-2' }}</h3>
+      </div>
+    </div>
+
+    <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex items-center space-x-4 rtl:space-x-reverse">
+      <div class="p-3 bg-amber-50 text-amber-600 rounded-xl">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+        </svg>
+      </div>
+      <div>
+        <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">{{ 'finance.ar.kpi_overdue' | translate }}</p>
+        <h3 class="text-lg font-black text-slate-800 mt-1">{{ kpis().overdueCount }}</h3>
+      </div>
+    </div>
+
+    <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex items-center space-x-4 rtl:space-x-reverse">
+      <div class="p-3 bg-sky-50 text-sky-600 rounded-xl">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+        </svg>
+      </div>
+      <div>
+        <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">{{ 'finance.ar.kpi_clients' | translate }}</p>
+        <h3 class="text-lg font-black text-slate-800 mt-1">{{ kpis().totalClients }}</h3>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabs Navigation -->
+  <div class="flex border-b border-slate-200 text-xs font-bold space-x-6 rtl:space-x-reverse">
+    <button 
+      (click)="activeTab.set('invoices')"
+      [class.border-indigo-600]="activeTab() === 'invoices'"
+      [class.text-indigo-600]="activeTab() === 'invoices'"
+      [class.border-transparent]="activeTab() !== 'invoices'"
+      [class.text-slate-500]="activeTab() !== 'invoices'"
+      class="pb-3 border-b-2 transition-all"
+    >
+      {{ 'finance.ar.tab_invoices' | translate }}
+    </button>
+    <button 
+      (click)="activeTab.set('aging')"
+      [class.border-indigo-600]="activeTab() === 'aging'"
+      [class.text-indigo-600]="activeTab() === 'aging'"
+      [class.border-transparent]="activeTab() !== 'aging'"
+      [class.text-slate-500]="activeTab() !== 'aging'"
+      class="pb-3 border-b-2 transition-all"
+    >
+      {{ 'finance.ar.tab_aging' | translate }}
+    </button>
+    <button 
+      (click)="activeTab.set('vouchers')"
+      [class.border-indigo-600]="activeTab() === 'vouchers'"
+      [class.text-indigo-600]="activeTab() === 'vouchers'"
+      [class.border-transparent]="activeTab() !== 'vouchers'"
+      [class.text-slate-500]="activeTab() !== 'vouchers'"
+      class="pb-3 border-b-2 transition-all"
+    >
+      {{ 'finance.ar.tab_vouchers' | translate }}
+    </button>
+  </div>
+
+  <!-- Tab Contents -->
+  @if (activeTab() === 'invoices') {
+    <!-- Search & Filters -->
+    <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4 text-xs">
+      <div class="relative w-full max-w-md">
+        <input 
+          type="text" 
+          [placeholder]="'finance.ar.search_placeholder' | translate"
+          (input)="searchQuery.set($any($event.target).value)"
+          class="w-full bg-slate-50/50 border border-slate-200 rounded-lg pl-8 pr-3 rtl:pl-3 rtl:pr-8 py-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+        >
+        <svg class="w-4 h-4 text-slate-400 absolute left-2.5 rtl:right-2.5 rtl:left-auto top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+        </svg>
+      </div>
+
+      <div class="flex items-center space-x-2 rtl:space-x-reverse">
+        <span class="text-slate-500 font-semibold">{{ 'finance.ar.filter_status' | translate }}:</span>
+        <select 
+          (change)="statusFilter.set($any($event.target).value)"
+          class="bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-800 font-bold focus:outline-none"
+        >
+          <option value="All">{{ 'finance.ar.status_all' | translate }}</option>
+          <option value="Draft">{{ 'finance.ar.status_draft' | translate }}</option>
+          <option value="Approved">{{ 'finance.ar.status_approved' | translate }}</option>
+          <option value="Sent">{{ 'finance.ar.status_sent' | translate }}</option>
+          <option value="Paid">{{ 'finance.ar.status_paid' | translate }}</option>
+          <option value="Partially Paid">{{ 'finance.ar.status_partially_paid' | translate }}</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Invoices Table -->
+    <div class="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden animate-fade-in">
+      <div class="overflow-x-auto">
+        <table class="w-full text-left rtl:text-right border-collapse text-xs">
+          <thead>
+            <tr class="text-slate-400 font-bold border-b border-slate-100 bg-slate-50/50">
+              <th class="p-4 py-3">{{ 'finance.ar.col_invoice_no' | translate }}</th>
+              <th class="p-4 py-3">{{ 'finance.ar.col_contract_no' | translate }}</th>
+              <th class="p-4 py-3">{{ 'finance.ar.col_client' | translate }}</th>
+              <th class="p-4 py-3">{{ 'finance.ar.col_issue_date' | translate }}</th>
+              <th class="p-4 py-3">{{ 'finance.ar.col_due_date' | translate }}</th>
+              <th class="p-4 py-3 text-right rtl:text-left">{{ 'finance.ar.col_amount' | translate }}</th>
+              <th class="p-4 py-3 text-right rtl:text-left">{{ 'finance.ar.col_collected' | translate }}</th>
+              <th class="p-4 py-3 text-center">{{ 'finance.ar.col_status' | translate }}</th>
+              <th class="p-4 py-3 text-center">{{ 'finance.ar.col_actions' | translate }}</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-50">
+            @for (invoice of filteredInvoices(); track invoice.id) {
+              <tr class="hover:bg-slate-50/50 transition-colors">
+                <td class="p-4 font-bold text-slate-800">{{ invoice.invoiceNumber }}</td>
+                <td class="p-4">
+                  <span class="text-indigo-650 font-semibold bg-indigo-50/40 px-2 py-0.5 rounded">{{ invoice.contractNumber }}</span>
+                </td>
+                <td class="p-4 font-semibold text-slate-700">{{ invoice.clientName }}</td>
+                <td class="p-4 text-slate-500 font-medium">{{ invoice.issueDate }}</td>
+                <td class="p-4 text-slate-500 font-medium">{{ invoice.dueDate }}</td>
+                <td class="p-4 text-right rtl:text-left font-black text-slate-800">${{ invoice.netPayable | number:'1.2-2' }}</td>
+                <td class="p-4 text-right rtl:text-left font-black text-emerald-600">${{ (invoice.paidAmount || 0) | number:'1.2-2' }}</td>
+                <td class="p-4 text-center">
+                  <span [class]="
+                    invoice.status === 'Paid' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 
+                    invoice.status === 'Partially Paid' ? 'bg-indigo-50 text-indigo-700 border-indigo-200' :
+                    invoice.status === 'Sent' ? 'bg-sky-50 text-sky-700 border-sky-200' :
+                    invoice.status === 'Approved' ? 'bg-amber-50 text-amber-700 border-amber-200' :
+                    'bg-slate-100 text-slate-550 border-slate-200'"
+                    class="px-2.5 py-1 rounded-full font-bold border text-[10px]"
+                  >
+                    {{ 'finance.ar.status_' + invoice.status.toLowerCase().replace(' ', '_') | translate }}
+                  </span>
+                </td>
+                <td class="p-4 text-center">
+                  <button 
+                    (click)="viewInvoiceDetails(invoice)"
+                    class="p-1 hover:bg-slate-100 text-slate-600 rounded transition-all inline-flex items-center"
+                    title="View Details"
+                  >
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
+                  </button>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="9" class="p-8 text-center text-slate-400 font-medium">
+                  {{ 'finance.ar.no_invoices' | translate }}
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
+
+  @if (activeTab() === 'aging') {
+    <!-- AR Aging Grid -->
+    <div class="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden animate-fade-in">
+      <div class="p-4 border-b border-slate-100 bg-slate-50/50">
+        <h3 class="text-sm font-bold text-slate-800">{{ 'finance.ar.aging_title' | translate }}</h3>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-left rtl:text-right border-collapse text-xs">
+          <thead>
+            <tr class="text-slate-400 font-bold border-b border-slate-100 bg-slate-50/50">
+              <th class="p-4 py-3">{{ 'finance.ar.col_client' | translate }}</th>
+              <th class="p-4 py-3 text-right rtl:text-left">{{ 'finance.ar.aging_current' | translate }}</th>
+              <th class="p-4 py-3 text-right rtl:text-left">{{ 'finance.ar.aging_30_60' | translate }}</th>
+              <th class="p-4 py-3 text-right rtl:text-left">{{ 'finance.ar.aging_60_90' | translate }}</th>
+              <th class="p-4 py-3 text-right rtl:text-left">{{ 'finance.ar.aging_over_90' | translate }}</th>
+              <th class="p-4 py-3 text-right rtl:text-left font-black text-slate-700 bg-slate-50/30">{{ 'finance.ar.col_total_due' | translate }}</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-50">
+            @for (row of aging(); track row.customerId) {
+              <tr class="hover:bg-slate-50/50 transition-colors">
+                <td class="p-4 font-bold text-slate-700">{{ row.customerName }}</td>
+                <td class="p-4 text-right rtl:text-left font-semibold text-slate-650">${{ row.current | number:'1.2-2' }}</td>
+                <td class="p-4 text-right rtl:text-left font-semibold text-slate-650">${{ row.thirtyToSixty | number:'1.2-2' }}</td>
+                <td class="p-4 text-right rtl:text-left font-semibold text-slate-650">${{ row.sixtyToNinety | number:'1.2-2' }}</td>
+                <td class="p-4 text-right rtl:text-left font-bold text-red-650">${{ row.overNinety | number:'1.2-2' }}</td>
+                <td class="p-4 text-right rtl:text-left font-black text-slate-800 bg-slate-50/20">${{ row.totalDue | number:'1.2-2' }}</td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="6" class="p-8 text-center text-slate-400 font-medium">
+                  {{ 'finance.ar.no_aging_records' | translate }}
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
+
+  @if (activeTab() === 'vouchers') {
+    <!-- Search Voucher -->
+    <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-sm flex items-center justify-between gap-4 text-xs">
+      <div class="relative w-full max-w-md">
+        <input 
+          type="text" 
+          [placeholder]="'finance.ar.search_vouchers_placeholder' | translate"
+          (input)="searchQuery.set($any($event.target).value)"
+          class="w-full bg-slate-50/50 border border-slate-200 rounded-lg pl-8 pr-3 rtl:pl-3 rtl:pr-8 py-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+        >
+        <svg class="w-4 h-4 text-slate-400 absolute left-2.5 rtl:right-2.5 rtl:left-auto top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+        </svg>
+      </div>
+    </div>
+
+    <!-- Vouchers Table -->
+    <div class="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden animate-fade-in">
+      <div class="overflow-x-auto">
+        <table class="w-full text-left rtl:text-right border-collapse text-xs">
+          <thead>
+            <tr class="text-slate-400 font-bold border-b border-slate-100 bg-slate-50/50">
+              <th class="p-4 py-3">{{ 'finance.ar.col_voucher_no' | translate }}</th>
+              <th class="p-4 py-3">{{ 'finance.ar.col_date' | translate }}</th>
+              <th class="p-4 py-3">{{ 'finance.ar.col_client' | translate }}</th>
+              <th class="p-4 py-3">{{ 'finance.ar.col_deposited_to' | translate }}</th>
+              <th class="p-4 py-3">{{ 'finance.ar.col_ref_no' | translate }}</th>
+              <th class="p-4 py-3 text-right rtl:text-left">{{ 'finance.ar.col_amount' | translate }}</th>
+              <th class="p-4 py-3 text-center">{{ 'finance.ar.col_status' | translate }}</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-50">
+            @for (v of filteredVouchers(); track v.id) {
+              <tr class="hover:bg-slate-50/50 transition-colors">
+                <td class="p-4 font-bold text-slate-800">{{ v.voucherNumber }}</td>
+                <td class="p-4 text-slate-500 font-semibold">{{ v.collectionDate }}</td>
+                <td class="p-4 font-semibold text-slate-700">{{ v.customerName }}</td>
+                <td class="p-4 text-slate-500 font-medium">{{ v.bankAccountName }}</td>
+                <td class="p-4 text-slate-650 font-mono text-[10px]">{{ v.referenceNumber }}</td>
+                <td class="p-4 text-right rtl:text-left font-black text-emerald-600">${{ v.amount | number:'1.2-2' }}</td>
+                <td class="p-4 text-center">
+                  <span class="px-2.5 py-1 rounded-full font-bold border border-emerald-200 bg-emerald-50 text-emerald-700 text-[10px]">
+                    {{ 'finance.ar.status_' + v.status.toLowerCase() | translate }}
+                  </span>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="7" class="p-8 text-center text-slate-400 font-medium">
+                  {{ 'finance.ar.no_vouchers' | translate }}
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
+
+  <!-- Modal: Post Collection Voucher -->
+  @if (showCollectionModal()) {
+    <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
+      <div class="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-xl overflow-hidden animate-slide-up">
+        <div class="p-5 border-b border-slate-100 flex items-center justify-between">
+          <h3 class="font-black text-slate-850 text-base">{{ 'finance.ar.modal_new_collection' | translate }}</h3>
+          <button (click)="showCollectionModal.set(false)" class="text-slate-400 hover:text-slate-600">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <form (submit)="$event.preventDefault(); submitCollection()" class="p-5 space-y-4 text-xs">
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-slate-500 font-semibold mb-1.5">{{ 'finance.ar.field_collection_date' | translate }}</label>
+              <input 
+                type="date" 
+                [(ngModel)]="collectionDate" 
+                name="collectionDate" 
+                class="w-full bg-white border border-slate-250 rounded-lg px-3 py-2 font-semibold text-slate-800 focus:outline-none"
+              >
+            </div>
+            <div>
+              <label class="block text-slate-500 font-semibold mb-1.5">{{ 'finance.ar.field_client' | translate }} *</label>
+              <select 
+                [ngModel]="selectedClientName()" 
+                (ngModelChange)="onClientChange($event)"
+                name="selectedClientName" 
+                required
+                class="w-full bg-white border border-slate-250 rounded-lg px-3 py-2 font-semibold text-slate-800 focus:outline-none"
+              >
+                <option value="">-- {{ 'finance.ar.select_client' | translate }} --</option>
+                @for (c of clientsList(); track c) {
+                  <option [value]="c">{{ c }}</option>
+                }
+              </select>
+            </div>
+          </div>
+
+          <!-- Pending Invoices list -->
+          @if (selectedClientName()) {
+            <div class="border border-slate-150 rounded-xl overflow-hidden bg-slate-50/50">
+              <div class="px-3.5 py-2 border-b border-slate-150 bg-slate-100/70 font-bold text-slate-605">
+                {{ 'finance.ar.select_invoices' | translate }}
+              </div>
+              <div class="max-h-40 overflow-y-auto divide-y divide-slate-150">
+                @for (ic of selectedInvoiceCollections(); track ic.invoiceId; let i = $index) {
+                  <div class="p-3 flex items-center justify-between text-[11px]">
+                    <div class="flex items-center space-x-2.5 rtl:space-x-reverse">
+                      <input 
+                        type="checkbox" 
+                        [checked]="ic.selected" 
+                        (change)="toggleInvoiceSelection(i)"
+                        class="rounded text-indigo-650 focus:ring-indigo-500 border-slate-300"
+                      >
+                      <span class="font-bold text-slate-800">{{ ic.invoiceNumber }}</span>
+                    </div>
+                    <div class="flex items-center space-x-4 rtl:space-x-reverse">
+                      <span class="text-slate-500 font-medium">{{ 'finance.ar.due' | translate }}: ${{ ic.amountDue | number:'1.2-2' }}</span>
+                      <div class="flex items-center space-x-1.5 rtl:space-x-reverse">
+                        <span class="text-slate-400 font-semibold">{{ 'finance.ar.collect' | translate }}:</span>
+                        <input 
+                          type="number" 
+                          [disabled]="!ic.selected"
+                          [(ngModel)]="ic.amountCollected" 
+                          [name]="'amountCol_' + i"
+                          (ngModelChange)="onCollectionAmountChange(i, $event)"
+                          class="w-20 bg-white disabled:bg-slate-100 border border-slate-250 rounded px-2 py-0.5 text-right font-semibold text-slate-800 focus:outline-none"
+                        >
+                      </div>
+                    </div>
+                  </div>
+                } @empty {
+                  <div class="p-4 text-center text-slate-400 font-medium">
+                    {{ 'finance.ar.no_pending_invoices' | translate }}
+                  </div>
+                }
+              </div>
+            </div>
+          }
+
+          <div class="grid grid-cols-2 gap-4 bg-emerald-50/20 p-3 rounded-xl border border-emerald-50">
+            <div>
+              <label class="block text-emerald-900 font-bold mb-1">{{ 'finance.ar.field_collected_amount' | translate }}</label>
+              <div class="text-lg font-black text-emerald-750">${{ collectedAmount | number:'1.2-2' }}</div>
+            </div>
+            <div>
+              <label class="block text-emerald-900 font-bold mb-1">{{ 'finance.ar.field_reference' | translate }}</label>
+              <input 
+                type="text" 
+                [(ngModel)]="referenceNumber" 
+                name="referenceNumber" 
+                class="w-full bg-white border border-emerald-200 rounded px-2 py-1 font-semibold text-slate-800 focus:outline-none"
+              >
+            </div>
+          </div>
+
+          <div class="grid grid-cols-3 gap-4">
+            <div>
+              <label class="block text-slate-500 font-semibold mb-1.5">{{ 'finance.ar.field_account_type' | translate }}</label>
+              <div class="flex border border-slate-250 rounded-lg overflow-hidden font-bold">
+                <button 
+                  type="button" 
+                  (click)="onAccountTypeChange('bank')"
+                  [class.bg-slate-100]="selectedAccountType() === 'bank'"
+                  [class.text-slate-800]="selectedAccountType() === 'bank'"
+                  class="w-1/2 py-2 text-slate-500 border-r border-slate-205 transition-colors"
+                >
+                  {{ 'finance.ar.acc_bank' | translate }}
+                </button>
+                <button 
+                  type="button" 
+                  (click)="onAccountTypeChange('cash')"
+                  [class.bg-slate-100]="selectedAccountType() === 'cash'"
+                  [class.text-slate-800]="selectedAccountType() === 'cash'"
+                  class="w-1/2 py-2 text-slate-500 transition-colors"
+                >
+                  {{ 'finance.ar.acc_cash' | translate }}
+                </button>
+              </div>
+            </div>
+
+            <div class="col-span-2">
+              <label class="block text-slate-500 font-semibold mb-1.5">{{ 'finance.ar.field_account' | translate }} *</label>
+              <select 
+                [(ngModel)]="selectedAccountId" 
+                name="selectedAccountId" 
+                required
+                class="w-full bg-white border border-slate-250 rounded-lg px-3 py-2 font-semibold text-slate-800 focus:outline-none"
+              >
+                @if (selectedAccountType() === 'bank') {
+                  @for (b of bankAccounts(); track b.id) {
+                    <option [value]="b.id">{{ b.bankName }} (Bal: ${{ b.balance | number:'1.2-2' }})</option>
+                  }
+                } @else {
+                  @for (c of cashAccounts(); track c.id) {
+                    <option [value]="c.id">{{ c.officeLocation }} (Bal: ${{ c.balance | number:'1.2-2' }})</option>
+                  }
+                }
+              </select>
+            </div>
+          </div>
+
+          <div class="p-4 bg-slate-50 rounded-xl flex justify-end space-x-3 rtl:space-x-reverse mt-2">
+            <button 
+              type="button" 
+              (click)="showCollectionModal.set(false)"
+              class="px-4 py-2 border border-slate-200 hover:bg-slate-100 text-slate-650 rounded-lg font-bold"
+            >
+              {{ 'common.cancel' | translate }}
+            </button>
+            <button 
+              type="submit"
+              class="px-4 py-2 bg-emerald-655 hover:bg-emerald-700 text-white rounded-lg font-bold shadow-sm"
+            >
+              {{ 'finance.ar.btn_post_collection' | translate }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+
+  <!-- Modal: Details View -->
+  @if (showDetailsModal()) {
+    <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
+      <div class="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-md overflow-hidden animate-slide-up">
+        <div class="p-5 border-b border-slate-100 flex items-center justify-between">
+          <h3 class="font-black text-slate-850 text-base">{{ 'finance.ar.modal_details_title' | translate }}</h3>
+          <button (click)="showDetailsModal.set(false)" class="text-slate-400 hover:text-slate-600">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <div class="p-5 space-y-4 text-xs" *ngIf="selectedInvoice() as invoice">
+          <div class="flex justify-between items-center bg-slate-50 p-3 rounded-xl border border-slate-100">
+            <div>
+              <p class="text-[10px] text-slate-400 font-bold uppercase">{{ 'finance.ar.field_invoice_no' | translate }}</p>
+              <h4 class="text-sm font-black text-slate-800 mt-0.5">{{ invoice.invoiceNumber }}</h4>
+            </div>
+            <span [class]="
+              invoice.status === 'Paid' ? 'bg-emerald-50 text-emerald-700 border-emerald-250' : 
+              invoice.status === 'Partially Paid' ? 'bg-indigo-50 text-indigo-700 border-indigo-200' :
+              invoice.status === 'Sent' ? 'bg-sky-50 text-sky-700 border-sky-200' :
+              invoice.status === 'Approved' ? 'bg-amber-50 text-amber-700 border-amber-200' :
+              'bg-slate-100 text-slate-550 border-slate-200'"
+              class="px-2.5 py-1 rounded-full font-bold border text-[10px]"
+            >
+              {{ 'finance.ar.status_' + invoice.status.toLowerCase().replace(' ', '_') | translate }}
+            </span>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <p class="text-slate-400 font-semibold">{{ 'finance.ar.field_client' | translate }}</p>
+              <p class="font-bold text-slate-800 mt-0.5">{{ invoice.clientName }}</p>
+            </div>
+            <div>
+              <p class="text-slate-400 font-semibold">{{ 'finance.ar.field_contract_no' | translate }}</p>
+              <p class="font-bold text-slate-800 mt-0.5">{{ invoice.contractNumber }}</p>
+            </div>
+            <div>
+              <p class="text-slate-400 font-semibold">{{ 'finance.ar.field_issue_date' | translate }}</p>
+              <p class="font-bold text-slate-800 mt-0.5">{{ invoice.issueDate }}</p>
+            </div>
+            <div>
+              <p class="text-slate-400 font-semibold">{{ 'finance.ar.field_due_date' | translate }}</p>
+              <p class="font-bold text-slate-800 mt-0.5">{{ invoice.dueDate }}</p>
+            </div>
+            <div>
+              <p class="text-slate-400 font-semibold">{{ 'finance.ar.field_terms' | translate }}</p>
+              <p class="font-bold text-slate-800 mt-0.5">{{ invoice.paymentTerms }}</p>
+            </div>
+          </div>
+
+          <div class="border-t border-slate-100 pt-3.5 space-y-2">
+            <div class="flex justify-between font-semibold text-slate-655">
+              <span>{{ 'finance.ar.field_subtotal' | translate }}</span>
+              <span>${{ invoice.subtotal | number:'1.2-2' }}</span>
+            </div>
+            <div class="flex justify-between font-semibold text-slate-655">
+              <span>{{ 'finance.ar.field_vat' | translate }} ({{ invoice.vatPercent }}%)</span>
+              <span>${{ invoice.vatAmount | number:'1.2-2' }}</span>
+            </div>
+            @if (invoice.retentionAmount) {
+              <div class="flex justify-between font-semibold text-red-600">
+                <span>{{ 'finance.ar.field_retention' | translate }} ({{ invoice.retentionPercent }}%)</span>
+                <span>-${{ invoice.retentionAmount | number:'1.2-2' }}</span>
+              </div>
+            }
+            <div class="flex justify-between font-black text-slate-850 text-sm border-t border-slate-100 pt-2">
+              <span>{{ 'finance.ar.field_net_payable' | translate }}</span>
+              <span>${{ invoice.netPayable | number:'1.2-2' }}</span>
+            </div>
+            <div class="flex justify-between font-bold text-emerald-600 pt-1">
+              <span>{{ 'finance.ar.field_paid_amount' | translate }}</span>
+              <span>${{ (invoice.paidAmount || 0) | number:'1.2-2' }}</span>
+            </div>
+            <div class="flex justify-between font-black text-slate-800 border-t border-slate-100 pt-1">
+              <span>{{ 'finance.ar.field_balance_due' | translate }}</span>
+              <span>${{ (invoice.balanceDue !== undefined ? invoice.balanceDue : invoice.netPayable) | number:'1.2-2' }}</span>
+            </div>
+          </div>
+
+          <div class="p-4 bg-slate-50 rounded-xl flex justify-end mt-2">
+            <button 
+              type="button" 
+              (click)="showDetailsModal.set(false)"
+              class="px-4 py-2 bg-slate-205 hover:bg-slate-300 text-slate-700 rounded-lg font-bold"
+            >
+              {{ 'common.close' | translate }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+</div>

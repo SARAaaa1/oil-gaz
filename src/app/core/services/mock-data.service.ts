@@ -2,10 +2,25 @@ import { Injectable, signal, computed } from '@angular/core';
 import { PurchaseRequest, PurchaseRequestItem, PurchaseRequestStatus } from '../../shared/interfaces/purchase-request.interface';
 import { RFQ, RFQQuotation, RFQStatus } from '../../shared/interfaces/rfq.interface';
 import { PurchaseOrder, POItem, PurchaseOrderStatus } from '../../shared/interfaces/purchase-order.interface';
-import { InventoryItem } from '../../shared/interfaces/inventory.interface';
 import { Vendor } from '../../shared/interfaces/vendor.interface';
 import { Rig, RigTimesheet, TimesheetDayRow } from '../../shared/interfaces/operations.interface';
-import { Equipment, AssetHistory, BulkImportRecord } from '../../shared/interfaces/assets.interface';
+import { 
+  InventoryItem, Warehouse, WarehouseLocation, UOM, MaterialCategory, 
+  MRV, MRVItem, MIV, MIVItem, InternalTransfer, InternalTransferItem, 
+  StockAdjustment, StockAdjustmentItem, StockCount, StockCountItem,
+  InventoryReservation, InventoryReservationItem
+} from '../../shared/interfaces/inventory.interface';
+import { 
+  Equipment, AssetHistory, BulkImportRecord, RigDetails, Caravan, Camp, CampAllocation, Vehicle, TripLog,
+  AssetAssignment, AssetTransfer, AssetDisposal
+} from '../../shared/interfaces/assets.interface';
+import { 
+  ItemCategory, ItemSubCategory, ItemMaster, WarehouseStructure, WarehouseZone, WarehouseRack, WarehouseShelf, WarehouseBin,
+  InspectionRequest, InspectionRequestItem, NCR, PMSchedule, WorkOrder,
+  SupplierInvoice, APAgingEntry, PaymentVoucher, ARAgingEntry, CollectionVoucher, BankAccountDetails, CashAccountDetails, BankReconciliation,
+  HSEIncident, PTW, SafetyInspection, SafetyRisk
+} from '../../shared/interfaces';
+import { FuelTank, FuelReceipt, FuelIssue } from '../../shared/interfaces/fuel.interface';
 
 @Injectable({
   providedIn: 'root'
@@ -23,59 +38,153 @@ export class MockDataService {
   readonly assetHistories = signal<AssetHistory[]>([]);
   readonly bulkImportHistories = signal<BulkImportRecord[]>([]);
 
+  // Phase 2 / extended signals
+  readonly warehouses = signal<Warehouse[]>([]);
+  readonly mrvs = signal<MRV[]>([]);
+  readonly mivs = signal<MIV[]>([]);
+  readonly transfers = signal<InternalTransfer[]>([]);
+  readonly adjustments = signal<StockAdjustment[]>([]);
+  readonly counts = signal<StockCount[]>([]);
+  readonly camps = signal<Camp[]>([]);
+  readonly caravans = signal<Caravan[]>([]);
+  readonly vehicles = signal<Vehicle[]>([]);
+  readonly tripLogs = signal<TripLog[]>([]);
+
+  // Phase 3 signals
+  readonly itemMasters = signal<ItemMaster[]>([]);
+  readonly itemCategories = signal<ItemCategory[]>([]);
+  readonly itemSubCategories = signal<ItemSubCategory[]>([]);
+  readonly warehouseStructures = signal<WarehouseStructure[]>([]);
+  readonly inspectionRequests = signal<InspectionRequest[]>([]);
+  readonly ncrs = signal<NCR[]>([]);
+  readonly assetAssignments = signal<AssetAssignment[]>([]);
+  readonly assetTransfers = signal<AssetTransfer[]>([]);
+  readonly assetDisposals = signal<AssetDisposal[]>([]);
+  readonly pmSchedules = signal<PMSchedule[]>([]);
+  readonly workOrders = signal<WorkOrder[]>([]);
+  readonly supplierInvoices = signal<SupplierInvoice[]>([]);
+  readonly apAging = signal<APAgingEntry[]>([]);
+  readonly paymentVouchers = signal<PaymentVoucher[]>([]);
+  readonly arAging = signal<ARAgingEntry[]>([]);
+  readonly collectionVouchers = signal<CollectionVoucher[]>([]);
+  readonly bankAccountsDetails = signal<BankAccountDetails[]>([]);
+  readonly cashAccountsDetails = signal<CashAccountDetails[]>([]);
+  readonly bankReconciliations = signal<BankReconciliation[]>([]);
+  readonly hseIncidents = signal<HSEIncident[]>([]);
+  readonly ptws = signal<PTW[]>([]);
+  readonly safetyInspections = signal<SafetyInspection[]>([]);
+  readonly safetyRisks = signal<SafetyRisk[]>([]);
+
+  // Phase 4 signals — Fuel Management
+  readonly fuelTanks = signal<FuelTank[]>([]);
+  readonly fuelReceipts = signal<FuelReceipt[]>([]);
+  readonly fuelIssues = signal<FuelIssue[]>([]);
+  // Phase 4 signals — Inventory Reservations
+  readonly inventoryReservations = signal<InventoryReservation[]>([]);
+
   constructor() {
     this.initializeMockData();
   }
+
 
   private initializeMockData() {
     // 1. Vendors
     const mockVendors: Vendor[] = [
       {
         id: 'v1',
+        vendorCode: 'VND-GOS-001',
         vendorName: 'Global Oilfield Solutions',
+        arabicName: 'الحلول العالمية لحقول النفط',
         taxNumber: 'TX-88992211',
+        vatNumber: 'VAT-99001122',
+        commercialRegistration: 'CR-101009988',
         address: '1220 Petroleum Way, Houston TX 77001',
         contactPerson: 'Mark Peterson',
         contactEmail: 'm.peterson@globaloilfield.com',
         contactPhone: '+1-555-0199',
         paymentTerms: 'Net 30',
-        status: 'Active'
+        currency: 'USD',
+        rating: 4.8,
+        status: 'Active',
+        bankAccounts: [
+          { bankName: 'HSBC Corporate', accountNumber: '120-889922-001', iban: 'AE12HSBC0000120889922001', currency: 'USD' }
+        ],
+        contactPersons: [
+          { name: 'Mark Peterson', role: 'Sales Account Manager', email: 'm.peterson@globaloilfield.com', phone: '+1-555-0199' }
+        ]
       },
       {
         id: 'v2',
+        vendorCode: 'VND-APX-002',
         vendorName: 'APEX Industrial Supplies',
+        arabicName: 'أبيكس للتوريدات الصناعية',
         taxNumber: 'TX-44558833',
+        vatNumber: 'VAT-44558833',
+        commercialRegistration: 'CR-101007766',
         address: '850 Industrial Blvd, Dallas TX 75201',
         contactPerson: 'Jane Sterling',
         contactEmail: 'j.sterling@apexind.com',
         contactPhone: '+1-555-0145',
         paymentTerms: 'Net 45',
-        status: 'Active'
+        currency: 'USD',
+        rating: 4.2,
+        status: 'Active',
+        bankAccounts: [
+          { bankName: 'Chase Commercial', accountNumber: '5544-3322-11', iban: 'US88CHAS00005544332211', currency: 'USD' }
+        ],
+        contactPersons: [
+          { name: 'Jane Sterling', role: 'Customer Support Lead', email: 'j.sterling@apexind.com', phone: '+1-555-0145' }
+        ]
       },
       {
         id: 'v3',
+        vendorCode: 'VND-VAL-003',
         vendorName: 'Valero Drilling Supplies',
+        arabicName: 'فاليرو لمستلزمات الحفر',
         taxNumber: 'TX-11223344',
+        vatNumber: 'VAT-11223344',
+        commercialRegistration: 'CR-101005544',
         address: '400 Refinery Rd, San Antonio TX 78201',
         contactPerson: 'Carlos Ruiz',
         contactEmail: 'c.ruiz@valerods.com',
         contactPhone: '+1-555-0182',
         paymentTerms: 'Net 15',
-        status: 'Active'
+        currency: 'SAR',
+        rating: 4.5,
+        status: 'Active',
+        bankAccounts: [
+          { bankName: 'Saudi National Bank', accountNumber: '2030-1122-002', iban: 'SA80SNB0000020301122002', currency: 'SAR' }
+        ],
+        contactPersons: [
+          { name: 'Carlos Ruiz', role: 'Operations Officer', email: 'c.ruiz@valerods.com', phone: '+1-555-0182' }
+        ]
       },
       {
         id: 'v4',
+        vendorCode: 'VND-HSE-004',
         vendorName: 'HSE Safety First Inc',
+        arabicName: 'بيئة وصحة أولاً للسلامة',
         taxNumber: 'TX-55443322',
+        vatNumber: 'VAT-55443322',
+        commercialRegistration: 'CR-101003322',
         address: '99 Safety Way, Houston TX 77002',
         contactPerson: 'Sarah Connor',
         contactEmail: 's.connor@hsesafety.com',
         contactPhone: '+1-555-0123',
         paymentTerms: 'Net 30',
-        status: 'Active'
+        currency: 'USD',
+        rating: 4.9,
+        status: 'Active',
+        bankAccounts: [
+          { bankName: 'Wells Fargo Corporate', accountNumber: '9988-7766-55', iban: 'US99WELS00009988776655', currency: 'USD' }
+        ],
+        contactPersons: [
+          { name: 'Sarah Connor', role: 'HSE Compliance Specialist', email: 's.connor@hsesafety.com', phone: '+1-555-0123' }
+        ]
       }
     ];
     this.vendors.set(mockVendors);
+
 
     // 2. Inventory Items
     const mockInventory: InventoryItem[] = [
@@ -554,7 +663,360 @@ export class MockDataService {
       }
     ];
     this.bulkImportHistories.set(mockImportHistories);
+
+    // Extended Mock Data Initialization
+    const mockWarehouses: Warehouse[] = [
+      { id: 'w1', code: 'WH-A', name: 'Warehouse A', location: 'Houston Main Station', status: 'Active' },
+      { id: 'w2', code: 'WH-B', name: 'Warehouse B', location: 'Permian Base Yard', status: 'Active' },
+      { id: 'w3', code: 'PY-1', name: 'Pipe Yard 1', location: 'Offshore Supply Port', status: 'Active' }
+    ];
+    this.warehouses.set(mockWarehouses);
+
+    const mockCamps: Camp[] = [
+      { id: 'c1', campCode: 'CMP-ALPHA', campName: 'Base Camp Alpha', location: 'Permian Block 12', totalBeds: 150, occupiedBeds: 112, caravansCount: 20, status: 'Active' },
+      { id: 'c2', campCode: 'CMP-BETA', campName: 'South Caravan Station', location: 'Orla Drilling Site', totalBeds: 80, occupiedBeds: 45, caravansCount: 10, status: 'Active' }
+    ];
+    this.camps.set(mockCamps);
+
+    const mockCaravans: Caravan[] = [
+      { id: 'car1', caravanNumber: 'CRV-001', capacityBeds: 8, assignedCampId: 'c1', status: 'Available', assets: { generators: 1, airConditioners: 2, furnitureCount: 6, waterTanks: 1, kitchenEquipCount: 0 } },
+      { id: 'car2', caravanNumber: 'CRV-002', capacityBeds: 8, assignedCampId: 'c1', status: 'Full', assets: { generators: 1, airConditioners: 2, furnitureCount: 6, waterTanks: 1, kitchenEquipCount: 1 } },
+      { id: 'car3', caravanNumber: 'CRV-003', capacityBeds: 4, assignedCampId: 'c2', status: 'Available', assets: { generators: 0, airConditioners: 1, furnitureCount: 4, waterTanks: 1, kitchenEquipCount: 0 } }
+    ];
+    this.caravans.set(mockCaravans);
+
+    const mockVehicles: Vehicle[] = [
+      { id: 'v1', plateNumber: 'TX-OG-889', make: 'Ford', model: 'F-250 Super Duty', year: 2024, assignedTo: 'Robert Vance', fuelType: 'Diesel', status: 'Assigned', currentOdometer: 14500 },
+      { id: 'v2', plateNumber: 'TX-OG-210', make: 'Chevrolet', model: 'Silverado 1500', year: 2023, assignedTo: 'Sven Larson', fuelType: 'Petrol', status: 'Assigned', currentOdometer: 22800 },
+      { id: 'v3', plateNumber: 'TX-OG-304', make: 'Toyota', model: 'Hilux 4x4', year: 2022, assignedTo: 'Sarah Jenkins', fuelType: 'Diesel', status: 'Available', currentOdometer: 48900 }
+    ];
+    this.vehicles.set(mockVehicles);
+
+    const mockTripLogs: TripLog[] = [
+      { id: 't1', vehicleId: 'v1', driverName: 'Robert Vance', purpose: 'Rig Alpha Site Inspection', startOdometer: 14200, endOdometer: 14500, fuelAddedLiters: 85, fuelCost: 110, tripDate: '2026-06-10' },
+      { id: 't2', vehicleId: 'v2', driverName: 'Sven Larson', purpose: 'Logistics Supply Run', startOdometer: 22500, endOdometer: 22800, fuelAddedLiters: 60, fuelCost: 80, tripDate: '2026-06-12' }
+    ];
+    this.tripLogs.set(mockTripLogs);
+
+    const mockMRVs: MRV[] = [
+      {
+        id: 'mrv1',
+        voucherNumber: 'MRV-2026-001',
+        poId: 'po1',
+        poNumber: 'PO-2026-001',
+        warehouseId: 'w1',
+        receivedDate: '2026-06-05',
+        receivedBy: 'Jim Halpert',
+        supplierName: 'Global Oilfield Solutions',
+        status: 'Posted',
+        totalAmount: 11200,
+        items: [
+          { itemCode: 'HY-PUMP-HP450', itemName: 'Hydraulic Pump HP-450 Seal Unit', quantityOrdered: 1, quantityReceived: 1, unitPrice: 11200, totalPrice: 11200, uom: 'EA' }
+        ]
+      }
+    ];
+    this.mrvs.set(mockMRVs);
+
+    const mockMIVs: MIV[] = [
+      {
+        id: 'miv1',
+        voucherNumber: 'MIV-2026-001',
+        issueTo: 'Project',
+        destinationId: 'Permian Overland',
+        referenceNumber: 'REF-MIV-8821',
+        requestedBy: 'Robert Vance',
+        approvedBy: 'Sophia Sterling',
+        issueDate: '2026-06-08',
+        status: 'Posted',
+        totalAmount: 350,
+        items: [
+          { itemCode: 'LUB-GRE-DRUM', itemName: 'Premium Rig Grease (55 Gal)', quantityRequested: 1, quantityIssued: 1, unitPrice: 350, totalPrice: 350, uom: 'DRUM', inventoryCreditAcc: '1201-01', consumptionDebitAcc: '5102-04' }
+        ]
+      }
+    ];
+    this.mivs.set(mockMIVs);
+
+    const mockTransfers: InternalTransfer[] = [
+      {
+        id: 'xfer1',
+        transferNumber: 'XFER-2026-001',
+        fromWarehouseId: 'w1',
+        toWarehouseId: 'w2',
+        transferDate: '2026-06-09',
+        requestedBy: 'Jim Halpert',
+        status: 'Approved',
+        items: [
+          { itemCode: 'HSE-HARN-CLA', itemName: 'Safety Harness Class A Full Body', quantity: 10, uom: 'EA' }
+        ]
+      }
+    ];
+    this.transfers.set(mockTransfers);
+
+    const mockAdjustments: StockAdjustment[] = [
+      {
+        id: 'adj1',
+        adjustmentNumber: 'ADJ-2026-001',
+        warehouseId: 'w1',
+        adjustmentDate: '2026-06-11',
+        requestedBy: 'Jim Halpert',
+        status: 'Approved',
+        totalValue: -8500,
+        items: [
+          { itemCode: 'DR-BIT-8.5-PDC', itemName: 'Drill Bit 8.5in PDC Premium', systemQuantity: 8, adjustedQuantity: -1, adjustmentType: 'Deduction', unitPrice: 8500, reason: 'Damaged in transit inspection' }
+        ]
+      }
+    ];
+    this.adjustments.set(mockAdjustments);
+
+    // Initialize Phase 3 Mock Data
+    this.initializePhase3MockData();
   }
+
+  private initializePhase3MockData() {
+    // 1. Item Master categories and subcategories
+    const categories: ItemCategory[] = [
+      { code: 'DRL', nameEn: 'Drilling Consumables', nameAr: 'مستهلكات الحفر' },
+      { code: 'MCH', nameEn: 'Machinery Spares', nameAr: 'قطع غيار الآلات' },
+      { code: 'HSE', nameEn: 'HSE Equipment', nameAr: 'معدات السلامة والبيئة' },
+      { code: 'LUB', nameEn: 'Lubricants', nameAr: 'زيوت وشحوم' },
+      { code: 'TUB', nameEn: 'Tubulars', nameAr: 'أنابيب تبطين' }
+    ];
+    this.itemCategories.set(categories);
+
+    const subCategories: ItemSubCategory[] = [
+      { code: 'BITS', parentCategoryCode: 'DRL', nameEn: 'Drill Bits', nameAr: 'دقاقات الحفر' },
+      { code: 'PUMPS', parentCategoryCode: 'MCH', nameEn: 'Pumps & Parts', nameAr: 'مضخات وأجزاؤها' },
+      { code: 'PPE', parentCategoryCode: 'HSE', nameEn: 'Personal Protective Equipment', nameAr: 'معدات الوقاية الشخصية' },
+      { code: 'GAS-DET', parentCategoryCode: 'HSE', nameEn: 'Gas Detection', nameAr: 'كشف الغازات' },
+      { code: 'OILS', parentCategoryCode: 'LUB', nameEn: 'Engine Oils', nameAr: 'زيوت المحركات' }
+    ];
+    this.itemSubCategories.set(subCategories);
+
+    // 2. Item Master list
+    const items: ItemMaster[] = [
+      { id: 'itm1', itemCode: 'DR-BIT-8.5-PDC', englishName: 'Drill Bit 8.5in PDC Premium', arabicName: 'دقاقة حفر 8.5 بوصة PDC ممتازة', category: 'DRL', subCategory: 'BITS', uom: 'EA', manufacturer: 'Baker Hughes', brand: 'Tricone', reorderLevel: 5, minStock: 2, maxStock: 15, serialTracking: true, batchTracking: false, isActive: true, unitPrice: 8500 },
+      { id: 'itm2', itemCode: 'HY-PUMP-HP450', englishName: 'Hydraulic Pump HP-450 Seal Unit', arabicName: 'مانع تسرب مضخة هيدروليكية HP-450', category: 'MCH', subCategory: 'PUMPS', uom: 'EA', manufacturer: 'Rexroth', brand: 'Bosch', reorderLevel: 2, minStock: 1, maxStock: 5, serialTracking: true, batchTracking: true, isActive: true, unitPrice: 12500 },
+      { id: 'itm3', itemCode: 'HSE-HARN-CLA', englishName: 'Safety Harness Class A Full Body', arabicName: 'حزام أمان كامل للجسم فئة أ', category: 'HSE', subCategory: 'PPE', uom: 'EA', manufacturer: '3M', brand: 'Protecta', reorderLevel: 15, minStock: 10, maxStock: 100, serialTracking: false, batchTracking: false, isActive: true, unitPrice: 150 },
+      { id: 'itm4', itemCode: 'HSE-DET-GAS', englishName: 'Multi-Gas Detector Portable', arabicName: 'جهاز محمول للكشف عن الغازات المتعددة', category: 'HSE', subCategory: 'GAS-DET', uom: 'EA', manufacturer: 'Honeywell', brand: 'BW Technologies', reorderLevel: 10, minStock: 5, maxStock: 30, serialTracking: true, batchTracking: false, isActive: true, unitPrice: 420 },
+      { id: 'itm5', itemCode: 'LUB-GRE-DRUM', englishName: 'Premium Rig Grease (55 Gal)', arabicName: 'شحم منصة حفر ممتاز (55 جالون)', category: 'LUB', subCategory: 'OILS', uom: 'DRUM', manufacturer: 'Mobil', brand: 'Mobilux', reorderLevel: 20, minStock: 10, maxStock: 50, serialTracking: false, batchTracking: true, isActive: true, unitPrice: 350 }
+    ];
+    this.itemMasters.set(items);
+
+    // 3. Warehouse Structures
+    const whStructs: WarehouseStructure[] = [
+      {
+        warehouseId: 'w1',
+        zones: [
+          { code: 'ZONE-A', name: 'Drilling Equipment Zone', description: 'Heavy parts storage' },
+          { code: 'ZONE-B', name: 'HSE & Small Parts Zone', description: 'Climate-controlled safety gear' }
+        ],
+        racks: [
+          { code: 'RACK-A1', zoneCode: 'ZONE-A', name: 'Drill Bit Rack' },
+          { code: 'RACK-B1', zoneCode: 'ZONE-B', name: 'Safety Gear Rack' }
+        ],
+        shelves: [
+          { code: 'SHELF-A1-1', rackCode: 'RACK-A1', name: 'Shelf 1' },
+          { code: 'SHELF-B1-1', rackCode: 'RACK-B1', name: 'Shelf 1' }
+        ],
+        bins: [
+          { code: 'BIN-A1-1-A', shelfCode: 'SHELF-A1-1', name: 'Bin A', maxWeightCapacity: 500, maxVolumeCapacity: 2 },
+          { code: 'BIN-B1-1-A', shelfCode: 'SHELF-B1-1', name: 'Bin A', maxWeightCapacity: 50, maxVolumeCapacity: 0.5 }
+        ]
+      }
+    ];
+    this.warehouseStructures.set(whStructs);
+
+    // 4. Inspection Requests
+    const inspections: InspectionRequest[] = [
+      {
+        id: 'ins1',
+        requestNumber: 'IR-2026-001',
+        poId: 'po1',
+        poNumber: 'PO-2026-001',
+        vendorId: 'v1',
+        vendorName: 'Global Oilfield Solutions',
+        requestDate: '2026-06-03',
+        inspectorName: 'John Doe',
+        status: 'Accepted',
+        inspectionDate: '2026-06-05',
+        notes: 'All items matched specs. Quality check passed.',
+        items: [
+          { itemCode: 'HY-PUMP-HP450', itemName: 'Hydraulic Pump HP-450 Seal Unit', quantityOrdered: 1, quantityReceived: 1, quantityAccepted: 1, quantityRejected: 0, status: 'Passed' }
+        ]
+      },
+      {
+        id: 'ins2',
+        requestNumber: 'IR-2026-002',
+        poId: 'po2',
+        poNumber: 'PO-2026-002',
+        vendorId: 'v2',
+        vendorName: 'APEX Industrial Supplies',
+        requestDate: '2026-06-11',
+        inspectorName: 'John Doe',
+        status: 'Rejected',
+        inspectionDate: '2026-06-12',
+        notes: 'Material defects found on outer casing. Defect logged.',
+        ncrId: 'ncr1',
+        items: [
+          { itemCode: 'DR-BIT-8.5-PDC', itemName: 'Drill Bit 8.5in PDC Premium', quantityOrdered: 2, quantityReceived: 2, quantityAccepted: 0, quantityRejected: 2, status: 'Failed', remarks: 'Outer cutters cracked.' }
+        ]
+      }
+    ];
+    this.inspectionRequests.set(inspections);
+
+    // 5. NCR Register
+    const mockNCRs: NCR[] = [
+      {
+        id: 'ncr1',
+        ncrNumber: 'NCR-2026-001',
+        inspectionRequestId: 'ins2',
+        poNumber: 'PO-2026-002',
+        vendorName: 'APEX Industrial Supplies',
+        issueDate: '2026-06-12',
+        severity: 'High',
+        description: 'Two drill bits failed structural integrity check due to micro-fractures in PDC inserts.',
+        rootCause: 'Supplier manufacturing flaw or inadequate protective transit packaging.',
+        correctiveAction: 'Return defective units to APEX. Request replacement and transit damage analysis.',
+        status: 'Open'
+      }
+    ];
+    this.ncrs.update(val => [...val, ...mockNCRs]);
+
+    // 6. Asset Assignments, Transfers, Disposals
+    const assignments: AssetAssignment[] = [
+      { id: 'asg1', assetId: 'eq1', assetNumber: 'AST-DRL-001', equipmentName: 'Rig Alpha Main Drawworks', assignedToType: 'Rig', assignedToId: 'rig1', assignedToName: 'Rig Alpha', assignmentDate: '2026-01-10', conditionOnAssign: 'Good', notes: 'Assigned for active drilling campaign' }
+    ];
+    this.assetAssignments.set(assignments);
+
+    const assetTransfersList: AssetTransfer[] = [
+      { id: 'xf1', assetId: 'eq2', assetNumber: 'AST-DRL-002', equipmentName: 'Cat 3512 Generator Set', fromLocation: 'Rig Beta', toLocation: 'Main Workshop', transferDate: '2026-06-01', authorizedBy: 'Frank Jones', status: 'Completed', notes: 'Transferred for major scheduled overhaul' }
+    ];
+    this.assetTransfers.set(assetTransfersList);
+
+    const disposals: AssetDisposal[] = [
+      { id: 'disp1', assetId: 'eq3', assetNumber: 'AST-LOG-010', equipmentName: 'Toyota Land Cruiser 2018', disposalDate: '2026-05-15', disposalMethod: 'Sale', disposalCost: 500, revenueReceived: 12000, reason: 'End of operational lifecycle, excessive mileage.', authorizedBy: 'Marcus Aurelius', status: 'Approved' }
+    ];
+    this.assetDisposals.set(disposals);
+
+    // 7. Maintenance schedules and work orders
+    const pmPlans: PMSchedule[] = [
+      { id: 'pm1', assetId: 'eq1', assetNumber: 'AST-DRL-001', equipmentName: 'Rig Alpha Main Drawworks', pmCode: 'PM-DW-MONTHLY', taskDescription: 'Lubricate bearings, inspect brake bands, check hydraulic pressure.', frequencyDays: 30, lastDoneDate: '2026-05-10', nextDueDate: '2026-06-09', status: 'Active' },
+      { id: 'pm2', assetId: 'eq2', assetNumber: 'AST-DRL-002', equipmentName: 'Cat 3512 Generator Set', pmCode: 'PM-GEN-250HR', taskDescription: 'Change engine oil, replace filters, clean air intakes.', frequencyDays: 15, lastDoneDate: '2026-05-25', nextDueDate: '2026-06-10', status: 'Active' }
+    ];
+    this.pmSchedules.set(pmPlans);
+
+    const wos: WorkOrder[] = [
+      { id: 'wo1', woNumber: 'WO-2026-001', assetId: 'eq1', assetNumber: 'AST-DRL-001', equipmentName: 'Rig Alpha Main Drawworks', type: 'Preventive', priority: 'Medium', issueDescription: 'Monthly Drawworks PM checklist execution', assignedToTechnician: 'Alex Mercer', createdDate: '2026-06-08', status: 'In Progress' },
+      { id: 'wo2', woNumber: 'WO-2026-002', assetId: 'eq2', assetNumber: 'AST-DRL-002', equipmentName: 'Cat 3512 Generator Set', type: 'Breakdown', priority: 'Emergency', issueDescription: 'Engine hunting and radiator coolant leakage reported.', assignedToTechnician: 'John Sterling', createdDate: '2026-06-11', status: 'Open' }
+    ];
+    this.workOrders.set(wos);
+
+    // 8. Finance extended: AP invoices, Aging, payments, collections
+    const apInvoices: SupplierInvoice[] = [
+      { id: 'ap1', invoiceNumber: 'INV-GOS-8821', poId: 'po1', poNumber: 'PO-2026-001', vendorId: 'v1', vendorName: 'Global Oilfield Solutions', invoiceDate: '2026-06-06', dueDate: '2026-07-06', subTotal: 11200, taxAmount: 1680, totalAmount: 12880, status: 'Unpaid', paymentTerms: 'Net 30' }
+    ];
+    this.supplierInvoices.set(apInvoices);
+
+    const agingAP: APAgingEntry[] = [
+      { vendorId: 'v1', vendorName: 'Global Oilfield Solutions', totalDue: 12880, current: 12880, thirtyToSixty: 0, sixtyToNinety: 0, overNinety: 0 },
+      { vendorId: 'v3', vendorName: 'Valero Drilling Supplies', totalDue: 4500, current: 0, thirtyToSixty: 4500, sixtyToNinety: 0, overNinety: 0 }
+    ];
+    this.apAging.set(agingAP);
+
+    const paymentVocs: PaymentVoucher[] = [
+      { id: 'pv1', voucherNumber: 'PV-2026-001', paymentDate: '2026-06-10', vendorId: 'v1', vendorName: 'Global Oilfield Solutions', bankAccountId: 'ba1', bankAccountName: 'HSBC Corporate A/C', paymentMethod: 'Bank Transfer', referenceNumber: 'TXN-8821092', amount: 5000, status: 'Posted', invoicesPaid: [{ invoiceId: 'ap1', invoiceNumber: 'INV-GOS-8821', amountPaid: 5000 }] }
+    ];
+    this.paymentVouchers.set(paymentVocs);
+
+    const agingAR: ARAgingEntry[] = [
+      { customerId: 'c1', customerName: 'Saudi Aramco', totalDue: 145000, current: 120000, thirtyToSixty: 25000, sixtyToNinety: 0, overNinety: 0 }
+    ];
+    this.arAging.set(agingAR);
+
+    const collectionVocs: CollectionVoucher[] = [
+      { id: 'cv1', voucherNumber: 'CV-2026-001', collectionDate: '2026-06-12', customerName: 'Saudi Aramco', bankAccountId: 'ba1', bankAccountName: 'HSBC Corporate A/C', paymentMethod: 'Bank Transfer', referenceNumber: 'INW-881290', amount: 25000, status: 'Posted', invoicesCollected: [{ invoiceId: 'inv-1', invoiceNumber: 'INV-2026-001', amountCollected: 25000 }] }
+    ];
+    this.collectionVouchers.set(collectionVocs);
+
+    const bankDetails: BankAccountDetails[] = [
+      { id: 'ba1', bankName: 'HSBC Bank', accountNumber: '120-889922-001', iban: 'AE12HSBC0000120889922001', currency: 'USD', balance: 420500, status: 'Active' },
+      { id: 'ba2', bankName: 'Saudi National Bank', accountNumber: '2030-1122-002', iban: 'SA80SNB0000020301122002', currency: 'SAR', balance: 1540000, status: 'Active' }
+    ];
+    this.bankAccountsDetails.set(bankDetails);
+
+    const cashDetails: CashAccountDetails[] = [
+      { id: 'ca1', officeLocation: 'Khobar HQ Petty Cash', custodianName: 'Ahmed Mansour', currency: 'SAR', balance: 15000, status: 'Active' }
+    ];
+    this.cashAccountsDetails.set(cashDetails);
+
+    const bankRecs: BankReconciliation[] = [
+      { id: 'br1', bankAccountId: 'ba1', statementPeriod: 'May 2026', statementEndDate: '2026-05-31', bookBalance: 425500, statementBalance: 425500, difference: 0, status: 'Reconciled', reconciledDate: '2026-06-02', reconciledBy: 'Sophia Sterling' }
+    ];
+    this.bankReconciliations.set(bankRecs);
+
+    // 9. HSE
+    const incidentsList: HSEIncident[] = [
+      { id: 'inc1', incidentNumber: 'INC-2026-001', type: 'Near Miss', severity: 'Low', date: '2026-06-04', location: 'Rig Alpha', description: 'Drill pipe slipped slightly during tripping operation. No injuries or damage.', immediateActionTaken: 'Tripping stopped. Slip jaws inspected and cleaned.', reportedBy: 'David Miller', status: 'Closed', rootCause: 'Accumulated grease on slip dies.', correctiveAction: 'Mandatory inspection of slips before every tripping run.' }
+    ];
+    this.hseIncidents.set(incidentsList);
+
+    const permits: PTW[] = [
+      { id: 'ptw1', permitNumber: 'PTW-2026-001', type: 'Hot Work', requestDate: '2026-06-12', validFrom: '2026-06-13 08:00', validTo: '2026-06-13 18:00', location: 'Rig Alpha Welding Shop', applicantName: 'Sven Larson', safetyOfficerApproved: true, operationsManagerApproved: true, status: 'Approved', gasTestRequired: true, gasTestResults: '0% LEL, 20.9% O2, 0ppm H2S' }
+    ];
+    this.ptws.set(permits);
+
+    const safetyAudits: SafetyInspection[] = [
+      { id: 'sa1', inspectionNumber: 'SI-2026-001', date: '2026-06-10', location: 'Rig Beta Base Camp', inspectorName: 'David Miller', itemsAuditedCount: 20, violationsCount: 1, scorePercentage: 95, status: 'Closed' }
+    ];
+    this.safetyInspections.set(safetyAudits);
+
+    const risks: SafetyRisk[] = [
+      { id: 'risk1', riskCode: 'RSK-DRL-001', activityDescription: 'Tripping Pipe', hazardDescription: 'Crush injuries from moving elevators / equipment', initialSeverity: 'High', controlMeasures: 'Ensure safety lines are clear, crew wearing heavy duty impact gloves, automated elevator checks.', residualSeverity: 'Medium', status: 'Mitigated' }
+    ];
+    this.safetyRisks.set(risks);
+
+    // ── Fuel Tanks ──────────────────────────────────────────────────────────
+    const mockFuelTanks: FuelTank[] = [
+      { id: 'ft1', tankCode: 'TNK-DSL-A', tankName: 'Main Diesel Tank A', location: 'Base Camp Alpha', fuelType: 'Diesel', capacityLiters: 50000, currentLevelLiters: 32500, status: 'Active' },
+      { id: 'ft2', tankCode: 'TNK-DSL-B', tankName: 'Site Diesel Tank B', location: 'Permian Rig Site', fuelType: 'Diesel', capacityLiters: 20000, currentLevelLiters: 8400, status: 'Active' },
+      { id: 'ft3', tankCode: 'TNK-PET-A', tankName: 'Petrol Tank A', location: 'Houston Main Station', fuelType: 'Petrol', capacityLiters: 10000, currentLevelLiters: 6200, status: 'Active' }
+    ];
+    this.fuelTanks.set(mockFuelTanks);
+
+    const mockFuelReceipts: FuelReceipt[] = [
+      { id: 'fr1', receiptNumber: 'FR-2026-001', tankId: 'ft1', tankName: 'Main Diesel Tank A', fuelType: 'Diesel', quantityLiters: 15000, unitCost: 0.85, totalCost: 12750, supplierName: 'Gulf Fuel Suppliers LLC', deliveryDate: '2026-06-01', receivedBy: 'Jim Halpert', invoiceNumber: 'GFS-2026-441', status: 'Posted' },
+      { id: 'fr2', receiptNumber: 'FR-2026-002', tankId: 'ft2', tankName: 'Site Diesel Tank B', fuelType: 'Diesel', quantityLiters: 5000, unitCost: 0.88, totalCost: 4400, supplierName: 'Texas Fuel Corp', deliveryDate: '2026-06-08', receivedBy: 'Robert Vance', status: 'Posted' },
+      { id: 'fr3', receiptNumber: 'FR-2026-003', tankId: 'ft3', tankName: 'Petrol Tank A', fuelType: 'Petrol', quantityLiters: 3000, unitCost: 1.05, totalCost: 3150, supplierName: 'Gulf Fuel Suppliers LLC', deliveryDate: '2026-06-10', receivedBy: 'Sven Larson', status: 'Posted' }
+    ];
+    this.fuelReceipts.set(mockFuelReceipts);
+
+    const mockFuelIssues: FuelIssue[] = [
+      { id: 'fi1', issueNumber: 'FI-2026-001', tankId: 'ft1', tankName: 'Main Diesel Tank A', fuelType: 'Diesel', quantityLiters: 250, unitCost: 0.85, totalCost: 212.5, issuedTo: 'Vehicle', issuedToId: 'v1', issuedToName: 'Ford F-250 (TX-OG-889)', costCenterCode: 'CC-OPS-001', issueDate: '2026-06-10', issuedBy: 'Jim Halpert', odometerReading: 14500, status: 'Posted' },
+      { id: 'fi2', issueNumber: 'FI-2026-002', tankId: 'ft1', tankName: 'Main Diesel Tank A', fuelType: 'Diesel', quantityLiters: 1500, unitCost: 0.85, totalCost: 1275, issuedTo: 'Generator', issuedToId: 'eq2', issuedToName: 'Generator GEN-001', costCenterCode: 'CC-DRL-001', issueDate: '2026-06-12', issuedBy: 'Robert Vance', runningHours: 450, status: 'Posted' },
+      { id: 'fi3', issueNumber: 'FI-2026-003', tankId: 'ft2', tankName: 'Site Diesel Tank B', fuelType: 'Diesel', quantityLiters: 800, unitCost: 0.88, totalCost: 704, issuedTo: 'Rig', issuedToId: 'rig1', issuedToName: 'Rig Alpha', costCenterCode: 'CC-DRL-001', issueDate: '2026-06-13', issuedBy: 'Sven Larson', runningHours: 520, status: 'Posted' }
+    ];
+    this.fuelIssues.set(mockFuelIssues);
+
+    // ── Inventory Reservations ───────────────────────────────────────────────
+    const mockReservations: InventoryReservation[] = [
+      {
+        id: 'res1', reservationNumber: 'RES-2026-001', projectCode: 'PRJ-001',
+        projectName: 'Permian Overland Drilling', requestedBy: 'Robert Vance',
+        requestDate: '2026-06-01', requiredDate: '2026-06-15', status: 'Approved',
+        items: [{ itemCode: 'DR-BIT-8.5-PDC', itemName: 'Drill Bit 8.5in PDC Premium', uom: 'EA', requestedQuantity: 3, reservedQuantity: 3, unitPrice: 8500 }],
+        totalValue: 25500
+      },
+      {
+        id: 'res2', reservationNumber: 'RES-2026-002', projectCode: 'PRJ-002',
+        projectName: 'Midland Basin Support', requestedBy: 'Sarah Jenkins',
+        requestDate: '2026-06-05', requiredDate: '2026-06-20', status: 'Pending',
+        items: [{ itemCode: 'HSE-HARN-CLA', itemName: 'Safety Harness Class A', uom: 'EA', requestedQuantity: 10, reservedQuantity: 0, unitPrice: 150 }],
+        totalValue: 1500
+      }
+    ];
+    this.inventoryReservations.set(mockReservations);
+  }
+
 
   private generateMockTimesheet(rigId: string, rigName: string, month: string): RigTimesheet {
     const days: TimesheetDayRow[] = [];
@@ -930,4 +1392,223 @@ export class MockDataService {
     this.bulkImportHistories.update(val => [newRecord, ...val]);
     return newRecord;
   }
+
+  // --- EXTENDED MUTATORS ---
+  addWarehouse(wh: Omit<Warehouse, 'id'>) {
+    const list = this.warehouses();
+    const newWh: Warehouse = { ...wh, id: `wh${list.length + 1}` };
+    this.warehouses.update(val => [...val, newWh]);
+    return newWh;
+  }
+
+  addMRV(mrv: Omit<MRV, 'id' | 'voucherNumber' | 'status'>) {
+    const list = this.mrvs();
+    const num = `MRV-2026-0${list.length + 1}`;
+    const newMRV: MRV = { ...mrv, id: `mrv${list.length + 1}`, voucherNumber: num, status: 'Draft' };
+    this.mrvs.update(val => [...val, newMRV]);
+    return newMRV;
+  }
+
+  updateMRVStatus(id: string, status: MRV['status']) {
+    this.mrvs.update(list => list.map(item => item.id === id ? { ...item, status } : item));
+    if (status === 'Posted') {
+      const voucher = this.mrvs().find(item => item.id === id);
+      if (voucher) {
+        voucher.items.forEach(vitem => {
+          const matched = this.inventoryItems().find(inv => inv.itemCode === vitem.itemCode);
+          if (matched) {
+            this.updateInventoryItem(matched.id, { quantity: matched.quantity + vitem.quantityReceived });
+          } else {
+            this.addInventoryItem({
+              itemCode: vitem.itemCode,
+              itemName: vitem.itemName,
+              quantity: vitem.quantityReceived,
+              minQuantity: 5,
+              category: 'General Spares',
+              uom: vitem.uom,
+              location: 'Warehouse A',
+              unitPrice: vitem.unitPrice,
+              status: 'In Stock'
+            });
+          }
+        });
+      }
+    }
+  }
+
+  addMIV(miv: Omit<MIV, 'id' | 'voucherNumber' | 'status'>) {
+    const list = this.mivs();
+    const num = `MIV-2026-0${list.length + 1}`;
+    const newMIV: MIV = { ...miv, id: `miv${list.length + 1}`, voucherNumber: num, status: 'Draft' };
+    this.mivs.update(val => [...val, newMIV]);
+    return newMIV;
+  }
+
+  updateMIVStatus(id: string, status: MIV['status']) {
+    this.mivs.update(list => list.map(item => item.id === id ? { ...item, status } : item));
+    if (status === 'Posted') {
+      const voucher = this.mivs().find(item => item.id === id);
+      if (voucher) {
+        voucher.items.forEach(vitem => {
+          const matched = this.inventoryItems().find(inv => inv.itemCode === vitem.itemCode);
+          if (matched) {
+            const newQty = Math.max(0, matched.quantity - vitem.quantityIssued);
+            this.updateInventoryItem(matched.id, {
+              quantity: newQty,
+              status: newQty === 0 ? 'Out of Stock' : newQty <= matched.minQuantity ? 'Low Stock' : 'In Stock'
+            });
+          }
+        });
+      }
+    }
+  }
+
+  addTransfer(xfer: Omit<InternalTransfer, 'id' | 'transferNumber' | 'status'>) {
+    const list = this.transfers();
+    const num = `XFER-2026-0${list.length + 1}`;
+    const newXfer: InternalTransfer = { ...xfer, id: `xfer${list.length + 1}`, transferNumber: num, status: 'Draft' };
+    this.transfers.update(val => [...val, newXfer]);
+    return newXfer;
+  }
+
+  updateTransferStatus(id: string, status: InternalTransfer['status']) {
+    this.transfers.update(list => list.map(item => item.id === id ? { ...item, status } : item));
+  }
+
+  addAdjustment(adj: Omit<StockAdjustment, 'id' | 'adjustmentNumber' | 'status'>) {
+    const list = this.adjustments();
+    const num = `ADJ-2026-0${list.length + 1}`;
+    const newAdj: StockAdjustment = { ...adj, id: `adj${list.length + 1}`, adjustmentNumber: num, status: 'Draft' };
+    this.adjustments.update(val => [...val, newAdj]);
+    return newAdj;
+  }
+
+  updateAdjustmentStatus(id: string, status: StockAdjustment['status']) {
+    this.adjustments.update(list => list.map(item => item.id === id ? { ...item, status } : item));
+    if (status === 'Posted') {
+      const adjustment = this.adjustments().find(item => item.id === id);
+      if (adjustment) {
+        adjustment.items.forEach(vitem => {
+          const matched = this.inventoryItems().find(inv => inv.itemCode === vitem.itemCode);
+          if (matched) {
+            const newQty = Math.max(0, matched.quantity + (vitem.adjustmentType === 'Addition' ? vitem.adjustedQuantity : -vitem.adjustedQuantity));
+            this.updateInventoryItem(matched.id, {
+              quantity: newQty,
+              status: newQty === 0 ? 'Out of Stock' : newQty <= matched.minQuantity ? 'Low Stock' : 'In Stock'
+            });
+          }
+        });
+      }
+    }
+  }
+
+  addCamp(camp: Omit<Camp, 'id'>) {
+    const list = this.camps();
+    const newCamp: Camp = { ...camp, id: `c${list.length + 1}` };
+    this.camps.update(val => [...val, newCamp]);
+    return newCamp;
+  }
+
+  addVehicle(vehicle: Omit<Vehicle, 'id'>) {
+    const list = this.vehicles();
+    const newVehicle: Vehicle = { ...vehicle, id: `v${list.length + 1}` };
+    this.vehicles.update(val => [...val, newVehicle]);
+    return newVehicle;
+  }
+
+  addTripLog(log: Omit<TripLog, 'id'>) {
+    const list = this.tripLogs();
+    const newLog: TripLog = { ...log, id: `t${list.length + 1}` };
+    this.tripLogs.update(val => [...val, newLog]);
+    return newLog;
+  }
+
+  // ─── FUEL MANAGEMENT HELPERS ─────────────────────────────────────────────
+  addFuelReceipt(receipt: Omit<FuelReceipt, 'id' | 'receiptNumber' | 'status'>) {
+    const list = this.fuelReceipts();
+    const num = `FR-2026-${String(list.length + 1).padStart(3, '0')}`;
+    const newReceipt: FuelReceipt = { ...receipt, id: `fr-${Date.now()}`, receiptNumber: num, status: 'Draft' };
+    this.fuelReceipts.update(val => [...val, newReceipt]);
+    return newReceipt;
+  }
+
+  postFuelReceipt(id: string) {
+    const receipt = this.fuelReceipts().find(r => r.id === id);
+    if (receipt) {
+      this.fuelTanks.update(tanks => tanks.map(t =>
+        t.id === receipt.tankId
+          ? { ...t, currentLevelLiters: Math.min(t.capacityLiters, t.currentLevelLiters + receipt.quantityLiters) }
+          : t
+      ));
+      this.fuelReceipts.update(list => list.map(r => r.id === id ? { ...r, status: 'Posted' as const } : r));
+    }
+  }
+
+  addFuelIssue(issue: Omit<FuelIssue, 'id' | 'issueNumber' | 'status'>) {
+    const list = this.fuelIssues();
+    const num = `FI-2026-${String(list.length + 1).padStart(3, '0')}`;
+    const newIssue: FuelIssue = { ...issue, id: `fi-${Date.now()}`, issueNumber: num, status: 'Draft' };
+    this.fuelIssues.update(val => [...val, newIssue]);
+    return newIssue;
+  }
+
+  postFuelIssue(id: string) {
+    const issue = this.fuelIssues().find(i => i.id === id);
+    if (issue) {
+      this.fuelTanks.update(tanks => tanks.map(t =>
+        t.id === issue.tankId
+          ? { ...t, currentLevelLiters: Math.max(0, t.currentLevelLiters - issue.quantityLiters) }
+          : t
+      ));
+      this.fuelIssues.update(list => list.map(i => i.id === id ? { ...i, status: 'Posted' as const } : i));
+    }
+  }
+
+  // ─── INVENTORY RESERVATION HELPERS ────────────────────────────────────────
+  addReservation(res: Omit<InventoryReservation, 'id' | 'reservationNumber' | 'status'>) {
+    const list = this.inventoryReservations();
+    const num = `RES-2026-${String(list.length + 1).padStart(3, '0')}`;
+    const newRes: InventoryReservation = { ...res, id: `res-${Date.now()}`, reservationNumber: num, status: 'Pending' };
+    this.inventoryReservations.update(val => [...val, newRes]);
+    return newRes;
+  }
+
+  approveReservation(id: string) {
+    const res = this.inventoryReservations().find(r => r.id === id);
+    if (!res) return;
+    res.items.forEach(item => {
+      const inv = this.inventoryItems().find(i => i.itemCode === item.itemCode);
+      if (inv) {
+        const newQty = Math.max(0, inv.quantity - item.requestedQuantity);
+        this.updateInventoryItem(inv.id, {
+          quantity: newQty,
+          status: newQty === 0 ? 'Out of Stock' : newQty <= inv.minQuantity ? 'Low Stock' : 'In Stock'
+        });
+      }
+    });
+    this.inventoryReservations.update(list => list.map(r =>
+      r.id === id
+        ? { ...r, status: 'Approved' as const, items: r.items.map(i => ({ ...i, reservedQuantity: i.requestedQuantity })) }
+        : r
+    ));
+  }
+
+  releaseReservation(id: string) {
+    const res = this.inventoryReservations().find(r => r.id === id);
+    if (!res || res.status !== 'Approved') return;
+    res.items.forEach(item => {
+      const inv = this.inventoryItems().find(i => i.itemCode === item.itemCode);
+      if (inv) {
+        const newQty = inv.quantity + item.reservedQuantity;
+        this.updateInventoryItem(inv.id, {
+          quantity: newQty,
+          status: newQty === 0 ? 'Out of Stock' : newQty <= inv.minQuantity ? 'Low Stock' : 'In Stock'
+        });
+      }
+    });
+    this.inventoryReservations.update(list => list.map(r =>
+      r.id === id ? { ...r, status: 'Released' as const } : r
+    ));
+  }
 }
+

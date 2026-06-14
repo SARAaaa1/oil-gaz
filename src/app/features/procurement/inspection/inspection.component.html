@@ -1,0 +1,340 @@
+<div class="space-y-6">
+
+  <!-- Header -->
+  <div>
+    <h1 class="text-2xl font-black text-slate-800 tracking-tight">{{ 'procurement.inspection.title' | translate }}</h1>
+    <p class="text-xs text-slate-500 font-semibold mt-1">{{ 'procurement.inspection.subtitle' | translate }}</p>
+  </div>
+
+  <!-- Tabs Nav -->
+  <div class="flex border-b border-slate-200 text-xs font-bold space-x-6">
+    <button 
+      (click)="activeTab.set('pending')"
+      [class.border-indigo-600]="activeTab() === 'pending'"
+      [class.text-indigo-600]="activeTab() === 'pending'"
+      [class.border-transparent]="activeTab() !== 'pending'"
+      [class.text-slate-500]="activeTab() !== 'pending'"
+      class="pb-3 border-b-2 transition-all font-black"
+    >
+      {{ 'procurement.inspection.tab_pending' | translate }} ({{ pendingRequests().length }})
+    </button>
+    <button 
+      (click)="activeTab.set('history')"
+      [class.border-indigo-600]="activeTab() === 'history'"
+      [class.text-indigo-600]="activeTab() === 'history'"
+      [class.border-transparent]="activeTab() !== 'history'"
+      [class.text-slate-500]="activeTab() !== 'history'"
+      class="pb-3 border-b-2 transition-all font-black"
+    >
+      {{ 'procurement.inspection.tab_log' | translate }} ({{ historyRequests().length }})
+    </button>
+    <button 
+      (click)="activeTab.set('ncrs')"
+      [class.border-indigo-600]="activeTab() === 'ncrs'"
+      [class.text-indigo-600]="activeTab() === 'ncrs'"
+      [class.border-transparent]="activeTab() !== 'ncrs'"
+      [class.text-slate-500]="activeTab() !== 'ncrs'"
+      class="pb-3 border-b-2 transition-all font-black"
+    >
+      {{ 'procurement.inspection.tab_ncrs' | translate }} ({{ ncrs().length }})
+    </button>
+  </div>
+
+  <!-- Tab 1: Pending Requests -->
+  @if (activeTab() === 'pending') {
+    <div class="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden animate-fade-in text-xs font-semibold">
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse">
+          <thead>
+            <tr class="text-slate-400 font-bold border-b border-slate-100 bg-slate-50/20">
+              <th class="p-4 py-3">{{ 'procurement.inspection.col_request' | translate }}</th>
+              <th class="p-4 py-3">{{ 'procurement.inspection.col_po' | translate }}</th>
+              <th class="p-4 py-3">{{ 'procurement.inspection.col_supplier' | translate }}</th>
+              <th class="p-4 py-3">{{ 'procurement.inspection.col_date' | translate }}</th>
+              <th class="p-4 py-3 text-center">{{ 'procurement.inspection.col_items' | translate }}</th>
+              <th class="p-4 py-3 text-center">{{ 'procurement.inspection.col_actions' | translate }}</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-50 text-slate-700 font-medium">
+            @for (req of pendingRequests(); track req.id) {
+              <tr class="hover:bg-slate-50/30 transition-colors">
+                <td class="p-4 font-mono font-bold text-slate-900">{{ req.requestNumber }}</td>
+                <td class="p-4 font-mono text-slate-500 font-bold">{{ req.poNumber }}</td>
+                <td class="p-4 font-bold text-slate-800">{{ req.vendorName }}</td>
+                <td class="p-4 font-mono text-slate-500">{{ req.requestDate }}</td>
+                <td class="p-4 text-center font-bold text-slate-650 bg-slate-50/20">{{ req.items.length }}</td>
+                <td class="p-4 text-center">
+                  <button 
+                    (click)="startInspection(req)"
+                    class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-bold"
+                  >
+                    {{ 'procurement.inspection.btn_inspect' | translate }}
+                  </button>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="6" class="p-8 text-center text-slate-400">
+                  <span class="font-bold">{{ 'procurement.inspection.no_pending' | translate }}</span>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
+
+  <!-- Tab 2: Inspection Log -->
+  @if (activeTab() === 'history') {
+    <div class="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden animate-fade-in text-xs font-semibold">
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse">
+          <thead>
+            <tr class="text-slate-400 font-bold border-b border-slate-100 bg-slate-50/20">
+              <th class="p-4 py-3">{{ 'procurement.inspection.col_request' | translate }}</th>
+              <th class="p-4 py-3">{{ 'procurement.inspection.col_po' | translate }}</th>
+              <th class="p-4 py-3">{{ 'procurement.inspection.col_supplier' | translate }}</th>
+              <th class="p-4 py-3">{{ 'procurement.inspection.col_inspector' | translate }}</th>
+              <th class="p-4 py-3">{{ 'procurement.inspection.col_date' | translate }}</th>
+              <th class="p-4 py-3 text-center">{{ 'procurement.inspection.col_outcome' | translate }}</th>
+              <th class="p-4 py-3">{{ 'procurement.inspection.col_notes' | translate }}</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-50 text-slate-700 font-medium">
+            @for (req of historyRequests(); track req.id) {
+              <tr class="hover:bg-slate-50/30 transition-colors">
+                <td class="p-4 font-mono font-bold text-slate-900">{{ req.requestNumber }}</td>
+                <td class="p-4 font-mono text-slate-500 font-bold">{{ req.poNumber }}</td>
+                <td class="p-4 font-bold text-slate-800">{{ req.vendorName }}</td>
+                <td class="p-4 text-slate-650">{{ req.inspectorName }}</td>
+                <td class="p-4 font-mono text-slate-500">{{ req.inspectionDate }}</td>
+                <td class="p-4 text-center">
+                  <span 
+                    [class.bg-green-50]="req.status === 'Accepted'"
+                    [class.text-green-700]="req.status === 'Accepted'"
+                    [class.bg-red-50]="req.status === 'Rejected'"
+                    [class.text-red-700]="req.status === 'Rejected'"
+                    [class.bg-amber-50]="req.status === 'Conditional'"
+                    [class.text-amber-700]="req.status === 'Conditional'"
+                    class="px-2.5 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider"
+                  >
+                    {{ 'procurement.inspection.statuses.' + req.status | translate }}
+                  </span>
+                </td>
+                <td class="p-4 text-slate-500 max-w-xs truncate">{{ req.notes || '-' }}</td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="7" class="p-8 text-center text-slate-400">
+                  <span class="font-bold">{{ 'procurement.inspection.no_log' | translate }}</span>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
+
+  <!-- Tab 3: NCR Registry -->
+  @if (activeTab() === 'ncrs') {
+    <div class="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden animate-fade-in text-xs font-semibold">
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse">
+          <thead>
+            <tr class="text-slate-400 font-bold border-b border-slate-100 bg-slate-50/20">
+              <th class="p-4 py-3">{{ 'procurement.inspection.ncr_no' | translate }}</th>
+              <th class="p-4 py-3">{{ 'procurement.inspection.col_po' | translate }}</th>
+              <th class="p-4 py-3">{{ 'procurement.inspection.col_supplier' | translate }}</th>
+              <th class="p-4 py-3">{{ 'procurement.inspection.col_date' | translate }}</th>
+              <th class="p-4 py-3 text-center">{{ 'procurement.inspection.col_severity' | translate }}</th>
+              <th class="p-4 py-3">{{ 'procurement.inspection.col_description' | translate }}</th>
+              <th class="p-4 py-3 text-center">{{ 'procurement.inspection.col_status' | translate }}</th>
+              <th class="p-4 py-3 text-center">{{ 'procurement.inspection.col_actions' | translate }}</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-50 text-slate-700 font-medium">
+            @for (ncr of ncrs(); track ncr.id) {
+              <tr class="hover:bg-slate-50/30 transition-colors">
+                <td class="p-4 font-mono font-bold text-slate-900">{{ ncr.ncrNumber }}</td>
+                <td class="p-4 font-mono text-slate-500 font-bold">{{ ncr.poNumber }}</td>
+                <td class="p-4 font-bold text-slate-800">{{ ncr.vendorName }}</td>
+                <td class="p-4 font-mono text-slate-500">{{ ncr.issueDate }}</td>
+                <td class="p-4 text-center">
+                  <span 
+                    [class.bg-red-50]="ncr.severity === 'High'"
+                    [class.text-red-700]="ncr.severity === 'High'"
+                    [class.bg-orange-50]="ncr.severity === 'Medium'"
+                    [class.text-orange-700]="ncr.severity === 'Medium'"
+                    [class.bg-blue-50]="ncr.severity === 'Low'"
+                    [class.text-blue-700]="ncr.severity === 'Low'"
+                    class="px-2 py-0.5 rounded text-[9px] font-extrabold uppercase tracking-wider"
+                  >
+                    {{ 'procurement.inspection.severities.' + ncr.severity | translate }}
+                  </span>
+                </td>
+                <td class="p-4 text-slate-500 max-w-xs truncate">{{ ncr.description }}</td>
+                <td class="p-4 text-center">
+                  <span 
+                    [class.bg-red-100]="ncr.status === 'Open'"
+                    [class.text-red-800]="ncr.status === 'Open'"
+                    [class.bg-green-100]="ncr.status === 'Closed'"
+                    [class.text-green-800]="ncr.status === 'Closed'"
+                    class="px-2.5 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider"
+                  >
+                    {{ ncr.status }}
+                  </span>
+                </td>
+                <td class="p-4 text-center">
+                  @if (ncr.status === 'Open') {
+                    <button 
+                      (click)="resolveNcr(ncr)"
+                      class="px-2.5 py-1 bg-green-650 hover:bg-green-700 text-white rounded text-[10px] font-bold"
+                    >
+                      {{ 'procurement.inspection.btn_resolve_ncr' | translate }}
+                    </button>
+                  } @else {
+                    <span class="text-slate-400 font-bold">-</span>
+                  }
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="8" class="p-8 text-center text-slate-400">
+                  <span class="font-bold">{{ 'procurement.inspection.no_ncrs' | translate }}</span>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
+
+</div>
+
+<!-- Inspection Checklist Modal -->
+@if (showInspectionForm()) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+    <div class="bg-white rounded-xl shadow-xl border border-slate-150 w-full max-w-2xl overflow-hidden animate-scale-in">
+      <div class="p-4 bg-slate-50 border-b border-slate-100 flex items-center justify-between text-xs font-semibold">
+        <h3 class="font-bold text-slate-800">{{ 'procurement.inspection.modal_title' | translate }} ({{ selectedRequest()?.requestNumber }})</h3>
+        <button (click)="showInspectionForm.set(false)" class="text-slate-400 hover:text-slate-600">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <div class="p-6 space-y-4 text-xs overflow-y-auto max-h-[70vh]">
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-slate-500 font-bold mb-1">{{ 'procurement.inspection.col_inspector' | translate }}</label>
+            <input type="text" [(ngModel)]="inspectorName" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-850">
+          </div>
+          <div>
+            <label class="block text-slate-500 font-bold mb-1">{{ 'procurement.inspection.overall_status' | translate }}</label>
+            <select [(ngModel)]="inspectionStatus" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-850">
+              <option value="Accepted">Passed / Accepted</option>
+              <option value="Rejected">Rejected</option>
+              <option value="Conditional">Conditional Acceptance</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Items Checklist -->
+        <div class="space-y-3">
+          <h4 class="font-bold text-slate-800 border-b border-slate-100 pb-1">{{ 'procurement.inspection.items_checklist' | translate }}</h4>
+          <div class="space-y-2">
+            @for (item of itemsToInspect; track $index) {
+              <div class="p-3 border border-slate-100 rounded-xl bg-slate-50/50 flex items-center justify-between gap-4">
+                <div>
+                  <div class="font-bold text-slate-800">{{ item.itemName }}</div>
+                  <div class="text-[10px] text-slate-500 font-mono mt-0.5">{{ item.itemCode }} | Qty Received: {{ item.quantityReceived }} {{ item.uom }}</div>
+                </div>
+
+                <div class="flex items-center space-x-2 rtl:space-x-reverse">
+                  <button 
+                    (click)="updateItemStatus($index, 'Passed')"
+                    [class.bg-green-600]="item.status === 'Passed'"
+                    [class.text-white]="item.status === 'Passed'"
+                    [class.bg-white]="item.status !== 'Passed'"
+                    [class.text-green-650]="item.status !== 'Passed'"
+                    class="px-2.5 py-1 rounded border border-green-500 font-bold"
+                  >
+                    Passed
+                  </button>
+                  <button 
+                    (click)="updateItemStatus($index, 'Failed')"
+                    [class.bg-red-600]="item.status === 'Failed'"
+                    [class.text-white]="item.status === 'Failed'"
+                    [class.bg-white]="item.status !== 'Failed'"
+                    [class.text-red-650]="item.status !== 'Failed'"
+                    class="px-2.5 py-1 rounded border border-red-500 font-bold"
+                  >
+                    Failed
+                  </button>
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-slate-500 font-bold mb-1">{{ 'procurement.inspection.col_notes' | translate }}</label>
+          <textarea [(ngModel)]="inspectionNotes" rows="3" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-850"></textarea>
+        </div>
+      </div>
+
+      <div class="p-4 bg-slate-50 border-t border-slate-100 flex justify-end space-x-2 rtl:space-x-reverse text-xs">
+        <button (click)="showInspectionForm.set(false)" class="px-4 py-2 bg-white border border-slate-200 rounded-lg text-slate-650 font-bold">{{ 'common.cancel' | translate }}</button>
+        <button (click)="submitInspection()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg">{{ 'procurement.inspection.btn_submit' | translate }}</button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- NCR Raise Modal -->
+@if (showNcrModal()) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+    <div class="bg-white rounded-xl shadow-xl border border-slate-150 w-full max-w-md overflow-hidden animate-scale-in">
+      <div class="p-4 bg-slate-50 border-b border-slate-100 flex items-center justify-between text-xs font-semibold">
+        <h3 class="font-bold text-red-650">{{ 'procurement.inspection.raise_ncr_title' | translate }}</h3>
+        <button (click)="showNcrModal.set(false)" class="text-slate-400 hover:text-slate-600">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <div class="p-5 space-y-3 text-xs">
+        <div>
+          <label class="block text-slate-500 font-bold mb-1">{{ 'procurement.inspection.col_severity' | translate }}</label>
+          <select [(ngModel)]="ncrSeverity" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-850">
+            <option value="Low">Low</option>
+            <option value="Medium">Medium</option>
+            <option value="High">High</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-slate-500 font-bold mb-1">{{ 'procurement.inspection.col_description' | translate }} *</label>
+          <textarea [(ngModel)]="ncrDescription" rows="3" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-850"></textarea>
+        </div>
+        <div>
+          <label class="block text-slate-500 font-bold mb-1">{{ 'procurement.inspection.root_cause' | translate }}</label>
+          <textarea [(ngModel)]="ncrRootCause" rows="2" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-850"></textarea>
+        </div>
+        <div>
+          <label class="block text-slate-500 font-bold mb-1">{{ 'procurement.inspection.corrective_action' | translate }} *</label>
+          <textarea [(ngModel)]="ncrCorrectiveAction" rows="2" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-850"></textarea>
+        </div>
+      </div>
+
+      <div class="p-4 bg-slate-50 border-t border-slate-100 flex justify-end space-x-2 rtl:space-x-reverse text-xs">
+        <button (click)="showNcrModal.set(false)" class="px-4 py-2 bg-white border border-slate-200 rounded-lg text-slate-650 font-bold">{{ 'common.cancel' | translate }}</button>
+        <button (click)="submitNcr()" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg">{{ 'procurement.inspection.btn_raise_ncr' | translate }}</button>
+      </div>
+    </div>
+  </div>
+}

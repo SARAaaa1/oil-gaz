@@ -1,22 +1,14 @@
 import { Component, OnInit, signal, computed, inject, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
+import { Router, RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
 import { BreadcrumbService } from '../../services/breadcrumb.service';
-import { NotificationService } from '../../services/notification.service';
+import { NotificationService, NotificationItem } from '../../services/notification.service';
 import { AuthService } from '../../services/auth.service';
 import { RoleDirective } from '../../../shared/directives/role.directive';
 import { TranslateModule } from '@ngx-translate/core';
 import { LanguageSwitcherComponent } from '../../../shared/components/language-switcher/language-switcher.component';
 import { LanguageService } from '../../services/language.service';
 import { DascoLogoComponent } from '../../../shared/components/dasco-logo/dasco-logo.component';
-
-interface NotificationItem {
-  id: string;
-  title: string;
-  message: string;
-  time: string;
-  type: 'info' | 'success' | 'warning' | 'danger';
-}
 
 @Component({
   selector: 'app-main-layout',
@@ -28,58 +20,35 @@ interface NotificationItem {
 })
 export class MainLayoutComponent implements OnInit {
   private readonly breadcrumbService = inject(BreadcrumbService);
-  private readonly notificationService = inject(NotificationService);
-  readonly authService = inject(AuthService);
   readonly langService = inject(LanguageService);
+  readonly authService = inject(AuthService);
+  private readonly router = inject(Router);
+  private readonly notificationService = inject(NotificationService);
 
-  // Layout UI State signals
+  readonly currentUser = this.authService.currentUser;
+  
+  // Collapse navigation menus state
   readonly isSidebarCollapsed = signal<boolean>(false);
   readonly isProcurementOpen = signal<boolean>(false);
-  readonly isOperationsOpen = signal<boolean>(true);
+  readonly isOperationsOpen = signal<boolean>(false);
   readonly isInventoryOpen = signal<boolean>(false);
   readonly isAssetsOpen = signal<boolean>(false);
   readonly isFinanceOpen = signal<boolean>(false);
+  readonly isMastersOpen = signal<boolean>(false);
   readonly isAdminOpen = signal<boolean>(false);
   readonly isMobileOpen = signal<boolean>(false);
   readonly isNotificationsOpen = signal<boolean>(false);
   readonly isUserMenuOpen = signal<boolean>(false);
 
-  // Mock Notifications for the dropdown
-  readonly notifications = signal<NotificationItem[]>([
-    {
-      id: 'n1',
-      title: 'Quotations Received',
-      message: '3 bids submitted for RFQ-2026-001 (Hydraulic Pump).',
-      time: '10 mins ago',
-      type: 'success'
-    },
-    {
-      id: 'n2',
-      title: 'PR Pending Review',
-      message: 'PR-2026-003 safety gear requires department head sign-off.',
-      time: '1 hour ago',
-      type: 'warning'
-    },
-    {
-      id: 'n3',
-      title: 'Rig Beta Down Time',
-      message: 'BOP Recertification scheduled starting tomorrow.',
-      time: '3 hours ago',
-      type: 'info'
-    },
-    {
-      id: 'n4',
-      title: 'Out of Stock Alert',
-      message: 'HSE-DET-GAS (Multi-Gas Detector) is out of stock in Warehouse A.',
-      time: '1 day ago',
-      type: 'danger'
-    }
-  ]);
+
+  // Link to shared notifications store
+  readonly notifications = this.notificationService.notifications;
 
   // Computed signals
   readonly breadcrumbs = this.breadcrumbService.breadcrumbs;
   readonly toasts = this.notificationService.toasts;
-  readonly activeNotificationCount = computed(() => this.notifications().length);
+  readonly activeNotificationCount = computed(() => this.notifications().filter(n => !n.isRead).length);
+
 
   ngOnInit() {
     // Initial load effects if needed
@@ -125,12 +94,20 @@ export class MainLayoutComponent implements OnInit {
     this.isFinanceOpen.update(val => !val);
   }
 
+  toggleMastersMenu() {
+    if (this.isSidebarCollapsed()) {
+      this.isSidebarCollapsed.set(false);
+    }
+    this.isMastersOpen.update(val => !val);
+  }
+
   toggleAdminMenu() {
     if (this.isSidebarCollapsed()) {
       this.isSidebarCollapsed.set(false);
     }
     this.isAdminOpen.update(val => !val);
   }
+
 
   toggleMobileSidebar() {
     this.isMobileOpen.update(val => !val);

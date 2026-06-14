@@ -6,7 +6,8 @@ export type UserRole =
   | 'Operations Manager'
   | 'Store Keeper'
   | 'Project Manager'
-  | 'Employee';
+  | 'Employee'
+  | 'Safety Officer';
 
 export type Permission =
   | 'view:dashboard'

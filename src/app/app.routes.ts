@@ -40,6 +40,10 @@ export const routes: Routes = [
           {
             path: 'purchase-orders',
             loadComponent: () => import('./features/procurement/purchase-orders/purchase-orders.component').then(m => m.PurchaseOrdersComponent)
+          },
+          {
+            path: 'inspection',
+            loadComponent: () => import('./features/procurement/inspection/inspection.component').then(m => m.InspectionComponent)
           }
         ]
       },
@@ -54,6 +58,21 @@ export const routes: Routes = [
         data: { permission: 'view:vendors' }
       },
       {
+        path: 'masters',
+        children: [
+          { path: 'items', loadComponent: () => import('./features/masters/items/items.component').then(m => m.ItemsComponent) },
+          { path: 'warehouses', loadComponent: () => import('./features/masters/warehouses/warehouses.component').then(m => m.WarehousesComponent) }
+        ]
+      },
+      {
+        path: 'assets',
+        children: [
+          { path: '', loadComponent: () => import('./features/assets/assets.component').then(m => m.AssetsComponent) },
+          { path: 'maintenance', loadComponent: () => import('./features/maintenance/maintenance.component').then(m => m.MaintenanceComponent) }
+        ]
+      },
+
+      {
         path: 'operations',
         children: [
           { path: '', redirectTo: 'rigs', pathMatch: 'full' },
@@ -66,6 +85,21 @@ export const routes: Routes = [
             path: 'timesheets',
             loadComponent: () => import('./features/operations/timesheets/timesheets.component').then(m => m.TimesheetsComponent),
             data: { permission: 'view:timesheets' }
+          },
+          {
+            path: 'camps',
+            loadComponent: () => import('./features/operations/camps/camps.component').then(m => m.CampsComponent),
+            data: { permission: 'view:rigs' }
+          },
+          {
+            path: 'fleet',
+            loadComponent: () => import('./features/operations/fleet/fleet.component').then(m => m.FleetComponent),
+            data: { permission: 'view:rigs' }
+          },
+          {
+            path: 'fuel',
+            loadComponent: () => import('./features/operations/fuel/fuel.component').then(m => m.FuelComponent),
+            data: { permission: 'view:rigs' }
           },
           {
             path: 'projects',
@@ -94,9 +128,38 @@ export const routes: Routes = [
           {
             path: 'cost-centers',
             loadComponent: () => import('./features/finance/cost-centers/cost-centers.component').then(m => m.CostCentersComponent)
+          },
+          {
+            path: 'chart-of-accounts',
+            loadComponent: () => import('./features/finance/chart-of-accounts/chart-of-accounts.component').then(m => m.ChartOfAccountsComponent)
+          },
+          {
+            path: 'general-ledger',
+            loadComponent: () => import('./features/finance/general-ledger/general-ledger.component').then(m => m.GeneralLedgerComponent)
+          },
+          {
+            path: 'ap',
+            loadComponent: () => import('./features/finance/accounts-payable/accounts-payable.component').then(m => m.AccountsPayableComponent)
+          },
+          {
+            path: 'ar',
+            loadComponent: () => import('./features/finance/accounts-receivable/accounts-receivable.component').then(m => m.AccountsReceivableComponent)
+          },
+          {
+            path: 'cash-bank',
+            loadComponent: () => import('./features/finance/cash-bank/cash-bank.component').then(m => m.CashBankComponent)
+          },
+          {
+            path: 'cost-control',
+            loadComponent: () => import('./features/finance/cost-control/cost-control.component').then(m => m.CostControlComponent)
           }
         ]
       },
+      {
+        path: 'hse',
+        loadComponent: () => import('./features/hse/hse.component').then(m => m.HseComponent)
+      },
+
       {
         path: 'activity-logs',
         loadComponent: () => import('./features/audit/activity-logs/activity-logs.component').then(m => m.ActivityLogsComponent),
@@ -106,6 +169,10 @@ export const routes: Routes = [
         path: 'audit-trail',
         loadComponent: () => import('./features/audit/audit-trail/audit-trail.component').then(m => m.AuditTrailComponent),
         data: { permission: 'view:settings' }
+      },
+      {
+        path: 'notifications',
+        loadComponent: () => import('./features/notifications/notifications.component').then(m => m.NotificationsComponent)
       },
       {
         path: 'workflow',

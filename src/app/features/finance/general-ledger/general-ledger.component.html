@@ -1,0 +1,609 @@
+<div class="space-y-6 container mx-auto px-4 py-6" [dir]="langService.isArabic() ? 'rtl' : 'ltr'">
+  
+  <!-- Header Page Section -->
+  <div class="flex flex-col md:flex-row md:items-center md:justify-between bg-white p-5 rounded-xl border border-slate-100 shadow-sm gap-4">
+    <div>
+      <h1 class="text-2xl font-black text-slate-800 tracking-tight flex items-center gap-2">
+        <svg class="w-8 h-8 text-primary shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+        </svg>
+        <span>{{ 'finance.general_ledger.title' | translate }}</span>
+      </h1>
+      <p class="text-xs text-slate-500 font-semibold mt-1">
+        {{ 'finance.general_ledger.subtitle' | translate }}
+      </p>
+    </div>
+
+    <!-- Actions -->
+    <div *appRole="['Super Admin', 'General Manager', 'Finance Manager']" class="flex items-center gap-2">
+      <button 
+        (click)="openPostModal()"
+        class="px-4 py-2.5 bg-primary hover:bg-slate-800 text-white rounded-lg font-bold transition-all shadow-sm flex items-center gap-2 text-xs"
+      >
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <span>{{ 'finance.general_ledger.add_entry' | translate }}</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Filters & Search Toolbar -->
+  <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-sm flex flex-col md:flex-row items-center gap-4">
+    
+    <!-- Search Bar -->
+    <div class="relative w-full md:flex-1">
+      <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+        </svg>
+      </span>
+      <input 
+        type="text" 
+        [placeholder]="'finance.general_ledger.search_placeholder' | translate"
+        [ngModel]="searchQuery()"
+        (ngModelChange)="searchQuery.set($event)"
+        class="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 focus:outline-none focus:border-indigo-500/50 text-xs font-semibold"
+      />
+    </div>
+
+    <!-- Filter by Status -->
+    <div class="flex items-center gap-2 w-full md:w-auto">
+      <label class="text-xs text-slate-455 shrink-0 font-bold">{{ 'common.filter' | translate }}:</label>
+      <select 
+        [ngModel]="statusFilter()"
+        (ngModelChange)="statusFilter.set($event)"
+        class="w-full md:w-44 bg-slate-50 border border-slate-200 rounded-lg p-2 text-slate-700 font-bold focus:outline-none text-xs"
+      >
+        <option value="All">{{ 'common.all' | translate }}</option>
+        <option value="Posted">Posted</option>
+        <option value="Voided">Voided</option>
+        <option value="Draft">Draft</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Historical Journal Entries Table -->
+  <div class="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="w-full text-left border-collapse text-xs font-semibold text-slate-600">
+        
+        <!-- Header -->
+        <thead class="bg-slate-50/20 text-slate-400 font-bold border-b border-slate-100 text-[10px] uppercase tracking-wider">
+          <tr>
+            <th class="p-4 py-3" [class.text-right]="langService.isArabic()">
+              {{ 'finance.general_ledger.journal_number' | translate }}
+            </th>
+            <th class="p-4 py-3" [class.text-right]="langService.isArabic()">
+              {{ 'finance.general_ledger.date' | translate }}
+            </th>
+            <th class="p-4 py-3" [class.text-right]="langService.isArabic()">
+              {{ 'finance.general_ledger.reference' | translate }}
+            </th>
+            <th class="p-4 py-3" [class.text-right]="langService.isArabic()">
+              {{ 'finance.general_ledger.description' | translate }}
+            </th>
+            <th class="p-4 py-3 text-right" [class.text-left]="langService.isArabic()">
+              {{ 'finance.general_ledger.debit' | translate }}
+            </th>
+            <th class="p-4 py-3 text-right" [class.text-left]="langService.isArabic()">
+              {{ 'finance.general_ledger.credit' | translate }}
+            </th>
+            <th class="p-4 py-3 text-center">
+              {{ 'finance.general_ledger.status' | translate }}
+            </th>
+            <th class="p-4 py-3 text-center">
+              {{ 'finance.chart_of_accounts.actions' | translate }}
+            </th>
+          </tr>
+        </thead>
+
+        <!-- Body -->
+        <tbody class="divide-y divide-slate-50 font-medium text-slate-700">
+          @if (filteredEntries().length === 0) {
+            <tr>
+              <td colspan="8" class="p-8 text-center text-slate-400 font-bold">
+                {{ 'common.no_data' | translate }}
+              </td>
+            </tr>
+          } @else {
+            @for (entry of filteredEntries(); track entry.id) {
+              <tr class="hover:bg-indigo-50/25 transition-colors group cursor-pointer" (click)="openDetailModal(entry)">
+                
+                <!-- Journal Number (Clickable link to details) -->
+                <td class="p-4 whitespace-nowrap font-mono text-xs font-bold text-slate-900">
+                  <button 
+                    (click)="openDetailModal(entry); $event.stopPropagation()"
+                    class="text-indigo-650 hover:text-indigo-800 hover:underline focus:outline-none font-mono text-xs font-bold"
+                  >
+                    {{ entry.journalNumber }}
+                  </button>
+                </td>
+
+                <!-- Date -->
+                <td class="p-4 whitespace-nowrap text-slate-500 font-semibold">
+                  {{ entry.date }}
+                </td>
+
+                <!-- Reference -->
+                <td class="p-4 whitespace-nowrap font-bold text-slate-800">
+                  {{ entry.reference }}
+                </td>
+
+                <!-- Description -->
+                <td class="p-4 max-w-xs truncate text-slate-500 font-semibold">
+                  {{ entry.description }}
+                </td>
+
+                <!-- Total Debit -->
+                <td class="p-4 whitespace-nowrap text-right text-sm font-black text-green-700 font-mono" [class.text-left]="langService.isArabic()">
+                  ${{ entry.totalDebit | number:'1.2-2' }}
+                </td>
+
+                <!-- Total Credit -->
+                <td class="p-4 whitespace-nowrap text-right text-sm font-black text-purple-700 font-mono" [class.text-left]="langService.isArabic()">
+                  ${{ entry.totalCredit | number:'1.2-2' }}
+                </td>
+
+                <!-- Status Badge -->
+                <td class="p-4 whitespace-nowrap text-center">
+                  <span 
+                    class="px-2.5 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider inline-block"
+                    [ngClass]="{
+                      'bg-green-50 text-success border border-green-100': entry.status === 'Posted',
+                      'bg-rose-50 text-rose-700 border border-rose-100': entry.status === 'Voided',
+                      'bg-slate-100 text-slate-650 border border-slate-200': entry.status === 'Draft'
+                    }"
+                  >
+                    {{ entry.status }}
+                  </span>
+                </td>
+
+                <!-- Actions -->
+                <td class="p-4 whitespace-nowrap text-center text-xs">
+                  <div class="flex items-center justify-center gap-1" (click)="$event.stopPropagation()">
+                    <button 
+                      (click)="openDetailModal(entry)"
+                      class="p-1 rounded text-slate-450 hover:bg-slate-100 hover:text-slate-800 transition-colors"
+                      [title]="'common.view' | translate"
+                    >
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                      </svg>
+                    </button>
+                    <button 
+                      *appRole="['Super Admin', 'General Manager', 'Finance Manager']"
+                      (click)="voidEntry(entry)"
+                      [disabled]="entry.status === 'Voided'"
+                      class="p-1 rounded text-slate-455 hover:bg-rose-50 hover:text-rose-700 transition-colors disabled:opacity-30 disabled:hover:bg-transparent"
+                      [title]="'finance.general_ledger.void_entry' | translate"
+                    >
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                      </svg>
+                    </button>
+                  </div>
+                </td>
+
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Modal 1: Journal Entry Details -->
+  @if (showDetailModal()) {
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm transition-all duration-300">
+      
+      <div 
+        class="bg-white rounded-2xl w-full max-w-4xl overflow-hidden shadow-2xl animate-scale-in text-slate-700 border border-slate-100"
+        (click)="$event.stopPropagation()"
+      >
+        <!-- Title bar -->
+        <div class="px-6 py-4.5 bg-slate-50/50 border-b border-slate-100 flex items-center justify-between">
+          <h3 class="text-base font-black text-slate-800 flex items-center gap-2">
+            <span class="font-mono text-indigo-650">{{ selectedEntry()?.journalNumber }}</span>
+            <span class="text-slate-300">|</span>
+            <span>{{ 'finance.general_ledger.entry_details' | translate }}</span>
+          </h3>
+          <button (click)="closeDetailModal()" class="p-1 rounded-lg text-slate-450 hover:bg-slate-100 hover:text-slate-800 transition-colors">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <!-- Detail content -->
+        <div class="px-6 py-5 space-y-6 max-h-[75vh] overflow-y-auto text-xs font-semibold text-slate-500">
+          
+          <!-- Master info row -->
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-4 bg-slate-50 p-4 border border-slate-150 rounded-xl text-xs text-slate-600">
+            <div>
+              <span class="text-slate-400 uppercase font-bold block mb-0.5 tracking-wider">Date</span>
+              <span class="text-slate-800 font-bold text-sm">{{ selectedEntry()?.date }}</span>
+            </div>
+            <div>
+              <span class="text-slate-400 uppercase font-bold block mb-0.5 tracking-wider">Reference</span>
+              <span class="text-slate-800 font-bold text-sm">{{ selectedEntry()?.reference }}</span>
+            </div>
+            <div>
+              <span class="text-slate-400 uppercase font-bold block mb-0.5 tracking-wider">Created By</span>
+              <span class="text-slate-800 font-bold text-sm">{{ selectedEntry()?.createdBy }}</span>
+            </div>
+            <div>
+              <span class="text-slate-400 uppercase font-bold block mb-0.5 tracking-wider">Status</span>
+              <span 
+                class="px-2.5 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider inline-block mt-0.5"
+                [ngClass]="{
+                  'bg-green-50 text-success border border-green-100': selectedEntry()?.status === 'Posted',
+                  'bg-rose-50 text-rose-700 border border-rose-100': selectedEntry()?.status === 'Voided',
+                  'bg-slate-100 text-slate-655 border border-slate-200': selectedEntry()?.status === 'Draft'
+                }"
+              >
+                {{ selectedEntry()?.status }}
+              </span>
+            </div>
+          </div>
+
+          <!-- Description -->
+          <div>
+            <h4 class="text-[10px] uppercase font-bold text-slate-400 tracking-wider mb-1">Description</h4>
+            <p class="text-slate-800 text-sm bg-slate-50/50 p-3 rounded-lg border border-slate-100 font-medium">
+              {{ selectedEntry()?.description }}
+            </p>
+          </div>
+
+          <!-- Lines table -->
+          <div class="space-y-2">
+            <h4 class="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
+              {{ 'finance.general_ledger.lines' | translate }}
+            </h4>
+            
+            <div class="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden">
+              <table class="w-full text-left border-collapse text-xs font-semibold text-slate-600">
+                <thead class="bg-slate-50/20 text-slate-400 font-bold border-b border-slate-100 text-[10px] uppercase tracking-wider">
+                  <tr>
+                    <th class="p-3 py-2.5" [class.text-right]="langService.isArabic()">Account</th>
+                    <th class="p-3 py-2.5" [class.text-right]="langService.isArabic()">Description</th>
+                    <th class="p-3 py-2.5" [class.text-right]="langService.isArabic()">Project</th>
+                    <th class="p-3 py-2.5" [class.text-right]="langService.isArabic()">Cost Center</th>
+                    <th class="p-3 py-2.5 text-right" [class.text-left]="langService.isArabic()">Debit</th>
+                    <th class="p-3 py-2.5 text-right" [class.text-left]="langService.isArabic()">Credit</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-50 font-medium text-slate-700">
+                  @for (line of selectedEntry()?.lines; track line.id) {
+                    <tr class="hover:bg-indigo-50/25 transition-colors">
+                      <td class="p-3 py-2.5 whitespace-nowrap">
+                        <div class="font-mono font-bold text-slate-900">{{ line.accountCode }}</div>
+                        <div class="text-[10px] text-slate-400 font-semibold">{{ line.accountName }}</div>
+                      </td>
+                      <td class="p-3 py-2.5 text-slate-550 font-semibold">
+                        {{ line.description || '-' }}
+                      </td>
+                      <td class="p-3 py-2.5 font-mono text-[10px] text-slate-500 font-semibold">
+                        {{ line.projectCode || '-' }}
+                      </td>
+                      <td class="p-3 py-2.5 font-mono text-[10px] text-slate-500 font-semibold">
+                        {{ line.costCenterCode || '-' }}
+                      </td>
+                      <td class="p-3 py-2.5 text-right font-mono text-green-700 text-sm font-black" [class.text-left]="langService.isArabic()">
+                        {{ line.debit > 0 ? '$' + (line.debit | number:'1.2-2') : '-' }}
+                      </td>
+                      <td class="p-3 py-2.5 text-right font-mono text-purple-700 text-sm font-black" [class.text-left]="langService.isArabic()">
+                        {{ line.credit > 0 ? '$' + (line.credit | number:'1.2-2') : '-' }}
+                      </td>
+                    </tr>
+                  }
+                  
+                  <!-- Totals Row -->
+                  <tr class="bg-slate-50 font-bold border-t border-slate-100 text-slate-800">
+                    <td colspan="4" class="p-3 py-2.5 text-right text-slate-400 uppercase text-[9px] tracking-wider" [class.text-left]="langService.isArabic()">
+                      Totals
+                    </td>
+                    <td class="p-3 py-2.5 text-right font-mono text-green-700 text-sm font-black" [class.text-left]="langService.isArabic()">
+                      ${{ selectedEntry()?.totalDebit | number:'1.2-2' }}
+                    </td>
+                    <td class="p-3 py-2.5 text-right font-mono text-purple-700 text-sm font-black" [class.text-left]="langService.isArabic()">
+                      ${{ selectedEntry()?.totalCredit | number:'1.2-2' }}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Footer -->
+        <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
+          <div>
+            @if (selectedEntry()?.status === 'Posted') {
+              <button 
+                *appRole="['Super Admin', 'General Manager', 'Finance Manager']"
+                (click)="voidEntry(selectedEntry()!)"
+                class="px-4 py-2 bg-rose-50 text-rose-705 border border-rose-200 hover:bg-rose-100 rounded-lg text-xs font-bold transition-all"
+              >
+                Void Journal Entry
+              </button>
+            }
+          </div>
+          <button 
+            (click)="closeDetailModal()"
+            class="px-4 py-2 bg-white hover:bg-slate-100 text-slate-650 border border-slate-200 rounded-lg text-xs font-bold transition-colors"
+          >
+            Close Details
+          </button>
+        </div>
+
+      </div>
+
+    </div>
+  }
+
+  <!-- Modal 2: Post New Manual Journal Entry -->
+  @if (showPostModal()) {
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm transition-all duration-300">
+      
+      <div 
+        class="bg-white rounded-2xl w-full max-w-6xl overflow-hidden shadow-2xl animate-scale-in text-slate-700 border border-slate-100"
+        (click)="$event.stopPropagation()"
+      >
+        <!-- Title bar -->
+        <div class="px-6 py-4.5 bg-slate-50/50 border-b border-slate-100 flex items-center justify-between">
+          <h3 class="text-base font-black text-slate-800 flex items-center gap-2">
+            <svg class="w-5 h-5 text-primary shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+            </svg>
+            <span>{{ 'finance.general_ledger.new_entry_title' | translate }}</span>
+          </h3>
+          <button (click)="closePostModal()" class="p-1 rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-800 transition-colors">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <!-- Scrollable Form content -->
+        <div class="px-6 py-5 max-h-[70vh] overflow-y-auto space-y-6 text-xs font-semibold text-slate-500">
+          
+          <!-- Master Header Fields -->
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div>
+              <label class="block text-[10px] uppercase font-bold tracking-wider text-slate-400 mb-1">
+                {{ 'finance.general_ledger.date' | translate }} *
+              </label>
+              <input 
+                type="date" 
+                [(ngModel)]="formDate"
+                class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-800 focus:outline-none focus:border-indigo-500/50 text-xs"
+              />
+            </div>
+            <div>
+              <label class="block text-[10px] uppercase font-bold tracking-wider text-slate-400 mb-1">
+                {{ 'finance.general_ledger.reference' | translate }} *
+              </label>
+              <input 
+                type="text" 
+                [(ngModel)]="formReference"
+                class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-800 focus:outline-none focus:border-indigo-500/50 text-xs"
+                placeholder="E.g. BANK-TRF-001, G&A-JUNE"
+              />
+            </div>
+            <div>
+              <label class="block text-[10px] uppercase font-bold tracking-wider text-slate-400 mb-1">
+                {{ 'finance.general_ledger.description' | translate }} *
+              </label>
+              <input 
+                type="text" 
+                [(ngModel)]="formDescription"
+                class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-800 focus:outline-none focus:border-indigo-500/50 text-xs"
+                placeholder="General description of the transaction..."
+              />
+            </div>
+          </div>
+
+          <!-- Transaction Lines Grid -->
+          <div class="space-y-2">
+            <div class="flex items-center justify-between">
+              <h4 class="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
+                {{ 'finance.general_ledger.lines' | translate }}
+              </h4>
+              <button 
+                (click)="addFormRow()"
+                class="text-indigo-650 hover:text-indigo-800 transition-colors flex items-center gap-1 text-[11px] font-bold py-1 px-2.5 rounded hover:bg-slate-50 border border-slate-200"
+              >
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+                <span>{{ 'finance.general_ledger.add_row' | translate }}</span>
+              </button>
+            </div>
+
+            <!-- Grid container -->
+            <div class="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden">
+              <table class="w-full text-left border-collapse text-xs font-semibold text-slate-600">
+                
+                <thead class="bg-slate-50/20 text-slate-400 font-bold border-b border-slate-100 text-[10px] uppercase tracking-wider">
+                  <tr>
+                    <th class="p-3 py-2.5 w-1/4" [class.text-right]="langService.isArabic()">Account *</th>
+                    <th class="p-3 py-2.5 w-1/5" [class.text-right]="langService.isArabic()">Project</th>
+                    <th class="p-3 py-2.5 w-1/5" [class.text-right]="langService.isArabic()">Cost Center</th>
+                    <th class="p-3 py-2.5" [class.text-right]="langService.isArabic()">Line Description</th>
+                    <th class="p-3 py-2.5 w-28 text-right" [class.text-left]="langService.isArabic()">Debit ($)</th>
+                    <th class="p-3 py-2.5 w-28 text-right" [class.text-left]="langService.isArabic()">Credit ($)</th>
+                    <th class="p-3 py-2.5 w-12 text-center"></th>
+                  </tr>
+                </thead>
+
+                <tbody class="divide-y divide-slate-50 font-medium text-slate-700">
+                  @for (line of formLines(); track $index) {
+                    <tr class="hover:bg-indigo-50/25 transition-colors">
+                      
+                      <!-- Account Dropdown -->
+                      <td class="p-2 py-1.5">
+                        <select 
+                          [(ngModel)]="line.accountCode"
+                          class="w-full bg-slate-50 border border-slate-200 rounded p-1.5 text-slate-800 focus:outline-none text-[11px] font-bold font-mono"
+                        >
+                          <option value="">-- Select Account --</option>
+                          @for (acc of leafAccounts(); track acc.code) {
+                            <option [value]="acc.code">{{ acc.code }} - {{ acc.name }}</option>
+                          }
+                        </select>
+                      </td>
+
+                      <!-- Project Dropdown -->
+                      <td class="p-2 py-1.5">
+                        <select 
+                          [(ngModel)]="line.projectCode"
+                          class="w-full bg-slate-50 border border-slate-200 rounded p-1.5 text-slate-800 focus:outline-none text-[11px] font-bold"
+                        >
+                          <option value="">-- No Project --</option>
+                          @for (p of workflowService.projects(); track p.code) {
+                            <option [value]="p.code">{{ p.code }} - {{ p.name }}</option>
+                          }
+                        </select>
+                      </td>
+
+                      <!-- Cost Center Dropdown -->
+                      <td class="p-2 py-1.5">
+                        <select 
+                          [(ngModel)]="line.costCenterCode"
+                          class="w-full bg-slate-50 border border-slate-200 rounded p-1.5 text-slate-800 focus:outline-none text-[11px] font-bold"
+                        >
+                          <option value="">-- No Cost Center --</option>
+                          @for (cc of workflowService.costCenters(); track cc.code) {
+                            <option [value]="cc.code">{{ cc.code }} - {{ cc.name }}</option>
+                          }
+                        </select>
+                      </td>
+
+                      <!-- Line Description -->
+                      <td class="p-2 py-1.5">
+                        <input 
+                          type="text" 
+                          [(ngModel)]="line.description"
+                          class="w-full bg-slate-50 border border-slate-200 rounded p-1.5 text-slate-800 focus:outline-none text-xs"
+                          placeholder="Line details..."
+                        />
+                      </td>
+
+                      <!-- Debit Input -->
+                      <td class="p-2 py-1.5 text-right">
+                        <input 
+                          type="number" 
+                          [(ngModel)]="line.debit"
+                          (ngModelChange)="onDebitChange($index)"
+                          min="0"
+                          class="w-24 bg-slate-50 border border-slate-200 rounded p-1.5 text-slate-850 text-right focus:outline-none text-xs font-mono font-bold"
+                          placeholder="0.00"
+                        />
+                      </td>
+
+                      <!-- Credit Input -->
+                      <td class="p-2 py-1.5 text-right">
+                        <input 
+                          type="number" 
+                          [(ngModel)]="line.credit"
+                          (ngModelChange)="onCreditChange($index)"
+                          min="0"
+                          class="w-24 bg-slate-50 border border-slate-200 rounded p-1.5 text-slate-855 text-right focus:outline-none text-xs font-mono font-bold"
+                          placeholder="0.00"
+                        />
+                      </td>
+
+                      <!-- Remove Action Button -->
+                      <td class="p-2 py-1.5 text-center">
+                        <button 
+                          (click)="removeFormRow($index)"
+                          class="p-1 rounded text-slate-455 hover:bg-rose-50 hover:text-rose-700 transition-colors"
+                        >
+                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
+                      </td>
+
+                    </tr>
+                  }
+
+                  <!-- Summation Row -->
+                  <tr class="bg-slate-50 font-bold border-t border-slate-100 text-slate-800">
+                    <td colspan="4" class="p-3 py-2.5 text-right uppercase text-[9px] tracking-wider text-slate-400" [class.text-left]="langService.isArabic()">
+                      Form Totals
+                    </td>
+                    <td class="p-3 py-2.5 text-right font-mono text-green-700 text-sm font-black" [class.text-left]="langService.isArabic()">
+                      ${{ formTotals().debits | number:'1.2-2' }}
+                    </td>
+                    <td class="p-3 py-2.5 text-right font-mono text-purple-700 text-sm font-black" [class.text-left]="langService.isArabic()">
+                      ${{ formTotals().credits | number:'1.2-2' }}
+                    </td>
+                    <td></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Variance & Balanced Warning Badge -->
+            <div class="flex flex-col sm:flex-row items-center justify-between gap-3 bg-slate-50 p-4 border border-slate-150 rounded-xl text-xs font-bold text-slate-655">
+              <div class="flex items-center gap-2">
+                <span class="text-slate-400">Variance:</span>
+                <span 
+                  [class.text-green-700]="formTotals().variance < 0.01" 
+                  [class.text-rose-600]="formTotals().variance >= 0.01"
+                  class="font-mono text-sm font-black"
+                >
+                  ${{ formTotals().variance | number:'1.2-2' }}
+                </span>
+              </div>
+              
+              <div>
+                @if (formTotals().isBalanced) {
+                  <span class="px-3 py-1 rounded bg-green-50 text-success border border-green-150 inline-flex items-center gap-1.5">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span>Double-Entry Balanced</span>
+                  </span>
+                } @else {
+                  <span class="px-3 py-1 rounded bg-rose-50 text-rose-700 border border-rose-150 inline-flex items-center gap-1.5 animate-pulse">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                    <span>Unbalanced Transaction</span>
+                  </span>
+                }
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+
+        <!-- Footer actions bar -->
+        <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-3">
+          <button 
+            (click)="closePostModal()"
+            class="px-4 py-2 bg-white hover:bg-slate-100 text-slate-655 border border-slate-200 rounded-lg text-xs font-bold transition-colors"
+          >
+            {{ 'common.cancel' | translate }}
+          </button>
+          <button 
+            (click)="postManualEntry()"
+            [disabled]="!formTotals().isBalanced"
+            class="px-4.5 py-2 bg-primary hover:bg-slate-800 text-white rounded-lg text-xs font-bold transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {{ 'finance.general_ledger.add_entry' | translate }}
+          </button>
+        </div>
+
+      </div>
+
+    </div>
+  }
+
+</div>

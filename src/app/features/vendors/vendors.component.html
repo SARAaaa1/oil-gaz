@@ -1,77 +1,327 @@
 <div class="space-y-6">
 
   <!-- Header -->
-  <div>
-    <h1 class="text-2xl font-black text-slate-800 tracking-tight">{{ 'vendors.title' | translate }}</h1>
-    <p class="text-xs text-slate-500 font-semibold mt-1">{{ 'vendors.subtitle' | translate }}</p>
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="text-2xl font-black text-slate-800 tracking-tight">{{ 'vendors.title' | translate }}</h1>
+      <p class="text-xs text-slate-500 font-semibold mt-1">{{ 'vendors.subtitle' | translate }}</p>
+    </div>
+    <button (click)="startAddVendor()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold flex items-center space-x-1.5 rtl:space-x-reverse transition-colors">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+      <span>{{ 'vendors.new_vendor' | translate }}</span>
+    </button>
   </div>
 
-  <!-- Vendors Table List -->
-  <div class="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden animate-fade-in">
-    
-    <!-- Table Header Filters -->
-    <div class="p-4 bg-slate-50/50 border-b border-slate-100 flex items-center justify-between text-xs">
-      <div class="relative w-full max-w-sm">
-        <input 
-          type="text" 
-          [placeholder]="'vendors.search_placeholder' | translate" 
-          (input)="searchQuery.set($any($event.target).value)"
-          class="w-full bg-white border border-slate-200 rounded-lg pl-8 pr-3 py-2 text-slate-850 focus:outline-none"
-        >
-        <svg class="w-4 h-4 text-slate-400 absolute left-2.5 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-        </svg>
+  <!-- KPI Cards -->
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+    <div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
+      <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">{{ 'vendors.kpi_total' | translate }}</p>
+      <h3 class="text-2xl font-black text-slate-800 mt-1">{{ vendorKPIs().total }}</h3>
+    </div>
+    <div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
+      <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">{{ 'vendors.kpi_active' | translate }}</p>
+      <h3 class="text-2xl font-black text-emerald-600 mt-1">{{ vendorKPIs().active }}</h3>
+    </div>
+    <div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
+      <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">{{ 'vendors.kpi_approved' | translate }}</p>
+      <h3 class="text-2xl font-black text-indigo-600 mt-1">{{ vendorKPIs().approved }}</h3>
+    </div>
+    <div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
+      <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">{{ 'vendors.kpi_blacklisted' | translate }}</p>
+      <h3 class="text-2xl font-black text-red-600 mt-1">{{ vendorKPIs().blacklisted }}</h3>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="flex border-b border-slate-200 text-xs font-bold space-x-6 rtl:space-x-reverse">
+    @for (tab of [['list','vendors.tab_list'],['profile','vendors.tab_profile'],['categories','vendors.tab_categories'],['evaluation','vendors.tab_evaluation'],['performance','vendors.tab_performance']]; track tab[0]) {
+      <button (click)="activeTab.set($any(tab[0]))"
+        [class.border-indigo-600]="activeTab() === tab[0]"
+        [class.text-indigo-600]="activeTab() === tab[0]"
+        [class.border-transparent]="activeTab() !== tab[0]"
+        [class.text-slate-500]="activeTab() !== tab[0]"
+        class="pb-3 border-b-2 transition-all whitespace-nowrap">
+        {{ tab[1] | translate }} @if (tab[0] === 'list') { ({{ vendors().length }}) }
+      </button>
+    }
+  </div>
+
+  <!-- TAB: Vendor List -->
+  @if (activeTab() === 'list') {
+    <div class="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden">
+      <div class="p-4 bg-slate-50/50 border-b border-slate-100 flex items-center gap-3">
+        <div class="relative flex-1 max-w-sm">
+          <input type="text" [placeholder]="'vendors.search_placeholder' | translate"
+            (input)="searchQuery.set($any($event.target).value)"
+            class="w-full bg-white border border-slate-200 rounded-lg pl-8 pr-3 py-2 text-xs focus:outline-none focus:border-indigo-300">
+          <svg class="w-4 h-4 text-slate-400 absolute left-2.5 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+        </div>
       </div>
-      
-      <div class="px-3.5 py-1.5 bg-slate-100 text-slate-650 font-bold rounded-lg shrink-0">
-        {{ 'vendors.suppliers_active' | translate:{ count: filteredVendors().length } }}
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse text-xs">
+          <thead>
+            <tr class="text-slate-400 font-bold border-b border-slate-100 bg-slate-50/20">
+              <th class="p-4 py-3">{{ 'vendors.col_code' | translate }}</th>
+              <th class="p-4 py-3">{{ 'vendors.vendor_name' | translate }}</th>
+              <th class="p-4 py-3">{{ 'vendors.contact_person' | translate }}</th>
+              <th class="p-4 py-3">{{ 'vendors.payment_terms' | translate }}</th>
+              <th class="p-4 py-3 text-center">⭐ {{ 'vendors.col_rating' | translate }}</th>
+              <th class="p-4 py-3 text-center">{{ 'vendors.status' | translate }}</th>
+              <th class="p-4 py-3 text-center">{{ 'common.actions' | translate }}</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-50 font-medium text-slate-700">
+            @for (v of filteredVendors(); track v.id) {
+              <tr (click)="selectVendor(v)" class="hover:bg-slate-50/50 transition-colors cursor-pointer">
+                <td class="p-4 font-mono font-bold text-slate-900 text-[11px]">{{ v.vendorCode }}</td>
+                <td class="p-4">
+                  <div class="font-bold text-slate-900">{{ v.vendorName }}</div>
+                  <div class="text-[10px] text-slate-400 font-semibold" dir="rtl">{{ v.arabicName }}</div>
+                </td>
+                <td class="p-4">{{ v.contactPerson }}</td>
+                <td class="p-4">{{ v.paymentTerms }}</td>
+                <td class="p-4 text-center font-black text-amber-500">{{ v.rating | number:'1.1-1' }}</td>
+                <td class="p-4 text-center">
+                  <span [class.bg-emerald-50]="v.status === 'Active'" [class.text-emerald-700]="v.status === 'Active'"
+                    [class.bg-red-50]="v.status === 'Inactive'" [class.text-red-700]="v.status === 'Inactive'"
+                    class="px-2.5 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider">
+                    {{ v.status === 'Active' ? ('vendors.status_active' | translate) : ('vendors.status_inactive' | translate) }}
+                  </span>
+                </td>
+                <td class="p-4 text-center">
+                  <div class="flex items-center justify-center gap-1">
+                    <button (click)="approveVendor(v); $event.stopPropagation()" class="px-2 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-[10px] font-bold">{{ 'vendors.btn_approve' | translate }}</button>
+                    <button (click)="blacklistVendor(v); $event.stopPropagation()" class="px-2 py-1 bg-red-500 hover:bg-red-600 text-white rounded text-[10px] font-bold">{{ 'vendors.btn_blacklist' | translate }}</button>
+                  </div>
+                </td>
+              </tr>
+            } @empty {
+              <tr><td colspan="7" class="p-8 text-center text-slate-400 font-bold">{{ 'vendors.no_vendors' | translate }}</td></tr>
+            }
+          </tbody>
+        </table>
       </div>
     </div>
+  }
 
-    <!-- Table -->
-    <div class="overflow-x-auto">
-      <table class="w-full text-left border-collapse text-xs">
-        <thead>
-          <tr class="text-slate-400 font-bold border-b border-slate-100 bg-slate-50/20">
-            <th class="p-4 py-3">{{ 'vendors.vendor_name' | translate }}</th>
-            <th class="p-4 py-3">{{ 'vendors.tax_number' | translate }}</th>
-            <th class="p-4 py-3">{{ 'vendors.address' | translate }}</th>
-            <th class="p-4 py-3">{{ 'vendors.contact_person' | translate }}</th>
-            <th class="p-4 py-3">{{ 'vendors.email' | translate }}</th>
-            <th class="p-4 py-3">{{ 'vendors.phone' | translate }}</th>
-            <th class="p-4 py-3 text-center">{{ 'vendors.payment_terms' | translate }}</th>
-            <th class="p-4 py-3 text-center">{{ 'vendors.status' | translate }}</th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-slate-50 font-medium text-slate-700">
-          @for (v of filteredVendors(); track v.id) {
-            <tr class="hover:bg-slate-50/50 transition-colors">
-              <td class="p-4 font-bold text-slate-900">{{ v.vendorName }}</td>
-              <td class="p-4 font-mono text-slate-500">{{ v.taxNumber }}</td>
-              <td class="p-4 text-slate-500 max-w-xs truncate">{{ v.address }}</td>
-              <td class="p-4 text-slate-800 font-bold">{{ v.contactPerson }}</td>
-              <td class="p-4 text-slate-500 font-mono">{{ v.contactEmail }}</td>
-              <td class="p-4 text-slate-500 font-mono">{{ v.contactPhone }}</td>
-              <td class="p-4 text-center font-bold text-slate-700 bg-slate-50/30">{{ v.paymentTerms }}</td>
-              <td class="p-4 text-center">
-                <span 
-                  class="px-2.5 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider bg-green-50 text-success"
-                >
-                  {{ 'vendors.statuses.' + v.status | translate }}
-                </span>
-              </td>
-            </tr>
-          } @empty {
-            <tr>
-              <td colspan="8" class="p-8 text-center text-slate-400">
-                <span class="font-bold">{{ 'vendors.no_matches' | translate }}</span>
-              </td>
-            </tr>
+  <!-- TAB: Profile -->
+  @if (activeTab() === 'profile') {
+    @if (isEditing()) {
+      <!-- Edit Form -->
+      <div class="bg-white rounded-xl border border-slate-100 shadow-sm p-5 space-y-4 text-xs">
+        <h3 class="font-bold text-slate-800 text-sm">{{ selectedVendor() ? ('vendors.edit_vendor' | translate) : ('vendors.new_vendor' | translate) }}</h3>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div><label class="block font-bold text-slate-500 mb-1">{{ 'vendors.col_code' | translate }} *</label><input type="text" [(ngModel)]="vendorCode" class="w-full border border-slate-200 rounded-lg px-3 py-2 bg-slate-50"></div>
+          <div><label class="block font-bold text-slate-500 mb-1">{{ 'vendors.vendor_name' | translate }} *</label><input type="text" [(ngModel)]="vendorName" class="w-full border border-slate-200 rounded-lg px-3 py-2 bg-slate-50"></div>
+          <div><label class="block font-bold text-slate-500 mb-1">{{ 'vendors.arabic_name' | translate }}</label><input type="text" [(ngModel)]="arabicName" dir="rtl" class="w-full border border-slate-200 rounded-lg px-3 py-2 bg-slate-50"></div>
+          <div><label class="block font-bold text-slate-500 mb-1">{{ 'vendors.tax_number' | translate }}</label><input type="text" [(ngModel)]="taxNumber" class="w-full border border-slate-200 rounded-lg px-3 py-2 bg-slate-50"></div>
+          <div><label class="block font-bold text-slate-500 mb-1">{{ 'vendors.contact_person' | translate }}</label><input type="text" [(ngModel)]="contactPerson" class="w-full border border-slate-200 rounded-lg px-3 py-2 bg-slate-50"></div>
+          <div><label class="block font-bold text-slate-500 mb-1">{{ 'vendors.email' | translate }}</label><input type="email" [(ngModel)]="contactEmail" class="w-full border border-slate-200 rounded-lg px-3 py-2 bg-slate-50"></div>
+          <div><label class="block font-bold text-slate-500 mb-1">{{ 'vendors.phone' | translate }}</label><input type="text" [(ngModel)]="contactPhone" class="w-full border border-slate-200 rounded-lg px-3 py-2 bg-slate-50"></div>
+          <div><label class="block font-bold text-slate-500 mb-1">{{ 'vendors.payment_terms' | translate }}</label>
+            <select [(ngModel)]="paymentTerms" class="w-full border border-slate-200 rounded-lg px-3 py-2 bg-slate-50">
+              <option>Net 30</option><option>Net 60</option><option>Net 90</option><option>Immediate</option>
+            </select>
+          </div>
+          <div><label class="block font-bold text-slate-500 mb-1">{{ 'vendors.currency' | translate }}</label>
+            <select [(ngModel)]="currency" class="w-full border border-slate-200 rounded-lg px-3 py-2 bg-slate-50">
+              <option>USD</option><option>SAR</option><option>EUR</option><option>GBP</option>
+            </select>
+          </div>
+          <div><label class="block font-bold text-slate-500 mb-1">{{ 'vendors.status' | translate }}</label>
+            <select [(ngModel)]="status" class="w-full border border-slate-200 rounded-lg px-3 py-2 bg-slate-50">
+              <option value="Active">Active</option><option value="Inactive">Inactive</option>
+            </select>
+          </div>
+        </div>
+        <div class="flex justify-end gap-2 pt-2">
+          <button (click)="cancelEdit()" class="px-4 py-2 bg-white border border-slate-200 rounded-lg font-bold text-slate-600">{{ 'common.cancel' | translate }}</button>
+          <button (click)="saveVendor()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-bold">{{ 'common.save' | translate }}</button>
+        </div>
+      </div>
+    } @else if (selectedVendor()) {
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Company Profile -->
+        <div class="bg-white rounded-xl border border-slate-100 shadow-sm p-5 space-y-3 text-xs">
+          <div class="flex items-center justify-between">
+            <h3 class="font-bold text-slate-800 text-sm">{{ 'vendors.profile_info' | translate }}</h3>
+            <button (click)="startEditVendor()" class="px-3 py-1 bg-indigo-50 text-indigo-600 rounded-lg font-bold text-xs">{{ 'common.edit' | translate }}</button>
+          </div>
+          <div class="space-y-2">
+            <div class="flex justify-between"><span class="text-slate-400 font-semibold">{{ 'vendors.col_code' | translate }}</span><span class="font-mono font-bold text-[11px]">{{ selectedVendor()!.vendorCode }}</span></div>
+            <div class="flex justify-between"><span class="text-slate-400">{{ 'vendors.vendor_name' | translate }}</span><span class="font-bold">{{ selectedVendor()!.vendorName }}</span></div>
+            <div class="flex justify-between"><span class="text-slate-400">{{ 'vendors.arabic_name' | translate }}</span><span class="font-bold" dir="rtl">{{ selectedVendor()!.arabicName }}</span></div>
+            <div class="flex justify-between"><span class="text-slate-400">{{ 'vendors.tax_number' | translate }}</span><span class="font-mono">{{ selectedVendor()!.taxNumber || '—' }}</span></div>
+            <div class="flex justify-between"><span class="text-slate-400">{{ 'vendors.payment_terms' | translate }}</span><span class="font-bold">{{ selectedVendor()!.paymentTerms }}</span></div>
+            <div class="flex justify-between"><span class="text-slate-400">{{ 'vendors.currency' | translate }}</span><span class="font-bold">{{ selectedVendor()!.currency }}</span></div>
+            <div class="flex justify-between"><span class="text-slate-400">{{ 'vendors.col_rating' | translate }}</span><span class="font-black text-amber-500">⭐ {{ selectedVendor()!.rating | number:'1.1-1' }} / 5</span></div>
+          </div>
+          <div class="flex gap-2 pt-2">
+            <button (click)="approveVendor(selectedVendor()!)" class="flex-1 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold text-[10px]">{{ 'vendors.btn_approve' | translate }}</button>
+            <button (click)="blacklistVendor(selectedVendor()!)" class="flex-1 py-1.5 bg-red-500 hover:bg-red-600 text-white rounded-lg font-bold text-[10px]">{{ 'vendors.btn_blacklist' | translate }}</button>
+          </div>
+        </div>
+        <!-- Contact Info -->
+        <div class="bg-white rounded-xl border border-slate-100 shadow-sm p-5 space-y-3 text-xs">
+          <h3 class="font-bold text-slate-800 text-sm">{{ 'vendors.contact_info' | translate }}</h3>
+          <div class="space-y-2">
+            <div class="flex justify-between"><span class="text-slate-400">{{ 'vendors.contact_person' | translate }}</span><span class="font-bold">{{ selectedVendor()!.contactPerson }}</span></div>
+            <div class="flex justify-between"><span class="text-slate-400">{{ 'vendors.email' | translate }}</span><span class="font-mono text-indigo-600 text-[10px]">{{ selectedVendor()!.contactEmail }}</span></div>
+            <div class="flex justify-between"><span class="text-slate-400">{{ 'vendors.phone' | translate }}</span><span class="font-mono">{{ selectedVendor()!.contactPhone }}</span></div>
+          </div>
+          @if (selectedVendor()!.contactPersons?.length) {
+            <div class="pt-2 border-t border-slate-100">
+              <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">{{ 'vendors.additional_contacts' | translate }}</p>
+              @for (cp of selectedVendor()!.contactPersons!; track cp.name) {
+                <div class="p-2 bg-slate-50 rounded-lg mb-1">
+                  <div class="font-bold">{{ cp.name }} <span class="text-slate-400 font-normal">({{ cp.role }})</span></div>
+                  <div class="text-slate-400 text-[10px]">{{ cp.email }} · {{ cp.phone }}</div>
+                </div>
+              }
+            </div>
           }
-        </tbody>
-      </table>
-    </div>
+        </div>
+        <!-- Bank Accounts -->
+        <div class="bg-white rounded-xl border border-slate-100 shadow-sm p-5 space-y-3 text-xs">
+          <h3 class="font-bold text-slate-800 text-sm">{{ 'vendors.bank_accounts' | translate }}</h3>
+          @if (selectedVendor()!.bankAccounts?.length) {
+            @for (ba of selectedVendor()!.bankAccounts!; track ba.accountNumber) {
+              <div class="p-3 bg-slate-50 rounded-xl border border-slate-100">
+                <div class="font-bold text-slate-800">{{ ba.bankName }}</div>
+                <div class="font-mono text-slate-400 text-[10px] mt-0.5">{{ ba.accountNumber }}</div>
+                <div class="font-mono text-slate-400 text-[10px]">IBAN: {{ ba.iban }}</div>
+                <div class="text-[10px] font-bold text-indigo-600 mt-1">{{ ba.currency }}</div>
+              </div>
+            }
+          } @else {
+            <p class="text-slate-400 italic">{{ 'vendors.no_banks' | translate }}</p>
+          }
+        </div>
+      </div>
+    } @else {
+      <div class="bg-white rounded-xl border border-slate-100 shadow-sm p-12 text-center text-slate-400">
+        <p class="font-bold">{{ 'vendors.select_vendor' | translate }}</p>
+      </div>
+    }
+  }
 
-  </div>
+  <!-- TAB: Categories -->
+  @if (activeTab() === 'categories') {
+    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+      @for (cat of vendorCategories; track cat.code) {
+        <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm hover:border-indigo-200 transition-colors">
+          <span class="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded">{{ cat.code }}</span>
+          <h3 class="font-bold text-slate-800 mt-3 text-sm">{{ cat.name }}</h3>
+          <p class="text-[10px] text-slate-400 mt-1 font-semibold">Vendor Category</p>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- TAB: Evaluation -->
+  @if (activeTab() === 'evaluation') {
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <!-- Evaluation Form -->
+      <div class="bg-white rounded-xl border border-slate-100 shadow-sm p-5 space-y-4 text-xs">
+        <h3 class="font-bold text-slate-800 text-sm">{{ 'vendors.evaluate_vendor' | translate }}</h3>
+        <div>
+          <label class="block font-bold text-slate-500 mb-1">{{ 'vendors.select_vendor_label' | translate }}</label>
+          <select [(ngModel)]="selectedEvalVendorId" class="w-full border border-slate-200 rounded-lg px-3 py-2 bg-slate-50">
+            <option value="">— {{ 'vendors.select_placeholder' | translate }} —</option>
+            @for (v of vendors(); track v.id) {
+              <option [value]="v.id">{{ v.vendorName }}</option>
+            }
+          </select>
+        </div>
+        <div class="space-y-3">
+          <div>
+            <div class="flex justify-between font-semibold text-slate-500 mb-1"><span>{{ 'vendors.eval_delivery' | translate }}</span><span class="font-black text-indigo-600">{{ evaluationDeliveryScore }}</span></div>
+            <input type="range" [(ngModel)]="evaluationDeliveryScore" min="0" max="100" class="w-full accent-indigo-600">
+          </div>
+          <div>
+            <div class="flex justify-between font-semibold text-slate-500 mb-1"><span>{{ 'vendors.eval_quality' | translate }}</span><span class="font-black text-indigo-600">{{ evaluationQualityScore }}</span></div>
+            <input type="range" [(ngModel)]="evaluationQualityScore" min="0" max="100" class="w-full accent-indigo-600">
+          </div>
+          <div>
+            <div class="flex justify-between font-semibold text-slate-500 mb-1"><span>{{ 'vendors.eval_price' | translate }}</span><span class="font-black text-indigo-600">{{ evaluationPriceScore }}</span></div>
+            <input type="range" [(ngModel)]="evaluationPriceScore" min="0" max="100" class="w-full accent-indigo-600">
+          </div>
+          <div>
+            <div class="flex justify-between font-semibold text-slate-500 mb-1"><span>{{ 'vendors.eval_communication' | translate }}</span><span class="font-black text-indigo-600">{{ evaluationCommunicationScore }}</span></div>
+            <input type="range" [(ngModel)]="evaluationCommunicationScore" min="0" max="100" class="w-full accent-indigo-600">
+          </div>
+        </div>
+        <div class="p-4 bg-indigo-50 rounded-xl text-center">
+          <p class="text-[10px] font-bold text-indigo-500 uppercase tracking-wider">{{ 'vendors.composite_score' | translate }}</p>
+          <p class="text-3xl font-black text-indigo-700 mt-1">{{ compositeEvalScore() }}<span class="text-sm font-bold">/100</span></p>
+        </div>
+        <button (click)="submitEvaluation()" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-bold">{{ 'vendors.btn_submit_eval' | translate }}</button>
+      </div>
+      <!-- Leaderboard -->
+      <div class="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden">
+        <div class="p-4 border-b border-slate-100 bg-slate-50/50">
+          <h3 class="font-bold text-slate-800 text-sm">{{ 'vendors.vendor_leaderboard' | translate }}</h3>
+        </div>
+        <div class="divide-y divide-slate-50 text-xs">
+          @for (v of rankedVendors(); track v.id; let i = $index) {
+            <div class="p-4 flex items-center justify-between hover:bg-slate-50/50 transition-colors">
+              <div class="flex items-center gap-3">
+                <span class="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center font-black text-slate-600 text-[11px]"
+                  [class.bg-amber-100]="i === 0" [class.text-amber-700]="i === 0"
+                  [class.bg-slate-200]="i === 1" [class.bg-slate-100]="i > 1">{{ i + 1 }}</span>
+                <div>
+                  <div class="font-bold text-slate-800">{{ v.vendorName }}</div>
+                  <div class="text-[10px] text-slate-400">{{ v.paymentTerms }}</div>
+                </div>
+              </div>
+              <div class="flex items-center gap-2">
+                <div class="w-20 bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                  <div class="h-full rounded-full bg-indigo-500" [style.width.%]="v.rating * 20"></div>
+                </div>
+                <span class="font-black text-amber-500 text-[11px] w-8 text-right">⭐ {{ v.rating | number:'1.1-1' }}</span>
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- TAB: Performance -->
+  @if (activeTab() === 'performance') {
+    <div class="space-y-4">
+      <div class="bg-white rounded-xl border border-slate-100 shadow-sm p-5 text-xs">
+        <label class="block font-bold text-slate-500 mb-1">{{ 'vendors.select_vendor_label' | translate }}</label>
+        <select (change)="selectedVendor.set(vendors()[$any($event.target).selectedIndex - 1])" class="w-full max-w-sm border border-slate-200 rounded-lg px-3 py-2 bg-slate-50">
+          <option value="">— {{ 'vendors.select_placeholder' | translate }} —</option>
+          @for (v of vendors(); track v.id) { <option [value]="v.id">{{ v.vendorName }}</option> }
+        </select>
+      </div>
+      @if (selectedVendor()) {
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm text-center">
+            <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">{{ 'vendors.perf_orders' | translate }}</p>
+            <h3 class="text-2xl font-black text-slate-800 mt-1">{{ selectedVendorPerformance().totalOrders }}</h3>
+          </div>
+          <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm text-center">
+            <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">{{ 'vendors.perf_delivery' | translate }}</p>
+            <h3 class="text-2xl font-black text-emerald-600 mt-1">{{ selectedVendorPerformance().deliveryRate }}%</h3>
+          </div>
+          <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm text-center">
+            <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">{{ 'vendors.perf_rejection' | translate }}</p>
+            <h3 class="text-2xl font-black text-red-500 mt-1">{{ selectedVendorPerformance().rejectedRate }}%</h3>
+          </div>
+          <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm text-center">
+            <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">{{ 'vendors.perf_lead_time' | translate }}</p>
+            <h3 class="text-2xl font-black text-slate-800 mt-1">{{ selectedVendorPerformance().leadTime }} <span class="text-sm font-bold text-slate-400">{{ 'common.days' | translate }}</span></h3>
+          </div>
+        </div>
+      } @else {
+        <div class="bg-white rounded-xl border border-slate-100 shadow-sm p-12 text-center text-slate-400">
+          <p class="font-bold">{{ 'vendors.select_vendor' | translate }}</p>
+        </div>
+      }
+    </div>
+  }
 
 </div>

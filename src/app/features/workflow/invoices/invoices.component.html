@@ -139,6 +139,14 @@
             </div>
             <h2 class="text-base font-black text-slate-800 tracking-tight">{{ inv.clientName }}</h2>
             <p class="text-[10px] text-slate-455 mt-1 font-semibold">{{ 'workflow.invoices.payment_terms' | translate }}: <span class="font-bold text-slate-700">{{ inv.paymentTerms }}</span></p>
+            @if (inv.isEquipmentTransfer) {
+              <div class="mt-2.5 flex items-center space-x-1.5">
+                <span class="px-2 py-0.5 bg-orange-100 text-orange-700 font-extrabold text-[8px] uppercase tracking-wider rounded border border-orange-200">
+                  Equipment Mobilization
+                </span>
+                <span class="text-[9px] font-bold text-slate-400">Ref: {{ inv.equipmentTransferNumber }}</span>
+              </div>
+            }
           </div>
 
           <!-- Financial breakdown values -->
@@ -165,11 +173,31 @@
 
             <div class="pt-2 border-t border-slate-200 flex justify-between items-center text-slate-900">
               <span class="font-black text-sm">{{ 'workflow.invoices.net_payable' | translate }}</span>
-              <span class="text-base font-black text-primary">
-                {{ inv.netPayable | currency:inv.currency }}
-              </span>
+              <div class="text-right">
+                <span class="text-base font-black text-primary block">
+                  {{ inv.netPayable | currency:inv.currency }}
+                </span>
+                @if (inv.netPayableEGP) {
+                  <span class="text-[11px] font-black text-emerald-700 block mt-0.5 font-mono">
+                    {{ inv.netPayableEGP | number:'1.2-2' }} EGP
+                  </span>
+                  @if (inv.exchangeRateUSDtoEGP) {
+                    <span class="text-[8px] text-slate-400 block font-semibold">
+                      (1 USD = {{ inv.exchangeRateUSDtoEGP | number:'1.2-4' }} EGP)
+                    </span>
+                  }
+                }
+              </div>
             </div>
           </div>
+
+          <!-- Cost Center Info -->
+          @if (inv.costCenterCode) {
+            <div class="p-2.5 bg-slate-50 border border-slate-150 rounded-lg text-[11px] font-bold text-slate-600">
+              <span class="text-[8px] text-slate-400 uppercase tracking-wider block">Associated Cost Center</span>
+              <span class="text-indigo-700 font-mono mt-0.5 block font-bold">{{ inv.costCenterCode }}</span>
+            </div>
+          }
 
           <!-- General Date info -->
           <div class="grid grid-cols-2 gap-3 text-[11px] font-bold text-slate-600 p-2.5 bg-slate-50/50 rounded border border-slate-100">

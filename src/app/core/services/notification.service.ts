@@ -9,12 +9,57 @@ export interface ToastMessage {
   duration?: number;
 }
 
+export interface NotificationItem {
+  id: string;
+  title: string;
+  message: string;
+  time: string;
+  type: 'info' | 'success' | 'warning' | 'danger';
+  isRead?: boolean;
+}
+
 @Injectable({
   providedIn: 'root'
 })
 export class NotificationService {
   private readonly translate = inject(TranslateService);
   readonly toasts = signal<ToastMessage[]>([]);
+
+  readonly notifications = signal<NotificationItem[]>([
+    {
+      id: 'n1',
+      title: 'Quotations Received',
+      message: '3 bids submitted for RFQ-2026-001 (Hydraulic Pump).',
+      time: '10 mins ago',
+      type: 'success',
+      isRead: false
+    },
+    {
+      id: 'n2',
+      title: 'PR Pending Review',
+      message: 'PR-2026-003 safety gear requires department head sign-off.',
+      time: '1 hour ago',
+      type: 'warning',
+      isRead: false
+    },
+    {
+      id: 'n3',
+      title: 'Rig Beta Down Time',
+      message: 'BOP Recertification scheduled starting tomorrow.',
+      time: '3 hours ago',
+      type: 'info',
+      isRead: false
+    },
+    {
+      id: 'n4',
+      title: 'Out of Stock Alert',
+      message: 'HSE-DET-GAS (Multi-Gas Detector) is out of stock in Warehouse A.',
+      time: '1 day ago',
+      type: 'danger',
+      isRead: false
+    }
+  ]);
+
 
   show(type: ToastMessage['type'], title: string, message: string, duration = 4000, params?: any) {
     const id = Math.random().toString(36).substring(2, 9);

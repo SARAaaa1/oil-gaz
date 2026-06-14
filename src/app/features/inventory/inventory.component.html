@@ -1,138 +1,1824 @@
 <div class="space-y-6">
 
   <!-- Header -->
-  <div>
-    <h1 class="text-2xl font-black text-slate-800 tracking-tight">{{ 'inventory.title' | translate }}</h1>
-    <p class="text-xs text-slate-500 font-semibold mt-1">{{ 'inventory.subtitle' | translate }}</p>
+  <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-black text-slate-850 tracking-tight">{{ 'inventory.title' | translate }}</h1>
+      <p class="text-xs text-slate-500 font-semibold mt-1">{{ 'inventory.subtitle' | translate }}</p>
+    </div>
+    <div class="flex flex-wrap gap-2">
+      <!-- Quick Action Buttons -->
+      <button (click)="openAddItem()" class="px-3.5 py-2 rounded-lg bg-slate-900 text-white text-xs font-bold hover:bg-slate-850 transition-colors shadow-sm flex items-center gap-1.5">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+        {{ 'inventory.add_item' | translate }}
+      </button>
+      <button (click)="openImport(false)" class="px-3.5 py-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition-all flex items-center gap-1.5">
+        <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+        {{ 'inventory.import_excel' | translate }}
+      </button>
+    </div>
   </div>
 
   <!-- KPI Summaries -->
-  <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-    
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+    <!-- Total Valuation -->
+    <div class="bg-white p-5 rounded-xl border border-slate-100 shadow-sm flex items-center justify-between">
+      <div class="space-y-1">
+        <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">{{ 'inventory.inventory_value' | translate }}</span>
+        <h2 class="text-2xl font-black text-slate-850">${{ inventoryValue() | number:'1.2-2' }}</h2>
+      </div>
+      <div class="p-3 bg-blue-50 rounded-xl">
+        <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      </div>
+    </div>
+
     <!-- Total Items -->
     <div class="bg-white p-5 rounded-xl border border-slate-100 shadow-sm flex items-center justify-between">
       <div class="space-y-1">
-        <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">{{ 'inventory.master_registry_count' | translate }}</span>
-        <h2 class="text-2xl font-black text-slate-850">{{ 'inventory.items_count' | translate:{count: inventory().length} }}</h2>
+        <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">{{ 'inventory.total_items' | translate }}</span>
+        <h2 class="text-2xl font-black text-slate-800">{{ totalItemsCount() }}</h2>
       </div>
       <div class="p-3 bg-slate-100 rounded-xl">
-        <svg class="w-6 h-6 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-        </svg>
+        <svg class="w-6 h-6 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
       </div>
     </div>
 
-    <!-- Low Stock warning -->
+    <!-- Low Stock -->
     <div class="bg-white p-5 rounded-xl border border-slate-100 shadow-sm flex items-center justify-between">
       <div class="space-y-1">
         <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">{{ 'inventory.low_stock_indicators' | translate }}</span>
-        <h2 class="text-2xl font-black text-accent">{{ 'inventory.warnings_count' | translate:{count: lowStockCount()} }}</h2>
+        <h2 class="text-2xl font-black text-amber-500">{{ lowStockCount() }}</h2>
       </div>
       <div class="p-3 bg-amber-50 rounded-xl">
-        <svg class="w-6 h-6 text-amber-505" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-        </svg>
+        <svg class="w-6 h-6 text-amber-505" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
       </div>
     </div>
 
-    <!-- Out of Stock -->
+    <!-- Out Of Stock -->
     <div class="bg-white p-5 rounded-xl border border-slate-100 shadow-sm flex items-center justify-between">
       <div class="space-y-1">
         <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">{{ 'inventory.out_of_stock_depleted' | translate }}</span>
-        <h2 class="text-2xl font-black text-danger">{{ 'inventory.items_count' | translate:{count: outOfStockCount()} }}</h2>
+        <h2 class="text-2xl font-black text-danger">{{ outOfStockCount() }}</h2>
       </div>
       <div class="p-3 bg-red-50 rounded-xl">
-        <svg class="w-6 h-6 text-red-505" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
+        <svg class="w-6 h-6 text-red-505" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
       </div>
     </div>
-
   </div>
 
-  <!-- INVENTORY LEDGER -->
-  <div class="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden animate-fade-in">
-    
-    <!-- Filter Toolbar -->
-    <div class="p-4 bg-slate-50/50 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-xs">
-      <div class="flex items-center space-x-2 w-full max-w-sm">
-        <div class="relative w-full">
+  <!-- MULTI-TAB NAVIGATION PANEL -->
+  <div class="border-b border-slate-200">
+    <nav class="flex flex-wrap gap-1 md:gap-2 select-none">
+      <button 
+        (click)="activeTab.set('dashboard')" 
+        [class.border-slate-800]="activeTab() === 'dashboard'" 
+        [class.text-slate-900]="activeTab() === 'dashboard'"
+        [class.font-bold]="activeTab() === 'dashboard'"
+        class="pb-3 px-3 border-b-2 border-transparent text-xs text-slate-500 font-medium hover:text-slate-800 transition-all cursor-pointer"
+      >
+        {{ 'inventory.tab_dashboard' | translate }}
+      </button>
+      <button 
+        (click)="activeTab.set('items')" 
+        [class.border-slate-800]="activeTab() === 'items'" 
+        [class.text-slate-900]="activeTab() === 'items'"
+        [class.font-bold]="activeTab() === 'items'"
+        class="pb-3 px-3 border-b-2 border-transparent text-xs text-slate-500 font-medium hover:text-slate-800 transition-all cursor-pointer"
+      >
+        {{ 'inventory.tab_items' | translate }}
+      </button>
+      <button 
+        (click)="activeTab.set('warehouses')" 
+        [class.border-slate-800]="activeTab() === 'warehouses'" 
+        [class.text-slate-900]="activeTab() === 'warehouses'"
+        [class.font-bold]="activeTab() === 'warehouses'"
+        class="pb-3 px-3 border-b-2 border-transparent text-xs text-slate-500 font-medium hover:text-slate-800 transition-all cursor-pointer"
+      >
+        {{ 'inventory.tab_warehouses' | translate }}
+      </button>
+      <button 
+        (click)="activeTab.set('mrv')" 
+        [class.border-slate-800]="activeTab() === 'mrv'" 
+        [class.text-slate-900]="activeTab() === 'mrv'"
+        [class.font-bold]="activeTab() === 'mrv'"
+        class="pb-3 px-3 border-b-2 border-transparent text-xs text-slate-500 font-medium hover:text-slate-800 transition-all cursor-pointer"
+      >
+        {{ 'inventory.tab_mrv' | translate }}
+      </button>
+      <button 
+        (click)="activeTab.set('miv')" 
+        [class.border-slate-800]="activeTab() === 'miv'" 
+        [class.text-slate-900]="activeTab() === 'miv'"
+        [class.font-bold]="activeTab() === 'miv'"
+        class="pb-3 px-3 border-b-2 border-transparent text-xs text-slate-500 font-medium hover:text-slate-800 transition-all cursor-pointer"
+      >
+        {{ 'inventory.tab_miv' | translate }}
+      </button>
+      <button 
+        (click)="activeTab.set('transfers')" 
+        [class.border-slate-800]="activeTab() === 'transfers'" 
+        [class.text-slate-900]="activeTab() === 'transfers'"
+        [class.font-bold]="activeTab() === 'transfers'"
+        class="pb-3 px-3 border-b-2 border-transparent text-xs text-slate-500 font-medium hover:text-slate-800 transition-all cursor-pointer"
+      >
+        {{ 'inventory.tab_transfers' | translate }}
+      </button>
+      <button 
+        (click)="activeTab.set('adjustments')" 
+        [class.border-slate-800]="activeTab() === 'adjustments'" 
+        [class.text-slate-900]="activeTab() === 'adjustments'"
+        [class.font-bold]="activeTab() === 'adjustments'"
+        class="pb-3 px-3 border-b-2 border-transparent text-xs text-slate-500 font-medium hover:text-slate-800 transition-all cursor-pointer"
+      >
+        {{ 'inventory.tab_adjustments' | translate }}
+      </button>
+      <button 
+        (click)="activeTab.set('valuation')" 
+        [class.border-slate-800]="activeTab() === 'valuation'" 
+        [class.text-slate-900]="activeTab() === 'valuation'"
+        [class.font-bold]="activeTab() === 'valuation'"
+        class="pb-3 px-3 border-b-2 border-transparent text-xs text-slate-500 font-medium hover:text-slate-800 transition-all cursor-pointer"
+      >
+        {{ 'inventory.tab_valuation' | translate }}
+      </button>
+      <button 
+        (click)="activeTab.set('history')" 
+        [class.border-slate-800]="activeTab() === 'history'" 
+        [class.text-slate-900]="activeTab() === 'history'"
+        [class.font-bold]="activeTab() === 'history'"
+        class="pb-3 px-3 border-b-2 border-transparent text-xs text-slate-500 font-medium hover:text-slate-800 transition-all cursor-pointer"
+      >
+        {{ 'inventory.tab_history' | translate }}
+      </button>
+      <button
+        (click)="activeTab.set('reservations')"
+        [class.border-indigo-600]="activeTab() === 'reservations'"
+        [class.text-indigo-600]="activeTab() === 'reservations'"
+        [class.font-bold]="activeTab() === 'reservations'"
+        class="pb-3 px-3 border-b-2 border-transparent text-xs text-slate-500 font-medium hover:text-indigo-600 transition-all cursor-pointer whitespace-nowrap"
+      >
+        🔒 {{ 'inventory.tab_reservations' | translate }}
+        @if (pendingReservations() > 0) {
+          <span class="ml-1 bg-amber-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full">{{ pendingReservations() }}</span>
+        }
+      </button>
+    </nav>
+  </div>
+
+  <!-- TAB CONTENT VIEWS -->
+
+  <!-- 1. DASHBOARD VIEW -->
+  @if (activeTab() === 'dashboard') {
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-fade-in">
+      
+      <!-- Category Chart Breakdown -->
+      <div class="bg-white p-5 rounded-xl border border-slate-100 shadow-sm lg:col-span-2 space-y-4">
+        <h3 class="text-sm font-bold text-slate-800">Valuation Breakdown by Warehouse</h3>
+        <div class="space-y-3">
+          @for (wh of warehouses(); track wh.id) {
+            <div class="space-y-1 text-xs">
+              <div class="flex items-center justify-between">
+                <span class="font-bold text-slate-700">{{ wh.name }} ({{ wh.code }})</span>
+                <span class="font-bold font-mono text-slate-800">${{ (wh.id === 'w1' ? 820000 : wh.id === 'w2' ? 410000 : 120000) | number }}</span>
+              </div>
+              <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                <div 
+                  class="bg-blue-600 h-2 rounded-full" 
+                  [style.width.%]="wh.id === 'w1' ? 60 : wh.id === 'w2' ? 30 : 10"
+                ></div>
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+
+      <!-- Critical Warnings Card -->
+      <div class="bg-white p-5 rounded-xl border border-slate-100 shadow-sm space-y-4">
+        <h3 class="text-sm font-bold text-slate-800">Critical Stock Warnings</h3>
+        <div class="space-y-3">
+          @for (item of inventory(); track item.id) {
+            @if (item.status !== 'In Stock') {
+              <div class="flex items-center justify-between p-2.5 rounded-lg bg-slate-50 text-xs border-l-4" 
+                [class.border-amber-500]="item.status === 'Low Stock'" 
+                [class.border-red-500]="item.status === 'Out of Stock'">
+                <div>
+                  <p class="font-bold text-slate-850">{{ item.itemName }}</p>
+                  <p class="text-[10px] text-slate-400 font-mono">{{ item.itemCode }} - {{ item.location }}</p>
+                </div>
+                <div class="text-right">
+                  <p class="font-extrabold text-slate-700">{{ item.quantity }} / {{ item.minQuantity }}</p>
+                  <span class="text-[9px] font-extrabold uppercase tracking-wide" 
+                    [class.text-amber-500]="item.status === 'Low Stock'" 
+                    [class.text-red-500]="item.status === 'Out of Stock'">
+                    {{ item.status }}
+                  </span>
+                </div>
+              </div>
+            }
+          }
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- 2. ITEMS REGISTRY VIEW -->
+  @if (activeTab() === 'items') {
+    <div class="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden animate-fade-in">
+      <!-- Search & Filters -->
+      <div class="p-4 bg-slate-50/50 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-xs">
+        <div class="relative w-full max-w-xs">
           <input 
             type="text" 
             [placeholder]="'inventory.search_placeholder' | translate" 
             (input)="searchQuery.set($any($event.target).value)"
             class="w-full bg-white border border-slate-200 rounded-lg pl-8 pr-3 py-2 text-slate-800 focus:outline-none"
           >
-          <svg class="w-4 h-4 text-slate-400 absolute left-2.5 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-          </svg>
+          <svg class="w-4 h-4 text-slate-400 absolute left-2.5 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="text-slate-400 font-semibold">{{ 'inventory.warehouse_loc' | translate }}</span>
+          <select 
+            (change)="locationFilter.set($any($event.target).value)"
+            class="bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-700 focus:outline-none"
+          >
+            <option value="ALL">{{ 'inventory.all_warehouses' | translate }}</option>
+            <option value="Warehouse A">Warehouse A</option>
+            <option value="Warehouse B">Warehouse B</option>
+            <option value="Pipe Yard 1">Pipe Yard 1</option>
+          </select>
         </div>
       </div>
 
-      <div class="flex items-center space-x-2 font-semibold">
-        <span class="text-slate-400">{{ 'inventory.warehouse_loc' | translate }}</span>
-        <select 
-          (change)="locationFilter.set($any($event.target).value)"
-          class="bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-700 focus:outline-none"
-        >
-          <option value="ALL">{{ 'inventory.all_warehouses' | translate }}</option>
-          <option value="Warehouse A">{{ 'inventory.warehouses.Warehouse A' | translate }}</option>
-          <option value="Warehouse B">{{ 'inventory.warehouses.Warehouse B' | translate }}</option>
-          <option value="Pipe Yard 1">{{ 'inventory.warehouses.Pipe Yard 1' | translate }}</option>
-        </select>
+      <!-- Items Table -->
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse text-xs">
+          <thead>
+            <tr class="text-slate-400 font-bold border-b border-slate-100 bg-slate-50/20">
+              <th class="p-4 py-3">{{ 'inventory.item_code' | translate }}</th>
+              <th class="p-4 py-3">{{ 'inventory.material_name' | translate }}</th>
+              <th class="p-4 py-3">{{ 'inventory.category' | translate }}</th>
+              <th class="p-4 py-3">{{ 'inventory.warehouse_location' | translate }}</th>
+              <th class="p-4 py-3 text-right">{{ 'inventory.available_qty' | translate }}</th>
+              <th class="p-4 py-3 text-center">{{ 'inventory.uom' | translate }}</th>
+              <th class="p-4 py-3 text-right">{{ 'inventory.unit_price' | translate }}</th>
+              <th class="p-4 py-3 text-center">{{ 'inventory.status' | translate }}</th>
+              <th class="p-4 py-3 text-center">Actions</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-50 font-medium text-slate-700">
+            @for (item of filteredInventory(); track item.id) {
+              <tr class="hover:bg-slate-50/50 transition-colors">
+                <td class="p-4 font-mono font-bold text-slate-500">{{ item.itemCode }}</td>
+                <td class="p-4 font-bold text-slate-900">{{ item.itemName }}</td>
+                <td class="p-4 text-slate-600">{{ item.category }}</td>
+                <td class="p-4 text-slate-500">{{ item.location }}</td>
+                <td class="p-4 text-right font-mono font-bold">{{ item.quantity | number }}</td>
+                <td class="p-4 text-center text-slate-400 font-bold">{{ item.uom }}</td>
+                <td class="p-4 text-right font-mono text-slate-650">${{ item.unitPrice | number:'1.2-2' }}</td>
+                <td class="p-4 text-center">
+                  <span class="px-2.5 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider"
+                    [class.bg-green-50]="item.status === 'In Stock'" [class.text-success]="item.status === 'In Stock'"
+                    [class.bg-amber-50]="item.status === 'Low Stock'" [class.text-accent]="item.status === 'Low Stock'"
+                    [class.bg-red-50]="item.status === 'Out of Stock'" [class.text-danger]="item.status === 'Out of Stock'">
+                    {{ item.status }}
+                  </span>
+                </td>
+                <td class="p-4 text-center space-x-1.5">
+                  <button (click)="openViewItem(item)" class="text-blue-600 hover:underline">View</button>
+                  <button (click)="openEditItem(item)" class="text-slate-800 hover:underline">Edit</button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
       </div>
     </div>
+  }
 
-    <!-- Table -->
-    <div class="overflow-x-auto">
-      <table class="w-full text-left border-collapse text-xs">
-        <thead>
-          <tr class="text-slate-400 font-bold border-b border-slate-100 bg-slate-50/20">
-            <th class="p-4 py-3">{{ 'inventory.item_code' | translate }}</th>
-            <th class="p-4 py-3">{{ 'inventory.material_name' | translate }}</th>
-            <th class="p-4 py-3">{{ 'inventory.category' | translate }}</th>
-            <th class="p-4 py-3">{{ 'inventory.warehouse_location' | translate }}</th>
-            <th class="p-4 py-3 text-right">{{ 'inventory.available_qty' | translate }}</th>
-            <th class="p-4 py-3 text-center">{{ 'inventory.uom' | translate }}</th>
-            <th class="p-4 py-3 text-right">{{ 'inventory.unit_price' | translate }}</th>
-            <th class="p-4 py-3 text-center">{{ 'inventory.status' | translate }}</th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-slate-50 font-medium text-slate-700">
-          @for (item of filteredInventory(); track item.id) {
-            <tr class="hover:bg-slate-50/50 transition-colors">
-              <td class="p-4 font-mono font-bold text-slate-500">{{ item.itemCode }}</td>
-              <td class="p-4 font-bold text-slate-900">{{ item.itemName }}</td>
-              <td class="p-4 text-slate-650">{{ 'inventory.categories.' + item.category | translate }}</td>
-              <td class="p-4 text-slate-500">{{ 'inventory.warehouses.' + item.location | translate }}</td>
-              <td class="p-4 text-right font-mono font-bold text-slate-800">{{ item.quantity | number }}</td>
-              <td class="p-4 text-center text-slate-400 font-bold">{{ item.uom }}</td>
-              <td class="p-4 text-right font-mono text-slate-600">${{ item.unitPrice | number }}</td>
-              <td class="p-4 text-center">
-                <span 
-                  class="px-2.5 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider"
-                  [class.bg-green-50]="item.status === 'In Stock'"
-                  [class.text-success]="item.status === 'In Stock'"
-                  [class.bg-amber-50]="item.status === 'Low Stock'"
-                  [class.text-accent]="item.status === 'Low Stock'"
-                  [class.bg-red-50]="item.status === 'Out of Stock'"
-                  [class.text-danger]="item.status === 'Out of Stock'"
-                >
-                  {{ 'inventory.statuses.' + item.status | translate }}
-                </span>
-              </td>
+  <!-- 3. WAREHOUSES MASTER VIEW -->
+  @if (activeTab() === 'warehouses') {
+    <div class="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden animate-fade-in">
+      <div class="p-4 bg-slate-50/50 border-b border-slate-100 flex items-center justify-between">
+        <h3 class="text-xs font-bold text-slate-800 uppercase">Warehouses Master List</h3>
+        <button (click)="openAddWarehouse()" class="px-3 py-1.5 bg-slate-900 text-white rounded-lg text-xs font-bold hover:bg-slate-850 transition-colors">
+          Add Warehouse
+        </button>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse text-xs">
+          <thead>
+            <tr class="text-slate-400 font-bold border-b border-slate-100 bg-slate-50/20">
+              <th class="p-4 py-3">Code</th>
+              <th class="p-4 py-3">Warehouse Name</th>
+              <th class="p-4 py-3">Geographic Location</th>
+              <th class="p-4 py-3 text-center">Status</th>
             </tr>
-          } @empty {
-            <tr>
-              <td colspan="8" class="p-8 text-center text-slate-400">
-                <span class="font-bold">{{ 'inventory.no_matches' | translate }}</span>
-              </td>
-            </tr>
-          }
-        </tbody>
-      </table>
+          </thead>
+          <tbody class="divide-y divide-slate-50 font-medium text-slate-700">
+            @for (wh of warehouses(); track wh.id) {
+              <tr class="hover:bg-slate-50/50 transition-colors">
+                <td class="p-4 font-mono font-bold text-slate-500">{{ wh.code }}</td>
+                <td class="p-4 font-bold text-slate-900">{{ wh.name }}</td>
+                <td class="p-4 text-slate-650">{{ wh.location }}</td>
+                <td class="p-4 text-center">
+                  <span class="px-2.5 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider bg-green-50 text-success">
+                    {{ wh.status }}
+                  </span>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
     </div>
+  }
 
-  </div>
+  <!-- 4. MRV GOODS RECEIPTS VIEW -->
+  @if (activeTab() === 'mrv') {
+    <div class="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden animate-fade-in">
+      <div class="p-4 bg-slate-50/50 border-b border-slate-100 flex items-center justify-between">
+        <h3 class="text-xs font-bold text-slate-800 uppercase">Material Receipt Vouchers (MRV)</h3>
+        <button (click)="openAddMRV()" class="px-3 py-1.5 bg-slate-900 text-white rounded-lg text-xs font-bold hover:bg-slate-850">
+          Receive Goods (MRV)
+        </button>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse text-xs">
+          <thead>
+            <tr class="text-slate-400 font-bold border-b border-slate-100 bg-slate-50/20">
+              <th class="p-4 py-3">Voucher Number</th>
+              <th class="p-4 py-3">PO Number</th>
+              <th class="p-4 py-3">Supplier Name</th>
+              <th class="p-4 py-3">Received Date</th>
+              <th class="p-4 py-3 text-right">Total Amount</th>
+              <th class="p-4 py-3 text-center">Status</th>
+              <th class="p-4 py-3 text-center">Actions</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-50 font-medium text-slate-700">
+            @for (mrv of mrvs(); track mrv.id) {
+              <tr (click)="selectedMRV.set(mrv)" class="hover:bg-slate-50/50 transition-colors cursor-pointer">
+                <td class="p-4 font-mono font-bold text-slate-900">{{ mrv.voucherNumber }}</td>
+                <td class="p-4 font-mono font-bold text-slate-500">{{ mrv.poNumber || 'Direct' }}</td>
+                <td class="p-4 text-slate-650">{{ mrv.supplierName }}</td>
+                <td class="p-4 text-slate-500">{{ mrv.receivedDate | date:'mediumDate' }}</td>
+                <td class="p-4 text-right font-mono font-bold">${{ mrv.totalAmount | number:'1.2-2' }}</td>
+                <td class="p-4 text-center">
+                  <span class="px-2.5 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider"
+                    [class.bg-slate-100]="mrv.status === 'Draft'"
+                    [class.bg-green-50]="mrv.status === 'Posted'" [class.text-success]="mrv.status === 'Posted'">
+                    {{ mrv.status }}
+                  </span>
+                </td>
+                <td class="p-4 text-center">
+                  @if (mrv.status === 'Draft') {
+                    <button (click)="approveMRV(mrv); $event.stopPropagation()" class="px-2.5 py-1 bg-slate-900 text-white rounded text-[10px] font-bold hover:bg-slate-800 transition-colors">
+                      Approve & Post
+                    </button>
+                  } @else {
+                    <span class="text-slate-400">N/A</span>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
+
+  <!-- 5. MIV MATERIAL ISSUE VIEW -->
+  @if (activeTab() === 'miv') {
+    <div class="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden animate-fade-in">
+      <div class="p-4 bg-slate-50/50 border-b border-slate-100 flex items-center justify-between">
+        <h3 class="text-xs font-bold text-slate-800 uppercase">Material Issue Vouchers (MIV)</h3>
+        <button (click)="openAddMIV()" class="px-3 py-1.5 bg-slate-900 text-white rounded-lg text-xs font-bold hover:bg-slate-850">
+          Issue Materials (MIV)
+        </button>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse text-xs">
+          <thead>
+            <tr class="text-slate-400 font-bold border-b border-slate-100 bg-slate-50/20">
+              <th class="p-4 py-3">Voucher Number</th>
+              <th class="p-4 py-3">Allocated Target</th>
+              <th class="p-4 py-3">Reference / Project</th>
+              <th class="p-4 py-3">Issued Date</th>
+              <th class="p-4 py-3 text-right">Total Cost</th>
+              <th class="p-4 py-3 text-center">Status</th>
+              <th class="p-4 py-3 text-center">Actions</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-50 font-medium text-slate-700">
+            @for (miv of mivs(); track miv.id) {
+              <tr (click)="selectedMIV.set(miv)" class="hover:bg-slate-50/50 transition-colors cursor-pointer">
+                <td class="p-4 font-mono font-bold text-slate-900">{{ miv.voucherNumber }}</td>
+                <td class="p-4"><span class="font-bold text-slate-800">[{{ miv.issueTo }}]</span> {{ miv.destinationId }}</td>
+                <td class="p-4 text-slate-650">{{ miv.referenceNumber || 'N/A' }}</td>
+                <td class="p-4 text-slate-500">{{ miv.issueDate | date:'mediumDate' }}</td>
+                <td class="p-4 text-right font-mono font-bold">${{ miv.totalAmount | number:'1.2-2' }}</td>
+                <td class="p-4 text-center">
+                  <span class="px-2.5 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider"
+                    [class.bg-slate-100]="miv.status === 'Draft'"
+                    [class.bg-green-50]="miv.status === 'Posted'" [class.text-success]="miv.status === 'Posted'">
+                    {{ miv.status }}
+                  </span>
+                </td>
+                <td class="p-4 text-center">
+                  @if (miv.status === 'Draft') {
+                    <button (click)="approveMIV(miv); $event.stopPropagation()" class="px-2.5 py-1 bg-slate-900 text-white rounded text-[10px] font-bold hover:bg-slate-800 transition-colors">
+                      Approve & Post
+                    </button>
+                  } @else {
+                    <span class="text-slate-400">N/A</span>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
+
+  <!-- 6. INTERNAL TRANSFERS VIEW -->
+  @if (activeTab() === 'transfers') {
+    <div class="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden animate-fade-in">
+      <div class="p-4 bg-slate-50/50 border-b border-slate-100 flex items-center justify-between">
+        <h3 class="text-xs font-bold text-slate-800 uppercase">Internal Warehouse Transfers</h3>
+        <button (click)="openAddTransfer()" class="px-3 py-1.5 bg-slate-900 text-white rounded-lg text-xs font-bold hover:bg-slate-850">
+          New Transfer
+        </button>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse text-xs">
+          <thead>
+            <tr class="text-slate-400 font-bold border-b border-slate-100 bg-slate-50/20">
+              <th class="p-4 py-3">Transfer Number</th>
+              <th class="p-4 py-3">From Warehouse</th>
+              <th class="p-4 py-3">To Warehouse</th>
+              <th class="p-4 py-3">Transfer Date</th>
+              <th class="p-4 py-3 text-center">Status</th>
+              <th class="p-4 py-3 text-center">Actions</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-50 font-medium text-slate-700">
+            @for (xfer of transfers(); track xfer.id) {
+              <tr (click)="selectedTransfer.set(xfer)" class="hover:bg-slate-50/50 transition-colors cursor-pointer">
+                <td class="p-4 font-mono font-bold text-slate-900">{{ xfer.transferNumber }}</td>
+                <td class="p-4 text-slate-650">{{ xfer.fromWarehouseId === 'w1' ? 'Warehouse A' : xfer.fromWarehouseId === 'w2' ? 'Warehouse B' : 'Pipe Yard 1' }}</td>
+                <td class="p-4 text-slate-650">{{ xfer.toWarehouseId === 'w1' ? 'Warehouse A' : xfer.toWarehouseId === 'w2' ? 'Warehouse B' : 'Pipe Yard 1' }}</td>
+                <td class="p-4 text-slate-500">{{ xfer.transferDate | date:'mediumDate' }}</td>
+                <td class="p-4 text-center">
+                  <span class="px-2.5 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider"
+                    [class.bg-slate-100]="xfer.status === 'Draft'"
+                    [class.bg-green-50]="xfer.status === 'Posted'" [class.text-success]="xfer.status === 'Posted'"
+                    [class.bg-amber-50]="xfer.status === 'Approved'" [class.text-accent]="xfer.status === 'Approved'">
+                    {{ xfer.status }}
+                  </span>
+                </td>
+                <td class="p-4 text-center">
+                  @if (xfer.status !== 'Posted') {
+                    <button (click)="approveTransfer(xfer); $event.stopPropagation()" class="px-2.5 py-1 bg-slate-900 text-white rounded text-[10px] font-bold hover:bg-slate-800 transition-colors">
+                      Execute relocation
+                    </button>
+                  } @else {
+                    <span class="text-slate-400">N/A</span>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
+
+  <!-- 7. ADJUSTMENTS VIEW -->
+  @if (activeTab() === 'adjustments') {
+    <div class="grid grid-cols-1 gap-6 animate-fade-in">
+      <!-- Adjustments Section -->
+      <div class="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden">
+        <div class="p-4 bg-slate-50/50 border-b border-slate-100 flex items-center justify-between">
+          <h3 class="text-xs font-bold text-slate-800 uppercase">Stock Adjustments</h3>
+          <div class="flex gap-2">
+            <button (click)="openAddAdjustment()" class="px-3 py-1.5 bg-slate-900 text-white rounded-lg text-xs font-bold hover:bg-slate-850">
+              New Adjustment
+            </button>
+            <button (click)="openAddCount()" class="px-3 py-1.5 border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 rounded-lg text-xs font-bold">
+              Record Physical Count
+            </button>
+          </div>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse text-xs">
+            <thead>
+              <tr class="text-slate-400 font-bold border-b border-slate-100 bg-slate-50/20">
+                <th class="p-4 py-3">Adjustment Number</th>
+                <th class="p-4 py-3">Warehouse</th>
+                <th class="p-4 py-3">Date</th>
+                <th class="p-4 py-3 text-right">Net Value Impact</th>
+                <th class="p-4 py-3 text-center">Status</th>
+                <th class="p-4 py-3 text-center">Actions</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-50 font-medium text-slate-700">
+              @for (adj of adjustments(); track adj.id) {
+                <tr (click)="selectedAdjustment.set(adj)" class="hover:bg-slate-50/50 transition-colors cursor-pointer">
+                  <td class="p-4 font-mono font-bold text-slate-900">{{ adj.adjustmentNumber }}</td>
+                  <td class="p-4 text-slate-650">{{ adj.warehouseId === 'w1' ? 'Warehouse A' : 'Warehouse B' }}</td>
+                  <td class="p-4 text-slate-500">{{ adj.adjustmentDate | date:'mediumDate' }}</td>
+                  <td class="p-4 text-right font-mono font-bold" [class.text-green-600]="adj.totalValue >= 0" [class.text-red-600]="adj.totalValue < 0">
+                    ${{ adj.totalValue | number:'1.2-2' }}
+                  </td>
+                  <td class="p-4 text-center">
+                    <span class="px-2.5 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider"
+                      [class.bg-slate-100]="adj.status === 'Draft'"
+                      [class.bg-green-50]="adj.status === 'Posted'" [class.text-success]="adj.status === 'Posted'"
+                      [class.bg-amber-50]="adj.status === 'Approved'" [class.text-accent]="adj.status === 'Approved'">
+                      {{ adj.status }}
+                    </span>
+                  </td>
+                  <td class="p-4 text-center">
+                    @if (adj.status !== 'Posted') {
+                      <button (click)="approveAdjustment(adj); $event.stopPropagation()" class="px-2.5 py-1 bg-slate-900 text-white rounded text-[10px] font-bold hover:bg-slate-800 transition-colors">
+                        Approve & Post Ledger
+                      </button>
+                    } @else {
+                      <span class="text-slate-400">N/A</span>
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Physical Counts Table -->
+      <div class="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden">
+        <div class="p-4 bg-slate-50/50 border-b border-slate-100">
+          <h3 class="text-xs font-bold text-slate-800 uppercase">Physical stock counts history</h3>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse text-xs">
+            <thead>
+              <tr class="text-slate-400 font-bold border-b border-slate-100 bg-slate-50/20">
+                <th class="p-4 py-3">Count reference</th>
+                <th class="p-4 py-3">Warehouse</th>
+                <th class="p-4 py-3">Date conducted</th>
+                <th class="p-4 py-3">Counted by</th>
+                <th class="p-4 py-3 text-center">Status</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-50 font-medium text-slate-700">
+              @for (c of counts(); track c.id) {
+                <tr class="hover:bg-slate-50/50 transition-colors">
+                  <td class="p-4 font-mono font-bold text-slate-900">{{ c.countNumber }}</td>
+                  <td class="p-4 text-slate-650">{{ c.warehouseId === 'w1' ? 'Warehouse A' : 'Warehouse B' }}</td>
+                  <td class="p-4 text-slate-500">{{ c.countDate | date:'mediumDate' }}</td>
+                  <td class="p-4 text-slate-600">{{ c.countedBy }}</td>
+                  <td class="p-4 text-center">
+                    <span class="px-2.5 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider bg-green-50 text-success">
+                      {{ c.status }}
+                    </span>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- 8. VALUATION VIEW -->
+  @if (activeTab() === 'valuation') {
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-fade-in">
+      <div class="bg-white p-5 rounded-xl border border-slate-100 shadow-sm space-y-4">
+        <h3 class="text-sm font-bold text-slate-800">Inventory Valuation Metrics</h3>
+        <div class="grid grid-cols-2 gap-4">
+          <div class="p-4 bg-slate-50 rounded-lg">
+            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total asset value</span>
+            <p class="text-lg font-black text-slate-800">${{ inventoryValue() | number:'1.2-2' }}</p>
+          </div>
+          <div class="p-4 bg-slate-50 rounded-lg">
+            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Weighted Avg Unit Cost</span>
+            <p class="text-lg font-black text-slate-850">$450.00</p>
+          </div>
+        </div>
+        <p class="text-xs text-slate-500 leading-relaxed">
+          Inventory valuation is computed dynamically using weighted average pricing methods based on matching MRV item unit prices and purchase transactions.
+        </p>
+      </div>
+
+      <!-- Cost allocation chart -->
+      <div class="bg-white p-5 rounded-xl border border-slate-100 shadow-sm space-y-4">
+        <h3 class="text-sm font-bold text-slate-800">Direct Material Cost Allocations</h3>
+        <div class="space-y-3">
+          <div class="flex justify-between items-center text-xs">
+            <span class="font-bold text-slate-700">Project Drilling Operations</span>
+            <span class="font-bold text-slate-800 font-mono">$142,500</span>
+          </div>
+          <div class="flex justify-between items-center text-xs">
+            <span class="font-bold text-slate-700">Rig Maintenance</span>
+            <span class="font-bold text-slate-800 font-mono">$48,200</span>
+          </div>
+          <div class="flex justify-between items-center text-xs">
+            <span class="font-bold text-slate-700">Base Camps logistics</span>
+            <span class="font-bold text-slate-800 font-mono">$18,000</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- 9. BULK IMPORT HISTORY VIEW -->
+  @if (activeTab() === 'history') {
+    <div class="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden animate-fade-in">
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse text-xs">
+          <thead>
+            <tr class="text-slate-400 font-bold border-b border-slate-100 bg-slate-50/20">
+              <th class="p-4 py-3">{{ 'inventory.imported_by' | translate }}</th>
+              <th class="p-4 py-3">{{ 'inventory.import_date' | translate }}</th>
+              <th class="p-4 py-3 text-center">{{ 'inventory.records_count' | translate }}</th>
+              <th class="p-4 py-3 text-center">{{ 'inventory.import_status' | translate }}</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-50 font-medium text-slate-700">
+            @for (history of filteredHistory(); track history.id) {
+              <tr class="hover:bg-slate-50/50 transition-colors">
+                <td class="p-4 font-bold text-slate-900">{{ history.importedBy }}</td>
+                <td class="p-4 text-slate-500">{{ history.date | date:'mediumDate' }}</td>
+                <td class="p-4 text-center font-bold font-mono">{{ history.numberOfRecords }}</td>
+                <td class="p-4 text-center">
+                  <span class="px-2.5 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider"
+                    [class.bg-green-50]="history.status === 'Success'" [class.text-success]="history.status === 'Success'"
+                    [class.bg-red-50]="history.status === 'Failed'" [class.text-danger]="history.status === 'Failed'">
+                    {{ history.status }}
+                  </span>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
 
 </div>
+
+<!-- ==============================================
+     MODAL DIALOGS
+     ============================================== -->
+
+<!-- Item Modal Dialog (Add / Edit / View) -->
+@if (isItemModalOpen()) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+    <div class="bg-white rounded-xl border border-slate-200 shadow-2xl w-full max-w-lg overflow-hidden animate-fade-in">
+      <div class="p-4 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
+        <h3 class="text-sm font-black text-slate-850">
+          @if (isViewMode()) { {{ 'inventory.view_item_title' | translate }} }
+          @else if (isEditMode()) { {{ 'inventory.edit_item_title' | translate }} }
+          @else { {{ 'inventory.add_item_title' | translate }} }
+        </h3>
+        <button (click)="isItemModalOpen.set(false)" class="text-slate-400 hover:text-slate-600">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <form (submit)="saveItem()" class="p-6 space-y-4 text-xs font-semibold text-slate-700">
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-slate-400 mb-1">Item Code *</label>
+            <input type="text" [(ngModel)]="itemForm.itemCode" name="itemCode" [disabled]="isViewMode() || isEditMode()" class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-slate-800 focus:outline-none" required>
+          </div>
+          <div>
+            <label class="block text-slate-400 mb-1">Item Name *</label>
+            <input type="text" [(ngModel)]="itemForm.itemName" name="itemName" [disabled]="isViewMode()" class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-slate-800 focus:outline-none" required>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-slate-400 mb-1">Category</label>
+            <select [(ngModel)]="itemForm.category" name="category" [disabled]="isViewMode()" class="w-full bg-white border border-slate-200 rounded-lg px-2 py-2 text-slate-800 focus:outline-none">
+              <option value="Drilling Consumables">Drilling Consumables</option>
+              <option value="Machinery Spares">Machinery Spares</option>
+              <option value="HSE Equipment">HSE Equipment</option>
+              <option value="Lubricants">Lubricants</option>
+              <option value="Tubulars">Tubulars</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-slate-400 mb-1">Unit of Measure (UOM)</label>
+            <input type="text" [(ngModel)]="itemForm.uom" name="uom" [disabled]="isViewMode()" class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-slate-800 focus:outline-none">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-3 gap-4">
+          <div>
+            <label class="block text-slate-400 mb-1">Quantity</label>
+            <input type="number" [(ngModel)]="itemForm.quantity" name="quantity" [disabled]="isViewMode()" class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-slate-800 focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-slate-400 mb-1">Unit Cost ($)</label>
+            <input type="number" [(ngModel)]="itemForm.unitPrice" name="unitPrice" [disabled]="isViewMode()" class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-slate-800 focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-slate-400 mb-1">Reorder Alert Lvl</label>
+            <input type="number" [(ngModel)]="itemForm.reorderLevel" name="reorderLevel" [disabled]="isViewMode()" class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-slate-800 focus:outline-none">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-slate-400 mb-1">Warehouse Location</label>
+          <select [(ngModel)]="itemForm.location" name="location" [disabled]="isViewMode()" class="w-full bg-white border border-slate-200 rounded-lg px-2 py-2 text-slate-800 focus:outline-none">
+            <option value="Warehouse A">Warehouse A</option>
+            <option value="Warehouse B">Warehouse B</option>
+            <option value="Pipe Yard 1">Pipe Yard 1</option>
+          </select>
+        </div>
+
+        <div class="flex justify-end gap-2 border-t border-slate-100 pt-4">
+          <button type="button" (click)="isItemModalOpen.set(false)" class="px-4 py-2 border border-slate-200 rounded-lg bg-white text-slate-700 hover:bg-slate-50">Cancel</button>
+          @if (!isViewMode()) {
+            <button type="submit" class="px-4 py-2 bg-slate-900 text-white rounded-lg hover:bg-slate-850">Save Item</button>
+          }
+        </div>
+      </form>
+    </div>
+  </div>
+}
+
+<!-- Warehouse Modal -->
+@if (isWarehouseModalOpen()) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+    <div class="bg-white rounded-xl border border-slate-200 shadow-2xl w-full max-w-md overflow-hidden animate-fade-in">
+      <div class="p-4 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
+        <h3 class="text-sm font-black text-slate-850">Register New Warehouse</h3>
+        <button (click)="isWarehouseModalOpen.set(false)" class="text-slate-400 hover:text-slate-600">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <form (submit)="saveWarehouse()" class="p-6 space-y-4 text-xs font-semibold text-slate-700">
+        <div>
+          <label class="block text-slate-400 mb-1">Warehouse Code *</label>
+          <input type="text" [(ngModel)]="warehouseForm.code" name="code" class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 focus:outline-none" placeholder="e.g. WH-C" required>
+        </div>
+        <div>
+          <label class="block text-slate-400 mb-1">Warehouse Name *</label>
+          <input type="text" [(ngModel)]="warehouseForm.name" name="name" class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 focus:outline-none" placeholder="e.g. Main Repair Yard" required>
+        </div>
+        <div>
+          <label class="block text-slate-400 mb-1">Location Details</label>
+          <input type="text" [(ngModel)]="warehouseForm.location" name="location" class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 focus:outline-none" placeholder="e.g. Basra Block 9">
+        </div>
+        <div class="flex justify-end gap-2 border-t border-slate-100 pt-4">
+          <button type="button" (click)="isWarehouseModalOpen.set(false)" class="px-4 py-2 border border-slate-200 bg-white text-slate-700 rounded-lg">Cancel</button>
+          <button type="submit" class="px-4 py-2 bg-slate-900 text-white rounded-lg">Save Warehouse</button>
+        </div>
+      </form>
+    </div>
+  </div>
+}
+
+<!-- MRV Modal (Goods Receipt) -->
+@if (isMRVModalOpen()) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+    <div class="bg-white rounded-xl border border-slate-200 shadow-2xl w-full max-w-2xl overflow-hidden animate-fade-in">
+      <div class="p-4 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
+        <h3 class="text-sm font-black text-slate-850">New Material Receipt Voucher (MRV)</h3>
+        <button (click)="isMRVModalOpen.set(false)" class="text-slate-400 hover:text-slate-600">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <form (submit)="saveMRV()" class="p-6 space-y-4 text-xs font-semibold text-slate-700">
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-slate-400 mb-1">Link Approved PO</label>
+            <select [(ngModel)]="mrvForm.poId" name="poId" (change)="onMRVPOSelect()" class="w-full bg-white border border-slate-200 rounded-lg px-2 py-2 focus:outline-none">
+              <option value="">-- Direct Receipt (No PO) --</option>
+              @for (po of purchaseOrders(); track po.id) {
+                @if (po.status === 'Approved' || po.status === 'Issued') {
+                  <option [value]="po.id">{{ po.poNumber }} ({{ po.vendorName }})</option>
+                }
+              }
+            </select>
+          </div>
+          <div>
+            <label class="block text-slate-400 mb-1">Target Warehouse</label>
+            <select [(ngModel)]="mrvForm.warehouseId" name="warehouseId" class="w-full bg-white border border-slate-200 rounded-lg px-2 py-2 focus:outline-none">
+              @for (w of warehouses(); track w.id) {
+                <option [value]="w.id">{{ w.name }}</option>
+              }
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-slate-400 mb-1">Supplier Name</label>
+            <input type="text" [(ngModel)]="mrvForm.supplierName" name="supplierName" class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-slate-400 mb-1">Date Received</label>
+            <input type="date" [(ngModel)]="mrvForm.receivedDate" name="receivedDate" class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 focus:outline-none">
+          </div>
+        </div>
+
+        <!-- Items table preview -->
+        <div class="border border-slate-100 rounded-lg overflow-hidden">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="bg-slate-50 text-slate-400 border-b border-slate-100">
+                <th class="p-3">Item Code</th>
+                <th class="p-3 text-right">Qty Received</th>
+                <th class="p-3 text-right">Unit Price</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (item of mrvForm.items; track item.itemCode) {
+                <tr class="border-b border-slate-50">
+                  <td class="p-3 font-mono">{{ item.itemCode }}</td>
+                  <td class="p-3 text-right">
+                    <input type="number" [(ngModel)]="item.quantityReceived" [name]="'mrv-qty-' + item.itemCode" class="w-20 bg-white border border-slate-200 rounded px-2 py-1 text-right focus:outline-none" (change)="item.totalPrice = item.quantityReceived * item.unitPrice">
+                  </td>
+                  <td class="p-3 text-right font-mono">${{ item.unitPrice }}</td>
+                </tr>
+              } @empty {
+                <tr>
+                  <td colspan="3" class="p-6 text-center text-slate-400">Please select an approved PO to fetch items automatically.</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <div class="flex justify-end gap-2 border-t border-slate-100 pt-4">
+          <button type="button" (click)="isMRVModalOpen.set(false)" class="px-4 py-2 border border-slate-200 bg-white text-slate-700 rounded-lg">Cancel</button>
+          <button type="submit" class="px-4 py-2 bg-slate-900 text-white rounded-lg">Save Receipt Draft</button>
+        </div>
+      </form>
+    </div>
+  </div>
+}
+
+<!-- MIV Modal (Material Issue) -->
+@if (isMIVModalOpen()) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+    <div class="bg-white rounded-xl border border-slate-200 shadow-2xl w-full max-w-3xl overflow-hidden animate-fade-in">
+      <div class="p-4 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
+        <h3 class="text-sm font-black text-slate-850">New Material Issue Voucher (MIV)</h3>
+        <button (click)="isMIVModalOpen.set(false)" class="text-slate-400 hover:text-slate-600">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <form (submit)="saveMIV()" class="p-6 space-y-4 text-xs font-semibold text-slate-700">
+        <div class="grid grid-cols-3 gap-4">
+          <div>
+            <label class="block text-slate-400 mb-1">Issue To</label>
+            <select [(ngModel)]="mivForm.issueTo" name="issueTo" class="w-full bg-white border border-slate-200 rounded-lg px-2 py-2 focus:outline-none">
+              <option value="Project">Project</option>
+              <option value="Rig">Rig</option>
+              <option value="Cost Center">Cost Center</option>
+              <option value="Vehicle">Vehicle / Fleet</option>
+              <option value="Camp">Camp / Caravan</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-slate-400 mb-1">Destination Name / Code</label>
+            <input type="text" [(ngModel)]="mivForm.destinationId" name="destinationId" class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-slate-400 mb-1">Reference Work Order</label>
+            <input type="text" [(ngModel)]="mivForm.referenceNumber" name="referenceNumber" class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 focus:outline-none">
+          </div>
+        </div>
+
+        <!-- Dynamic Items Selection -->
+        <div class="space-y-2">
+          <div class="flex justify-between items-center">
+            <label class="text-slate-400">Materials for Issue</label>
+            <button type="button" (click)="addMIVRow()" class="text-blue-600 hover:underline">+ Add Item Row</button>
+          </div>
+
+          <div class="max-h-56 overflow-y-auto space-y-2">
+            @for (row of mivForm.items; track $index) {
+              <div class="flex items-center gap-2 bg-slate-50 p-2.5 rounded-lg">
+                <div class="flex-1">
+                  <select [(ngModel)]="row.itemCode" [name]="'miv-code-' + $index" (change)="onMIVItemChange($index)" class="w-full bg-white border border-slate-200 rounded px-2 py-1.5 focus:outline-none">
+                    <option value="">-- Choose Item --</option>
+                    @for (inv of inventory(); track inv.id) {
+                      <option [value]="inv.itemCode">{{ inv.itemName }} (Stock: {{ inv.quantity }})</option>
+                    }
+                  </select>
+                </div>
+                <div class="w-24">
+                  <input type="number" [(ngModel)]="row.quantityIssued" [name]="'miv-qty-' + $index" (change)="row.totalPrice = row.quantityIssued * row.unitPrice" class="w-full bg-white border border-slate-200 rounded px-2 py-1.5 text-right focus:outline-none" placeholder="Qty">
+                </div>
+                <div class="w-16 text-center text-slate-400">{{ row.uom }}</div>
+                <button type="button" (click)="removeMIVRow($index)" class="text-red-600 hover:text-red-800">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                </button>
+              </div>
+            }
+          </div>
+        </div>
+
+        <div class="flex justify-end gap-2 border-t border-slate-100 pt-4">
+          <button type="button" (click)="isMIVModalOpen.set(false)" class="px-4 py-2 border border-slate-200 bg-white text-slate-700 rounded-lg">Cancel</button>
+          <button type="submit" class="px-4 py-2 bg-slate-900 text-white rounded-lg">Save Issue Voucher</button>
+        </div>
+      </form>
+    </div>
+  </div>
+}
+
+<!-- Internal Transfer Modal -->
+@if (isTransferModalOpen()) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+    <div class="bg-white rounded-xl border border-slate-200 shadow-2xl w-full max-w-2xl overflow-hidden animate-fade-in">
+      <div class="p-4 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
+        <h3 class="text-sm font-black text-slate-850">New Internal Warehouse Transfer</h3>
+        <button (click)="isTransferModalOpen.set(false)" class="text-slate-400 hover:text-slate-600">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <form (submit)="saveTransfer()" class="p-6 space-y-4 text-xs font-semibold text-slate-700">
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-slate-400 mb-1">From Warehouse</label>
+            <select [(ngModel)]="transferForm.fromWarehouseId" name="fromWarehouseId" class="w-full bg-white border border-slate-200 rounded-lg px-2 py-2 focus:outline-none">
+              @for (w of warehouses(); track w.id) {
+                <option [value]="w.id">{{ w.name }}</option>
+              }
+            </select>
+          </div>
+          <div>
+            <label class="block text-slate-400 mb-1">To Warehouse</label>
+            <select [(ngModel)]="transferForm.toWarehouseId" name="toWarehouseId" class="w-full bg-white border border-slate-200 rounded-lg px-2 py-2 focus:outline-none">
+              @for (w of warehouses(); track w.id) {
+                <option [value]="w.id">{{ w.name }}</option>
+              }
+            </select>
+          </div>
+        </div>
+
+        <div class="space-y-2">
+          <div class="flex justify-between items-center">
+            <label class="text-slate-400">Transfer Items</label>
+            <button type="button" (click)="addTransferRow()" class="text-blue-600 hover:underline">+ Add Row</button>
+          </div>
+
+          <div class="max-h-56 overflow-y-auto space-y-2">
+            @for (row of transferForm.items; track $index) {
+              <div class="flex items-center gap-2 bg-slate-50 p-2.5 rounded-lg">
+                <div class="flex-1">
+                  <select [(ngModel)]="row.itemCode" [name]="'xfer-code-' + $index" (change)="onTransferItemChange($index)" class="w-full bg-white border border-slate-200 rounded px-2 py-1.5 focus:outline-none">
+                    <option value="">-- Select Material --</option>
+                    @for (inv of inventory(); track inv.id) {
+                      <option [value]="inv.itemCode">{{ inv.itemName }}</option>
+                    }
+                  </select>
+                </div>
+                <div class="w-24">
+                  <input type="number" [(ngModel)]="row.quantity" [name]="'xfer-qty-' + $index" class="w-full bg-white border border-slate-200 rounded px-2 py-1.5 text-right focus:outline-none" placeholder="Qty">
+                </div>
+                <div class="w-16 text-center text-slate-400">{{ row.uom }}</div>
+                <button type="button" (click)="removeTransferRow($index)" class="text-red-600">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                </button>
+              </div>
+            }
+          </div>
+        </div>
+
+        <div class="flex justify-end gap-2 border-t border-slate-100 pt-4">
+          <button type="button" (click)="isTransferModalOpen.set(false)" class="px-4 py-2 border border-slate-200 bg-white text-slate-700 rounded-lg">Cancel</button>
+          <button type="submit" class="px-4 py-2 bg-slate-900 text-white rounded-lg">Save Transfer</button>
+        </div>
+      </form>
+    </div>
+  </div>
+}
+
+<!-- Stock Adjustment Modal -->
+@if (isAdjustmentModalOpen()) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+    <div class="bg-white rounded-xl border border-slate-200 shadow-2xl w-full max-w-2xl overflow-hidden animate-fade-in">
+      <div class="p-4 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
+        <h3 class="text-sm font-black text-slate-850">Create Stock Adjustment</h3>
+        <button (click)="isAdjustmentModalOpen.set(false)" class="text-slate-400 hover:text-slate-600">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <form (submit)="saveAdjustment()" class="p-6 space-y-4 text-xs font-semibold text-slate-700">
+        <div>
+          <label class="block text-slate-400 mb-1">Select Warehouse</label>
+          <select [(ngModel)]="adjustmentForm.warehouseId" name="warehouseId" class="w-full bg-white border border-slate-200 rounded-lg px-2 py-2 focus:outline-none">
+            @for (w of warehouses(); track w.id) {
+              <option [value]="w.id">{{ w.name }}</option>
+            }
+          </select>
+        </div>
+
+        <div class="space-y-2">
+          <div class="flex justify-between items-center">
+            <label class="text-slate-400">Adjustment Items</label>
+            <button type="button" (click)="addAdjustmentRow()" class="text-blue-600 hover:underline">+ Add Item Row</button>
+          </div>
+
+          <div class="max-h-56 overflow-y-auto space-y-2">
+            @for (row of adjustmentForm.items; track $index) {
+              <div class="space-y-2 bg-slate-50 p-3 rounded-lg border border-slate-100">
+                <div class="flex items-center gap-2">
+                  <div class="flex-1">
+                    <select [(ngModel)]="row.itemCode" [name]="'adj-code-' + $index" (change)="onAdjustmentItemChange($index)" class="w-full bg-white border border-slate-200 rounded px-2 py-1.5 focus:outline-none">
+                      <option value="">-- Choose Material --</option>
+                      @for (inv of inventory(); track inv.id) {
+                        <option [value]="inv.itemCode">{{ inv.itemName }}</option>
+                      }
+                    </select>
+                  </div>
+                  <div class="w-24">
+                    <select [(ngModel)]="row.adjustmentType" [name]="'adj-type-' + $index" class="w-full bg-white border border-slate-200 rounded px-2 py-1.5 focus:outline-none">
+                      <option value="Addition">Addition</option>
+                      <option value="Deduction">Deduction</option>
+                    </select>
+                  </div>
+                  <div class="w-24">
+                    <input type="number" [(ngModel)]="row.adjustedQuantity" [name]="'adj-qty-' + $index" class="w-full bg-white border border-slate-200 rounded px-2 py-1.5 text-right focus:outline-none" placeholder="Qty">
+                  </div>
+                  <button type="button" (click)="removeAdjustmentRow($index)" class="text-red-600">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                  </button>
+                </div>
+                <div>
+                  <input type="text" [(ngModel)]="row.reason" [name]="'adj-reason-' + $index" class="w-full bg-white border border-slate-200 rounded px-3 py-1.5 focus:outline-none" placeholder="Adjustment Reason / Code reference *">
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+
+        <div class="flex justify-end gap-2 border-t border-slate-100 pt-4">
+          <button type="button" (click)="isAdjustmentModalOpen.set(false)" class="px-4 py-2 border border-slate-200 bg-white text-slate-700 rounded-lg">Cancel</button>
+          <button type="submit" class="px-4 py-2 bg-slate-900 text-white rounded-lg">Save Adjustment</button>
+        </div>
+      </form>
+    </div>
+  </div>
+}
+
+<!-- Physical Count Modal -->
+@if (isCountModalOpen()) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+    <div class="bg-white rounded-xl border border-slate-200 shadow-2xl w-full max-w-3xl overflow-hidden animate-fade-in">
+      <div class="p-4 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
+        <h3 class="text-sm font-black text-slate-850">Conduct Physical Stock Count</h3>
+        <button (click)="isCountModalOpen.set(false)" class="text-slate-400 hover:text-slate-600">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <form (submit)="saveCount()" class="p-6 space-y-4 text-xs font-semibold text-slate-700">
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-slate-400 mb-1">Target Warehouse</label>
+            <select [(ngModel)]="countForm.warehouseId" name="warehouseId" class="w-full bg-white border border-slate-200 rounded-lg px-2 py-2 focus:outline-none">
+              @for (w of warehouses(); track w.id) {
+                <option [value]="w.id">{{ w.name }}</option>
+              }
+            </select>
+          </div>
+          <div>
+            <label class="block text-slate-400 mb-1">Count Date</label>
+            <input type="date" [(ngModel)]="countForm.countDate" name="countDate" class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 focus:outline-none">
+          </div>
+        </div>
+
+        <!-- items grid with system qty and counted input -->
+        <div class="border border-slate-100 rounded-lg overflow-hidden max-h-72 overflow-y-auto">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="bg-slate-50 text-slate-400 border-b border-slate-100">
+                <th class="p-3">Material Name</th>
+                <th class="p-3 text-right">System Qty</th>
+                <th class="p-3 text-right">Counted Qty</th>
+                <th class="p-3 text-right">Variance</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (row of countForm.items; track row.itemCode; let idx = $index) {
+                <tr class="border-b border-slate-50">
+                  <td class="p-3 font-bold text-slate-800">
+                    {{ row.itemName }}
+                    <p class="text-[10px] text-slate-400 font-mono font-medium">{{ row.itemCode }}</p>
+                  </td>
+                  <td class="p-3 text-right font-mono font-bold text-slate-500">{{ row.systemQuantity }}</td>
+                  <td class="p-3 text-right">
+                    <input type="number" [(ngModel)]="row.countedQuantity" [name]="'cnt-qty-' + idx" (input)="onCountQtyChange(idx)" class="w-20 bg-white border border-slate-200 rounded px-2 py-1 text-right focus:outline-none">
+                  </td>
+                  <td class="p-3 text-right font-mono font-bold" [class.text-green-600]="row.variance > 0" [class.text-red-600]="row.variance < 0">
+                    {{ row.variance > 0 ? '+' : '' }}{{ row.variance }}
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <div class="flex justify-end gap-2 border-t border-slate-100 pt-4">
+          <button type="button" (click)="isCountModalOpen.set(false)" class="px-4 py-2 border border-slate-200 bg-white text-slate-700 rounded-lg">Cancel</button>
+          <button type="submit" class="px-4 py-2 bg-slate-900 text-white rounded-lg">Finalize Stock Count</button>
+        </div>
+      </form>
+    </div>
+  </div>
+}
+
+<!-- Excel Import Modal (Shared) -->
+@if (isImportModalOpen()) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+    <div class="bg-white rounded-xl border border-slate-200 shadow-2xl w-full max-w-xl overflow-hidden animate-fade-in">
+      <div class="p-4 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
+        <h3 class="text-sm font-black text-slate-850">
+          {{ 'inventory.import_excel' | translate }} - 
+          {{ (isEquipmentImport() ? 'navigation.equipment_registry' : 'navigation.items') | translate }}
+        </h3>
+        <button (click)="isImportModalOpen.set(false)" class="text-slate-400 hover:text-slate-600">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <div class="p-6 space-y-4 text-xs">
+        <!-- Drag Drop Zone -->
+        @if (uploadedFileName() === '') {
+          <div 
+            (dragover)="onDragOver($event)"
+            (dragleave)="onDragLeave($event)"
+            (drop)="onDrop($event)"
+            [class.border-slate-800]="isDragOver()"
+            [class.bg-slate-50]="isDragOver()"
+            class="border-2 border-dashed border-slate-200 rounded-xl p-8 text-center cursor-pointer hover:bg-slate-50/50 transition-all"
+          >
+            <input type="file" id="fileImportInput" (change)="onFileSelected($event)" class="hidden" accept=".xlsx,.csv">
+            <label for="fileImportInput" class="cursor-pointer space-y-2 block">
+              <svg class="w-10 h-10 mx-auto text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m-9 1V4a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
+              <p class="font-bold text-slate-700">{{ 'inventory.drag_drop_prompt' | translate }}</p>
+              <p class="text-[10px] text-slate-400 font-semibold">Supports Microsoft Excel (.xlsx) or CSV format</p>
+            </label>
+          </div>
+          <div class="text-right">
+            <button (click)="downloadTemplate()" class="text-blue-600 font-bold hover:underline">
+              {{ 'inventory.download_template' | translate }}
+            </button>
+          </div>
+        }
+
+        <!-- Upload progress indicator -->
+        @if (isUploading()) {
+          <div class="space-y-2 text-center p-6">
+            <p class="font-bold text-slate-700">{{ 'inventory.uploading' | translate }}</p>
+            <div class="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
+              <div class="bg-slate-800 h-2.5 rounded-full transition-all duration-200" [style.width.%]="uploadProgress()"></div>
+            </div>
+            <p class="font-mono text-[10px] text-slate-400 font-bold">{{ uploadProgress() }}% completed</p>
+          </div>
+        }
+
+        <!-- Preview imported records -->
+        @if (uploadedFileName() !== '' && !isUploading()) {
+          <div class="space-y-4">
+            <div class="flex items-center justify-between p-3 rounded-lg bg-slate-50 font-bold text-slate-750">
+              <span class="truncate">File: {{ uploadedFileName() }}</span>
+              <button (click)="uploadedFileName.set('')" class="text-red-600 hover:underline">Remove</button>
+            </div>
+
+            <!-- validation errors alert -->
+            @if (importValidationErrors().length > 0) {
+              <div class="bg-red-50 p-4 rounded-xl border border-red-100 space-y-2">
+                <p class="font-black text-danger uppercase tracking-wider">{{ 'inventory.validation_errors' | translate }}</p>
+                <ul class="list-disc pl-4 space-y-1 text-[11px] text-red-700 font-medium">
+                  @for (err of importValidationErrors(); track err) {
+                    <li>{{ err }}</li>
+                  }
+                </ul>
+              </div>
+            }
+
+            <h4 class="font-bold text-slate-800">{{ 'inventory.preview_records' | translate }}</h4>
+            <div class="border border-slate-150 rounded-xl overflow-hidden max-h-56 overflow-y-auto">
+              <table class="w-full text-left border-collapse">
+                <thead>
+                  <tr class="bg-slate-50 text-slate-400 border-b border-slate-100 font-bold">
+                    <th class="p-3">{{ (isEquipmentImport() ? 'Equipment Code' : 'Item Code') }}</th>
+                    <th class="p-3">{{ (isEquipmentImport() ? 'Equipment Name' : 'Item Name') }}</th>
+                    <th class="p-3 text-center">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (record of importPreviewRecords(); track record.equipmentCode || record.itemCode) {
+                    <tr class="border-b border-slate-50 text-slate-700 font-medium" [ngClass]="{'bg-red-50': !record.isValid}">
+                      <td class="p-3 font-mono font-bold">{{ record.equipmentCode || record.itemCode || 'MISSING' }}</td>
+                      <td class="p-3 font-bold">{{ record.equipmentName || record.itemName }}</td>
+                      <td class="p-3 text-center">
+                        <span class="px-2 py-0.5 rounded text-[10px] font-black uppercase"
+                          [class.bg-green-100]="record.isValid" [class.text-green-700]="record.isValid"
+                          [class.bg-red-100]="!record.isValid" [class.text-red-750]="!record.isValid">
+                          {{ record.isValid ? 'Valid' : 'Invalid' }}
+                        </span>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+
+            <div class="flex justify-end gap-2 border-t border-slate-100 pt-4">
+              <button (click)="isImportModalOpen.set(false)" class="px-4 py-2 border border-slate-200 bg-white text-slate-700 rounded-lg">Cancel</button>
+              <button (click)="confirmImport()" [disabled]="importPreviewRecords().length === 0" class="px-4 py-2 bg-slate-900 text-white rounded-lg hover:bg-slate-850">
+                {{ 'inventory.confirm_import' | translate }}
+              </button>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+}
+
+  <!-- MRV DETAILS MODAL -->
+  @if (selectedMRV()) {
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm animate-fade-in p-4">
+      <div class="bg-white rounded-xl shadow-xl border border-slate-200 w-full max-w-2xl overflow-hidden text-xs">
+        <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+          <div>
+            <h3 class="text-sm font-bold text-slate-800">Material Receipt Voucher Details</h3>
+            <span class="text-[10px] font-mono text-indigo-650">{{ selectedMRV()?.voucherNumber }}</span>
+          </div>
+          <button (click)="selectedMRV.set(null)" class="text-slate-400 hover:text-slate-655">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+        </div>
+        <div class="p-6 space-y-5 max-h-[80vh] overflow-y-auto font-semibold text-slate-700">
+          <!-- Info Grid -->
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 bg-slate-50 p-4 rounded-lg border border-slate-100">
+            <div>
+              <p class="text-slate-400 text-[10px]">PO Reference</p>
+              <p class="text-slate-808 font-mono font-bold">{{ selectedMRV()?.poNumber || 'Direct Receipt' }}</p>
+            </div>
+            <div>
+              <p class="text-slate-400 text-[10px]">Supplier</p>
+              <p class="text-slate-800">{{ selectedMRV()?.supplierName }}</p>
+            </div>
+            <div>
+              <p class="text-slate-400 text-[10px]">Received Date</p>
+              <p class="text-slate-800 font-mono">{{ selectedMRV()?.receivedDate }}</p>
+            </div>
+            <div>
+              <p class="text-slate-400 text-[10px]">Received By</p>
+              <p class="text-slate-800">{{ selectedMRV()?.receivedBy }}</p>
+            </div>
+          </div>
+
+          <!-- Items Table -->
+          <div class="space-y-2">
+            <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Received Items</h4>
+            <div class="border border-slate-100 rounded-lg overflow-hidden">
+              <table class="w-full text-left border-collapse text-xs">
+                <thead class="bg-slate-50">
+                  <tr class="text-slate-450 border-b border-slate-100">
+                    <th class="p-3">Item Code</th>
+                    <th class="p-3">Item Name</th>
+                    <th class="p-3 text-right">Qty Received</th>
+                    <th class="p-3 text-right">Unit Price</th>
+                    <th class="p-3 text-right">Total Price</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                  @for (item of selectedMRV()?.items; track item.itemCode) {
+                    <tr>
+                      <td class="p-3 font-mono text-indigo-650 font-bold">{{ item.itemCode }}</td>
+                      <td class="p-3 text-slate-800">{{ item.itemName }}</td>
+                      <td class="p-3 text-right font-mono font-bold">{{ item.quantityReceived }} {{ item.uom }}</td>
+                      <td class="p-3 text-right font-mono">${{ item.unitPrice | number:'1.2-2' }}</td>
+                      <td class="p-3 text-right font-mono font-bold">${{ item.totalPrice | number:'1.2-2' }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Finance posting section -->
+          <div class="space-y-2 pt-2 border-t border-slate-100">
+            <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Financial Posting Context</h4>
+            <div class="bg-slate-50 p-3.5 rounded-lg border border-slate-100 space-y-2 font-mono text-[11px]">
+              <div class="flex items-center justify-between text-slate-500 font-bold border-b border-slate-200/60 pb-1.5 mb-1.5">
+                <span>Account Name</span>
+                <div class="flex space-x-12">
+                  <span>Debit</span>
+                  <span>Credit</span>
+                </div>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-indigo-650 font-bold">[Debit] 131000 - Material Warehouse Stock</span>
+                <div class="flex space-x-10 font-bold">
+                  <span>${{ selectedMRV()?.totalAmount | number:'1.2-2' }}</span>
+                  <span class="text-slate-300">-</span>
+                </div>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-slate-655 font-bold">[Credit] 211000 - Accounts Payable (A/P)</span>
+                <div class="flex space-x-10 font-bold">
+                  <span class="text-slate-300">-</span>
+                  <span>${{ selectedMRV()?.totalAmount | number:'1.2-2' }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Approval Stepper -->
+          <div class="pt-2 border-t border-slate-100">
+            <app-approval-history [workflow]="[
+              { role: 'Warehouse Inspector', approverName: selectedMRV()?.receivedBy, status: 'Approved', actionDate: selectedMRV()?.receivedDate, comments: 'Goods inspected. Quantities and grade specifications match.' },
+              { role: 'Finance Accountant', approverName: 'Frank Jones', status: selectedMRV()?.status === 'Posted' ? 'Approved' : 'Pending', actionDate: selectedMRV()?.status === 'Posted' ? selectedMRV()?.receivedDate : undefined, comments: selectedMRV()?.status === 'Posted' ? 'Accruals recorded in ledger.' : undefined }
+            ]" />
+          </div>
+        </div>
+        <div class="p-4 bg-slate-50 border-t border-slate-100 flex justify-end">
+          <button (click)="selectedMRV.set(null)" class="px-4 py-2 border border-slate-200 bg-white rounded-lg text-slate-700 font-bold">Close Details</button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- MIV DETAILS MODAL -->
+  @if (selectedMIV()) {
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm animate-fade-in p-4">
+      <div class="bg-white rounded-xl shadow-xl border border-slate-200 w-full max-w-2xl overflow-hidden text-xs">
+        <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+          <div>
+            <h3 class="text-sm font-bold text-slate-800">Material Issue Voucher Details</h3>
+            <span class="text-[10px] font-mono text-indigo-650">{{ selectedMIV()?.voucherNumber }}</span>
+          </div>
+          <button (click)="selectedMIV.set(null)" class="text-slate-400 hover:text-slate-655">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+        </div>
+        <div class="p-6 space-y-5 max-h-[80vh] overflow-y-auto font-semibold text-slate-700">
+          <!-- Info Grid -->
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 bg-slate-50 p-4 rounded-lg border border-slate-100">
+            <div>
+              <p class="text-slate-400 text-[10px]">Issue To</p>
+              <p class="text-slate-858 font-bold">[{{ selectedMIV()?.issueTo }}] {{ selectedMIV()?.destinationId }}</p>
+            </div>
+            <div>
+              <p class="text-slate-400 text-[10px]">Reference Number</p>
+              <p class="text-slate-800 font-mono">{{ selectedMIV()?.referenceNumber || 'N/A' }}</p>
+            </div>
+            <div>
+              <p class="text-slate-400 text-[10px]">Issue Date</p>
+              <p class="text-slate-800 font-mono">{{ selectedMIV()?.issueDate }}</p>
+            </div>
+            <div>
+              <p class="text-slate-400 text-[10px]">Requested By</p>
+              <p class="text-slate-800">{{ selectedMIV()?.requestedBy }}</p>
+            </div>
+          </div>
+
+          <!-- Items Table -->
+          <div class="space-y-2">
+            <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Issued Items</h4>
+            <div class="border border-slate-100 rounded-lg overflow-hidden">
+              <table class="w-full text-left border-collapse text-xs">
+                <thead class="bg-slate-50">
+                  <tr class="text-slate-450 border-b border-slate-100">
+                    <th class="p-3">Item Code</th>
+                    <th class="p-3">Item Name</th>
+                    <th class="p-3 text-right">Qty Issued</th>
+                    <th class="p-3 text-right">Unit Cost</th>
+                    <th class="p-3 text-right">Total Cost</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                  @for (item of selectedMIV()?.items; track item.itemCode) {
+                    <tr>
+                      <td class="p-3 font-mono text-indigo-655 font-bold">{{ item.itemCode }}</td>
+                      <td class="p-3 text-slate-800">{{ item.itemName }}</td>
+                      <td class="p-3 text-right font-mono font-bold">{{ item.quantityIssued }} {{ item.uom }}</td>
+                      <td class="p-3 text-right font-mono">${{ item.unitPrice | number:'1.2-2' }}</td>
+                      <td class="p-3 text-right font-mono font-bold">${{ item.totalPrice | number:'1.2-2' }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Finance posting section -->
+          <div class="space-y-2 pt-2 border-t border-slate-100">
+            <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Cost Allocation & Double-Entry Posting</h4>
+            <div class="bg-slate-50 p-3.5 rounded-lg border border-slate-100 space-y-2 font-mono text-[11px]">
+              <div class="flex items-center justify-between text-slate-500 font-bold border-b border-slate-200/60 pb-1.5 mb-1.5">
+                <span>Account Name</span>
+                <div class="flex space-x-12">
+                  <span>Debit</span>
+                  <span>Credit</span>
+                </div>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-indigo-650 font-bold">[Debit] 511000 - Project Material Consumed</span>
+                <div class="flex space-x-10 font-bold">
+                  <span>${{ selectedMIV()?.totalAmount | number:'1.2-2' }}</span>
+                  <span class="text-slate-300">-</span>
+                </div>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-slate-655 font-bold">[Credit] 131000 - Material Warehouse Stock</span>
+                <div class="flex space-x-10 font-bold">
+                  <span class="text-slate-300">-</span>
+                  <span>${{ selectedMIV()?.totalAmount | number:'1.2-2' }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Approval Stepper -->
+          <div class="pt-2 border-t border-slate-100">
+            <app-approval-history [workflow]="[
+              { role: 'Requisitioner', approverName: selectedMIV()?.requestedBy, status: 'Approved', actionDate: selectedMIV()?.issueDate, comments: 'Material request dispatched for operation.' },
+              { role: 'Warehouse Keeper', approverName: 'Jim Halpert', status: selectedMIV()?.status === 'Posted' ? 'Approved' : 'Pending', actionDate: selectedMIV()?.status === 'Posted' ? selectedMIV()?.issueDate : undefined, comments: selectedMIV()?.status === 'Posted' ? 'Materials issued and inventory adjusted.' : undefined }
+            ]" />
+          </div>
+        </div>
+        <div class="p-4 bg-slate-50 border-t border-slate-100 flex justify-end">
+          <button (click)="selectedMIV.set(null)" class="px-4 py-2 border border-slate-200 bg-white rounded-lg text-slate-700 font-bold">Close Details</button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- TRANSFER DETAILS MODAL -->
+  @if (selectedTransfer()) {
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm animate-fade-in p-4">
+      <div class="bg-white rounded-xl shadow-xl border border-slate-200 w-full max-w-2xl overflow-hidden text-xs">
+        <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+          <div>
+            <h3 class="text-sm font-bold text-slate-800">Internal Material Transfer Details</h3>
+            <span class="text-[10px] font-mono text-indigo-650">{{ selectedTransfer()?.transferNumber }}</span>
+          </div>
+          <button (click)="selectedTransfer.set(null)" class="text-slate-400 hover:text-slate-655">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+        </div>
+        <div class="p-6 space-y-5 max-h-[80vh] overflow-y-auto font-semibold text-slate-700">
+          <!-- Info Grid -->
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 bg-slate-50 p-4 rounded-lg border border-slate-100">
+            <div>
+              <p class="text-slate-400 text-[10px]">Source Warehouse</p>
+              <p class="text-slate-800 font-bold">{{ selectedTransfer()?.fromWarehouseId === 'w1' ? 'Warehouse A' : selectedTransfer()?.fromWarehouseId === 'w2' ? 'Warehouse B' : 'Pipe Yard 1' }}</p>
+            </div>
+            <div>
+              <p class="text-slate-400 text-[10px]">Destination Warehouse</p>
+              <p class="text-slate-800 font-bold">{{ selectedTransfer()?.toWarehouseId === 'w1' ? 'Warehouse A' : selectedTransfer()?.toWarehouseId === 'w2' ? 'Warehouse B' : 'Pipe Yard 1' }}</p>
+            </div>
+            <div>
+              <p class="text-slate-400 text-[10px]">Transfer Date</p>
+              <p class="text-slate-800 font-mono">{{ selectedTransfer()?.transferDate }}</p>
+            </div>
+            <div>
+              <p class="text-slate-400 text-[10px]">Requested By</p>
+              <p class="text-slate-800">{{ selectedTransfer()?.requestedBy }}</p>
+            </div>
+          </div>
+
+          <!-- Items Table -->
+          <div class="space-y-2">
+            <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Transferred Items</h4>
+            <div class="border border-slate-100 rounded-lg overflow-hidden">
+              <table class="w-full text-left border-collapse text-xs">
+                <thead class="bg-slate-50">
+                  <tr class="text-slate-455 border-b border-slate-100">
+                    <th class="p-3">Item Code</th>
+                    <th class="p-3">Item Name</th>
+                    <th class="p-3 text-right">Quantity</th>
+                    <th class="p-3 text-center">UOM</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                  @for (item of selectedTransfer()?.items; track item.itemCode) {
+                    <tr>
+                      <td class="p-3 font-mono text-indigo-655 font-bold">{{ item.itemCode }}</td>
+                      <td class="p-3 text-slate-800">{{ item.itemName }}</td>
+                      <td class="p-3 text-right font-mono font-bold">{{ item.quantity }}</td>
+                      <td class="p-3 text-center">{{ item.uom }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Approval Stepper -->
+          <div class="pt-2 border-t border-slate-100">
+            <app-approval-history [workflow]="[
+              { role: 'Warehouse Custodian', approverName: selectedTransfer()?.requestedBy, status: 'Approved', actionDate: selectedTransfer()?.transferDate, comments: 'Transfer initiated for relocation.' },
+              { role: 'Logistics Supervisor', approverName: 'Sven Larson', status: selectedTransfer()?.status === 'Posted' ? 'Approved' : 'Pending', actionDate: selectedTransfer()?.status === 'Posted' ? selectedTransfer()?.transferDate : undefined, comments: selectedTransfer()?.status === 'Posted' ? 'Inventory relocation completed and registered.' : undefined }
+            ]" />
+          </div>
+        </div>
+        <div class="p-4 bg-slate-50 border-t border-slate-100 flex justify-end">
+          <button (click)="selectedTransfer.set(null)" class="px-4 py-2 border border-slate-200 bg-white rounded-lg text-slate-700 font-bold">Close Details</button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ADJUSTMENT DETAILS MODAL -->
+  @if (selectedAdjustment()) {
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm animate-fade-in p-4">
+      <div class="bg-white rounded-xl shadow-xl border border-slate-200 w-full max-w-2xl overflow-hidden text-xs">
+        <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+          <div>
+            <h3 class="text-sm font-bold text-slate-800">Stock Adjustment Voucher Details</h3>
+            <span class="text-[10px] font-mono text-indigo-655">{{ selectedAdjustment()?.adjustmentNumber }}</span>
+          </div>
+          <button (click)="selectedAdjustment.set(null)" class="text-slate-400 hover:text-slate-655">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+        </div>
+        <div class="p-6 space-y-5 max-h-[80vh] overflow-y-auto font-semibold text-slate-700">
+          <!-- Info Grid -->
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 bg-slate-50 p-4 rounded-lg border border-slate-100">
+            <div>
+              <p class="text-slate-400 text-[10px]">Warehouse</p>
+              <p class="text-slate-805 font-bold">{{ selectedAdjustment()?.warehouseId === 'w1' ? 'Warehouse A' : 'Warehouse B' }}</p>
+            </div>
+            <div>
+              <p class="text-slate-400 text-[10px]">Adjustment Date</p>
+              <p class="text-slate-800 font-mono">{{ selectedAdjustment()?.adjustmentDate }}</p>
+            </div>
+            <div>
+              <p class="text-slate-400 text-[10px]">Requested By</p>
+              <p class="text-slate-800">{{ selectedAdjustment()?.requestedBy }}</p>
+            </div>
+            <div>
+              <p class="text-slate-400 text-[10px]">Net Valuation Impact</p>
+              <p class="font-mono font-bold" [class.text-green-600]="(selectedAdjustment()?.totalValue || 0) >= 0" [class.text-red-650]="(selectedAdjustment()?.totalValue || 0) < 0">
+                ${{ selectedAdjustment()?.totalValue | number:'1.2-2' }}
+              </p>
+            </div>
+          </div>
+
+          <!-- Items Table -->
+          <div class="space-y-2">
+            <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Adjustment Lines</h4>
+            <div class="border border-slate-100 rounded-lg overflow-hidden">
+              <table class="w-full text-left border-collapse text-xs">
+                <thead class="bg-slate-50">
+                  <tr class="text-slate-455 border-b border-slate-100">
+                    <th class="p-3">Item Code</th>
+                    <th class="p-3">Item Name</th>
+                    <th class="p-3 text-right">System Qty</th>
+                    <th class="p-3 text-right">Adjusted Qty</th>
+                    <th class="p-3">Reason</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                  @for (item of selectedAdjustment()?.items; track item.itemCode) {
+                    <tr>
+                      <td class="p-3 font-mono text-indigo-650 font-bold">{{ item.itemCode }}</td>
+                      <td class="p-3 text-slate-800">{{ item.itemName }}</td>
+                      <td class="p-3 text-right font-mono">{{ item.systemQuantity }}</td>
+                      <td class="p-3 text-right font-mono font-bold" [class.text-green-600]="item.adjustmentType === 'Addition'" [class.text-red-600]="item.adjustmentType === 'Deduction'">
+                        {{ item.adjustmentType === 'Addition' ? '+' : '-' }}{{ item.adjustedQuantity }}
+                      </td>
+                      <td class="p-3 text-slate-500 italic font-medium">{{ item.reason }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Finance posting section -->
+          <div class="space-y-2 pt-2 border-t border-slate-100">
+            <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Accounting Adjustments Posting</h4>
+            <div class="bg-slate-50 p-3.5 rounded-lg border border-slate-100 space-y-2 font-mono text-[11px]">
+              <div class="flex items-center justify-between text-slate-500 font-bold border-b border-slate-200/60 pb-1.5 mb-1.5">
+                <span>Account Name</span>
+                <div class="flex space-x-12">
+                  <span>Debit</span>
+                  <span>Credit</span>
+                </div>
+              </div>
+              @if ((selectedAdjustment()?.totalValue || 0) >= 0) {
+                <div class="flex items-center justify-between">
+                  <span class="text-indigo-650 font-bold">[Debit] 131000 - Material Warehouse Stock</span>
+                  <div class="flex space-x-10 font-bold">
+                    <span>${{ selectedAdjustment()?.totalValue | number:'1.2-2' }}</span>
+                    <span class="text-slate-300">-</span>
+                  </div>
+                </div>
+                <div class="flex items-center justify-between">
+                  <span class="text-slate-655 font-bold">[Credit] 521000 - General & Administrative Costs</span>
+                  <div class="flex space-x-10 font-bold">
+                    <span class="text-slate-300">-</span>
+                    <span>${{ selectedAdjustment()?.totalValue | number:'1.2-2' }}</span>
+                  </div>
+                </div>
+              } @else {
+                <div class="flex items-center justify-between">
+                  <span class="text-indigo-655 font-bold">[Debit] 521000 - General & Administrative Costs</span>
+                  <div class="flex space-x-10 font-bold">
+                    <span>${{ getAbsValue(selectedAdjustment()?.totalValue || 0) | number:'1.2-2' }}</span>
+                    <span class="text-slate-300">-</span>
+                  </div>
+                </div>
+                <div class="flex items-center justify-between">
+                  <span class="text-slate-655 font-bold">[Credit] 131000 - Material Warehouse Stock</span>
+                  <div class="flex space-x-10 font-bold">
+                    <span class="text-slate-300">-</span>
+                    <span>${{ getAbsValue(selectedAdjustment()?.totalValue || 0) | number:'1.2-2' }}</span>
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+
+          <!-- Approval Stepper -->
+          <div class="pt-2 border-t border-slate-100">
+            <app-approval-history [workflow]="[
+              { role: 'Warehouse Custodian', approverName: selectedAdjustment()?.requestedBy, status: 'Approved', actionDate: selectedAdjustment()?.adjustmentDate, comments: 'Discrepancy logged from physical count.' },
+              { role: 'Finance Manager', approverName: 'Frank Jones', status: selectedAdjustment()?.status === 'Posted' ? 'Approved' : 'Pending', actionDate: selectedAdjustment()?.status === 'Posted' ? selectedAdjustment()?.adjustmentDate : undefined, comments: selectedAdjustment()?.status === 'Posted' ? 'Ledger adjustment posted. Inventory asset value updated.' : undefined }
+            ]" />
+          </div>
+        </div>
+        <div class="p-4 bg-slate-50 border-t border-slate-100 flex justify-end">
+          <button (click)="selectedAdjustment.set(null)" class="px-4 py-2 border border-slate-200 bg-white rounded-lg text-slate-700 font-bold">Close Details</button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- RESERVATIONS TAB -->
+  @if (activeTab() === 'reservations') {
+    <div class="space-y-5">
+      <!-- KPI Strip -->
+      <div class="grid grid-cols-3 gap-4">
+        <div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
+          <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">{{ 'inventory.res_kpi_pending' | translate }}</p>
+          <h3 class="text-3xl font-black text-amber-600 mt-1">{{ pendingReservations() }}</h3>
+        </div>
+        <div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
+          <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">{{ 'inventory.res_kpi_approved' | translate }}</p>
+          <h3 class="text-3xl font-black text-emerald-600 mt-1">{{ approvedReservations() }}</h3>
+        </div>
+        <div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
+          <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">{{ 'inventory.res_kpi_value' | translate }}</p>
+          <h3 class="text-xl font-black text-indigo-600 mt-1">${{ reservedValue() | number:'1.0-0' }}</h3>
+        </div>
+      </div>
+      <!-- Header + New Button -->
+      <div class="flex items-center justify-between">
+        <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider">{{ 'inventory.reservations_list' | translate }}</h3>
+        <button (click)="openReservationModal()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg flex items-center gap-1.5 transition-colors">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+          {{ 'inventory.btn_new_reservation' | translate }}
+        </button>
+      </div>
+      <!-- Table -->
+      <div class="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse text-xs">
+            <thead>
+              <tr class="text-slate-400 font-bold border-b border-slate-100 bg-slate-50/30">
+                <th class="p-4 py-3">{{ 'inventory.res_number' | translate }}</th>
+                <th class="p-4 py-3">{{ 'inventory.res_project' | translate }}</th>
+                <th class="p-4 py-3">{{ 'inventory.res_requested_by' | translate }}</th>
+                <th class="p-4 py-3">{{ 'inventory.res_required_date' | translate }}</th>
+                <th class="p-4 py-3">{{ 'inventory.res_items' | translate }}</th>
+                <th class="p-4 py-3 text-right">{{ 'inventory.res_value' | translate }}</th>
+                <th class="p-4 py-3 text-center">{{ 'common.status' | translate }}</th>
+                <th class="p-4 py-3 text-center">{{ 'common.actions' | translate }}</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-50 font-medium text-slate-700">
+              @for (res of inventoryReservations(); track res.id) {
+                <tr class="hover:bg-slate-50/50 transition-colors">
+                  <td class="p-4 font-mono font-bold text-slate-900 text-[11px]">{{ res.reservationNumber }}</td>
+                  <td class="p-4">
+                    <div class="font-bold">{{ res.projectName }}</div>
+                    <div class="text-[10px] text-slate-400">{{ res.projectCode }}</div>
+                  </td>
+                  <td class="p-4">{{ res.requestedBy }}</td>
+                  <td class="p-4 font-mono text-slate-500">{{ res.requiredDate }}</td>
+                  <td class="p-4">
+                    <span class="bg-slate-100 text-slate-700 text-[10px] font-bold px-2 py-0.5 rounded-full">{{ res.items.length }} {{ 'inventory.items_label' | translate }}</span>
+                  </td>
+                  <td class="p-4 text-right font-mono font-black text-indigo-600">${{ res.totalValue | number:'1.0-0' }}</td>
+                  <td class="p-4 text-center">
+                    <span
+                      [class.bg-amber-50]="res.status === 'Pending'"
+                      [class.text-amber-700]="res.status === 'Pending'"
+                      [class.bg-emerald-50]="res.status === 'Approved'"
+                      [class.text-emerald-700]="res.status === 'Approved'"
+                      [class.bg-slate-100]="res.status === 'Released' || res.status === 'Cancelled'"
+                      [class.text-slate-600]="res.status === 'Released' || res.status === 'Cancelled'"
+                      class="px-2.5 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider">
+                      {{ res.status }}
+                    </span>
+                  </td>
+                  <td class="p-4">
+                    <div class="flex items-center justify-center gap-1">
+                      @if (res.status === 'Pending') {
+                        <button (click)="approveReservation(res.id)" class="px-2 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-[10px] font-bold">{{ 'inventory.btn_approve_res' | translate }}</button>
+                      }
+                      @if (res.status === 'Approved') {
+                        <button (click)="releaseReservation(res.id)" class="px-2 py-1 bg-amber-500 hover:bg-amber-600 text-white rounded text-[10px] font-bold">{{ 'inventory.btn_release_res' | translate }}</button>
+                      }
+                    </div>
+                  </td>
+                </tr>
+              } @empty {
+                <tr><td colspan="8" class="p-8 text-center text-slate-400 font-bold">{{ 'inventory.no_reservations' | translate }}</td></tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Reservation Create Modal -->
+  @if (showReservationModal()) {
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+      <div class="bg-white rounded-xl shadow-xl border border-slate-150 w-full max-w-2xl overflow-hidden max-h-[90vh] flex flex-col">
+        <div class="p-4 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
+          <h3 class="text-sm font-bold text-slate-800">{{ 'inventory.modal_reservation_title' | translate }}</h3>
+          <button (click)="showReservationModal.set(false)" class="text-slate-400 hover:text-slate-600">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+        </div>
+        <div class="p-5 space-y-4 text-xs overflow-y-auto flex-1">
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block font-bold text-slate-500 mb-1">{{ 'inventory.res_project_code' | translate }} *</label>
+              <input type="text" [(ngModel)]="reservationForm.projectCode" class="w-full border border-slate-200 rounded-lg px-3 py-2 bg-slate-50">
+            </div>
+            <div>
+              <label class="block font-bold text-slate-500 mb-1">{{ 'inventory.res_project_name' | translate }} *</label>
+              <input type="text" [(ngModel)]="reservationForm.projectName" class="w-full border border-slate-200 rounded-lg px-3 py-2 bg-slate-50">
+            </div>
+            <div>
+              <label class="block font-bold text-slate-500 mb-1">{{ 'inventory.res_requested_by' | translate }} *</label>
+              <input type="text" [(ngModel)]="reservationForm.requestedBy" class="w-full border border-slate-200 rounded-lg px-3 py-2 bg-slate-50">
+            </div>
+            <div>
+              <label class="block font-bold text-slate-500 mb-1">{{ 'inventory.res_required_date' | translate }}</label>
+              <input type="date" [(ngModel)]="reservationForm.requiredDate" class="w-full border border-slate-200 rounded-lg px-3 py-2 bg-slate-50">
+            </div>
+          </div>
+          <!-- Items -->
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <label class="font-bold text-slate-600">{{ 'inventory.res_items' | translate }}</label>
+              <button (click)="addReservationItem()" class="text-[10px] text-indigo-600 font-bold hover:underline">+ {{ 'inventory.btn_add_item' | translate }}</button>
+            </div>
+            <div class="space-y-2">
+              @for (item of reservationForm.items; track $index; let i = $index) {
+                <div class="grid grid-cols-5 gap-2 p-2 bg-slate-50 rounded-lg border border-slate-100">
+                  <div class="col-span-2">
+                    <label class="text-[10px] font-bold text-slate-400">{{ 'inventory.col_item_code' | translate }}</label>
+                    <input type="text" [(ngModel)]="item.itemCode" class="w-full border border-slate-200 rounded px-2 py-1 bg-white text-[11px] mt-0.5">
+                  </div>
+                  <div>
+                    <label class="text-[10px] font-bold text-slate-400">{{ 'inventory.col_uom' | translate }}</label>
+                    <input type="text" [(ngModel)]="item.uom" class="w-full border border-slate-200 rounded px-2 py-1 bg-white text-[11px] mt-0.5">
+                  </div>
+                  <div>
+                    <label class="text-[10px] font-bold text-slate-400">{{ 'inventory.res_qty' | translate }}</label>
+                    <input type="number" [(ngModel)]="item.requestedQuantity" min="1" (ngModelChange)="calcReservationTotal()" class="w-full border border-slate-200 rounded px-2 py-1 bg-white text-[11px] mt-0.5">
+                  </div>
+                  <div class="flex items-end">
+                    @if (reservationForm.items.length > 1) {
+                      <button (click)="removeReservationItem(i)" class="w-full py-1 bg-red-50 text-red-500 hover:bg-red-100 rounded text-[10px] font-bold">✕</button>
+                    }
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+        <div class="p-4 bg-slate-50 border-t border-slate-100 flex justify-between items-center">
+          <span class="text-xs font-bold text-slate-600">{{ 'inventory.res_total_value' | translate }}: <span class="text-indigo-600 font-black">${{ reservationForm.totalValue | number:'1.0-0' }}</span></span>
+          <div class="flex gap-2">
+            <button (click)="showReservationModal.set(false)" class="px-4 py-2 bg-white border border-slate-200 rounded-lg font-bold text-slate-600 text-xs">{{ 'common.cancel' | translate }}</button>
+            <button (click)="submitReservation()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg text-xs">{{ 'inventory.btn_submit_reservation' | translate }}</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }

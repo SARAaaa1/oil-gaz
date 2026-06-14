@@ -1,0 +1,503 @@
+<div class="space-y-6">
+
+  <!-- Header -->
+  <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-black text-slate-800 tracking-tight">{{ 'finance.cash_bank.title' | translate }}</h1>
+      <p class="text-xs text-slate-500 font-semibold mt-1">{{ 'finance.cash_bank.subtitle' | translate }}</p>
+    </div>
+    <div class="flex flex-wrap items-center gap-3">
+      <button 
+        (click)="openAddBankModal()"
+        class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold shadow-sm transition-all flex items-center space-x-1.5 rtl:space-x-reverse"
+      >
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+        </svg>
+        <span>{{ 'finance.cash_bank.new_bank' | translate }}</span>
+      </button>
+
+      <button 
+        (click)="openAddCashModal()"
+        class="px-4 py-2 bg-sky-600 hover:bg-sky-700 text-white rounded-lg text-xs font-bold shadow-sm transition-all flex items-center space-x-1.5 rtl:space-x-reverse"
+      >
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+        </svg>
+        <span>{{ 'finance.cash_bank.new_cash' | translate }}</span>
+      </button>
+
+      <button 
+        (click)="openReconcileModal()"
+        class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold shadow-sm transition-all flex items-center space-x-1.5 rtl:space-x-reverse"
+      >
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+        </svg>
+        <span>{{ 'finance.cash_bank.reconcile' | translate }}</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Liquidity Cards -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+    <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex items-center space-x-4 rtl:space-x-reverse">
+      <div class="p-3 bg-indigo-50 text-indigo-650 rounded-xl">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+        </svg>
+      </div>
+      <div>
+        <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">{{ 'finance.cash_bank.kpi_liquidity' | translate }}</p>
+        <h3 class="text-lg font-black text-slate-800 mt-1">${{ kpis().totalLiquidityUSD | number:'1.2-2' }}</h3>
+      </div>
+    </div>
+
+    <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex items-center space-x-4 rtl:space-x-reverse">
+      <div class="p-3 bg-sky-50 text-sky-605 rounded-xl">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+        </svg>
+      </div>
+      <div>
+        <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">{{ 'finance.cash_bank.kpi_banks' | translate }}</p>
+        <h3 class="text-lg font-black text-slate-800 mt-1">${{ kpis().bankBalanceUSD | number:'1.2-2' }}</h3>
+      </div>
+    </div>
+
+    <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex items-center space-x-4 rtl:space-x-reverse">
+      <div class="p-3 bg-amber-50 text-amber-600 rounded-xl">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+        </svg>
+      </div>
+      <div>
+        <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">{{ 'finance.cash_bank.kpi_cash' | translate }}</p>
+        <h3 class="text-lg font-black text-slate-800 mt-1">${{ kpis().cashBalanceUSD | number:'1.2-2' }}</h3>
+      </div>
+    </div>
+
+    <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex items-center space-x-4 rtl:space-x-reverse">
+      <div class="p-3 bg-emerald-50 text-emerald-600 rounded-xl">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      </div>
+      <div>
+        <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">{{ 'finance.cash_bank.kpi_unreconciled' | translate }}</p>
+        <h3 class="text-lg font-black text-slate-800 mt-1">{{ kpis().pendingRecsCount }}</h3>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabs Navigation -->
+  <div class="flex border-b border-slate-200 text-xs font-bold space-x-6 rtl:space-x-reverse">
+    <button 
+      (click)="activeTab.set('banks')"
+      [class.border-indigo-600]="activeTab() === 'banks'"
+      [class.text-indigo-600]="activeTab() === 'banks'"
+      [class.border-transparent]="activeTab() !== 'banks'"
+      [class.text-slate-500]="activeTab() !== 'banks'"
+      class="pb-3 border-b-2 transition-all"
+    >
+      {{ 'finance.cash_bank.tab_banks' | translate }}
+    </button>
+    <button 
+      (click)="activeTab.set('cash')"
+      [class.border-indigo-600]="activeTab() === 'cash'"
+      [class.text-indigo-600]="activeTab() === 'cash'"
+      [class.border-transparent]="activeTab() !== 'cash'"
+      [class.text-slate-500]="activeTab() !== 'cash'"
+      class="pb-3 border-b-2 transition-all"
+    >
+      {{ 'finance.cash_bank.tab_cash' | translate }}
+    </button>
+    <button 
+      (click)="activeTab.set('reconciliation')"
+      [class.border-indigo-600]="activeTab() === 'reconciliation'"
+      [class.text-indigo-600]="activeTab() === 'reconciliation'"
+      [class.border-transparent]="activeTab() !== 'reconciliation'"
+      [class.text-slate-500]="activeTab() !== 'reconciliation'"
+      class="pb-3 border-b-2 transition-all"
+    >
+      {{ 'finance.cash_bank.tab_reconciliation' | translate }}
+    </button>
+  </div>
+
+  <!-- Tab Contents -->
+  @if (activeTab() === 'banks') {
+    <!-- Bank Accounts Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 animate-fade-in">
+      @for (bank of bankAccounts(); track bank.id) {
+        <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden flex flex-col justify-between">
+          <div class="p-6">
+            <div class="flex items-center justify-between">
+              <div>
+                <h4 class="text-sm font-black text-slate-800">{{ bank.bankName }}</h4>
+                <p class="text-[10px] text-slate-400 font-bold tracking-wide mt-0.5">{{ 'finance.cash_bank.acc_no' | translate }}: {{ bank.accountNumber }}</p>
+              </div>
+              <span [class]="bank.status === 'Active' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-slate-100 text-slate-500 border-slate-200'" class="px-2.5 py-0.5 rounded-full font-bold border text-[10px]">{{ bank.status }}</span>
+            </div>
+            <div class="mt-4 pt-4 border-t border-slate-100 grid grid-cols-2 gap-4 text-xs font-semibold text-slate-550">
+              <div>
+                <span class="text-slate-400 block font-bold text-[10px] uppercase">{{ 'finance.cash_bank.iban' | translate }}</span>
+                <span class="font-mono text-slate-850 mt-1 block truncate" [title]="bank.iban">{{ bank.iban }}</span>
+              </div>
+              <div>
+                <span class="text-slate-400 block font-bold text-[10px] uppercase">{{ 'finance.cash_bank.currency' | translate }}</span>
+                <span class="text-slate-800 font-black mt-1 block">{{ bank.currency }}</span>
+              </div>
+            </div>
+          </div>
+          <div class="bg-slate-50 p-4 px-6 border-t border-slate-100 flex items-center justify-between">
+            <span class="text-slate-500 font-bold text-[10px] uppercase">{{ 'finance.cash_bank.balance' | translate }}</span>
+            <span class="text-base font-black text-slate-800">${{ bank.balance | number:'1.2-2' }}</span>
+          </div>
+        </div>
+      }
+    </div>
+  }
+
+  @if (activeTab() === 'cash') {
+    <!-- Cash Accounts Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 animate-fade-in">
+      @for (cash of cashAccounts(); track cash.id) {
+        <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden flex flex-col justify-between">
+          <div class="p-6">
+            <div class="flex items-center justify-between">
+              <div>
+                <h4 class="text-sm font-black text-slate-800">{{ cash.officeLocation }}</h4>
+                <p class="text-[10px] text-slate-400 font-bold tracking-wide mt-0.5">{{ 'finance.cash_bank.custodian' | translate }}: {{ cash.custodianName }}</p>
+              </div>
+              <span [class]="cash.status === 'Active' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-slate-100 text-slate-550 border-slate-200'" class="px-2.5 py-0.5 rounded-full font-bold border text-[10px]">{{ cash.status }}</span>
+            </div>
+            <div class="mt-4 pt-4 border-t border-slate-100 grid grid-cols-2 gap-4 text-xs font-semibold text-slate-550">
+              <div>
+                <span class="text-slate-400 block font-bold text-[10px] uppercase">{{ 'finance.cash_bank.currency' | translate }}</span>
+                <span class="text-slate-800 font-black mt-1 block">{{ cash.currency }}</span>
+              </div>
+            </div>
+          </div>
+          <div class="bg-slate-50 p-4 px-6 border-t border-slate-100 flex items-center justify-between">
+            <span class="text-slate-500 font-bold text-[10px] uppercase">{{ 'finance.cash_bank.balance' | translate }}</span>
+            <span class="text-base font-black text-slate-800">${{ cash.balance | number:'1.2-2' }}</span>
+          </div>
+        </div>
+      }
+    </div>
+  }
+
+  @if (activeTab() === 'reconciliation') {
+    <!-- Reconciliations Table -->
+    <div class="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden animate-fade-in">
+      <div class="overflow-x-auto">
+        <table class="w-full text-left rtl:text-right border-collapse text-xs">
+          <thead>
+            <tr class="text-slate-400 font-bold border-b border-slate-100 bg-slate-50/50">
+              <th class="p-4 py-3">{{ 'finance.cash_bank.col_bank_account' | translate }}</th>
+              <th class="p-4 py-3">{{ 'finance.cash_bank.col_period' | translate }}</th>
+              <th class="p-4 py-3">{{ 'finance.cash_bank.col_end_date' | translate }}</th>
+              <th class="p-4 py-3 text-right rtl:text-left">{{ 'finance.cash_bank.col_book_bal' | translate }}</th>
+              <th class="p-4 py-3 text-right rtl:text-left">{{ 'finance.cash_bank.col_statement_bal' | translate }}</th>
+              <th class="p-4 py-3 text-right rtl:text-left">{{ 'finance.cash_bank.col_diff' | translate }}</th>
+              <th class="p-4 py-3 text-center">{{ 'finance.cash_bank.col_status' | translate }}</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-50">
+            @for (rec of reconciliations(); track rec.id) {
+              <tr class="hover:bg-slate-50/50 transition-colors">
+                <td class="p-4 font-bold text-slate-800">{{ getBankAccountName(rec.bankAccountId) }}</td>
+                <td class="p-4 font-semibold text-slate-705">{{ rec.statementPeriod }}</td>
+                <td class="p-4 text-slate-500 font-medium">{{ rec.statementEndDate }}</td>
+                <td class="p-4 text-right rtl:text-left font-black text-slate-700">${{ rec.bookBalance | number:'1.2-2' }}</td>
+                <td class="p-4 text-right rtl:text-left font-black text-slate-705">${{ rec.statementBalance | number:'1.2-2' }}</td>
+                <td class="p-4 text-right rtl:text-left font-black" [class.text-red-650]="rec.difference !== 0" [class.text-slate-400]="rec.difference === 0">
+                  ${{ rec.difference | number:'1.2-2' }}
+                </td>
+                <td class="p-4 text-center">
+                  <span [class]="rec.status === 'Reconciled' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-red-50 text-red-700 border-red-200'" class="px-2.5 py-1 rounded-full font-bold border text-[10px]">
+                    {{ 'finance.cash_bank.status_' + rec.status.toLowerCase() | translate }}
+                  </span>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="7" class="p-8 text-center text-slate-400 font-medium">
+                  {{ 'finance.cash_bank.no_reconciliations' | translate }}
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
+
+  <!-- Modal: New Bank Account -->
+  @if (showBankModal()) {
+    <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
+      <div class="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-md overflow-hidden animate-slide-up">
+        <div class="p-5 border-b border-slate-100 flex items-center justify-between">
+          <h3 class="font-black text-slate-850 text-base">{{ 'finance.cash_bank.modal_new_bank' | translate }}</h3>
+          <button (click)="showBankModal.set(false)" class="text-slate-400 hover:text-slate-600">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <form (submit)="$event.preventDefault(); submitBankAccount()" class="p-5 space-y-4 text-xs">
+          <div>
+            <label class="block text-slate-500 font-semibold mb-1.5">{{ 'finance.cash_bank.field_bank_name' | translate }} *</label>
+            <input 
+              type="text" 
+              [(ngModel)]="bankName" 
+              name="bankName" 
+              required 
+              class="w-full bg-slate-50 border border-slate-250 rounded-lg px-3 py-2 font-bold text-slate-800 focus:outline-none"
+            >
+          </div>
+
+          <div>
+            <label class="block text-slate-500 font-semibold mb-1.5">{{ 'finance.cash_bank.field_acc_no' | translate }} *</label>
+            <input 
+              type="text" 
+              [(ngModel)]="accountNumber" 
+              name="accountNumber" 
+              required 
+              class="w-full bg-slate-50 border border-slate-250 rounded-lg px-3 py-2 font-semibold text-slate-800 focus:outline-none"
+            >
+          </div>
+
+          <div>
+            <label class="block text-slate-500 font-semibold mb-1.5">{{ 'finance.cash_bank.field_iban' | translate }} *</label>
+            <input 
+              type="text" 
+              [(ngModel)]="iban" 
+              name="iban" 
+              required 
+              class="w-full bg-slate-50 border border-slate-250 rounded-lg px-3 py-2 font-semibold text-slate-800 focus:outline-none"
+            >
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-slate-500 font-semibold mb-1.5">{{ 'finance.cash_bank.field_currency' | translate }}</label>
+              <select 
+                [(ngModel)]="bankCurrency" 
+                name="bankCurrency" 
+                class="w-full bg-white border border-slate-250 rounded-lg px-3 py-2 font-semibold text-slate-800 focus:outline-none"
+              >
+                <option value="USD">USD</option>
+                <option value="SAR">SAR</option>
+                <option value="EGP">EGP</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-slate-500 font-semibold mb-1.5">{{ 'finance.cash_bank.field_opening_bal' | translate }}</label>
+              <input 
+                type="number" 
+                [(ngModel)]="bankBalance" 
+                name="bankBalance" 
+                class="w-full bg-white border border-slate-250 rounded-lg px-3 py-2 font-semibold text-slate-800 focus:outline-none"
+              >
+            </div>
+          </div>
+
+          <div class="p-4 bg-slate-50 rounded-xl flex justify-end space-x-3 rtl:space-x-reverse mt-2">
+            <button 
+              type="button" 
+              (click)="showBankModal.set(false)"
+              class="px-4 py-2 border border-slate-200 hover:bg-slate-100 text-slate-650 rounded-lg font-bold"
+            >
+              {{ 'common.cancel' | translate }}
+            </button>
+            <button 
+              type="submit"
+              class="px-4 py-2 bg-indigo-650 hover:bg-indigo-700 text-white rounded-lg font-bold shadow-sm"
+            >
+              {{ 'common.save' | translate }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+
+  <!-- Modal: New Cash Account -->
+  @if (showCashModal()) {
+    <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
+      <div class="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-md overflow-hidden animate-slide-up">
+        <div class="p-5 border-b border-slate-100 flex items-center justify-between">
+          <h3 class="font-black text-slate-850 text-base">{{ 'finance.cash_bank.modal_new_cash' | translate }}</h3>
+          <button (click)="showCashModal.set(false)" class="text-slate-400 hover:text-slate-600">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <form (submit)="$event.preventDefault(); submitCashAccount()" class="p-5 space-y-4 text-xs">
+          <div>
+            <label class="block text-slate-500 font-semibold mb-1.5">{{ 'finance.cash_bank.field_location' | translate }} *</label>
+            <input 
+              type="text" 
+              [(ngModel)]="officeLocation" 
+              name="officeLocation" 
+              required 
+              class="w-full bg-slate-50 border border-slate-250 rounded-lg px-3 py-2 font-bold text-slate-800 focus:outline-none"
+            >
+          </div>
+
+          <div>
+            <label class="block text-slate-500 font-semibold mb-1.5">{{ 'finance.cash_bank.field_custodian' | translate }} *</label>
+            <input 
+              type="text" 
+              [(ngModel)]="custodianName" 
+              name="custodianName" 
+              required 
+              class="w-full bg-slate-50 border border-slate-250 rounded-lg px-3 py-2 font-semibold text-slate-800 focus:outline-none"
+            >
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-slate-500 font-semibold mb-1.5">{{ 'finance.cash_bank.field_currency' | translate }}</label>
+              <select 
+                [(ngModel)]="cashCurrency" 
+                name="cashCurrency" 
+                class="w-full bg-white border border-slate-250 rounded-lg px-3 py-2 font-semibold text-slate-800 focus:outline-none"
+              >
+                <option value="SAR">SAR</option>
+                <option value="USD">USD</option>
+                <option value="EGP">EGP</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-slate-500 font-semibold mb-1.5">{{ 'finance.cash_bank.field_opening_bal' | translate }}</label>
+              <input 
+                type="number" 
+                [(ngModel)]="cashBalance" 
+                name="cashBalance" 
+                class="w-full bg-white border border-slate-250 rounded-lg px-3 py-2 font-semibold text-slate-800 focus:outline-none"
+              >
+            </div>
+          </div>
+
+          <div class="p-4 bg-slate-50 rounded-xl flex justify-end space-x-3 rtl:space-x-reverse mt-2">
+            <button 
+              type="button" 
+              (click)="showCashModal.set(false)"
+              class="px-4 py-2 border border-slate-200 hover:bg-slate-100 text-slate-650 rounded-lg font-bold"
+            >
+              {{ 'common.cancel' | translate }}
+            </button>
+            <button 
+              type="submit"
+              class="px-4 py-2 bg-indigo-650 hover:bg-indigo-700 text-white rounded-lg font-bold shadow-sm"
+            >
+              {{ 'common.save' | translate }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+
+  <!-- Modal: Reconcile Bank Account -->
+  @if (showReconcileModal()) {
+    <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
+      <div class="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-md overflow-hidden animate-slide-up">
+        <div class="p-5 border-b border-slate-100 flex items-center justify-between">
+          <h3 class="font-black text-slate-850 text-base">{{ 'finance.cash_bank.modal_reconcile' | translate }}</h3>
+          <button (click)="showReconcileModal.set(false)" class="text-slate-400 hover:text-slate-600">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <form (submit)="$event.preventDefault(); submitReconciliation()" class="p-5 space-y-4 text-xs">
+          <div>
+            <label class="block text-slate-500 font-semibold mb-1.5">{{ 'finance.cash_bank.field_bank_account' | translate }} *</label>
+            <select 
+              [(ngModel)]="reconcileBankAccountId" 
+              name="reconcileBankAccountId" 
+              required
+              class="w-full bg-white border border-slate-250 rounded-lg px-3 py-2 font-semibold text-slate-800 focus:outline-none"
+            >
+              @for (b of bankAccounts(); track b.id) {
+                <option [value]="b.id">{{ b.bankName }} (Bal: ${{ b.balance | number:'1.2-2' }})</option>
+              }
+            </select>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-slate-500 font-semibold mb-1.5">{{ 'finance.cash_bank.field_period' | translate }} *</label>
+              <input 
+                type="text" 
+                [(ngModel)]="statementPeriod" 
+                name="statementPeriod" 
+                required 
+                placeholder="e.g. June 2026"
+                class="w-full bg-slate-50 border border-slate-250 rounded-lg px-3 py-2 font-semibold text-slate-800 focus:outline-none"
+              >
+            </div>
+            <div>
+              <label class="block text-slate-500 font-semibold mb-1.5">{{ 'finance.cash_bank.field_end_date' | translate }}</label>
+              <input 
+                type="date" 
+                [(ngModel)]="statementEndDate" 
+                name="statementEndDate" 
+                class="w-full bg-white border border-slate-250 rounded-lg px-3 py-2 font-semibold text-slate-805 focus:outline-none"
+              >
+            </div>
+          </div>
+
+          <div class="border-t border-slate-150 pt-3 space-y-2.5">
+            <div class="flex justify-between font-semibold text-slate-600">
+              <span>{{ 'finance.cash_bank.current_book_bal' | translate }}</span>
+              <span class="font-bold text-slate-850">${{ currentBookBalance() | number:'1.2-2' }}</span>
+            </div>
+
+            <div>
+              <label class="block text-slate-500 font-semibold mb-1.5">{{ 'finance.cash_bank.field_statement_bal' | translate }} *</label>
+              <input 
+                type="number" 
+                [(ngModel)]="statementBalance" 
+                name="statementBalance" 
+                required
+                class="w-full bg-white border border-slate-250 rounded-lg px-3 py-2 font-black text-slate-800 focus:outline-none"
+              >
+            </div>
+
+            <div class="flex justify-between font-black border-t border-slate-150 pt-2 text-slate-850">
+              <span>{{ 'finance.cash_bank.reconciliation_diff' | translate }}</span>
+              <span [class.text-red-600]="reconciliationDifference() !== 0" [class.text-emerald-600]="reconciliationDifference() === 0">
+                ${{ reconciliationDifference() | number:'1.2-2' }}
+              </span>
+            </div>
+          </div>
+
+          <div class="p-4 bg-slate-50 rounded-xl flex justify-end space-x-3 rtl:space-x-reverse mt-2">
+            <button 
+              type="button" 
+              (click)="showReconcileModal.set(false)"
+              class="px-4 py-2 border border-slate-200 hover:bg-slate-100 text-slate-650 rounded-lg font-bold"
+            >
+              {{ 'common.cancel' | translate }}
+            </button>
+            <button 
+              type="submit"
+              class="px-4 py-2 bg-emerald-655 hover:bg-emerald-700 text-white rounded-lg font-bold shadow-sm"
+            >
+              {{ 'finance.cash_bank.btn_post_reconcile' | translate }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+
+</div>

@@ -352,6 +352,60 @@
               >
                 {{ 'navigation.purchase_orders' | translate }}
               </a>
+              <a 
+                routerLink="/procurement/inspection" 
+                routerLinkActive="text-accent font-semibold"
+                class="block py-1 text-xs text-slate-400 hover:text-white transition-colors"
+              >
+                {{ 'navigation.receiving_inspection' | translate }}
+              </a>
+            </div>
+
+          }
+        </div>
+
+        <!-- Masters Group (collapsible) -->
+        <div *appRole="['Super Admin', 'General Manager', 'Procurement Manager', 'Store Keeper']" class="space-y-1 animate-fade-in">
+          <button 
+            (click)="toggleMastersMenu()"
+            class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-slate-800 hover:text-white transition-all group"
+          >
+            <div class="flex items-center space-x-3">
+              <svg class="w-5 h-5 shrink-0 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+              </svg>
+              <span class="transition-all duration-300" [class.opacity-0]="isSidebarCollapsed()" [class.w-0]="isSidebarCollapsed()" [class.hidden]="isSidebarCollapsed()">
+                {{ 'navigation.masters' | translate }}
+              </span>
+            </div>
+            @if (!isSidebarCollapsed()) {
+              <svg 
+                [class.rotate-180]="isMastersOpen()"
+                class="w-4 h-4 transition-transform duration-200" 
+                fill="none" stroke="currentColor" viewBox="0 0 24 24"
+              >
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            }
+          </button>
+
+          <!-- Submenu links -->
+          @if (isMastersOpen() && !isSidebarCollapsed()) {
+            <div class="pl-9 space-y-1.5 transition-all duration-300">
+              <a 
+                routerLink="/masters/items" 
+                routerLinkActive="text-accent font-semibold"
+                class="block py-1 text-xs text-slate-400 hover:text-white transition-colors"
+              >
+                {{ 'navigation.item_master' | translate }}
+              </a>
+              <a 
+                routerLink="/masters/warehouses" 
+                routerLinkActive="text-accent font-semibold"
+                class="block py-1 text-xs text-slate-400 hover:text-white transition-colors"
+              >
+                {{ 'navigation.warehouse_structure' | translate }}
+              </a>
             </div>
           }
         </div>
@@ -455,6 +509,27 @@
                 {{ 'navigation.equipment_registry' | translate }}
               </a>
               <a 
+                routerLink="/operations/camps" 
+                routerLinkActive="text-accent font-semibold"
+                class="block py-1 text-xs text-slate-400 hover:text-white transition-colors"
+              >
+                {{ 'navigation.camps' | translate }}
+              </a>
+              <a 
+                routerLink="/operations/fleet" 
+                routerLinkActive="text-accent font-semibold"
+                class="block py-1 text-xs text-slate-400 hover:text-white transition-colors"
+              >
+                {{ 'navigation.fleet' | translate }}
+              </a>
+              <a
+                routerLink="/operations/fuel"
+                routerLinkActive="text-accent font-semibold"
+                class="block py-1 text-xs text-slate-400 hover:text-white transition-colors"
+              >
+                {{ 'navigation.fuel' | translate }}
+              </a>
+              <a 
                 routerLink="/operations/timesheets" 
                 routerLinkActive="text-accent font-semibold"
                 class="block py-1 text-xs text-slate-400 hover:text-white transition-colors"
@@ -469,7 +544,23 @@
               >
                 {{ 'navigation.maintenance' | translate }}
               </a>
+              <a 
+                routerLink="/assets" 
+                routerLinkActive="text-accent font-semibold"
+                [routerLinkActiveOptions]="{ exact: true }"
+                class="block py-1 text-xs text-slate-400 hover:text-white transition-colors"
+              >
+                {{ 'navigation.asset_register' | translate }}
+              </a>
+              <a 
+                routerLink="/assets/maintenance" 
+                routerLinkActive="text-accent font-semibold"
+                class="block py-1 text-xs text-slate-400 hover:text-white transition-colors"
+              >
+                {{ 'navigation.maintenance_orders' | translate }}
+              </a>
             </div>
+
           }
         </div>
 
@@ -509,29 +600,73 @@
                 {{ 'navigation.cost_centers' | translate }}
               </a>
               <a 
+                routerLink="/finance/chart-of-accounts" 
+                routerLinkActive="text-accent font-semibold"
+                class="block py-1 text-xs text-slate-400 hover:text-white transition-colors"
+              >
+                {{ 'navigation.chart_of_accounts' | translate }}
+              </a>
+              <a 
+                routerLink="/finance/general-ledger" 
+                routerLinkActive="text-accent font-semibold"
+                class="block py-1 text-xs text-slate-400 hover:text-white transition-colors"
+              >
+                {{ 'navigation.general_ledger' | translate }}
+              </a>
+              <a 
+                routerLink="/finance/ap" 
+                routerLinkActive="text-accent font-semibold"
+                class="block py-1 text-xs text-slate-400 hover:text-white transition-colors"
+              >
+                {{ 'navigation.ap_ledger' | translate }}
+              </a>
+              <a 
+                routerLink="/finance/ar" 
+                routerLinkActive="text-accent font-semibold"
+                class="block py-1 text-xs text-slate-400 hover:text-white transition-colors"
+              >
+                {{ 'navigation.ar_ledger' | translate }}
+              </a>
+              <a 
+                routerLink="/finance/cash-bank" 
+                routerLinkActive="text-accent font-semibold"
+                class="block py-1 text-xs text-slate-400 hover:text-white transition-colors"
+              >
+                {{ 'navigation.cash_bank' | translate }}
+              </a>
+              <a 
+                routerLink="/finance/cost-control" 
+                routerLinkActive="text-accent font-semibold"
+                class="block py-1 text-xs text-slate-400 hover:text-white transition-colors"
+              >
+                {{ 'navigation.cost_control' | translate }}
+              </a>
+              <a 
                 routerLink="/workflow/wccs" 
                 routerLinkActive="text-accent font-semibold"
                 class="block py-1 text-xs text-slate-400 hover:text-white transition-colors"
               >
                 {{ 'navigation.wip' | translate }}
               </a>
-              <a 
-                routerLink="/workflow/collections" 
-                routerLinkActive="text-accent font-semibold"
-                class="block py-1 text-xs text-slate-400 hover:text-white transition-colors"
-              >
-                {{ 'navigation.accounts_receivable' | translate }}
-              </a>
-              <a 
-                routerLink="/procurement/purchase-orders" 
-                routerLinkActive="text-accent font-semibold"
-                class="block py-1 text-xs text-slate-400 hover:text-white transition-colors"
-              >
-                {{ 'navigation.accounts_payable' | translate }}
-              </a>
             </div>
+
           }
         </div>
+
+        <!-- HSE Management Link -->
+        <a 
+          *appRole="['Super Admin', 'General Manager', 'Operations Manager']"
+          routerLink="/hse" 
+          routerLinkActive="bg-accent text-primary font-semibold"
+          class="flex items-center space-x-3 px-3 py-2.5 rounded-lg hover:bg-slate-800 hover:text-white transition-all group animate-fade-in"
+        >
+          <svg class="w-5 h-5 shrink-0 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+          </svg>
+          <span class="transition-all duration-300" [class.opacity-0]="isSidebarCollapsed()" [class.w-0]="isSidebarCollapsed()" [class.hidden]="isSidebarCollapsed()">
+            {{ 'navigation.hse' | translate }}
+          </span>
+        </a>
       </div>
 
       <!-- SECTION: ANALYTICS & SYSTEM -->

@@ -33,4 +33,8 @@ export class LanguageService {
       document.body.classList.remove('rtl');
     }
   }
+
+  isArabic(): boolean {
+    return this.currentLang() === 'ar';
+  }
 }

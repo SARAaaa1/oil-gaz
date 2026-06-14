@@ -1,0 +1,237 @@
+<div class="space-y-6">
+
+  <!-- Header -->
+  <div>
+    <h1 class="text-2xl font-black text-slate-800 tracking-tight">{{ 'maintenance.title' | translate }}</h1>
+    <p class="text-xs text-slate-500 font-semibold mt-1">{{ 'maintenance.subtitle' | translate }}</p>
+  </div>
+
+  <!-- Tabs Nav -->
+  <div class="flex border-b border-slate-200 text-xs font-bold space-x-6">
+    <button 
+      (click)="activeTab.set('orders')"
+      [class.border-indigo-600]="activeTab() === 'orders'"
+      [class.text-indigo-600]="activeTab() === 'orders'"
+      [class.border-transparent]="activeTab() !== 'orders'"
+      [class.text-slate-500]="activeTab() !== 'orders'"
+      class="pb-3 border-b-2 transition-all font-black"
+    >
+      {{ 'maintenance.tab_orders' | translate }} ({{ workOrders().length }})
+    </button>
+    <button 
+      (click)="activeTab.set('schedules')"
+      [class.border-indigo-600]="activeTab() === 'schedules'"
+      [class.text-indigo-600]="activeTab() === 'schedules'"
+      [class.border-transparent]="activeTab() !== 'schedules'"
+      [class.text-slate-500]="activeTab() !== 'schedules'"
+      class="pb-3 border-b-2 transition-all font-black"
+    >
+      {{ 'maintenance.tab_schedules' | translate }} ({{ pmSchedules().length }})
+    </button>
+    <button 
+      (click)="activeTab.set('create')"
+      [class.border-indigo-600]="activeTab() === 'create'"
+      [class.text-indigo-600]="activeTab() === 'create'"
+      [class.border-transparent]="activeTab() !== 'create'"
+      [class.text-slate-500]="activeTab() !== 'create'"
+      class="pb-3 border-b-2 transition-all font-black"
+    >
+      {{ 'maintenance.tab_create' | translate }}
+    </button>
+  </div>
+
+  <!-- Tab 1: Work Orders List -->
+  @if (activeTab() === 'orders') {
+    <div class="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden animate-fade-in text-xs font-semibold">
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse">
+          <thead>
+            <tr class="text-slate-400 font-bold border-b border-slate-100 bg-slate-50/20">
+              <th class="p-4 py-3">{{ 'maintenance.col_wo_no' | translate }}</th>
+              <th class="p-4 py-3">{{ 'maintenance.col_asset' | translate }}</th>
+              <th class="p-4 py-3">{{ 'maintenance.col_type' | translate }}</th>
+              <th class="p-4 py-3 text-center">{{ 'maintenance.col_priority' | translate }}</th>
+              <th class="p-4 py-3">{{ 'maintenance.col_desc' | translate }}</th>
+              <th class="p-4 py-3">{{ 'maintenance.col_tech' | translate }}</th>
+              <th class="p-4 py-3 text-center">{{ 'maintenance.col_status' | translate }}</th>
+              <th class="p-4 py-3 text-center">{{ 'maintenance.col_actions' | translate }}</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-50 text-slate-700 font-medium">
+            @for (wo of workOrders(); track wo.id) {
+              <tr class="hover:bg-slate-50/30 transition-colors">
+                <td class="p-4 font-mono font-bold text-slate-900">{{ wo.woNumber }}</td>
+                <td class="p-4">
+                  <div class="font-bold text-slate-900">{{ wo.equipmentName }}</div>
+                  <div class="text-[10px] text-slate-400 font-semibold font-mono">{{ wo.assetNumber }}</div>
+                </td>
+                <td class="p-4 font-bold text-slate-650">{{ wo.type }}</td>
+                <td class="p-4 text-center">
+                  <span 
+                    [class.bg-red-50]="wo.priority === 'Emergency'"
+                    [class.text-red-700]="wo.priority === 'Emergency'"
+                    [class.bg-orange-50]="wo.priority === 'High'"
+                    [class.text-orange-700]="wo.priority === 'High'"
+                    [class.bg-blue-50]="wo.priority === 'Medium'"
+                    [class.text-blue-700]="wo.priority === 'Medium'"
+                    [class.bg-slate-50]="wo.priority === 'Low'"
+                    [class.text-slate-600]="wo.priority === 'Low'"
+                    class="px-2 py-0.5 rounded text-[9px] font-extrabold uppercase tracking-wider"
+                  >
+                    {{ wo.priority }}
+                  </span>
+                </td>
+                <td class="p-4 text-slate-500 max-w-xs truncate">{{ wo.issueDescription }}</td>
+                <td class="p-4 text-slate-650">{{ wo.assignedToTechnician || '-' }}</td>
+                <td class="p-4 text-center">
+                  <span 
+                    [class.bg-slate-100]="wo.status === 'Open'"
+                    [class.text-slate-650]="wo.status === 'Open'"
+                    [class.bg-amber-50]="wo.status === 'In Progress'"
+                    [class.text-amber-700]="wo.status === 'In Progress'"
+                    [class.bg-green-50]="wo.status === 'Completed'"
+                    [class.text-green-700]="wo.status === 'Completed'"
+                    [class.bg-red-50]="wo.status === 'Cancelled'"
+                    [class.text-red-750]="wo.status === 'Cancelled'"
+                    class="px-2.5 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider"
+                  >
+                    {{ wo.status }}
+                  </span>
+                </td>
+                <td class="p-4 text-center space-x-1 rtl:space-x-reverse">
+                  @if (wo.status === 'Open') {
+                    <button 
+                      (click)="updateStatus(wo, 'In Progress')"
+                      class="px-2 py-1 bg-amber-50 text-amber-700 hover:bg-amber-100 rounded text-[10px] font-bold"
+                    >
+                      Start
+                    </button>
+                  } @else if (wo.status === 'In Progress') {
+                    <button 
+                      (click)="updateStatus(wo, 'Completed')"
+                      class="px-2 py-1 bg-green-50 text-green-700 hover:bg-green-100 rounded text-[10px] font-bold"
+                    >
+                      Complete
+                    </button>
+                  } @else {
+                    <span class="text-slate-400 font-bold">-</span>
+                  }
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="8" class="p-8 text-center text-slate-400">
+                  <span class="font-bold">{{ 'maintenance.no_orders' | translate }}</span>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
+
+  <!-- Tab 2: PM Schedules -->
+  @if (activeTab() === 'schedules') {
+    <div class="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden animate-fade-in text-xs font-semibold">
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse">
+          <thead>
+            <tr class="text-slate-400 font-bold border-b border-slate-100 bg-slate-50/20">
+              <th class="p-4 py-3">{{ 'maintenance.col_pm_code' | translate }}</th>
+              <th class="p-4 py-3">{{ 'maintenance.col_asset' | translate }}</th>
+              <th class="p-4 py-3">{{ 'maintenance.col_desc' | translate }}</th>
+              <th class="p-4 py-3 text-center">{{ 'maintenance.col_frequency' | translate }}</th>
+              <th class="p-4 py-3">{{ 'maintenance.col_last_done' | translate }}</th>
+              <th class="p-4 py-3">{{ 'maintenance.col_next_due' | translate }}</th>
+              <th class="p-4 py-3 text-center">{{ 'maintenance.col_status' | translate }}</th>
+              <th class="p-4 py-3 text-center">{{ 'maintenance.col_actions' | translate }}</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-50 text-slate-700 font-medium">
+            @for (pm of pmSchedules(); track pm.id) {
+              <tr class="hover:bg-slate-50/30 transition-colors">
+                <td class="p-4 font-mono font-bold text-indigo-650">{{ pm.pmCode }}</td>
+                <td class="p-4">
+                  <div class="font-bold text-slate-900">{{ pm.equipmentName }}</div>
+                  <div class="text-[10px] text-slate-400 font-semibold font-mono">{{ pm.assetNumber }}</div>
+                </td>
+                <td class="p-4 text-slate-550">{{ pm.taskDescription }}</td>
+                <td class="p-4 text-center font-bold text-slate-650 bg-slate-50/20">{{ pm.frequencyDays }} {{ 'maintenance.days' | translate }}</td>
+                <td class="p-4 font-mono text-slate-500">{{ pm.lastDoneDate || '-' }}</td>
+                <td class="p-4 font-mono text-slate-700 font-bold">{{ pm.nextDueDate }}</td>
+                <td class="p-4 text-center">
+                  <span class="px-2.5 py-0.5 rounded-full bg-green-50 text-green-700 text-[9px] font-extrabold uppercase">{{ pm.status }}</span>
+                </td>
+                <td class="p-4 text-center">
+                  <button 
+                    (click)="triggerPM(pm)"
+                    class="px-2.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-bold"
+                  >
+                    Trigger WO
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
+
+  <!-- Tab 3: Create Breakdown WO -->
+  @if (activeTab() === 'create') {
+    <div class="bg-white p-6 rounded-xl border border-slate-100 shadow-sm max-w-xl animate-fade-in text-xs font-semibold space-y-4">
+      <h3 class="font-bold text-slate-800 text-sm border-b border-slate-100 pb-2">{{ 'maintenance.report_breakdown' | translate }}</h3>
+      
+      <div class="space-y-3">
+        <div>
+          <label class="block text-slate-500 font-bold mb-1">{{ 'maintenance.select_asset' | translate }} *</label>
+          <select [(ngModel)]="selectedAssetId" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-850">
+            @for (eq of equipment(); track eq.id) {
+              <option [value]="eq.id">{{ eq.equipmentName }} ({{ eq.assetNumber }})</option>
+            }
+          </select>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-slate-500 font-bold mb-1">{{ 'maintenance.col_type' | translate }}</label>
+            <select [(ngModel)]="woType" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-850">
+              <option value="Preventive">Preventive PM</option>
+              <option value="Breakdown">Breakdown Maintenance</option>
+              <option value="Calibration">Instrument Calibration</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-slate-500 font-bold mb-1">{{ 'maintenance.col_priority' | translate }}</label>
+            <select [(ngModel)]="woPriority" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-850">
+              <option value="Low">Low</option>
+              <option value="Medium">Medium</option>
+              <option value="High">High</option>
+              <option value="Emergency">Emergency</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-slate-500 font-bold mb-1">{{ 'maintenance.technician' | translate }}</label>
+          <input type="text" [(ngModel)]="assignedTechnician" placeholder="Technician name..." class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-850">
+        </div>
+
+        <div>
+          <label class="block text-slate-500 font-bold mb-1">{{ 'maintenance.issue_description' | translate }} *</label>
+          <textarea [(ngModel)]="woDescription" rows="4" placeholder="Describe mechanical fault or issue details..." class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-850"></textarea>
+        </div>
+
+        <button 
+          (click)="createWorkOrder()"
+          class="w-full py-2 bg-indigo-650 hover:bg-indigo-700 text-white rounded-lg font-bold"
+        >
+          {{ 'maintenance.btn_create_wo' | translate }}
+        </button>
+      </div>
+    </div>
+  }
+
+</div>

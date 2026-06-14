@@ -95,6 +95,12 @@ const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
   'Employee': [
     'view:dashboard',
     'view:timesheets'
+  ],
+  'Safety Officer': [
+    'view:dashboard',
+    'view:rigs',
+    'view:timesheets',
+    'view:reports'
   ]
 };
 
@@ -211,6 +217,20 @@ const MOCK_USERS: Record<string, Omit<User, 'token'>> = {
     preferredLanguage: 'en',
     timezone: 'UTC-6',
     emailNotifications: false
+  },
+  safety: {
+    id: 'u-9',
+    username: 'safety',
+    email: 'safety.officer@petroflow.com',
+    fullName: 'David Miller',
+    role: 'Safety Officer',
+    permissions: ROLE_PERMISSIONS['Safety Officer'],
+    lastLogin: '2026-06-03T09:30:00Z',
+    avatar: 'DM',
+    companyName: 'PetroFlow Global Services',
+    preferredLanguage: 'en',
+    timezone: 'UTC-5',
+    emailNotifications: true
   }
 };
 

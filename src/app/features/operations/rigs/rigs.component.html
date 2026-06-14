@@ -1,5 +1,4 @@
-<div class="space-y-6">
-
+<div class="space-y-6 p-6">
   <!-- Header -->
   <div>
     <h1 class="text-2xl font-black text-slate-800 tracking-tight">{{ 'operations.rigs.title' | translate }}</h1>
@@ -8,7 +7,6 @@
 
   <!-- Rig Status Summary Cards -->
   <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-
     <!-- Total Fleet -->
     <div class="bg-white p-5 rounded-xl border border-slate-100 shadow-sm flex items-center justify-between">
       <div>
@@ -44,7 +42,6 @@
       <div class="p-3 bg-amber-50 rounded-xl text-accent">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
         </svg>
       </div>
     </div>
@@ -55,7 +52,7 @@
         <span class="text-xs font-bold text-slate-400 uppercase tracking-wider block">{{ 'operations.rigs.standby_idle' | translate }}</span>
         <span class="text-2xl font-black text-slate-500">{{ standbyCount() }} {{ 'operations.rigs.status_standby' | translate }}</span>
       </div>
-      <div class="p-3 bg-slate-105 rounded-xl text-slate-550">
+      <div class="p-3 bg-slate-100 rounded-xl text-slate-500">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
@@ -63,86 +60,322 @@
     </div>
   </div>
 
-  <!-- Rigs Table -->
-  <div class="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden animate-fade-in">
-    <div class="p-4 bg-slate-50/50 border-b border-slate-100 flex items-center justify-between text-xs">
-      <div class="relative w-full max-w-sm">
-        <input
-          type="text"
-          [placeholder]="'operations.rigs.search_placeholder' | translate"
-          (input)="searchQuery.set($any($event.target).value)"
-          class="w-full bg-white border border-slate-200 rounded-lg pl-8 pr-3 py-2 text-slate-800 focus:outline-none"
-        >
-        <svg class="w-4 h-4 text-slate-400 absolute left-2.5 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-        </svg>
+  <!-- Main Grid Layout -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- Rigs Table List (Left 2 Columns) -->
+    <div class="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden lg:col-span-2">
+      <div class="p-4 bg-slate-50/50 border-b border-slate-100 flex items-center justify-between text-xs">
+        <div class="relative w-full max-w-sm">
+          <input
+            type="text"
+            [placeholder]="'operations.rigs.search_placeholder' | translate"
+            (input)="searchQuery.set($any($event.target).value)"
+            class="w-full bg-white border border-slate-200 rounded-lg pl-8 pr-3 py-2 text-slate-850 focus:outline-none"
+          >
+          <svg class="w-4 h-4 text-slate-400 absolute left-2.5 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+        </div>
+
+        <div class="flex items-center space-x-2 font-semibold">
+          <span class="text-slate-400">{{ 'operations.rigs.status_label' | translate }}</span>
+          <select
+            (change)="statusFilter.set($any($event.target).value)"
+            class="bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-700 focus:outline-none"
+          >
+            <option value="ALL">{{ 'operations.rigs.all_statuses' | translate }}</option>
+            <option value="Active">{{ 'operations.rigs.status_active' | translate }}</option>
+            <option value="Maintenance">{{ 'operations.rigs.status_maintenance' | translate }}</option>
+            <option value="Standby">{{ 'operations.rigs.status_standby' | translate }}</option>
+          </select>
+        </div>
       </div>
 
-      <div class="flex items-center space-x-2 font-semibold">
-        <span class="text-slate-400">{{ 'operations.rigs.status_label' | translate }}</span>
-        <select
-          (change)="statusFilter.set($any($event.target).value)"
-          class="bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-700 focus:outline-none"
-        >
-          <option value="ALL">{{ 'operations.rigs.all_statuses' | translate }}</option>
-          <option value="Active">{{ 'operations.rigs.status_active' | translate }}</option>
-          <option value="Maintenance">{{ 'operations.rigs.status_maintenance' | translate }}</option>
-          <option value="Standby">{{ 'operations.rigs.status_standby' | translate }}</option>
-        </select>
+      <!-- Table -->
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse text-xs">
+          <thead>
+            <tr class="text-slate-400 font-bold border-b border-slate-100 bg-slate-50/20">
+              <th class="p-4 py-3">{{ 'operations.rigs.col_identifier' | translate }}</th>
+              <th class="p-4 py-3">Assigned Region</th>
+              <th class="p-4 py-3 text-right">Drilled Depth</th>
+              <th class="p-4 py-3 text-center">Crew Count</th>
+              <th class="p-4 py-3">Manager</th>
+              <th class="p-4 py-3 text-center">Status</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-55 font-medium text-slate-700">
+            @for (rig of filteredRigs(); track rig.id) {
+              <tr 
+                (click)="selectRig(rig)" 
+                class="hover:bg-slate-50/50 transition-colors cursor-pointer"
+                [class.bg-indigo-50]="selectedRig()?.id === rig.id"
+              >
+                <td class="p-4 font-bold text-slate-900">{{ rig.rigName }}</td>
+                <td class="p-4 text-slate-500">{{ rig.location }}</td>
+                <td class="p-4 text-right font-mono font-bold text-slate-800">
+                  @if (rig.drillDepthFt > 0) {
+                    {{ rig.drillDepthFt | number }} ft
+                  } @else {
+                    <span class="text-slate-350">-</span>
+                  }
+                </td>
+                <td class="p-4 text-center font-mono font-bold text-slate-750">{{ rig.crewCount }}</td>
+                <td class="p-4 text-slate-700 font-bold">{{ rig.managerName }}</td>
+                <td class="p-4 text-center">
+                  <span
+                    class="px-2.5 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider"
+                    [class.bg-green-50]="rig.status === 'Active'"
+                    [class.text-success]="rig.status === 'Active'"
+                    [class.bg-amber-50]="rig.status === 'Maintenance'"
+                    [class.text-accent]="rig.status === 'Maintenance'"
+                    [class.bg-slate-100]="rig.status === 'Standby'"
+                    [class.text-slate-500]="rig.status === 'Standby'"
+                  >
+                    {{ rig.status }}
+                  </span>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="6" class="p-8 text-center text-slate-400">
+                  <span class="font-bold">{{ 'operations.rigs.no_records' | translate }}</span>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
       </div>
     </div>
 
-    <!-- Table -->
-    <div class="overflow-x-auto">
-      <table class="w-full text-left border-collapse text-xs">
-        <thead>
-          <tr class="text-slate-400 font-bold border-b border-slate-100 bg-slate-50/20">
-            <th class="p-4 py-3">{{ 'operations.rigs.col_identifier' | translate }}</th>
-            <th class="p-4 py-3">{{ 'operations.rigs.col_location' | translate }}</th>
-            <th class="p-4 py-3 text-right">{{ 'operations.rigs.col_depth' | translate }}</th>
-            <th class="p-4 py-3 text-center">{{ 'operations.rigs.col_crew' | translate }}</th>
-            <th class="p-4 py-3">{{ 'operations.rigs.col_manager' | translate }}</th>
-            <th class="p-4 py-3 text-center">{{ 'operations.rigs.col_status' | translate }}</th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-slate-50 font-medium text-slate-700">
-          @for (rig of filteredRigs(); track rig.id) {
-            <tr class="hover:bg-slate-50/50 transition-colors">
-              <td class="p-4 font-bold text-slate-900">{{ rig.rigName }}</td>
-              <td class="p-4 text-slate-650">{{ rig.location }}</td>
-              <td class="p-4 text-right font-mono font-bold text-slate-800">
-                @if (rig.drillDepthFt > 0) {
-                  {{ rig.drillDepthFt | number }} {{ 'operations.rigs.ft' | translate }}
-                } @else {
-                  <span class="text-slate-350">-</span>
-                }
-              </td>
-              <td class="p-4 text-center font-mono font-bold text-slate-750">{{ rig.crewCount }}</td>
-              <td class="p-4 text-slate-700 font-bold">{{ rig.managerName }}</td>
-              <td class="p-4 text-center">
-                <span
-                  class="px-2.5 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider"
-                  [class.bg-green-50]="rig.status === 'Active'"
-                  [class.text-success]="rig.status === 'Active'"
-                  [class.bg-amber-50]="rig.status === 'Maintenance'"
-                  [class.text-accent]="rig.status === 'Maintenance'"
-                  [class.bg-slate-100]="rig.status === 'Standby'"
-                  [class.text-slate-555]="rig.status === 'Standby'"
-                >
-                  {{ 'operations.rigs.status_' + rig.status.toLowerCase() | translate }}
-                </span>
-              </td>
-            </tr>
-          } @empty {
-            <tr>
-              <td colspan="6" class="p-8 text-center text-slate-400">
-                <span class="font-bold">{{ 'operations.rigs.no_records' | translate }}</span>
-              </td>
-            </tr>
+    <!-- Rig Sub-Modules Detailed Panel (Right 1 Column) -->
+    <div class="space-y-6">
+      @if (selectedRig()) {
+        <div class="bg-white p-5 rounded-xl border border-slate-100 shadow-sm space-y-4 animate-fade-in text-xs font-semibold text-slate-700">
+          <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div>
+              <h3 class="text-sm font-bold text-slate-850">{{ selectedRig()?.rigName }}</h3>
+              <p class="text-[10px] text-slate-400">Manager: {{ selectedRig()?.managerName }} • Region: {{ selectedRig()?.location }}</p>
+            </div>
+            <button (click)="closeRigDetails()" class="text-slate-400 hover:text-slate-650">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+          </div>
+
+          <!-- Quick Action Buttons -->
+          <div class="flex items-center gap-2">
+            @if (selectedRig()?.status !== 'Active') {
+              <button (click)="deployRig()" class="flex-1 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all shadow-sm">
+                Deploy Rig
+              </button>
+            }
+            @if (selectedRig()?.status !== 'Maintenance') {
+              <button (click)="decommissionRig()" class="flex-1 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all shadow-sm">
+                Decommission
+              </button>
+            }
+          </div>
+
+          <!-- Detailed Panel Sub-Tabs -->
+          <div class="border-b border-slate-200">
+            <nav class="flex space-x-4 text-[10px] font-bold uppercase tracking-wider">
+              <button 
+                (click)="detailsTab.set('assets')" 
+                class="pb-2 border-b-2 transition-all px-1"
+                [class.border-indigo-600]="detailsTab() === 'assets'"
+                [class.text-indigo-600]="detailsTab() === 'assets'"
+                [class.border-transparent]="detailsTab() !== 'assets'"
+                [class.text-slate-400]="detailsTab() !== 'assets'"
+              >
+                Assets
+              </button>
+              <button 
+                (click)="detailsTab.set('components')" 
+                class="pb-2 border-b-2 transition-all px-1"
+                [class.border-indigo-600]="detailsTab() === 'components'"
+                [class.text-indigo-600]="detailsTab() === 'components'"
+                [class.border-transparent]="detailsTab() !== 'components'"
+                [class.text-slate-400]="detailsTab() !== 'components'"
+              >
+                Systems
+              </button>
+              <button 
+                (click)="detailsTab.set('inventory')" 
+                class="pb-2 border-b-2 transition-all px-1"
+                [class.border-indigo-600]="detailsTab() === 'inventory'"
+                [class.text-indigo-600]="detailsTab() === 'inventory'"
+                [class.border-transparent]="detailsTab() !== 'inventory'"
+                [class.text-slate-400]="detailsTab() !== 'inventory'"
+              >
+                Stock
+              </button>
+              <button 
+                (click)="detailsTab.set('readiness')" 
+                class="pb-2 border-b-2 transition-all px-1"
+                [class.border-indigo-600]="detailsTab() === 'readiness'"
+                [class.text-indigo-600]="detailsTab() === 'readiness'"
+                [class.border-transparent]="detailsTab() !== 'readiness'"
+                [class.text-slate-400]="detailsTab() !== 'readiness'"
+              >
+                Readiness
+              </button>
+            </nav>
+          </div>
+
+          <!-- SUB-TAB CONTENT -->
+          
+          <!-- 1. RIG ASSETS TAB -->
+          @if (detailsTab() === 'assets') {
+            <div class="space-y-2 max-h-80 overflow-y-auto pr-1">
+              @for (eq of rigAssets(); track eq.id) {
+                <div class="p-3 bg-slate-50 rounded-lg border border-slate-100 text-xs flex flex-col gap-1">
+                  <div class="flex items-center justify-between font-bold text-slate-800">
+                    <span>{{ eq.equipmentName }}</span>
+                    <span 
+                      class="px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase tracking-wide"
+                      [class.bg-green-100]="eq.status === 'Active'"
+                      [class.text-green-700]="eq.status === 'Active'"
+                      [class.bg-slate-100]="eq.status === 'Standby'"
+                      [class.text-slate-700]="eq.status === 'Standby'"
+                      [class.bg-amber-100]="eq.status === 'Maintenance'"
+                      [class.text-amber-700]="eq.status === 'Maintenance'"
+                      [class.bg-red-100]="eq.status === 'Out Of Service'"
+                      [class.text-red-700]="eq.status === 'Out Of Service'"
+                    >
+                      {{ eq.status }}
+                    </span>
+                  </div>
+                  <p class="text-slate-400 font-mono text-[9px]">{{ eq.equipmentCode }} • Serial: {{ eq.serialNumber }}</p>
+                  <div class="flex items-center justify-between text-[10px] text-slate-500 mt-1">
+                    <span>Hours Logged: {{ eq.operatingHours | number }} hrs</span>
+                    <span>Cost Center: {{ eq.costCenter }}</span>
+                  </div>
+                </div>
+              } @empty {
+                <p class="text-xs text-slate-400 italic">No heavy drilling equipment assigned to this rig.</p>
+              }
+            </div>
           }
-        </tbody>
-      </table>
+
+          <!-- 2. RIG COMPONENTS / SYSTEMS TAB -->
+          @if (detailsTab() === 'components') {
+            <div class="space-y-2 max-h-80 overflow-y-auto pr-1">
+              @for (comp of rigComponents(); track comp.serial) {
+                <div class="p-3 bg-slate-50 rounded-lg border border-slate-100 text-xs flex flex-col gap-1">
+                  <div class="flex items-center justify-between font-bold text-slate-800">
+                    <span>{{ comp.name }}</span>
+                    <span 
+                      class="px-1.5 py-0.2 rounded text-[9px] font-extrabold uppercase"
+                      [class.bg-emerald-100]="comp.status === 'Operational'"
+                      [class.text-emerald-700]="comp.status === 'Operational'"
+                      [class.bg-amber-100]="comp.status !== 'Operational'"
+                      [class.text-amber-700]="comp.status !== 'Operational'"
+                    >
+                      {{ comp.status }}
+                    </span>
+                  </div>
+                  <div class="flex items-center justify-between text-[9px] text-slate-400">
+                    <span>Serial: {{ comp.serial }}</span>
+                    <span>Last Certified: {{ comp.certificationDate }}</span>
+                  </div>
+                </div>
+              }
+            </div>
+          }
+
+          <!-- 3. RIG INVENTORY STOCK TAB -->
+          @if (detailsTab() === 'inventory') {
+            <div class="space-y-2 max-h-80 overflow-y-auto pr-1">
+              @for (item of rigInventory(); track item.id) {
+                <div class="p-3 bg-slate-50 rounded-lg border border-slate-100 text-xs flex items-center justify-between">
+                  <div>
+                    <p class="font-bold text-slate-800">{{ item.itemName }}</p>
+                    <span class="font-mono text-[9px] text-slate-400">{{ item.itemCode }}</span>
+                  </div>
+                  <div class="text-right">
+                    <p class="font-bold font-mono text-slate-800">{{ item.quantity }} {{ item.uom }}</p>
+                    <span 
+                      class="text-[9px] font-bold uppercase"
+                      [class.text-green-600]="item.status === 'In Stock'"
+                      [class.text-amber-600]="item.status === 'Low Stock'"
+                      [class.text-red-600]="item.status === 'Out of Stock'"
+                    >
+                      {{ item.status }}
+                    </span>
+                  </div>
+                </div>
+              } @empty {
+                <p class="text-xs text-slate-400 italic">No active inventory stocks mapped to this rig's supply warehouse.</p>
+              }
+            </div>
+          }
+
+          <!-- 4. RIG SAFETY & MAINTENANCE READINESS AUDIT -->
+          @if (detailsTab() === 'readiness') {
+            <div class="space-y-4">
+              <div class="flex items-center justify-between p-3 bg-indigo-50/50 rounded-lg border border-indigo-100 text-xs">
+                <span class="font-bold text-indigo-900">Current Safety Readiness:</span>
+                <span class="font-mono font-black text-indigo-750 text-sm">{{ readinessPercentage() }}%</span>
+              </div>
+
+              <!-- Checklist Switches -->
+              <div class="space-y-2">
+                <div class="flex items-center justify-between p-2 hover:bg-slate-50 rounded transition-colors text-xs">
+                  <div>
+                    <p class="font-bold text-slate-850">BOP Certified & Sealed</p>
+                    <p class="text-[10px] text-slate-400 font-medium">Verify current shear-ram validation</p>
+                  </div>
+                  <input type="checkbox" [checked]="readinessChecklist().bopCertified" (change)="toggleCheck('bopCertified')" class="w-4 h-4 text-indigo-650 border-slate-300 rounded focus:ring-indigo-500">
+                </div>
+                
+                <div class="flex items-center justify-between p-2 hover:bg-slate-50 rounded transition-colors text-xs">
+                  <div>
+                    <p class="font-bold text-slate-850">Top Drive Seal & Oil Levels</p>
+                    <p class="text-[10px] text-slate-400 font-medium">Overhaul checks completed YTD</p>
+                  </div>
+                  <input type="checkbox" [checked]="readinessChecklist().topDriveChecked" (change)="toggleCheck('topDriveChecked')" class="w-4 h-4 text-indigo-650 border-slate-300 rounded focus:ring-indigo-500">
+                </div>
+
+                <div class="flex items-center justify-between p-2 hover:bg-slate-50 rounded transition-colors text-xs">
+                  <div>
+                    <p class="font-bold text-slate-850">Mud Pumps Calibration</p>
+                    <p class="text-[10px] text-slate-400 font-medium">Verify liner wear tolerances</p>
+                  </div>
+                  <input type="checkbox" [checked]="readinessChecklist().mudPumpsTested" (change)="toggleCheck('mudPumpsTested')" class="w-4 h-4 text-indigo-650 border-slate-300 rounded focus:ring-indigo-500">
+                </div>
+
+                <div class="flex items-center justify-between p-2 hover:bg-slate-50 rounded transition-colors text-xs">
+                  <div>
+                    <p class="font-bold text-slate-850">Drawworks Lubrication & Brake</p>
+                    <p class="text-[10px] text-slate-400 font-medium">Automatic block control test ok</p>
+                  </div>
+                  <input type="checkbox" [checked]="readinessChecklist().drawworksLubricated" (change)="toggleCheck('drawworksLubricated')" class="w-4 h-4 text-indigo-650 border-slate-300 rounded focus:ring-indigo-500">
+                </div>
+
+                <div class="flex items-center justify-between p-2 hover:bg-slate-50 rounded transition-colors text-xs">
+                  <div>
+                    <p class="font-bold text-slate-850">HSE Safety Gear Stocked</p>
+                    <p class="text-[10px] text-slate-400 font-medium">Gas detectors, masks, and harnesses</p>
+                  </div>
+                  <input type="checkbox" [checked]="readinessChecklist().safetyGearVerified" (change)="toggleCheck('safetyGearVerified')" class="w-4 h-4 text-indigo-650 border-slate-300 rounded focus:ring-indigo-500">
+                </div>
+              </div>
+
+              <!-- Submit audit button -->
+              <button (click)="submitSafetyAudit()" class="w-full py-2 bg-slate-900 text-white rounded-lg font-bold text-xs hover:bg-slate-800 transition-colors shadow-sm">
+                Log Safety Review Audit
+              </button>
+            </div>
+          }
+        </div>
+      } @else {
+        <div class="bg-slate-50 p-6 rounded-xl border border-dashed border-slate-250 text-center text-slate-400">
+          <svg class="w-8 h-8 mx-auto mb-2 text-slate-350" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+          </svg>
+          <p class="text-xs font-bold">Select a Rig to view assigned assets, components, stock, and checklist readiness.</p>
+        </div>
+      }
     </div>
   </div>
-
 </div>

@@ -10,6 +10,8 @@ import {
 } from '../../shared/interfaces/project.interface';
 import { AuditService } from './audit.service';
 import { AuthService } from './auth.service';
+import { ExchangeRateService } from './exchange-rate.service';
+import { FinanceCoreService } from './finance-core.service';
 
 @Injectable({
   providedIn: 'root'
@@ -34,6 +36,10 @@ export class WorkflowService {
 
   private get auditService(): AuditService {
     return this.injector.get(AuditService);
+  }
+
+  private get exchangeRateService(): ExchangeRateService {
+    return this.injector.get(ExchangeRateService);
   }
 
   constructor() {
@@ -1267,6 +1273,59 @@ export class WorkflowService {
     this.collections.update(val => [...val, newCol]);
     this.saveState();
 
+    // Trigger double entry posting in General Ledger
+    try {
+      const financeCore = this.injector.get(FinanceCoreService);
+      financeCore.postJournalEntry({
+        date: new Date().toISOString().split('T')[0],
+        reference: old.invoiceNumber,
+        description: `Revenue recognized for Invoice ${old.invoiceNumber} (Client: ${old.clientName})`,
+        lines: [
+          {
+            id: `jel_ar_${Math.random().toString(36).substr(2, 9)}`,
+            accountCode: '121000',
+            accountName: 'Accounts Receivable (A/R)',
+            debit: old.netPayable,
+            credit: 0,
+            projectCode: old.wccNumber !== 'N/A' ? old.wccNumber : undefined,
+            costCenterCode: old.costCenterCode
+          },
+          ...(old.retentionAmount > 0 ? [{
+            id: `jel_ret_${Math.random().toString(36).substr(2, 9)}`,
+            accountCode: '122000',
+            accountName: 'Retentions Receivable',
+            debit: old.retentionAmount,
+            credit: 0,
+            costCenterCode: old.costCenterCode
+          }] : []),
+          ...(old.withholdingTaxAmount > 0 ? [{
+            id: `jel_wht_${Math.random().toString(36).substr(2, 9)}`,
+            accountCode: '213000',
+            accountName: 'Withholding Tax Payable',
+            debit: old.withholdingTaxAmount,
+            credit: 0,
+            costCenterCode: old.costCenterCode
+          }] : []),
+          {
+            id: `jel_rev_${Math.random().toString(36).substr(2, 9)}`,
+            accountCode: '410000',
+            accountName: 'Drilling Services Revenue',
+            debit: 0,
+            credit: old.subtotal
+          },
+          ...(old.vatAmount > 0 ? [{
+            id: `jel_vat_${Math.random().toString(36).substr(2, 9)}`,
+            accountCode: '214000',
+            accountName: 'VAT Payable',
+            debit: 0,
+            credit: old.vatAmount
+          }] : [])
+        ]
+      });
+    } catch (err) {
+      console.error('Failed to post automatic journal entry for invoice send:', err);
+    }
+
     const user = this.authService.currentUser();
     this.auditService.log({
       user: user?.fullName || 'System',
@@ -1341,6 +1400,34 @@ export class WorkflowService {
     );
 
     this.saveState();
+
+    // Trigger Journal Entry for payment collection receipt
+    try {
+      const financeCore = this.injector.get(FinanceCoreService);
+      financeCore.postJournalEntry({
+        date: payment.date || new Date().toISOString().split('T')[0],
+        reference: payment.reference || col.collectionNumber,
+        description: `Payment received for Invoice ${col.invoiceNumber} (Ref: ${payment.reference || col.collectionNumber})`,
+        lines: [
+          {
+            id: `jel_bank_${Math.random().toString(36).substr(2, 9)}`,
+            accountCode: '111000',
+            accountName: 'Cash at Bank (USD)',
+            debit: payment.amount,
+            credit: 0
+          },
+          {
+            id: `jel_ar_${Math.random().toString(36).substr(2, 9)}`,
+            accountCode: '121000',
+            accountName: 'Accounts Receivable (A/R)',
+            debit: 0,
+            credit: payment.amount
+          }
+        ]
+      });
+    } catch (err) {
+      console.error('Failed to post automatic journal entry for collection payment:', err);
+    }
 
     const user = this.authService.currentUser();
     this.auditService.log({
@@ -1575,6 +1662,37 @@ export class WorkflowService {
     }
 
     this.saveState();
+
+    // Trigger double entry for material consumption
+    try {
+      const financeCore = this.injector.get(FinanceCoreService);
+      financeCore.postJournalEntry({
+        date: consumption.issueDate || new Date().toISOString().split('T')[0],
+        reference: `MIV-${id}`,
+        description: `Material issued to project ${consumption.projectCode} - ${consumption.materialName}`,
+        lines: [
+          {
+            id: `jel_matex_${Math.random().toString(36).substr(2, 9)}`,
+            accountCode: '511000',
+            accountName: 'Project Material Consumed',
+            debit: cost,
+            credit: 0,
+            projectCode: consumption.projectCode,
+            costCenterCode: consumption.costCenterCode
+          },
+          {
+            id: `jel_matst_${Math.random().toString(36).substr(2, 9)}`,
+            accountCode: '131000',
+            accountName: 'Material Warehouse Stock',
+            debit: 0,
+            credit: cost
+          }
+        ]
+      });
+    } catch (err) {
+      console.error('Failed to post automatic journal entry for material consumption:', err);
+    }
+
     const user = this.authService.currentUser();
     this.auditService.log({
       user: user?.fullName || 'System',
@@ -1593,7 +1711,80 @@ export class WorkflowService {
   // --- EQUIPMENT TRANSFER MUTATORS ---
   createEquipmentTransfer(transfer: EquipmentTransfer) {
     this.equipmentTransfers.update(list => [...list, transfer]);
+
+    // Automatically generate invoice for the equipment transfer first
+    const proj = this.projects().find(p => p.code === transfer.projectCode);
+    const contractId = proj ? proj.contractId : 'con1';
+    const contractNumber = proj ? proj.contractNumber : 'CON-2026-001';
+    const clientName = proj ? proj.customer : 'Chevron Energy Corp';
+    
+    const contract = this.contracts().find(c => c.id === contractId);
+    const clientContact = (contract && contract.clientContact) ? contract.clientContact : 'David Sterling';
+    const paymentTerms = (contract && contract.paymentTerms) ? contract.paymentTerms : 'Net 30';
+
+    const today = new Date().toISOString().split('T')[0];
+    const days = paymentTerms.toLowerCase().includes('45') ? 45 :
+                 paymentTerms.toLowerCase().includes('15') ? 15 : 30;
+    const issue = new Date(today);
+    issue.setDate(issue.getDate() + days);
+    const dueDate = issue.toISOString().split('T')[0];
+
+    const subtotal = transfer.transportationCost || 800;
+    const vatPercent = 15;
+    const retentionPercent = (contract && contract.retentionPercent !== undefined) ? contract.retentionPercent : 10;
+    const withholdingTaxPercent = 2;
+
+    const vatAmount = Math.round(subtotal * (vatPercent / 100));
+    const retentionAmount = Math.round(subtotal * (retentionPercent / 100));
+    const withholdingTaxAmount = Math.round(subtotal * (withholdingTaxPercent / 100));
+    const totalAmount = subtotal + vatAmount;
+    const netPayable = subtotal + vatAmount - retentionAmount - withholdingTaxAmount;
+
+    // Get current exchange rate snapshot
+    const fxRate = this.exchangeRateService.snapshot()?.rate ?? 49.50;
+    const netPayableEGP = parseFloat((netPayable * fxRate).toFixed(2));
+
+    const newInv: Invoice = {
+      id: `inv_trf_${transfer.transferNumber}`,
+      invoiceNumber: `INV-TRF-${transfer.transferNumber}`,
+      contractId,
+      contractNumber,
+      wccId: 'N/A',
+      wccNumber: `TRF-REF-${transfer.transferNumber}`,
+      clientName,
+      clientContact,
+      issueDate: today,
+      dueDate,
+      status: 'Draft',
+      subtotal,
+      vatPercent,
+      vatAmount,
+      retentionPercent,
+      retentionAmount,
+      withholdingTaxPercent,
+      withholdingTaxAmount,
+      totalAmount,
+      netPayable,
+      currency: 'USD',
+      paidAmount: 0,
+      balanceDue: netPayable,
+      paymentTerms,
+      approvalWorkflow: [
+        { role: 'Finance Manager', approverName: '', status: 'Pending' }
+      ],
+      createdDate: today,
+      notes: `Automatic mobilization invoice for Equipment: ${transfer.equipmentName} (${transfer.fromLocation} -> ${transfer.toLocation}). Reason: ${transfer.reason}`,
+      isEquipmentTransfer: true,
+      equipmentTransferNumber: transfer.transferNumber,
+      equipmentName: transfer.equipmentName,
+      costCenterCode: transfer.costCenterCode || proj?.costCenterCode || 'CC-OPS-01',
+      netPayableEGP,
+      exchangeRateUSDtoEGP: fxRate
+    };
+
+    this.invoices.update(list => [...list, newInv]);
     this.saveState();
+
     const user = this.authService.currentUser();
     this.auditService.log({
       user: user?.fullName || 'System',
@@ -1604,7 +1795,7 @@ export class WorkflowService {
       action: 'Create',
       oldValue: '',
       newValue: JSON.stringify(transfer),
-      details: `Initiated transfer of "${transfer.equipmentName}" from ${transfer.fromLocation} to ${transfer.toLocation}.`
+      details: `Initiated transfer of "${transfer.equipmentName}" from ${transfer.fromLocation} to ${transfer.toLocation}. Auto-generated Invoice ${newInv.invoiceNumber}.`
     });
   }
 
@@ -1648,6 +1839,37 @@ export class WorkflowService {
     }
 
     this.saveState();
+
+    // Trigger double entry for labor expense recognition
+    try {
+      const financeCore = this.injector.get(FinanceCoreService);
+      financeCore.postJournalEntry({
+        date: labor.date || new Date().toISOString().split('T')[0],
+        reference: `LAB-${id}`,
+        description: `Labor cost logged for ${labor.employeeName} (${labor.role}) on project ${labor.projectCode}`,
+        lines: [
+          {
+            id: `jel_labex_${Math.random().toString(36).substr(2, 9)}`,
+            accountCode: '512000',
+            accountName: 'Project Labor Cost',
+            debit: totalCost,
+            credit: 0,
+            projectCode: labor.projectCode,
+            costCenterCode: project?.costCenterCode
+          },
+          {
+            id: `jel_salap_${Math.random().toString(36).substr(2, 9)}`,
+            accountCode: '212000',
+            accountName: 'Accrued Salaries & Payroll',
+            debit: 0,
+            credit: totalCost
+          }
+        ]
+      });
+    } catch (err) {
+      console.error('Failed to post automatic journal entry for labor record:', err);
+    }
+
     const user = this.authService.currentUser();
     this.auditService.log({
       user: user?.fullName || 'System',

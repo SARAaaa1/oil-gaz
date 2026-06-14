@@ -8,11 +8,12 @@ import { BreadcrumbService } from '../../../core/services/breadcrumb.service';
 import { NotificationService } from '../../../core/services/notification.service';
 import { PurchaseRequest, PurchaseRequestItem } from '../../../shared/interfaces/purchase-request.interface';
 import { AuditService } from '../../../core/services/audit.service';
+import { ApprovalHistoryComponent } from '../../../shared/components/approval-history/approval-history.component';
 
 @Component({
   selector: 'app-purchase-requests',
   standalone: true,
-  imports: [CommonModule, FormsModule, TranslateModule],
+  imports: [CommonModule, FormsModule, TranslateModule, ApprovalHistoryComponent],
   templateUrl: './purchase-requests.component.html',
   styles: [],
   changeDetection: ChangeDetectionStrategy.OnPush

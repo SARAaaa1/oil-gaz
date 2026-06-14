@@ -1,0 +1,920 @@
+<div class="space-y-6">
+
+  <!-- Header -->
+  <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-black text-slate-800 tracking-tight">{{ 'hse.title' | translate }}</h1>
+      <p class="text-xs text-slate-500 font-semibold mt-1">{{ 'hse.subtitle' | translate }}</p>
+    </div>
+    
+    <!-- Action buttons -->
+    <div class="flex flex-wrap items-center gap-3 text-xs">
+      <button 
+        (click)="openReportIncidentModal()"
+        class="px-4 py-2 bg-red-650 hover:bg-red-700 text-white rounded-lg font-bold shadow-sm transition-all flex items-center space-x-1.5 rtl:space-x-reverse"
+      >
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+        </svg>
+        <span>{{ 'hse.report_incident' | translate }}</span>
+      </button>
+
+      <button 
+        (click)="openAddPtwModal()"
+        class="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-bold shadow-sm transition-all flex items-center space-x-1.5 rtl:space-x-reverse"
+      >
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+        </svg>
+        <span>{{ 'hse.new_ptw' | translate }}</span>
+      </button>
+
+      <button 
+        (click)="openAddInspectionModal()"
+        class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-bold shadow-sm transition-all flex items-center space-x-1.5 rtl:space-x-reverse"
+      >
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+        </svg>
+        <span>{{ 'hse.log_inspection' | translate }}</span>
+      </button>
+
+      <button 
+        (click)="openAddRiskModal()"
+        class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold shadow-sm transition-all flex items-center space-x-1.5 rtl:space-x-reverse"
+      >
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+        </svg>
+        <span>{{ 'hse.log_risk' | translate }}</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- HSE KPI cards -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+    <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex items-center space-x-4 rtl:space-x-reverse">
+      <div class="p-3 bg-emerald-50 text-emerald-600 rounded-xl">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+        </svg>
+      </div>
+      <div>
+        <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">{{ 'hse.kpi_lti_free' | translate }}</p>
+        <h3 class="text-lg font-black text-slate-800 mt-1">{{ kpis().ltiFreeDays }} {{ 'hse.days' | translate }}</h3>
+      </div>
+    </div>
+
+    <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex items-center space-x-4 rtl:space-x-reverse">
+      <div class="p-3 bg-amber-50 text-amber-600 rounded-xl">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m-2 4a2 2 0 012 2m-2-4a2 2 0 11-4 0 2 2 0 014 0zM5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+        </svg>
+      </div>
+      <div>
+        <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">{{ 'hse.kpi_active_ptw' | translate }}</p>
+        <h3 class="text-lg font-black text-slate-800 mt-1">{{ kpis().activePtws }}</h3>
+      </div>
+    </div>
+
+    <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex items-center space-x-4 rtl:space-x-reverse">
+      <div class="p-3 bg-indigo-50 text-indigo-650 rounded-xl">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      </div>
+      <div>
+        <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">{{ 'hse.kpi_audit_score' | translate }}</p>
+        <h3 class="text-lg font-black text-slate-800 mt-1">{{ kpis().avgScore | number:'1.1-1' }}%</h3>
+      </div>
+    </div>
+
+    <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex items-center space-x-4 rtl:space-x-reverse">
+      <div class="p-3 bg-red-50 text-red-650 rounded-xl">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+        </svg>
+      </div>
+      <div>
+        <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">{{ 'hse.kpi_incidents' | translate }}</p>
+        <h3 class="text-lg font-black text-slate-800 mt-1">{{ kpis().closedIncidentsRatio }}</h3>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabs Navigation -->
+  <div class="flex border-b border-slate-200 text-xs font-bold space-x-6 rtl:space-x-reverse">
+    <button 
+      (click)="activeTab.set('dashboard')"
+      [class.border-indigo-600]="activeTab() === 'dashboard'"
+      [class.text-indigo-600]="activeTab() === 'dashboard'"
+      [class.border-transparent]="activeTab() !== 'dashboard'"
+      [class.text-slate-500]="activeTab() !== 'dashboard'"
+      class="pb-3 border-b-2 transition-all"
+    >
+      {{ 'hse.tab_incidents' | translate }}
+    </button>
+    <button 
+      (click)="activeTab.set('ptw')"
+      [class.border-indigo-600]="activeTab() === 'ptw'"
+      [class.text-indigo-600]="activeTab() === 'ptw'"
+      [class.border-transparent]="activeTab() !== 'ptw'"
+      [class.text-slate-500]="activeTab() !== 'ptw'"
+      class="pb-3 border-b-2 transition-all"
+    >
+      {{ 'hse.tab_ptw' | translate }}
+    </button>
+    <button 
+      (click)="activeTab.set('inspections')"
+      [class.border-indigo-600]="activeTab() === 'inspections'"
+      [class.text-indigo-600]="activeTab() === 'inspections'"
+      [class.border-transparent]="activeTab() !== 'inspections'"
+      [class.text-slate-500]="activeTab() !== 'inspections'"
+      class="pb-3 border-b-2 transition-all"
+    >
+      {{ 'hse.tab_inspections' | translate }}
+    </button>
+    <button 
+      (click)="activeTab.set('risks')"
+      [class.border-indigo-600]="activeTab() === 'risks'"
+      [class.text-indigo-600]="activeTab() === 'risks'"
+      [class.border-transparent]="activeTab() !== 'risks'"
+      [class.text-slate-500]="activeTab() !== 'risks'"
+      class="pb-3 border-b-2 transition-all"
+    >
+      {{ 'hse.tab_risks' | translate }}
+    </button>
+  </div>
+
+  <!-- Search Query -->
+  <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-sm flex items-center justify-between gap-4 text-xs">
+    <div class="relative w-full max-w-md">
+      <input 
+        type="text" 
+        [placeholder]="'hse.search_placeholder' | translate"
+        (input)="searchQuery.set($any($event.target).value)"
+        class="w-full bg-slate-50/50 border border-slate-200 rounded-lg pl-8 pr-3 rtl:pl-3 rtl:pr-8 py-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+      >
+      <svg class="w-4 h-4 text-slate-400 absolute left-2.5 rtl:right-2.5 rtl:left-auto top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+      </svg>
+    </div>
+  </div>
+
+  <!-- Tab Contents -->
+  @if (activeTab() === 'dashboard') {
+    <!-- Incidents Table -->
+    <div class="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden animate-fade-in">
+      <div class="overflow-x-auto">
+        <table class="w-full text-left rtl:text-right border-collapse text-xs">
+          <thead>
+            <tr class="text-slate-400 font-bold border-b border-slate-100 bg-slate-50/50">
+              <th class="p-4 py-3">{{ 'hse.col_inc_no' | translate }}</th>
+              <th class="p-4 py-3">{{ 'hse.col_type' | translate }}</th>
+              <th class="p-4 py-3">{{ 'hse.col_severity' | translate }}</th>
+              <th class="p-4 py-3">{{ 'hse.col_date' | translate }}</th>
+              <th class="p-4 py-3">{{ 'hse.col_location' | translate }}</th>
+              <th class="p-4 py-3">{{ 'hse.col_reported_by' | translate }}</th>
+              <th class="p-4 py-3 text-center">{{ 'hse.col_status' | translate }}</th>
+              <th class="p-4 py-3 text-center" *appRole="['Safety Officer', 'Super Admin']">{{ 'hse.col_actions' | translate }}</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-50">
+            @for (inc of filteredIncidents(); track inc.id) {
+              <tr class="hover:bg-slate-50/50 transition-colors">
+                <td class="p-4 font-bold text-slate-800">{{ inc.incidentNumber }}</td>
+                <td class="p-4">
+                  <span [class]="
+                    inc.type === 'LTI' ? 'bg-red-50 text-red-700 border-red-200' :
+                    inc.type === 'Near Miss' ? 'bg-amber-50 text-amber-700 border-amber-200' :
+                    inc.type === 'Environmental' ? 'bg-teal-50 text-teal-700 border-teal-200' :
+                    'bg-slate-100 text-slate-650 border-slate-200'"
+                    class="px-2 py-0.5 rounded font-bold border text-[10px]"
+                  >
+                    {{ inc.type }}
+                  </span>
+                </td>
+                <td class="p-4">
+                  <span [class]="
+                    inc.severity === 'Critical' ? 'text-red-650 font-black' :
+                    inc.severity === 'High' ? 'text-orange-600 font-black' :
+                    inc.severity === 'Medium' ? 'text-amber-600 font-bold' :
+                    'text-slate-500 font-semibold'"
+                  >
+                    {{ inc.severity }}
+                  </span>
+                </td>
+                <td class="p-4 text-slate-500 font-semibold">{{ inc.date }}</td>
+                <td class="p-4 font-bold text-slate-700">{{ inc.location }}</td>
+                <td class="p-4 text-slate-600 font-medium">{{ inc.reportedBy }}</td>
+                <td class="p-4 text-center">
+                  <span [class]="inc.status === 'Closed' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-amber-50 text-amber-700 border-amber-200'" class="px-2.5 py-1 rounded-full font-bold border text-[10px]">
+                    {{ 'hse.status_' + inc.status.toLowerCase().replace(' ', '_') | translate }}
+                  </span>
+                </td>
+                <td class="p-4 text-center" *appRole="['Safety Officer', 'Super Admin']">
+                  @if (inc.status === 'Investigating') {
+                    <button 
+                      (click)="openInvestigateModal(inc)"
+                      class="px-2.5 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded font-bold transition-all text-[10px]"
+                    >
+                      {{ 'hse.btn_investigate' | translate }}
+                    </button>
+                  } @else {
+                    <span class="text-slate-400 font-bold">—</span>
+                  }
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="8" class="p-8 text-center text-slate-400 font-medium">
+                  {{ 'hse.no_incidents' | translate }}
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
+
+  @if (activeTab() === 'ptw') {
+    <!-- PTWs Table -->
+    <div class="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden animate-fade-in">
+      <div class="overflow-x-auto">
+        <table class="w-full text-left rtl:text-right border-collapse text-xs">
+          <thead>
+            <tr class="text-slate-400 font-bold border-b border-slate-100 bg-slate-50/50">
+              <th class="p-4 py-3">{{ 'hse.col_permit_no' | translate }}</th>
+              <th class="p-4 py-3">{{ 'hse.col_type' | translate }}</th>
+              <th class="p-4 py-3">{{ 'hse.col_location' | translate }}</th>
+              <th class="p-4 py-3">{{ 'hse.col_applicant' | translate }}</th>
+              <th class="p-4 py-3 text-center">{{ 'hse.col_safety_sign' | translate }}</th>
+              <th class="p-4 py-3 text-center">{{ 'hse.col_ops_sign' | translate }}</th>
+              <th class="p-4 py-3">{{ 'hse.col_valid_from' | translate }}</th>
+              <th class="p-4 py-3">{{ 'hse.col_valid_to' | translate }}</th>
+              <th class="p-4 py-3 text-center">{{ 'hse.col_status' | translate }}</th>
+              <th class="p-4 py-3 text-center">{{ 'hse.col_actions' | translate }}</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-50">
+            @for (p of filteredPtws(); track p.id) {
+              <tr class="hover:bg-slate-50/50 transition-colors">
+                <td class="p-4 font-bold text-slate-800">{{ p.permitNumber }}</td>
+                <td class="p-4 font-semibold text-slate-650">{{ p.type }}</td>
+                <td class="p-4 font-bold text-slate-700">{{ p.location }}</td>
+                <td class="p-4 text-slate-600 font-medium">{{ p.applicantName }}</td>
+                <td class="p-4 text-center">
+                  @if (p.safetyOfficerApproved) {
+                    <span class="text-emerald-600 font-bold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">SIGNED</span>
+                  } @else {
+                    <span class="text-red-500 font-bold bg-red-50 px-2 py-0.5 rounded border border-red-200">WAITING</span>
+                  }
+                </td>
+                <td class="p-4 text-center">
+                  @if (p.operationsManagerApproved) {
+                    <span class="text-emerald-600 font-bold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">SIGNED</span>
+                  } @else {
+                    <span class="text-red-500 font-bold bg-red-50 px-2 py-0.5 rounded border border-red-200">WAITING</span>
+                  }
+                </td>
+                <td class="p-4 text-slate-550">{{ p.validFrom }}</td>
+                <td class="p-4 text-slate-550">{{ p.validTo }}</td>
+                <td class="p-4 text-center">
+                  <span [class]="
+                    p.status === 'Approved' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                    p.status === 'Pending Approval' ? 'bg-amber-50 text-amber-700 border-amber-200' :
+                    'bg-slate-100 text-slate-550 border-slate-200'"
+                    class="px-2.5 py-1 rounded-full font-bold border text-[10px]"
+                  >
+                    {{ 'hse.status_' + p.status.toLowerCase().replace(' ', '_') | translate }}
+                  </span>
+                </td>
+                <td class="p-4 text-center">
+                  <div class="flex items-center justify-center gap-1.5">
+                    @if (p.status === 'Pending Approval') {
+                      <button 
+                        *appRole="['Safety Officer', 'Super Admin']"
+                        [disabled]="p.safetyOfficerApproved"
+                        (click)="approvePtw(p.id, 'safety')"
+                        class="px-2 py-0.5 bg-indigo-650 hover:bg-indigo-700 text-white rounded font-bold transition-all text-[9px] disabled:opacity-40"
+                      >
+                        SIGN SAFETY
+                      </button>
+                      <button 
+                        *appRole="['Operations Manager', 'Super Admin']"
+                        [disabled]="p.operationsManagerApproved"
+                        (click)="approvePtw(p.id, 'operations')"
+                        class="px-2 py-0.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded font-bold transition-all text-[9px] disabled:opacity-40"
+                      >
+                        SIGN OPS
+                      </button>
+                    } @else {
+                      <span class="text-slate-400 font-bold">—</span>
+                    }
+                  </div>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="10" class="p-8 text-center text-slate-400 font-medium">
+                  {{ 'hse.no_ptw_records' | translate }}
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
+
+  @if (activeTab() === 'inspections') {
+    <!-- Safety Inspections Table -->
+    <div class="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden animate-fade-in">
+      <div class="overflow-x-auto">
+        <table class="w-full text-left rtl:text-right border-collapse text-xs">
+          <thead>
+            <tr class="text-slate-400 font-bold border-b border-slate-100 bg-slate-50/50">
+              <th class="p-4 py-3">{{ 'hse.col_ins_no' | translate }}</th>
+              <th class="p-4 py-3">{{ 'hse.col_date' | translate }}</th>
+              <th class="p-4 py-3">{{ 'hse.col_location' | translate }}</th>
+              <th class="p-4 py-3">{{ 'hse.col_inspector' | translate }}</th>
+              <th class="p-4 py-3 text-center">{{ 'hse.col_audited_items' | translate }}</th>
+              <th class="p-4 py-3 text-center">{{ 'hse.col_violations' | translate }}</th>
+              <th class="p-4 py-3 text-right rtl:text-left">{{ 'hse.col_score' | translate }}</th>
+              <th class="p-4 py-3 text-center">{{ 'hse.col_status' | translate }}</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-50">
+            @for (audit of filteredInspections(); track audit.id) {
+              <tr class="hover:bg-slate-50/50 transition-colors">
+                <td class="p-4 font-bold text-slate-800">{{ audit.inspectionNumber }}</td>
+                <td class="p-4 text-slate-500 font-semibold">{{ audit.date }}</td>
+                <td class="p-4 font-bold text-slate-700">{{ audit.location }}</td>
+                <td class="p-4 text-slate-600 font-medium">{{ audit.inspectorName }}</td>
+                <td class="p-4 text-center font-semibold text-slate-650">{{ audit.itemsAuditedCount }}</td>
+                <td class="p-4 text-center font-bold text-red-600">{{ audit.violationsCount }}</td>
+                <td class="p-4 text-right rtl:text-left font-black" [class.text-red-600]="audit.scorePercentage < 90" [class.text-emerald-600]="audit.scorePercentage >= 90">
+                  {{ audit.scorePercentage }}%
+                </td>
+                <td class="p-4 text-center">
+                  <span [class]="audit.status === 'Closed' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-red-50 text-red-700 border-red-200'" class="px-2.5 py-1 rounded-full font-bold border text-[10px]">
+                    {{ 'hse.status_' + audit.status.toLowerCase().replace(' ', '_') | translate }}
+                  </span>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="8" class="p-8 text-center text-slate-400 font-medium">
+                  {{ 'hse.no_inspections' | translate }}
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
+
+  @if (activeTab() === 'risks') {
+    <!-- Risk Register Table -->
+    <div class="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden animate-fade-in">
+      <div class="overflow-x-auto">
+        <table class="w-full text-left rtl:text-right border-collapse text-xs">
+          <thead>
+            <tr class="text-slate-400 font-bold border-b border-slate-100 bg-slate-50/50">
+              <th class="p-4 py-3">{{ 'hse.col_risk_code' | translate }}</th>
+              <th class="p-4 py-3">{{ 'hse.col_activity' | translate }}</th>
+              <th class="p-4 py-3">{{ 'hse.col_hazard' | translate }}</th>
+              <th class="p-4 py-3 text-center">{{ 'hse.col_initial_severity' | translate }}</th>
+              <th class="p-4 py-3">{{ 'hse.col_controls' | translate }}</th>
+              <th class="p-4 py-3 text-center">{{ 'hse.col_residual_severity' | translate }}</th>
+              <th class="p-4 py-3 text-center">{{ 'hse.col_status' | translate }}</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-50">
+            @for (risk of filteredRisks(); track risk.id) {
+              <tr class="hover:bg-slate-50/50 transition-colors">
+                <td class="p-4 font-bold text-slate-800">{{ risk.riskCode }}</td>
+                <td class="p-4 font-semibold text-slate-700">{{ risk.activityDescription }}</td>
+                <td class="p-4 text-slate-600 font-semibold max-w-xs truncate" [title]="risk.hazardDescription">{{ risk.hazardDescription }}</td>
+                <td class="p-4 text-center">
+                  <span [class]="
+                    risk.initialSeverity === 'Critical' || risk.initialSeverity === 'High' ? 'bg-red-50 text-red-750 font-bold border-red-200' : 'bg-amber-50 text-amber-700 border-amber-200'"
+                    class="px-2 py-0.5 rounded border text-[10px]"
+                  >
+                    {{ risk.initialSeverity }}
+                  </span>
+                </td>
+                <td class="p-4 text-slate-500 font-medium max-w-xs truncate" [title]="risk.controlMeasures">{{ risk.controlMeasures }}</td>
+                <td class="p-4 text-center">
+                  <span [class]="risk.residualSeverity === 'High' ? 'text-red-650' : risk.residualSeverity === 'Medium' ? 'text-amber-600' : 'text-emerald-600'" class="font-bold">
+                    {{ risk.residualSeverity }}
+                  </span>
+                </td>
+                <td class="p-4 text-center">
+                  <span class="px-2.5 py-1 rounded-full font-bold border border-emerald-200 bg-emerald-50 text-emerald-700 text-[10px]">
+                    {{ risk.status }}
+                  </span>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="7" class="p-8 text-center text-slate-400 font-medium">
+                  {{ 'hse.no_risks' | translate }}
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
+
+  <!-- Modal: Report HSE Incident -->
+  @if (showIncidentModal()) {
+    <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
+      <div class="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-lg overflow-hidden animate-slide-up">
+        <div class="p-5 border-b border-slate-100 flex items-center justify-between">
+          <h3 class="font-black text-slate-850 text-base">{{ 'hse.modal_report_incident' | translate }}</h3>
+          <button (click)="showIncidentModal.set(false)" class="text-slate-400 hover:text-slate-600">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <form (submit)="$event.preventDefault(); submitIncident()" class="p-5 space-y-4 text-xs">
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-slate-500 font-semibold mb-1.5">{{ 'hse.field_inc_type' | translate }} *</label>
+              <select 
+                [(ngModel)]="incidentType" 
+                name="incidentType" 
+                class="w-full bg-white border border-slate-250 rounded-lg px-3 py-2 font-bold text-slate-800 focus:outline-none"
+              >
+                <option value="LTI">LTI (Lost Time Injury)</option>
+                <option value="Near Miss">Near Miss</option>
+                <option value="First Aid">First Aid Case</option>
+                <option value="Environmental">Environmental Incident</option>
+                <option value="Property Damage">Property Damage</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-slate-500 font-semibold mb-1.5">{{ 'hse.field_severity' | translate }} *</label>
+              <select 
+                [(ngModel)]="incidentSeverity" 
+                name="incidentSeverity" 
+                class="w-full bg-white border border-slate-250 rounded-lg px-3 py-2 font-bold text-slate-800 focus:outline-none"
+              >
+                <option value="Low">Low</option>
+                <option value="Medium">Medium</option>
+                <option value="High">High</option>
+                <option value="Critical">Critical</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-slate-500 font-semibold mb-1.5">{{ 'hse.field_date' | translate }}</label>
+              <input 
+                type="date" 
+                [(ngModel)]="incidentDate" 
+                name="incidentDate" 
+                class="w-full bg-white border border-slate-250 rounded-lg px-3 py-2 font-semibold text-slate-800 focus:outline-none"
+              >
+            </div>
+            <div>
+              <label class="block text-slate-500 font-semibold mb-1.5">{{ 'hse.field_location' | translate }} *</label>
+              <input 
+                type="text" 
+                [(ngModel)]="incidentLocation" 
+                name="incidentLocation" 
+                required 
+                placeholder="e.g. Rig Alpha Drill Floor"
+                class="w-full bg-slate-50 border border-slate-250 rounded-lg px-3 py-2 font-semibold text-slate-800 focus:outline-none"
+              >
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-slate-500 font-semibold mb-1.5">{{ 'hse.field_description' | translate }} *</label>
+            <textarea 
+              [(ngModel)]="incidentDescription" 
+              name="incidentDescription" 
+              required
+              rows="3"
+              class="w-full bg-slate-50 border border-slate-250 rounded-lg px-3 py-2 font-semibold text-slate-800 focus:outline-none"
+            ></textarea>
+          </div>
+
+          <div>
+            <label class="block text-slate-500 font-semibold mb-1.5">{{ 'hse.field_immediate_action' | translate }} *</label>
+            <input 
+              type="text" 
+              [(ngModel)]="incidentImmediateAction" 
+              name="incidentImmediateAction" 
+              required 
+              placeholder="e.g. Operations halted immediately, slip dies cleaned."
+              class="w-full bg-slate-50 border border-slate-250 rounded-lg px-3 py-2 font-semibold text-slate-800 focus:outline-none"
+            >
+          </div>
+
+          <div>
+            <label class="block text-slate-500 font-semibold mb-1.5">{{ 'hse.field_reported_by' | translate }}</label>
+            <input 
+              type="text" 
+              [(ngModel)]="incidentReportedBy" 
+              name="incidentReportedBy" 
+              class="w-full bg-white border border-slate-250 rounded-lg px-3 py-2 font-semibold text-slate-800 focus:outline-none"
+            >
+          </div>
+
+          <div class="p-4 bg-slate-50 rounded-xl flex justify-end space-x-3 rtl:space-x-reverse mt-2">
+            <button 
+              type="button" 
+              (click)="showIncidentModal.set(false)"
+              class="px-4 py-2 border border-slate-200 hover:bg-slate-100 text-slate-650 rounded-lg font-bold"
+            >
+              {{ 'common.cancel' | translate }}
+            </button>
+            <button 
+              type="submit"
+              class="px-4 py-2 bg-red-650 hover:bg-red-700 text-white rounded-lg font-bold shadow-sm"
+            >
+              {{ 'hse.btn_log_incident' | translate }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+
+  <!-- Modal: Close Safety Investigation -->
+  @if (showInvestigateModal()) {
+    <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
+      <div class="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-md overflow-hidden animate-slide-up">
+        <div class="p-5 border-b border-slate-100 flex items-center justify-between">
+          <h3 class="font-black text-slate-850 text-base">{{ 'hse.modal_investigation_title' | translate }}</h3>
+          <button (click)="showInvestigateModal.set(false)" class="text-slate-400 hover:text-slate-600">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <form (submit)="$event.preventDefault(); submitInvestigation()" class="p-5 space-y-4 text-xs" *ngIf="selectedIncident() as inc">
+          <div class="p-3 bg-slate-50 rounded-xl border border-slate-100">
+            <div class="font-bold text-slate-700">{{ inc.incidentNumber }} - {{ inc.type }}</div>
+            <div class="text-[10px] text-slate-400 font-medium mt-1 leading-relaxed">{{ inc.description }}</div>
+          </div>
+
+          <div>
+            <label class="block text-slate-500 font-semibold mb-1.5">{{ 'hse.field_root_cause' | translate }} *</label>
+            <textarea 
+              [(ngModel)]="rootCause" 
+              name="rootCause" 
+              required
+              rows="3"
+              placeholder="Detailed investigation findings..."
+              class="w-full bg-slate-50 border border-slate-250 rounded-lg px-3 py-2 font-semibold text-slate-800 focus:outline-none"
+            ></textarea>
+          </div>
+
+          <div>
+            <label class="block text-slate-500 font-semibold mb-1.5">{{ 'hse.field_corrective_action' | translate }} *</label>
+            <textarea 
+              [(ngModel)]="correctiveAction" 
+              name="correctiveAction" 
+              required
+              rows="3"
+              placeholder="Mandatory control measures to prevent recurrence..."
+              class="w-full bg-slate-50 border border-slate-250 rounded-lg px-3 py-2 font-semibold text-slate-800 focus:outline-none"
+            ></textarea>
+          </div>
+
+          <div class="p-4 bg-slate-50 rounded-xl flex justify-end space-x-3 rtl:space-x-reverse mt-2">
+            <button 
+              type="button" 
+              (click)="showInvestigateModal.set(false)"
+              class="px-4 py-2 border border-slate-200 hover:bg-slate-100 text-slate-650 rounded-lg font-bold"
+            >
+              {{ 'common.cancel' | translate }}
+            </button>
+            <button 
+              type="submit"
+              class="px-4 py-2 bg-indigo-650 hover:bg-indigo-700 text-white rounded-lg font-bold shadow-sm"
+            >
+              {{ 'hse.btn_close_incident' | translate }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+
+  <!-- Modal: Apply for PTW -->
+  @if (showPtwModal()) {
+    <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
+      <div class="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-lg overflow-hidden animate-slide-up">
+        <div class="p-5 border-b border-slate-100 flex items-center justify-between">
+          <h3 class="font-black text-slate-850 text-base">{{ 'hse.modal_new_ptw' | translate }}</h3>
+          <button (click)="showPtwModal.set(false)" class="text-slate-400 hover:text-slate-600">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <form (submit)="$event.preventDefault(); submitPtw()" class="p-5 space-y-4 text-xs">
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-slate-500 font-semibold mb-1.5">{{ 'hse.field_ptw_type' | translate }} *</label>
+              <select 
+                [(ngModel)]="ptwType" 
+                name="ptwType" 
+                class="w-full bg-white border border-slate-250 rounded-lg px-3 py-2 font-bold text-slate-805 focus:outline-none"
+              >
+                <option value="Cold Work">Cold Work</option>
+                <option value="Hot Work">Hot Work</option>
+                <option value="Confined Space">Confined Space Entry</option>
+                <option value="Electrical Isolation">LOTO / Electrical Isolation</option>
+                <option value="Working at Height">Working at Height</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-slate-500 font-semibold mb-1.5">{{ 'hse.field_ptw_project' | translate }}</label>
+              <select 
+                [(ngModel)]="ptwProjectCode" 
+                name="ptwProjectCode" 
+                class="w-full bg-white border border-slate-250 rounded-lg px-3 py-2 font-semibold text-slate-800 focus:outline-none"
+              >
+                <option value="">-- {{ 'hse.select_project' | translate }} --</option>
+                @for (p of projects(); track p.code) {
+                  <option [value]="p.code">{{ p.name }}</option>
+                }
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-slate-500 font-semibold mb-1.5">{{ 'hse.field_location' | translate }} *</label>
+            <input 
+              type="text" 
+              [(ngModel)]="ptwLocation" 
+              name="ptwLocation" 
+              required 
+              placeholder="e.g. Rig Alpha Compressor Area"
+              class="w-full bg-slate-50 border border-slate-250 rounded-lg px-3 py-2 font-semibold text-slate-800 focus:outline-none"
+            >
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-slate-500 font-semibold mb-1.5">{{ 'hse.field_valid_from' | translate }}</label>
+              <input 
+                type="datetime-local" 
+                [(ngModel)]="ptwValidFrom" 
+                name="ptwValidFrom" 
+                class="w-full bg-white border border-slate-250 rounded-lg px-3 py-2 font-semibold text-slate-805 focus:outline-none"
+              >
+            </div>
+            <div>
+              <label class="block text-slate-500 font-semibold mb-1.5">{{ 'hse.field_valid_to' | translate }}</label>
+              <input 
+                type="datetime-local" 
+                [(ngModel)]="ptwValidTo" 
+                name="ptwValidTo" 
+                class="w-full bg-white border border-slate-250 rounded-lg px-3 py-2 font-semibold text-slate-805 focus:outline-none"
+              >
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-slate-500 font-semibold mb-1.5">{{ 'hse.field_applicant' | translate }} *</label>
+            <input 
+              type="text" 
+              [(ngModel)]="ptwApplicant" 
+              name="ptwApplicant" 
+              required
+              class="w-full bg-slate-50 border border-slate-250 rounded-lg px-3 py-2 font-bold text-slate-800 focus:outline-none"
+            >
+          </div>
+
+          <div class="flex items-center space-x-2.5 rtl:space-x-reverse bg-slate-50 p-3 rounded-xl border border-slate-100">
+            <input 
+              type="checkbox" 
+              [(ngModel)]="ptwGasTestRequired" 
+              name="ptwGasTestRequired" 
+              class="rounded text-indigo-650 focus:ring-indigo-500 border-slate-300"
+            >
+            <label class="font-bold text-slate-650 select-none">{{ 'hse.field_gas_test_required' | translate }}</label>
+          </div>
+
+          <div class="p-4 bg-slate-50 rounded-xl flex justify-end space-x-3 rtl:space-x-reverse mt-2">
+            <button 
+              type="button" 
+              (click)="showPtwModal.set(false)"
+              class="px-4 py-2 border border-slate-200 hover:bg-slate-100 text-slate-650 rounded-lg font-bold"
+            >
+              {{ 'common.cancel' | translate }}
+            </button>
+            <button 
+              type="submit"
+              class="px-4 py-2 bg-indigo-650 hover:bg-indigo-700 text-white rounded-lg font-bold shadow-sm"
+            >
+              {{ 'hse.btn_submit_ptw' | translate }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+
+  <!-- Modal: Log Safety Inspection -->
+  @if (showInspectionModal()) {
+    <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
+      <div class="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-md overflow-hidden animate-slide-up">
+        <div class="p-5 border-b border-slate-100 flex items-center justify-between">
+          <h3 class="font-black text-slate-850 text-base">{{ 'hse.modal_log_inspection' | translate }}</h3>
+          <button (click)="showInspectionModal.set(false)" class="text-slate-400 hover:text-slate-600">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <form (submit)="$event.preventDefault(); submitInspection()" class="p-5 space-y-4 text-xs">
+          <div>
+            <label class="block text-slate-500 font-semibold mb-1.5">{{ 'hse.field_location' | translate }} *</label>
+            <input 
+              type="text" 
+              [(ngModel)]="inspectionLocation" 
+              name="inspectionLocation" 
+              required 
+              placeholder="e.g. Base Camp Kitchen & Catering"
+              class="w-full bg-slate-50 border border-slate-250 rounded-lg px-3 py-2 font-semibold text-slate-800 focus:outline-none"
+            >
+          </div>
+
+          <div>
+            <label class="block text-slate-500 font-semibold mb-1.5">{{ 'hse.field_inspector' | translate }} *</label>
+            <input 
+              type="text" 
+              [(ngModel)]="inspectionInspector" 
+              name="inspectionInspector" 
+              required
+              class="w-full bg-white border border-slate-250 rounded-lg px-3 py-2 font-bold text-slate-800 focus:outline-none"
+            >
+          </div>
+
+          <div class="grid grid-cols-3 gap-4">
+            <div>
+              <label class="block text-slate-500 font-bold mb-1">{{ 'hse.field_items_audited' | translate }}</label>
+              <input 
+                type="number" 
+                [(ngModel)]="inspectionAuditedCount" 
+                name="inspectionAuditedCount" 
+                class="w-full bg-white border border-slate-250 rounded px-2 py-1 font-semibold text-slate-800 focus:outline-none"
+              >
+            </div>
+            <div>
+              <label class="block text-slate-500 font-bold mb-1">{{ 'hse.field_violations' | translate }}</label>
+              <input 
+                type="number" 
+                [(ngModel)]="inspectionViolationsCount" 
+                name="inspectionViolationsCount" 
+                class="w-full bg-white border border-slate-250 rounded px-2 py-1 font-bold text-slate-800 focus:outline-none"
+              >
+            </div>
+            <div>
+              <label class="block text-slate-500 font-bold mb-1">{{ 'hse.field_score' | translate }} (%)</label>
+              <input 
+                type="number" 
+                [(ngModel)]="inspectionScore" 
+                name="inspectionScore" 
+                class="w-full bg-white border border-slate-250 rounded px-2 py-1 font-black text-slate-800 focus:outline-none"
+              >
+            </div>
+          </div>
+
+          <div class="p-4 bg-slate-50 rounded-xl flex justify-end space-x-3 rtl:space-x-reverse mt-2">
+            <button 
+              type="button" 
+              (click)="showInspectionModal.set(false)"
+              class="px-4 py-2 border border-slate-200 hover:bg-slate-100 text-slate-650 rounded-lg font-bold"
+            >
+              {{ 'common.cancel' | translate }}
+            </button>
+            <button 
+              type="submit"
+              class="px-4 py-2 bg-indigo-650 hover:bg-indigo-700 text-white rounded-lg font-bold shadow-sm"
+            >
+              {{ 'common.save' | translate }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+
+  <!-- Modal: Log Risk Entry -->
+  @if (showRiskModal()) {
+    <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
+      <div class="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-md overflow-hidden animate-slide-up">
+        <div class="p-5 border-b border-slate-100 flex items-center justify-between">
+          <h3 class="font-black text-slate-850 text-base">{{ 'hse.modal_log_risk' | translate }}</h3>
+          <button (click)="showRiskModal.set(false)" class="text-slate-400 hover:text-slate-600">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <form (submit)="$event.preventDefault(); submitRisk()" class="p-5 space-y-4 text-xs">
+          <div>
+            <label class="block text-slate-500 font-semibold mb-1.5">{{ 'hse.field_activity' | translate }} *</label>
+            <input 
+              type="text" 
+              [(ngModel)]="riskActivity" 
+              name="riskActivity" 
+              required 
+              placeholder="e.g. Rig Mobilization & Heavy Hauling"
+              class="w-full bg-slate-50 border border-slate-250 rounded-lg px-3 py-2 font-semibold text-slate-800 focus:outline-none"
+            >
+          </div>
+
+          <div>
+            <label class="block text-slate-500 font-semibold mb-1.5">{{ 'hse.field_hazard' | translate }} *</label>
+            <textarea 
+              [(ngModel)]="riskHazard" 
+              name="riskHazard" 
+              required
+              rows="2"
+              placeholder="Describe the hazard and potential consequences..."
+              class="w-full bg-slate-50 border border-slate-250 rounded-lg px-3 py-2 font-semibold text-slate-800 focus:outline-none"
+            ></textarea>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-slate-500 font-semibold mb-1.5">{{ 'hse.field_initial_severity' | translate }}</label>
+              <select 
+                [(ngModel)]="riskInitialSeverity" 
+                name="riskInitialSeverity" 
+                class="w-full bg-white border border-slate-250 rounded-lg px-3 py-2 font-bold text-slate-805 focus:outline-none"
+              >
+                <option value="Low">Low</option>
+                <option value="Medium">Medium</option>
+                <option value="High">High</option>
+                <option value="Critical">Critical</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-slate-500 font-semibold mb-1.5">{{ 'hse.field_residual_severity' | translate }}</label>
+              <select 
+                [(ngModel)]="riskResidualSeverity" 
+                name="riskResidualSeverity" 
+                class="w-full bg-white border border-slate-250 rounded-lg px-3 py-2 font-bold text-slate-805 focus:outline-none"
+              >
+                <option value="Low">Low</option>
+                <option value="Medium">Medium</option>
+                <option value="High">High</option>
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-slate-500 font-semibold mb-1.5">{{ 'hse.field_control_measures' | translate }} *</label>
+            <textarea 
+              [(ngModel)]="riskControlMeasures" 
+              name="riskControlMeasures" 
+              required
+              rows="3"
+              placeholder="List controls (Engineering, Administrative, PPE)..."
+              class="w-full bg-slate-50 border border-slate-250 rounded-lg px-3 py-2 font-semibold text-slate-800 focus:outline-none"
+            ></textarea>
+          </div>
+
+          <div class="p-4 bg-slate-50 rounded-xl flex justify-end space-x-3 rtl:space-x-reverse mt-2">
+            <button 
+              type="button" 
+              (click)="showRiskModal.set(false)"
+              class="px-4 py-2 border border-slate-200 hover:bg-slate-100 text-slate-650 rounded-lg font-bold"
+            >
+              {{ 'common.cancel' | translate }}
+            </button>
+            <button 
+              type="submit"
+              class="px-4 py-2 bg-indigo-650 hover:bg-indigo-700 text-white rounded-lg font-bold shadow-sm"
+            >
+              {{ 'common.save' | translate }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+
+</div>
