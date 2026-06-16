@@ -8,12 +8,13 @@ import { RoleDirective } from '../../../shared/directives/role.directive';
 import { TranslateModule } from '@ngx-translate/core';
 import { LanguageSwitcherComponent } from '../../../shared/components/language-switcher/language-switcher.component';
 import { LanguageService } from '../../services/language.service';
-import { DascoLogoComponent } from '../../../shared/components/dasco-logo/dasco-logo.component';
+import { ThemeService } from '../../services/theme.service';
+import { CommandPaletteComponent } from '../../../shared/components/command-palette/command-palette.component';
 
 @Component({
   selector: 'app-main-layout',
   standalone: true,
-  imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive, RoleDirective, TranslateModule, LanguageSwitcherComponent, DascoLogoComponent],
+  imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive, RoleDirective, TranslateModule, LanguageSwitcherComponent, CommandPaletteComponent],
   templateUrl: './main-layout.component.html',
   styleUrls: [],
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -22,6 +23,7 @@ export class MainLayoutComponent implements OnInit {
   private readonly breadcrumbService = inject(BreadcrumbService);
   readonly langService = inject(LanguageService);
   readonly authService = inject(AuthService);
+  readonly themeService = inject(ThemeService);
   private readonly router = inject(Router);
   private readonly notificationService = inject(NotificationService);
 

@@ -1,7 +1,7 @@
 import { Component, OnInit, signal, computed, inject, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterLink, ActivatedRoute } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { MockDataService } from '../../../core/services/mock-data.service';
 import { BreadcrumbService } from '../../../core/services/breadcrumb.service';
@@ -12,7 +12,7 @@ import { PurchaseRequest } from '../../../shared/interfaces/purchase-request.int
 @Component({
   selector: 'app-rfqs',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, TranslateModule],
+  imports: [CommonModule, FormsModule, TranslateModule],
   templateUrl: './rfqs.component.html',
   styles: [],
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -85,7 +85,7 @@ export class RfqsComponent implements OnInit {
       { label: this.translate.instant('procurement.rfqs.breadcrumb') }
     ]);
 
-    // Check query params for PR source auto-fill
+    // Check query params for PR source auto-fill or RFQ detail drawer view
     this.route.queryParams.subscribe(params => {
       const prId = params['createForPR'];
       if (prId) {
@@ -97,6 +97,14 @@ export class RfqsComponent implements OnInit {
           this.isFormView.set(true);
         } else {
           this.router.navigate([], { queryParams: {} });
+        }
+      }
+      
+      const rfqId = params['rfqId'];
+      if (rfqId) {
+        const rfq = this.rfqs().find(r => r.id === rfqId);
+        if (rfq) {
+          this.selectedRFQ.set(rfq);
         }
       }
     });
@@ -143,7 +151,8 @@ export class RfqsComponent implements OnInit {
         vendorId: vid,
         vendorName: vend.vendorName,
         contactEmail: vend.contactEmail,
-        status: 'Invited'
+        status: 'Pending' as const,
+        invitationSentDate: new Date().toISOString().split('T')[0]
       };
     });
 
@@ -195,7 +204,7 @@ export class RfqsComponent implements OnInit {
 
   getUnsubmittedVendors(rfq: RFQ) {
     // Return vendors invited that haven't submitted yet
-    return rfq.vendors.filter(v => v.status === 'Invited');
+    return rfq.vendors.filter(v => v.status === 'Pending');
   }
 
   submitVendorBid(event: Event) {
@@ -225,7 +234,8 @@ export class RfqsComponent implements OnInit {
       taxPercent,
       taxAmount,
       totalAmount: total,
-      notes: this.bidForm.notes || undefined
+      notes: this.bidForm.notes || undefined,
+      status: 'Submitted' as const
     });
 
     // Update vendor status inside RFQ in local view
@@ -239,5 +249,77 @@ export class RfqsComponent implements OnInit {
     );
 
     this.closeBiddingModal();
+  }
+
+  readonly activeDetailsTab = signal<'vendors' | 'responses' | 'comparison'>('vendors');
+
+  awardVendor(quote: RFQQuotation) {
+    const rfq = this.selectedRFQ();
+    if (!rfq) return;
+
+    this.mockDataService.awardQuotation(rfq.id, quote.vendorId);
+    const newPO = this.mockDataService.createPOFromRFQ(rfq.id, quote.vendorId);
+
+    if (newPO) {
+      this.notificationService.success(
+        'procurement.quotation_comparison.notif_awarded_title',
+        'procurement.quotation_comparison.notif_awarded_desc',
+        { po: newPO.poNumber, vendor: quote.vendorName }
+      );
+
+      this.notificationService.addNotification(
+        'vendor.notifications.quotation_accepted_title',
+        'vendor.notifications.quotation_accepted_desc',
+        'success',
+        { rfq: rfq.rfqNumber }
+      );
+
+      this.closeRFQDetails();
+      this.router.navigate(['/procurement/purchase-orders'], { queryParams: { poId: newPO.id } });
+    }
+  }
+
+  rejectVendor(quote: RFQQuotation) {
+    const rfq = this.selectedRFQ();
+    if (!rfq) return;
+
+    this.mockDataService.rejectQuotation(rfq.id, quote.vendorId);
+    this.notificationService.warning(
+      'procurement.rfq.notif_rejected_title',
+      'procurement.rfq.notif_rejected_desc',
+      { vendor: quote.vendorName }
+    );
+
+    this.notificationService.addNotification(
+      'vendor.notifications.quotation_rejected_title',
+      'vendor.notifications.quotation_rejected_desc',
+      'danger',
+      { rfq: rfq.rfqNumber }
+    );
+
+    const updated = this.rfqs().find(r => r.id === rfq.id);
+    if (updated) this.selectedRFQ.set(updated);
+  }
+
+  requestRevisionVendor(quote: RFQQuotation) {
+    const rfq = this.selectedRFQ();
+    if (!rfq) return;
+
+    this.mockDataService.requestRevision(rfq.id, quote.vendorId);
+    this.notificationService.info(
+      'procurement.rfq.notif_revision_title',
+      'procurement.rfq.notif_revision_desc',
+      { vendor: quote.vendorName }
+    );
+
+    this.notificationService.addNotification(
+      'vendor.notifications.revision_requested_title',
+      'vendor.notifications.revision_requested_desc',
+      'warning',
+      { rfq: rfq.rfqNumber }
+    );
+
+    const updated = this.rfqs().find(r => r.id === rfq.id);
+    if (updated) this.selectedRFQ.set(updated);
   }
 }

@@ -7,7 +7,8 @@ export type UserRole =
   | 'Store Keeper'
   | 'Project Manager'
   | 'Employee'
-  | 'Safety Officer';
+  | 'Safety Officer'
+  | 'Vendor';
 
 export type Permission =
   | 'view:dashboard'
@@ -29,7 +30,9 @@ export type Permission =
   | 'edit:projects'
   | 'approve:projects'
   | 'view:finance'
-  | 'edit:finance';
+  | 'edit:finance'
+  | 'view:vendor_portal'
+  | 'submit:vendor_quotation';
 
 export interface User {
   id: string;
@@ -46,6 +49,7 @@ export interface User {
   preferredLanguage?: string;
   timezone?: string;
   emailNotifications?: boolean;
+  vendorId?: string; // Links Vendor role users to their Vendor database entry
 }
 
 export interface AuthState {

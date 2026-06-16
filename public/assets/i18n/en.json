@@ -181,8 +181,10 @@
     "jun": "Jun",
     "days": "days",
     "validation_error": "Validation Error",
-    "fill_required_fields": "Please fill all required fields.",
-    "warning": "Warning"
+    "fill_required_fields": "Please fill in all required fields.",
+    "warning": "Warning",
+    "active": "Active",
+    "inactive": "Inactive"
   },
   "auth": {
     "title": "Security Portal Access",
@@ -339,7 +341,26 @@
     "no_pending": "None pending — all clear",
     "click_to_view": "Click to navigate →",
     "recent_activity": "Recent System Activity",
-    "total_events": "total events logged"
+    "total_events": "total events logged",
+    "welcome_back": "Welcome back, {{name}}!",
+    "welcome_message": "Salis-Tech ERP is active. All system pipelines and operational networks are performing optimally.",
+    "quick_actions": "Quick Actions Center",
+    "quick_actions_desc": "Initiate vital workflows across procurement, inventory, and operations.",
+    "create_pr": "Create PR",
+    "create_miv": "Material Issue (MIV)",
+    "receive_mrv": "Receive Goods (MRV)",
+    "create_wo": "Work Order (WO)",
+    "apply_ptw": "Apply PTW",
+    "my_tasks": "My Action Items & Tasks",
+    "my_tasks_desc": "Pending approvals, reviews, and inspections requiring your attention.",
+    "critical_alerts": "Operational Warnings & Critical Alerts",
+    "critical_alerts_desc": "Real-time alerts regarding stock outages, breakdowns, and safety compliance.",
+    "alert_critical_stock": "Low Stock / Spares Alert",
+    "alert_breakdown": "Equipment Breakdown Order",
+    "alert_expired_permit": "Expired Work Permit",
+    "alert_no_warnings": "Zero critical warnings. Operational risk is low.",
+    "pending_wccs": "WCC Reviews Awaiting Sign-off",
+    "pending_inspections_list": "Receiving & HSE Inspections Awaiting"
   },
   "notifications": {
     "title": "Notification Center",
@@ -1124,7 +1145,6 @@
       "modal_subtitle": "Fill in all contract details below",
       "save_contract": "Save Contract",
       "alert_required": "Contract title and client name are required.",
-      "breadcrumb": "Contracts",
       "project_code": "Project Code",
       "client_label": "Client",
       "defined": "Defined",
@@ -1132,7 +1152,6 @@
       "billing_unit": "Billing Unit",
       "milestones_heading": "Milestones",
       "total": "Total",
-      "rates_heading": "Rate Sheet",
       "due": "Due",
       "activity_audit": "Activity & Audit Log",
       "empty_hint": "Select a contract to view details"
@@ -1280,7 +1299,17 @@
       "dept_drilling": "Drilling Operations",
       "dept_maintenance": "Maintenance & Engineering",
       "dept_hse": "HSE & Safety",
-      "dept_logistics": "Logistics & Warehousing"
+      "dept_logistics": "Logistics & Warehousing",
+      "charge_type": "Cost Allocation Type",
+      "charge_type_overhead": "General Overhead",
+      "charge_type_project": "Project Cost",
+      "charge_type_asset": "Asset Maintenance Cost",
+      "project_label": "Project Code / Name",
+      "asset_label": "Asset / Equipment ID",
+      "item_type_label": "Line Item Type",
+      "item_type_inventory": "Store Inventory Item",
+      "item_type_new": "New Stock Requisition",
+      "item_type_service": "Service Delivery / Contract"
     },
     "rfqs": {
       "breadcrumb": "RFQs",
@@ -1348,7 +1377,11 @@
       "err_invalid_price_title": "Invalid Price",
       "err_invalid_price_desc": "Bid price must be greater than zero.",
       "notif_bid_logged_title": "Bid Logged",
-      "notif_bid_logged_desc": "Quotation from {{vendor}} submitted for {{rfq}}."
+      "notif_bid_logged_desc": "Quotation from {{vendor}} submitted for {{rfq}}.",
+      "status_draft": "Draft",
+      "status_awarded": "Awarded",
+      "status_partially_responded": "Partially Responded",
+      "back": "Back"
     },
     "quotation_comparison": {
       "breadcrumb": "Quotation Comparison",
@@ -1442,6 +1475,20 @@
         "Medium": "Medium",
         "High": "High"
       }
+    },
+    "rfq": {
+      "tab_vendors": "Invited Vendors",
+      "tab_responses": "Quotation Responses",
+      "tab_comparison": "Quotation Comparison Matrix",
+      "invitation_sent": "Invitation Sent",
+      "quotation_date": "Quoted On",
+      "action_award": "Award Contract",
+      "action_revision": "Request Revision",
+      "action_reject": "Reject Quote",
+      "notif_rejected_title": "Bid Rejected",
+      "notif_rejected_desc": "Quotation from {{vendor}} has been rejected.",
+      "notif_revision_title": "Revision Requested",
+      "notif_revision_desc": "Quotation revision request sent to {{vendor}}."
     }
   },
   "projects": {
@@ -1765,7 +1812,6 @@
       "over_budget": "Over Budget"
     }
   },
-
   "admin": {
     "approvals": {
       "title": "Approval Workflows",
@@ -1783,16 +1829,6 @@
       "error_load": "Failed to load approval requests",
       "error_action": "Failed to process approval action"
     }
-  },
-  "common": {
-    "cancel": "Cancel",
-    "save": "Save",
-    "edit": "Edit",
-    "delete": "Delete",
-    "active": "Active",
-    "inactive": "Inactive",
-    "validation_error": "Validation Error",
-    "fill_required_fields": "Please fill in all required fields."
   },
   "masters": {
     "items": {
@@ -2075,5 +2111,101 @@
     "issue_created_desc": "Fuel has been issued and cost allocated.",
     "insufficient_fuel_title": "Insufficient Fuel",
     "insufficient_fuel_desc": "The requested quantity exceeds the current tank level."
+  },
+  "vendor": {
+    "portal": {
+      "navigation_section": "Vendor RFQ Portal",
+      "dashboard": "Portal Dashboard",
+      "my_rfqs": "My RFQ Requests",
+      "quotation_history": "Quotation History",
+      "breadcrumb_home": "Vendor Portal",
+      "status_pending": "Pending Bidding",
+      "status_submitted": "Submitted",
+      "status_accepted": "Awarded",
+      "status_rejected": "Rejected",
+      "status_revision_requested": "Revision Requested",
+      "search_rfqs_placeholder": "Search assigned RFQs...",
+      "search_history_placeholder": "Search quotation history...",
+      "filter_open": "Open / Pending",
+      "filter_submitted": "Submitted",
+      "filter_accepted": "Awarded",
+      "filter_rejected": "Rejected",
+      "filter_revision_requested": "Revision Requested",
+      "no_rfqs_found": "No assigned RFQs found.",
+      "page_indicator": "Page {{current}} of {{total}}",
+      "rfq_details": "RFQ Details",
+      "rfq_info": "Request for Quotation Information",
+      "rfq_not_found": "Requested RFQ was not found or access is unauthorized."
+    },
+    "dashboard": {
+      "welcome_back": "Welcome Back, {{name}}",
+      "welcome_message": "Access and submit your competitive pricing for PetroFlow active purchase requests.",
+      "portal_live": "Portal Active",
+      "section_summary": "RFQ Bidding Metrics Summary",
+      "kpi_open_rfqs": "Open RFQs",
+      "kpi_action_required": "Pricing outstanding",
+      "kpi_submitted": "Submitted Bids",
+      "kpi_active_bids": "Awaiting evaluation",
+      "kpi_awarded": "Awarded Contracts",
+      "kpi_contracts_won": "PO generated",
+      "kpi_rejected": "Rejected Bids",
+      "kpi_unsuccessful": "Not awarded",
+      "recent_rfqs": "Recent RFQ Invitations",
+      "recent_rfqs_subtitle": "Review and submit quotations before the bidding deadlines.",
+      "view_all_rfqs": "View all assigned RFQs",
+      "col_rfq_number": "RFQ Number",
+      "col_title": "RFQ Title",
+      "col_created_date": "Invited Date",
+      "col_due_date": "Bidding Due Date",
+      "col_your_status": "Your Status",
+      "col_quoted_amount": "Quoted Amount",
+      "col_actions": "Actions",
+      "source_pr": "PR Source",
+      "action_quote": "Submit Quotation",
+      "no_recent_rfqs": "No active RFQ invitations at this moment."
+    },
+    "quotation": {
+      "submit_title": "Submit Quotation Proposal",
+      "items_pricing_header": "Itemized Line Item Pricing",
+      "col_unit_price": "Unit Cost",
+      "col_discount": "Discount",
+      "col_total": "Total Cost",
+      "terms_remarks_header": "Logistics Terms & Remarks",
+      "payment_terms": "Payment Terms",
+      "summary": "Commercial Summary",
+      "subtotal": "Subtotal (Before Discount)",
+      "discount": "Discount Amount",
+      "vat": "VAT Tax",
+      "grand_total": "Grand Total (Net Cost)",
+      "submit_action": "Publish & Submit Bid",
+      "attachment_upload": "Quotation Document Attachments",
+      "drag_drop_text": "Click or Drag files here to upload your formal proposal sheet",
+      "upload_format_limit": "Supports PDF, Excel, and Images up to 10MB",
+      "rfq_attachments": "RFQ Tender Attachments",
+      "timeline": "Bidding Timeline",
+      "deadline_warning": "Ensure submission before the deadline. Late offers will be locked.",
+      "submitted_summary": "Your Submitted Proposal Summary",
+      "submitted_on": "Submitted on {{date}}",
+      "remarks": "Bid Remarks / Notes",
+      "attached_files": "Uploaded Attachments",
+      "err_invalid_price_title": "Missing Pricing",
+      "err_invalid_price_desc": "Please enter a positive unit price for all requested items.",
+      "history_subtitle": "Archive of your commercial responses and final award outcomes.",
+      "submission_date": "Submission Date",
+      "no_history": "You have not submitted any pricing proposals yet.",
+      "delivery_weeks": "Delivery (Weeks)"
+    },
+    "notifications": {
+      "file_uploaded_title": "File Attached",
+      "file_uploaded_desc": "Document {{file}} has been successfully attached to this quotation.",
+      "quotation_submitted_title": "Quotation Submitted",
+      "quotation_submitted_desc": "Quotation from {{vendor}} submitted for {{rfq}}.",
+      "quotation_accepted_title": "Contract Awarded!",
+      "quotation_accepted_desc": "Your quotation for {{rfq}} has been accepted. Purchase Order is being generated.",
+      "quotation_rejected_title": "Quotation Rejected",
+      "quotation_rejected_desc": "Your pricing proposal for {{rfq}} was not selected.",
+      "revision_requested_title": "Revision Requested",
+      "revision_requested_desc": "PetroFlow has requested a commercial or technical revision on {{rfq}}."
+    }
   }
 }

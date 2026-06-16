@@ -101,6 +101,10 @@ const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     'view:rigs',
     'view:timesheets',
     'view:reports'
+  ],
+  'Vendor': [
+    'view:vendor_portal',
+    'submit:vendor_quotation'
   ]
 };
 
@@ -231,6 +235,36 @@ const MOCK_USERS: Record<string, Omit<User, 'token'>> = {
     preferredLanguage: 'en',
     timezone: 'UTC-5',
     emailNotifications: true
+  },
+  vendor: {
+    id: 'u-10',
+    username: 'vendor',
+    email: 'j.sterling@apexind.com',
+    fullName: 'Jane Sterling',
+    role: 'Vendor',
+    permissions: ROLE_PERMISSIONS['Vendor'],
+    lastLogin: '2026-06-03T10:15:00Z',
+    avatar: 'JS',
+    companyName: 'APEX Industrial Supplies',
+    preferredLanguage: 'en',
+    timezone: 'UTC-5',
+    emailNotifications: true,
+    vendorId: 'v2'
+  },
+  vendor2: {
+    id: 'u-11',
+    username: 'vendor2',
+    email: 's.connor@hsesafety.com',
+    fullName: 'Sarah Connor',
+    role: 'Vendor',
+    permissions: ROLE_PERMISSIONS['Vendor'],
+    lastLogin: '2026-06-03T14:20:00Z',
+    avatar: 'SC',
+    companyName: 'HSE Safety First Inc',
+    preferredLanguage: 'en',
+    timezone: 'UTC-5',
+    emailNotifications: true,
+    vendorId: 'v4'
   }
 };
 
@@ -263,7 +297,13 @@ export class AuthService {
                            : sanitizedUsername === 'employee' ? 'emp123'
                            : `${sanitizedUsername}123`;
 
-    if (!matchedUser || password !== expectedPassword) {
+    // Also check dynamically registered vendor credentials stored from registration
+    const dynamicCreds: Record<string, string> = JSON.parse(localStorage.getItem('pf_vendor_creds') || '{}');
+    const dynamicPassword = dynamicCreds[sanitizedUsername];
+
+    const isValidPassword = password === expectedPassword || (dynamicPassword && password === dynamicPassword);
+
+    if (!matchedUser || !isValidPassword) {
       return throwError(() => new Error('Invalid username or password. Try: admin/admin123, procurement/procure123, etc.'));
     }
 
@@ -414,6 +454,38 @@ export class AuthService {
 
   getRememberedUsername(): string | null {
     return localStorage.getItem(this.REMEMBERED_USER_KEY);
+  }
+
+  // --- REGISTER VENDOR USER (called from Vendor Registration) ---
+  registerVendorUser(
+    username: string,
+    password: string,
+    companyName: string,
+    fullName: string,
+    email: string,
+    vendorId: string
+  ): void {
+    const newId = `u-v-${Date.now()}`;
+    MOCK_USERS[username] = {
+      id: newId,
+      username,
+      email,
+      fullName,
+      role: 'Vendor',
+      permissions: ROLE_PERMISSIONS['Vendor'],
+      lastLogin: undefined,
+      avatar: fullName.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2),
+      companyName,
+      preferredLanguage: 'en',
+      timezone: 'UTC+3',
+      emailNotifications: true,
+      vendorId
+    };
+
+    // Dynamically patch the password check by storing a credential map in localStorage (mock only)
+    const creds: Record<string, string> = JSON.parse(localStorage.getItem('pf_vendor_creds') || '{}');
+    creds[username] = password;
+    localStorage.setItem('pf_vendor_creds', JSON.stringify(creds));
   }
 
   // --- SESSION CHECK ON INITIATION ---

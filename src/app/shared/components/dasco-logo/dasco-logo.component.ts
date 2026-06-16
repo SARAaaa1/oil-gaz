@@ -2,16 +2,11 @@ import { Component, Input, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 /**
- * DASCO ERP — Custom SVG Logo Component
+ * Salis-Tech ERP — Custom SVG Logo Component
  *
  * Usage:
  *   <app-dasco-logo [compact]="false" />  — full  (icon + wordmark)
  *   <app-dasco-logo [compact]="true"  />  — compact (icon only, collapsed sidebar)
- *
- * The icon fuses three petroleum-industry concepts into one minimal mark:
- *   • Oil drop  — teardrop outer silhouette
- *   • Gear arc  — 6-tooth partial ring suggesting industrial machinery
- *   • Flow node — central diamond representing pipeline / workflow routing
  */
 @Component({
   selector: 'app-dasco-logo',
@@ -28,7 +23,7 @@ import { CommonModule } from '@angular/common';
         [style.width.px]="size"
         [style.height.px]="size"
         role="img"
-        aria-label="DASCO ERP"
+        aria-label="Salis-Tech ERP"
       >
         <svg
           viewBox="0 0 40 40"
@@ -37,11 +32,11 @@ import { CommonModule } from '@angular/common';
           [attr.width]="size"
           [attr.height]="size"
         >
-          <!-- ── Drop / gear ring background ── -->
+          <!-- ── Gradient definitions ── -->
           <defs>
             <linearGradient id="bg-grad-c" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse">
-              <stop offset="0%"   stop-color="#F59E0B" stop-opacity="1"/>
-              <stop offset="100%" stop-color="#D97706" stop-opacity="1"/>
+              <stop offset="0%"   stop-color="#009FE3" stop-opacity="1"/>
+              <stop offset="100%" stop-color="#005CB9" stop-opacity="1"/>
             </linearGradient>
             <linearGradient id="icon-grad-c" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse">
               <stop offset="0%"   stop-color="#0F172A"/>
@@ -49,14 +44,14 @@ import { CommonModule } from '@angular/common';
             </linearGradient>
           </defs>
 
-          <!-- Outer oil-drop shape (teardrop) — amber fill -->
+          <!-- Outer drop shape — Salis-Tech blue gradient -->
           <path
             d="M20 3 C20 3 8 14 8 22 C8 28.627 13.373 35 20 35 C26.627 35 32 28.627 32 22 C32 14 20 3 20 3 Z"
             fill="url(#bg-grad-c)"
           />
 
-          <!-- Gear teeth arc (top arc — 6 teeth) rendered as a series of small rects rotated around center -->
-          <g transform="translate(20,20)" fill="#0F172A" opacity="0.55">
+          <!-- Gear teeth arc -->
+          <g transform="translate(20,20)" fill="#0F172A" opacity="0.35">
             <rect x="-1.2" y="-17.5" width="2.4" height="4" rx="0.8"/>
             <rect x="-1.2" y="-17.5" width="2.4" height="4" rx="0.8" transform="rotate(60)"/>
             <rect x="-1.2" y="-17.5" width="2.4" height="4" rx="0.8" transform="rotate(120)"/>
@@ -68,9 +63,9 @@ import { CommonModule } from '@angular/common';
           <!-- Inner circle — dark -->
           <circle cx="20" cy="22" r="8.5" fill="url(#icon-grad-c)"/>
 
-          <!-- Central diamond — workflow node — amber -->
+          <!-- Central diamond — workflow node — Salis-Tech orange -->
           <rect x="20" y="15.5" width="9" height="9" rx="1.5"
-                transform="rotate(45 20 20)" fill="#F59E0B" opacity="0.92"/>
+                transform="rotate(45 20 20)" fill="#FF8A00" opacity="0.95"/>
 
           <!-- Pipeline lines through diamond -->
           <line x1="20" y1="18" x2="20" y2="26" stroke="#0F172A" stroke-width="1.5" stroke-linecap="round"/>
@@ -84,9 +79,9 @@ import { CommonModule } from '@angular/common';
          ───────────────────────────────────────────────── -->
     @if (!compact) {
       <div
-        class="flex items-center gap-3 overflow-hidden"
+        class="flex items-center gap-3 overflow-hidden animate-fade-in"
         role="img"
-        aria-label="DASCO ERP — Petroleum Services"
+        aria-label="Salis-Tech ERP"
       >
         <!-- Icon mark -->
         <svg
@@ -99,8 +94,8 @@ import { CommonModule } from '@angular/common';
         >
           <defs>
             <linearGradient id="bg-grad-f" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse">
-              <stop offset="0%"   stop-color="#FBBF24"/>
-              <stop offset="100%" stop-color="#D97706"/>
+              <stop offset="0%"   stop-color="#009FE3"/>
+              <stop offset="100%" stop-color="#005CB9"/>
             </linearGradient>
             <linearGradient id="icon-grad-f" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse">
               <stop offset="0%"   stop-color="#0F172A"/>
@@ -116,15 +111,15 @@ import { CommonModule } from '@angular/common';
             </filter>
           </defs>
 
-          <!-- Outer oil-drop silhouette — amber gradient -->
+          <!-- Outer silhouette — blue gradient -->
           <path
             d="M20 3 C20 3 8 14 8 22 C8 28.627 13.373 35 20 35 C26.627 35 32 28.627 32 22 C32 14 20 3 20 3 Z"
             fill="url(#bg-grad-f)"
             filter="url(#glow)"
           />
 
-          <!-- Gear teeth (subtle overlay on drop) -->
-          <g transform="translate(20,20)" fill="#0F172A" opacity="0.4">
+          <!-- Gear teeth -->
+          <g transform="translate(20,20)" fill="#0F172A" opacity="0.3">
             <rect x="-1.2" y="-17.5" width="2.4" height="4" rx="0.8"/>
             <rect x="-1.2" y="-17.5" width="2.4" height="4" rx="0.8" transform="rotate(60)"/>
             <rect x="-1.2" y="-17.5" width="2.4" height="4" rx="0.8" transform="rotate(120)"/>
@@ -136,9 +131,9 @@ import { CommonModule } from '@angular/common';
           <!-- Inner dark circle -->
           <circle cx="20" cy="22" r="8.5" fill="url(#icon-grad-f)"/>
 
-          <!-- Workflow diamond node — amber -->
+          <!-- Workflow diamond node — orange -->
           <rect x="20" y="15.5" width="9" height="9" rx="1.5"
-                transform="rotate(45 20 20)" fill="#FBBF24"/>
+                transform="rotate(45 20 20)" fill="#FF8A00"/>
 
           <!-- Cross / pipeline flow lines -->
           <line x1="20" y1="17.5" x2="20" y2="26.5" stroke="#0F172A" stroke-width="1.6" stroke-linecap="round"/>
@@ -152,39 +147,39 @@ import { CommonModule } from '@angular/common';
         <div class="flex flex-col leading-none whitespace-nowrap overflow-hidden">
           <!-- Primary name -->
           <svg
-            viewBox="0 0 120 18"
+            viewBox="0 0 160 18"
             fill="none"
             xmlns="http://www.w3.org/2000/svg"
-            width="120"
+            width="160"
             height="18"
             aria-hidden="true"
           >
-            <!-- DASCO -->
+            <!-- SALIS-TECH -->
             <text
               x="0" y="14"
               font-family="Inter, system-ui, sans-serif"
-              font-size="15"
+              font-size="14"
               font-weight="800"
-              letter-spacing="2.5"
-              fill="white"
-            >DASCO</text>
-            <!-- ERP — amber accent -->
-            <text
-              x="75" y="14"
-              font-family="Inter, system-ui, sans-serif"
-              font-size="15"
-              font-weight="300"
               letter-spacing="2"
-              fill="#F59E0B"
+              fill="white"
+            >SALIS-TECH</text>
+            <!-- ERP — orange accent -->
+            <text
+              x="115" y="14"
+              font-family="Inter, system-ui, sans-serif"
+              font-size="14"
+              font-weight="300"
+              letter-spacing="1.5"
+              fill="#FF8A00"
             >ERP</text>
           </svg>
 
           <!-- Subtitle -->
           <svg
-            viewBox="0 0 120 10"
+            viewBox="0 0 160 10"
             fill="none"
             xmlns="http://www.w3.org/2000/svg"
-            width="120"
+            width="160"
             height="10"
             aria-hidden="true"
             class="mt-0.5"
@@ -194,10 +189,10 @@ import { CommonModule } from '@angular/common';
               font-family="Inter, system-ui, sans-serif"
               font-size="7.5"
               font-weight="600"
-              letter-spacing="2.8"
-              fill="#F59E0B"
-              opacity="0.75"
-            >PETROLEUM SERVICES</text>
+              letter-spacing="2.5"
+              fill="#FF8A00"
+              opacity="0.8"
+            >ENTERPRISE SOLUTIONS</text>
           </svg>
         </div>
       </div>

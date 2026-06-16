@@ -7,29 +7,29 @@
     [class.w-20]="isSidebarCollapsed()" 
     [class.-translate-x-full]="isMobileOpen() === false && !langService.isRtl()"
     [class.translate-x-full]="isMobileOpen() === false && langService.isRtl()"
-    class="fixed inset-y-0 left-0 rtl:right-0 rtl:left-auto z-30 flex flex-col bg-primary text-slate-300 transition-all duration-300 ease-in-out md:static md:translate-x-0 border-r rtl:border-l rtl:border-r-0 border-slate-800 shadow-xl"
+    class="fixed inset-y-0 left-0 rtl:right-0 rtl:left-auto z-30 flex flex-col salistech-sidebar transition-all duration-300 ease-in-out md:static md:translate-x-0"
   >
     <!-- Brand / Logo Area -->
-    <div class="flex items-center justify-between h-16 px-3 bg-secondary border-b border-slate-800">
+    <div class="flex items-center justify-between h-16  sidebar-logo-area">
 
       <!-- Compact icon-only (collapsed) -->
       @if (isSidebarCollapsed()) {
         <div class="flex items-center justify-center w-full animate-fade-in">
-          <app-dasco-logo [compact]="true" [size]="38" />
+          <img src="assets/colapslogo.jpeg" class="h-12 w-12" alt="Logo">
         </div>
       }
 
       <!-- Full logo (expanded) -->
       @if (!isSidebarCollapsed()) {
-        <div class="flex-1 overflow-hidden animate-fade-in">
-          <app-dasco-logo [compact]="false" />
+        <div class="flex-1 overflow-hidden animate-fade-in flex items-center justify-start pl-2">
+          <img src="assets/erplogo.png" class="h-60 w-80 object-contain" alt="Logo">
         </div>
       }
 
       <!-- Toggle collapse button (Desktop) -->
       <button
         (click)="toggleSidebar()"
-        class="hidden md:flex shrink-0 items-center justify-center w-7 h-7 rounded-lg hover:bg-slate-700 text-slate-500 hover:text-white transition-all duration-200 ml-2"
+        class="hidden md:flex shrink-0 items-center justify-center w-7 h-7 rounded-lg sidebar-collapse-btn transition-all duration-200 ml-2"
         [title]="isSidebarCollapsed() ? 'Expand sidebar' : 'Collapse sidebar'"
       >
         <svg class="w-4 h-4 animate-direction" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -46,47 +46,103 @@
     <div class="sidebar-scroll-container flex-1 min-h-0">
     <nav class="sidebar-nav h-full overflow-y-auto py-4 px-3 space-y-1">
       
-      <!-- SECTION: GENERAL -->
-      <div class="space-y-1">
-        @if (!isSidebarCollapsed()) {
-          <div class="text-[9px] font-bold text-slate-500 uppercase tracking-widest px-3 pt-2 pb-1 select-none animate-fade-in">
-            {{ 'navigation.general' | translate }}
-          </div>
-        }
-        
-        <!-- Dashboard Link -->
-        @if (authService.hasPermission('view:dashboard')) {
+      <!-- SECTION: VENDOR PORTAL -->
+      @if (authService.userRole() === 'Vendor') {
+        <div class="space-y-1">
+          @if (!isSidebarCollapsed()) {
+            <div class="sidebar-section-label text-[9px] font-bold uppercase tracking-widest px-3 pt-2 pb-1 select-none animate-fade-in">
+              {{ 'vendor.portal.navigation_section' | translate }}
+            </div>
+          }
+          
+          <!-- Vendor Dashboard Link -->
           <a 
-            routerLink="/dashboard" 
-            routerLinkActive="bg-accent text-primary font-semibold"
+            routerLink="/vendor-portal/dashboard" 
+            routerLinkActive="active"
             [routerLinkActiveOptions]="{ exact: true }"
-            class="flex items-center space-x-3 px-3 py-2.5 rounded-lg hover:bg-slate-800 hover:text-white transition-all group animate-fade-in"
+            class="sidebar-menu-item group animate-fade-in"
           >
             <svg class="w-5 h-5 shrink-0 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2v-4zM14 16a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 01-2-2v-4z" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
             </svg>
             <span class="transition-all duration-300" [class.opacity-0]="isSidebarCollapsed()" [class.w-0]="isSidebarCollapsed()" [class.hidden]="isSidebarCollapsed()">
-              {{ 'navigation.dashboard' | translate }}
+              {{ 'vendor.portal.dashboard' | translate }}
             </span>
           </a>
-        }
-      </div>
+
+          <!-- My RFQs Link -->
+          <a 
+            routerLink="/vendor-portal/rfqs" 
+            routerLinkActive="active"
+            class="sidebar-menu-item group animate-fade-in"
+          >
+            <svg class="w-5 h-5 shrink-0 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+            </svg>
+            <span class="transition-all duration-300" [class.opacity-0]="isSidebarCollapsed()" [class.w-0]="isSidebarCollapsed()" [class.hidden]="isSidebarCollapsed()">
+              {{ 'vendor.portal.my_rfqs' | translate }}
+            </span>
+          </a>
+
+          <!-- Quotation History Link -->
+          <a 
+            routerLink="/vendor-portal/history" 
+            routerLinkActive="active"
+            class="sidebar-menu-item group animate-fade-in"
+          >
+            <svg class="w-5 h-5 shrink-0 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span class="transition-all duration-300" [class.opacity-0]="isSidebarCollapsed()" [class.w-0]="isSidebarCollapsed()" [class.hidden]="isSidebarCollapsed()">
+              {{ 'vendor.portal.quotation_history' | translate }}
+            </span>
+          </a>
+        </div>
+      }
+
+      <!-- SECTION: GENERAL -->
+      @if (authService.userRole() !== 'Vendor') {
+        <div class="space-y-1">
+          @if (!isSidebarCollapsed()) {
+            <div class="sidebar-section-label text-[9px] font-bold uppercase tracking-widest px-3 pt-2 pb-1 select-none animate-fade-in">
+              {{ 'navigation.general' | translate }}
+            </div>
+          }
+          
+          <!-- Dashboard Link -->
+          @if (authService.hasPermission('view:dashboard')) {
+            <a 
+              routerLink="/dashboard" 
+              routerLinkActive="active"
+              [routerLinkActiveOptions]="{ exact: true }"
+              class="sidebar-menu-item group animate-fade-in"
+            >
+              <svg class="w-5 h-5 shrink-0 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2v-4zM14 16a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 01-2-2v-4z" />
+              </svg>
+              <span class="transition-all duration-300" [class.opacity-0]="isSidebarCollapsed()" [class.w-0]="isSidebarCollapsed()" [class.hidden]="isSidebarCollapsed()">
+                {{ 'navigation.dashboard' | translate }}
+              </span>
+            </a>
+          }
+        </div>
+      }
 
       <!-- SECTION: CORE BUSINESS -->
       <div class="space-y-1">
         @if (!isSidebarCollapsed()) {
-          <div class="text-[9px] font-bold text-slate-500 uppercase tracking-widest px-3 pt-4 pb-1 select-none animate-fade-in">
+          <div class="sidebar-section-label text-[9px] font-bold uppercase tracking-widest px-3 pt-4 pb-1 select-none animate-fade-in">
             {{ 'navigation.core_business' | translate }}
           </div>
         }
 
-
         <div *appRole="['Super Admin', 'General Manager', 'Operations Manager', 'Project Manager', 'Employee', 'Finance Manager']" class="space-y-1 animate-fade-in">
           <button 
             (click)="toggleOperationsMenu()"
-            class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-slate-800 hover:text-white transition-all group"
+            class="sidebar-menu-item w-full justify-between group"
+            [class.active]="isOperationsOpen()"
           >
-            <div class="flex items-center space-x-3">
+            <div class="flex items-center gap-3">
               <!-- O&G Tower/Rig Icon -->
               <svg class="w-5 h-5 shrink-0 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
@@ -108,30 +164,21 @@
 
           <!-- Reorganized flow with visual connector dots & down-arrows -->
           @if (isOperationsOpen() && !isSidebarCollapsed()) {
-            <div class="pl-6 ml-5 border-l border-slate-700/60 space-y-1.5 transition-all duration-300 relative mt-1 mb-2">
+            <div class="sidebar-submenu-container transition-all duration-300 relative">
               
               <!-- 1. Contracts -->
               <a 
                 routerLink="/workflow/contracts" 
-                routerLinkActive="text-accent font-semibold"
-                #rlaContracts="routerLinkActive"
-                class="group/item flex items-center py-1 text-xs text-slate-400 hover:text-white transition-colors relative"
+                routerLinkActive="active"
+                class="sidebar-submenu-item group/item"
               >
-                <span class="absolute -left-[30px] flex items-center justify-center w-3.5 h-3.5 bg-primary rounded-full">
-                  <span 
-                    class="w-1.5 h-1.5 rounded-full transition-all duration-300"
-                    [class.bg-accent]="rlaContracts.isActive"
-                    [class.scale-125]="rlaContracts.isActive"
-                    [class.bg-slate-600]="!rlaContracts.isActive"
-                  ></span>
-                </span>
                 {{ 'navigation.contracts' | translate }}
               </a>
 
               <!-- Flow Arrow -->
-              <div class="flex items-center h-1 select-none pointer-events-none relative">
-                <span class="absolute -left-[27px] w-2 h-2 flex items-center justify-center bg-primary text-slate-600">
-                  <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div class="sidebar-flow-arrow">
+                <span class="sidebar-flow-arrow-icon">
+                  <svg class="w-2 h-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 13l-7 7-7-7" />
                   </svg>
                 </span>
@@ -141,25 +188,16 @@
               @if (authService.hasPermission('view:projects')) {
                 <a 
                   routerLink="/operations/projects" 
-                  routerLinkActive="text-accent font-semibold"
-                  #rlaProjects="routerLinkActive"
-                  class="group/item flex items-center py-1 text-xs text-slate-400 hover:text-white transition-colors relative"
+                  routerLinkActive="active"
+                  class="sidebar-submenu-item group/item"
                 >
-                  <span class="absolute -left-[30px] flex items-center justify-center w-3.5 h-3.5 bg-primary rounded-full">
-                    <span 
-                      class="w-1.5 h-1.5 rounded-full transition-all duration-300"
-                      [class.bg-accent]="rlaProjects.isActive"
-                      [class.scale-125]="rlaProjects.isActive"
-                      [class.bg-slate-600]="!rlaProjects.isActive"
-                    ></span>
-                  </span>
                   {{ 'navigation.projects' | translate }}
                 </a>
 
                 <!-- Flow Arrow -->
-                <div class="flex items-center h-1 select-none pointer-events-none relative">
-                  <span class="absolute -left-[27px] w-2 h-2 flex items-center justify-center bg-primary text-slate-600">
-                    <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div class="sidebar-flow-arrow">
+                  <span class="sidebar-flow-arrow-icon">
+                    <svg class="w-2 h-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 13l-7 7-7-7" />
                     </svg>
                   </span>
@@ -169,25 +207,16 @@
               <!-- 2. Daily Activity Reports (DAR) -->
               <a 
                 routerLink="/workflow/dars" 
-                routerLinkActive="text-accent font-semibold"
-                #rlaDars="routerLinkActive"
-                class="group/item flex items-center py-1 text-xs text-slate-400 hover:text-white transition-colors relative"
+                routerLinkActive="active"
+                class="sidebar-submenu-item group/item"
               >
-                <span class="absolute -left-[30px] flex items-center justify-center w-3.5 h-3.5 bg-primary rounded-full">
-                  <span 
-                    class="w-1.5 h-1.5 rounded-full transition-all duration-300"
-                    [class.bg-accent]="rlaDars.isActive"
-                    [class.scale-125]="rlaDars.isActive"
-                    [class.bg-slate-600]="!rlaDars.isActive"
-                  ></span>
-                </span>
                 {{ 'navigation.dar' | translate }}
               </a>
 
               <!-- Flow Arrow -->
-              <div class="flex items-center h-1 select-none pointer-events-none relative">
-                <span class="absolute -left-[27px] w-2 h-2 flex items-center justify-center bg-primary text-slate-600">
-                  <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div class="sidebar-flow-arrow">
+                <span class="sidebar-flow-arrow-icon">
+                  <svg class="w-2 h-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 13l-7 7-7-7" />
                   </svg>
                 </span>
@@ -196,25 +225,16 @@
               <!-- 3. Monthly Progress Reports / Timesheets -->
               <a 
                 routerLink="/operations/timesheets" 
-                routerLinkActive="text-accent font-semibold"
-                #rlaTimesheets="routerLinkActive"
-                class="group/item flex items-center py-1 text-xs text-slate-400 hover:text-white transition-colors relative"
+                routerLinkActive="active"
+                class="sidebar-submenu-item group/item"
               >
-                <span class="absolute -left-[30px] flex items-center justify-center w-3.5 h-3.5 bg-primary rounded-full">
-                  <span 
-                    class="w-1.5 h-1.5 rounded-full transition-all duration-300"
-                    [class.bg-accent]="rlaTimesheets.isActive"
-                    [class.scale-125]="rlaTimesheets.isActive"
-                    [class.bg-slate-600]="!rlaTimesheets.isActive"
-                  ></span>
-                </span>
                 {{ 'navigation.timesheets' | translate }}
               </a>
 
               <!-- Flow Arrow -->
-              <div class="flex items-center h-1 select-none pointer-events-none relative">
-                <span class="absolute -left-[27px] w-2 h-2 flex items-center justify-center bg-primary text-slate-600">
-                  <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div class="sidebar-flow-arrow">
+                <span class="sidebar-flow-arrow-icon">
+                  <svg class="w-2 h-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 13l-7 7-7-7" />
                   </svg>
                 </span>
@@ -223,25 +243,16 @@
               <!-- 4. Work Completion Certificates (WCC) -->
               <a 
                 routerLink="/workflow/wccs" 
-                routerLinkActive="text-accent font-semibold"
-                #rlaWccs="routerLinkActive"
-                class="group/item flex items-center py-1 text-xs text-slate-400 hover:text-white transition-colors relative"
+                routerLinkActive="active"
+                class="sidebar-submenu-item group/item"
               >
-                <span class="absolute -left-[30px] flex items-center justify-center w-3.5 h-3.5 bg-primary rounded-full">
-                  <span 
-                    class="w-1.5 h-1.5 rounded-full transition-all duration-300"
-                    [class.bg-accent]="rlaWccs.isActive"
-                    [class.scale-125]="rlaWccs.isActive"
-                    [class.bg-slate-600]="!rlaWccs.isActive"
-                  ></span>
-                </span>
                 {{ 'navigation.wcc' | translate }}
               </a>
 
               <!-- Flow Arrow -->
-              <div class="flex items-center h-1 select-none pointer-events-none relative">
-                <span class="absolute -left-[27px] w-2 h-2 flex items-center justify-center bg-primary text-slate-600">
-                  <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div class="sidebar-flow-arrow">
+                <span class="sidebar-flow-arrow-icon">
+                  <svg class="w-2 h-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 13l-7 7-7-7" />
                   </svg>
                 </span>
@@ -250,25 +261,16 @@
               <!-- 5. Invoices -->
               <a 
                 routerLink="/workflow/invoices" 
-                routerLinkActive="text-accent font-semibold"
-                #rlaInvoices="routerLinkActive"
-                class="group/item flex items-center py-1 text-xs text-slate-400 hover:text-white transition-colors relative"
+                routerLinkActive="active"
+                class="sidebar-submenu-item group/item"
               >
-                <span class="absolute -left-[30px] flex items-center justify-center w-3.5 h-3.5 bg-primary rounded-full">
-                  <span 
-                    class="w-1.5 h-1.5 rounded-full transition-all duration-300"
-                    [class.bg-accent]="rlaInvoices.isActive"
-                    [class.scale-125]="rlaInvoices.isActive"
-                    [class.bg-slate-600]="!rlaInvoices.isActive"
-                  ></span>
-                </span>
                 {{ 'navigation.invoices' | translate }}
               </a>
 
               <!-- Flow Arrow -->
-              <div class="flex items-center h-1 select-none pointer-events-none relative">
-                <span class="absolute -left-[27px] w-2 h-2 flex items-center justify-center bg-primary text-slate-600">
-                  <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div class="sidebar-flow-arrow">
+                <span class="sidebar-flow-arrow-icon">
+                  <svg class="w-2 h-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 13l-7 7-7-7" />
                   </svg>
                 </span>
@@ -277,18 +279,9 @@
               <!-- 6. Collections -->
               <a 
                 routerLink="/workflow/collections" 
-                routerLinkActive="text-accent font-semibold"
-                #rlaCollections="routerLinkActive"
-                class="group/item flex items-center py-1 text-xs text-slate-400 hover:text-white transition-colors relative"
+                routerLinkActive="active"
+                class="sidebar-submenu-item group/item"
               >
-                <span class="absolute -left-[30px] flex items-center justify-center w-3.5 h-3.5 bg-primary rounded-full">
-                  <span 
-                    class="w-1.5 h-1.5 rounded-full transition-all duration-300"
-                    [class.bg-accent]="rlaCollections.isActive"
-                    [class.scale-125]="rlaCollections.isActive"
-                    [class.bg-slate-600]="!rlaCollections.isActive"
-                  ></span>
-                </span>
                 {{ 'navigation.collections' | translate }}
               </a>
 
@@ -300,9 +293,10 @@
         <div *appRole="['Super Admin', 'General Manager', 'Finance Manager', 'Procurement Manager']" class="space-y-1 animate-fade-in">
           <button 
             (click)="toggleProcurementMenu()"
-            class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-slate-800 hover:text-white transition-all group"
+            class="sidebar-menu-item w-full justify-between group"
+            [class.active]="isProcurementOpen()"
           >
-            <div class="flex items-center space-x-3">
+            <div class="flex items-center gap-3">
               <svg class="w-5 h-5 shrink-0 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
               </svg>
@@ -323,88 +317,48 @@
 
           <!-- Submenu links -->
           @if (isProcurementOpen() && !isSidebarCollapsed()) {
-            <div class="pl-9 space-y-1.5 transition-all duration-300">
+            <div class="sidebar-submenu-container transition-all duration-300">
               <a 
                 routerLink="/procurement/purchase-requests" 
-                routerLinkActive="text-accent font-semibold"
-                class="block py-1 text-xs text-slate-400 hover:text-white transition-colors"
+                routerLinkActive="active"
+                class="sidebar-submenu-item group/item"
               >
                 {{ 'navigation.purchase_requests' | translate }}
               </a>
               <a 
                 routerLink="/procurement/rfqs" 
-                routerLinkActive="text-accent font-semibold"
-                class="block py-1 text-xs text-slate-400 hover:text-white transition-colors"
+                routerLinkActive="active"
+                class="sidebar-submenu-item group/item"
               >
                 {{ 'navigation.rfqs' | translate }}
               </a>
               <a 
                 routerLink="/procurement/quotation-comparison" 
-                routerLinkActive="text-accent font-semibold"
-                class="block py-1 text-xs text-slate-400 hover:text-white transition-colors"
+                routerLinkActive="active"
+                class="sidebar-submenu-item group/item"
               >
                 {{ 'navigation.quotation_comparison' | translate }}
               </a>
               <a 
                 routerLink="/procurement/purchase-orders" 
-                routerLinkActive="text-accent font-semibold"
-                class="block py-1 text-xs text-slate-400 hover:text-white transition-colors"
+                routerLinkActive="active"
+                class="sidebar-submenu-item group/item"
               >
                 {{ 'navigation.purchase_orders' | translate }}
               </a>
               <a 
                 routerLink="/procurement/inspection" 
-                routerLinkActive="text-accent font-semibold"
-                class="block py-1 text-xs text-slate-400 hover:text-white transition-colors"
+                routerLinkActive="active"
+                class="sidebar-submenu-item group/item"
               >
                 {{ 'navigation.receiving_inspection' | translate }}
               </a>
-            </div>
-
-          }
-        </div>
-
-        <!-- Masters Group (collapsible) -->
-        <div *appRole="['Super Admin', 'General Manager', 'Procurement Manager', 'Store Keeper']" class="space-y-1 animate-fade-in">
-          <button 
-            (click)="toggleMastersMenu()"
-            class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-slate-800 hover:text-white transition-all group"
-          >
-            <div class="flex items-center space-x-3">
-              <svg class="w-5 h-5 shrink-0 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-              </svg>
-              <span class="transition-all duration-300" [class.opacity-0]="isSidebarCollapsed()" [class.w-0]="isSidebarCollapsed()" [class.hidden]="isSidebarCollapsed()">
-                {{ 'navigation.masters' | translate }}
-              </span>
-            </div>
-            @if (!isSidebarCollapsed()) {
-              <svg 
-                [class.rotate-180]="isMastersOpen()"
-                class="w-4 h-4 transition-transform duration-200" 
-                fill="none" stroke="currentColor" viewBox="0 0 24 24"
-              >
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-              </svg>
-            }
-          </button>
-
-          <!-- Submenu links -->
-          @if (isMastersOpen() && !isSidebarCollapsed()) {
-            <div class="pl-9 space-y-1.5 transition-all duration-300">
               <a 
-                routerLink="/masters/items" 
-                routerLinkActive="text-accent font-semibold"
-                class="block py-1 text-xs text-slate-400 hover:text-white transition-colors"
+                routerLink="/vendors" 
+                routerLinkActive="active"
+                class="sidebar-submenu-item group/item"
               >
-                {{ 'navigation.item_master' | translate }}
-              </a>
-              <a 
-                routerLink="/masters/warehouses" 
-                routerLinkActive="text-accent font-semibold"
-                class="block py-1 text-xs text-slate-400 hover:text-white transition-colors"
-              >
-                {{ 'navigation.warehouse_structure' | translate }}
+                {{ 'navigation.vendors' | translate }}
               </a>
             </div>
           }
@@ -414,9 +368,10 @@
         <div *appRole="['Super Admin', 'General Manager', 'Store Keeper', 'Procurement Manager']" class="space-y-1 animate-fade-in">
           <button 
             (click)="toggleInventoryMenu()"
-            class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-slate-800 hover:text-white transition-all group"
+            class="sidebar-menu-item w-full justify-between group"
+            [class.active]="isInventoryOpen()"
           >
-            <div class="flex items-center space-x-3">
+            <div class="flex items-center gap-3">
               <svg class="w-5 h-5 shrink-0 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
               </svg>
@@ -437,38 +392,38 @@
 
           <!-- Submenu links -->
           @if (isInventoryOpen() && !isSidebarCollapsed()) {
-            <div class="pl-9 space-y-1.5 transition-all duration-300">
+            <div class="sidebar-submenu-container transition-all duration-300">
               <a 
                 routerLink="/inventory" 
-                routerLinkActive="text-accent font-semibold"
-                class="block py-1 text-xs text-slate-400 hover:text-white transition-colors"
+                routerLinkActive="active"
+                [routerLinkActiveOptions]="{ exact: true }"
+                class="sidebar-submenu-item group/item"
               >
                 {{ 'navigation.items' | translate }}
               </a>
               <a 
+                routerLink="/masters/items" 
+                routerLinkActive="active"
+                class="sidebar-submenu-item group/item"
+              >
+                {{ 'navigation.item_master' | translate }}
+              </a>
+              <a 
+                routerLink="/masters/warehouses" 
+                routerLinkActive="active"
+                class="sidebar-submenu-item group/item"
+              >
+                {{ 'navigation.warehouse_structure' | translate }}
+              </a>
+              <a 
                 routerLink="/inventory" 
                 [queryParams]="{ filter: 'warehouses' }"
-                routerLinkActive="text-accent font-semibold"
-                class="block py-1 text-xs text-slate-400 hover:text-white transition-colors"
+                routerLinkActive="active"
+                class="sidebar-submenu-item group/item"
               >
                 {{ 'navigation.warehouses' | translate }}
               </a>
-              <a 
-                routerLink="/inventory" 
-                [queryParams]="{ filter: 'receipts' }"
-                routerLinkActive="text-accent font-semibold"
-                class="block py-1 text-xs text-slate-400 hover:text-white transition-colors"
-              >
-                {{ 'navigation.goods_receipts' | translate }}
-              </a>
-              <a 
-                routerLink="/inventory" 
-                [queryParams]="{ filter: 'requisitions' }"
-                routerLinkActive="text-accent font-semibold"
-                class="block py-1 text-xs text-slate-400 hover:text-white transition-colors"
-              >
-                {{ 'navigation.material_requisitions' | translate }}
-              </a>
+            
             </div>
           }
         </div>
@@ -477,9 +432,10 @@
         <div *appRole="['Super Admin', 'General Manager', 'Operations Manager']" class="space-y-1 animate-fade-in">
           <button 
             (click)="toggleAssetsMenu()"
-            class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-slate-800 hover:text-white transition-all group"
+            class="sidebar-menu-item w-full justify-between group"
+            [class.active]="isAssetsOpen()"
           >
-            <div class="flex items-center space-x-3">
+            <div class="flex items-center gap-3">
               <svg class="w-5 h-5 shrink-0 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
               </svg>
@@ -500,67 +456,67 @@
 
           <!-- Submenu links -->
           @if (isAssetsOpen() && !isSidebarCollapsed()) {
-            <div class="pl-9 space-y-1.5 transition-all duration-300">
+            <div class="sidebar-submenu-container transition-all duration-300">
               <a 
                 routerLink="/operations/rigs" 
-                routerLinkActive="text-accent font-semibold"
-                class="block py-1 text-xs text-slate-400 hover:text-white transition-colors"
+                routerLinkActive="active"
+                [routerLinkActiveOptions]="{ exact: true }"
+                class="sidebar-submenu-item group/item"
               >
                 {{ 'navigation.equipment_registry' | translate }}
               </a>
               <a 
                 routerLink="/operations/camps" 
-                routerLinkActive="text-accent font-semibold"
-                class="block py-1 text-xs text-slate-400 hover:text-white transition-colors"
+                routerLinkActive="active"
+                class="sidebar-submenu-item group/item"
               >
                 {{ 'navigation.camps' | translate }}
               </a>
               <a 
                 routerLink="/operations/fleet" 
-                routerLinkActive="text-accent font-semibold"
-                class="block py-1 text-xs text-slate-400 hover:text-white transition-colors"
+                routerLinkActive="active"
+                class="sidebar-submenu-item group/item"
               >
                 {{ 'navigation.fleet' | translate }}
               </a>
               <a
                 routerLink="/operations/fuel"
-                routerLinkActive="text-accent font-semibold"
-                class="block py-1 text-xs text-slate-400 hover:text-white transition-colors"
+                routerLinkActive="active"
+                class="sidebar-submenu-item group/item"
               >
                 {{ 'navigation.fuel' | translate }}
               </a>
               <a 
                 routerLink="/operations/timesheets" 
-                routerLinkActive="text-accent font-semibold"
-                class="block py-1 text-xs text-slate-400 hover:text-white transition-colors"
+                routerLinkActive="active"
+                class="sidebar-submenu-item group/item"
               >
                 {{ 'navigation.utilization' | translate }}
               </a>
               <a 
                 routerLink="/operations/rigs" 
                 [queryParams]="{ tab: 'maintenance' }"
-                routerLinkActive="text-accent font-semibold"
-                class="block py-1 text-xs text-slate-400 hover:text-white transition-colors"
+                routerLinkActive="active"
+                class="sidebar-submenu-item group/item"
               >
                 {{ 'navigation.maintenance' | translate }}
               </a>
               <a 
                 routerLink="/assets" 
-                routerLinkActive="text-accent font-semibold"
+                routerLinkActive="active"
                 [routerLinkActiveOptions]="{ exact: true }"
-                class="block py-1 text-xs text-slate-400 hover:text-white transition-colors"
+                class="sidebar-submenu-item group/item"
               >
                 {{ 'navigation.asset_register' | translate }}
               </a>
               <a 
                 routerLink="/assets/maintenance" 
-                routerLinkActive="text-accent font-semibold"
-                class="block py-1 text-xs text-slate-400 hover:text-white transition-colors"
+                routerLinkActive="active"
+                class="sidebar-submenu-item group/item"
               >
                 {{ 'navigation.maintenance_orders' | translate }}
               </a>
             </div>
-
           }
         </div>
 
@@ -568,9 +524,10 @@
         <div *appRole="['Super Admin', 'General Manager', 'Finance Manager']" class="space-y-1 animate-fade-in">
           <button 
             (click)="toggleFinanceMenu()"
-            class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-slate-800 hover:text-white transition-all group"
+            class="sidebar-menu-item w-full justify-between group"
+            [class.active]="isFinanceOpen()"
           >
-            <div class="flex items-center space-x-3">
+            <div class="flex items-center gap-3">
               <svg class="w-5 h-5 shrink-0 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
@@ -591,65 +548,64 @@
 
           <!-- Submenu links -->
           @if (isFinanceOpen() && !isSidebarCollapsed()) {
-            <div class="pl-9 space-y-1.5 transition-all duration-300">
+            <div class="sidebar-submenu-container transition-all duration-300">
               <a 
                 routerLink="/finance/cost-centers" 
-                routerLinkActive="text-accent font-semibold"
-                class="block py-1 text-xs text-slate-400 hover:text-white transition-colors"
+                routerLinkActive="active"
+                class="sidebar-submenu-item group/item"
               >
                 {{ 'navigation.cost_centers' | translate }}
               </a>
               <a 
                 routerLink="/finance/chart-of-accounts" 
-                routerLinkActive="text-accent font-semibold"
-                class="block py-1 text-xs text-slate-400 hover:text-white transition-colors"
+                routerLinkActive="active"
+                class="sidebar-submenu-item group/item"
               >
                 {{ 'navigation.chart_of_accounts' | translate }}
               </a>
               <a 
                 routerLink="/finance/general-ledger" 
-                routerLinkActive="text-accent font-semibold"
-                class="block py-1 text-xs text-slate-400 hover:text-white transition-colors"
+                routerLinkActive="active"
+                class="sidebar-submenu-item group/item"
               >
                 {{ 'navigation.general_ledger' | translate }}
               </a>
               <a 
                 routerLink="/finance/ap" 
-                routerLinkActive="text-accent font-semibold"
-                class="block py-1 text-xs text-slate-400 hover:text-white transition-colors"
+                routerLinkActive="active"
+                class="sidebar-submenu-item group/item"
               >
                 {{ 'navigation.ap_ledger' | translate }}
               </a>
               <a 
                 routerLink="/finance/ar" 
-                routerLinkActive="text-accent font-semibold"
-                class="block py-1 text-xs text-slate-400 hover:text-white transition-colors"
+                routerLinkActive="active"
+                class="sidebar-submenu-item group/item"
               >
                 {{ 'navigation.ar_ledger' | translate }}
               </a>
               <a 
                 routerLink="/finance/cash-bank" 
-                routerLinkActive="text-accent font-semibold"
-                class="block py-1 text-xs text-slate-400 hover:text-white transition-colors"
+                routerLinkActive="active"
+                class="sidebar-submenu-item group/item"
               >
                 {{ 'navigation.cash_bank' | translate }}
               </a>
               <a 
                 routerLink="/finance/cost-control" 
-                routerLinkActive="text-accent font-semibold"
-                class="block py-1 text-xs text-slate-400 hover:text-white transition-colors"
+                routerLinkActive="active"
+                class="sidebar-submenu-item group/item"
               >
                 {{ 'navigation.cost_control' | translate }}
               </a>
               <a 
                 routerLink="/workflow/wccs" 
-                routerLinkActive="text-accent font-semibold"
-                class="block py-1 text-xs text-slate-400 hover:text-white transition-colors"
+                routerLinkActive="active"
+                class="sidebar-submenu-item group/item"
               >
                 {{ 'navigation.wip' | translate }}
               </a>
             </div>
-
           }
         </div>
 
@@ -657,8 +613,8 @@
         <a 
           *appRole="['Super Admin', 'General Manager', 'Operations Manager']"
           routerLink="/hse" 
-          routerLinkActive="bg-accent text-primary font-semibold"
-          class="flex items-center space-x-3 px-3 py-2.5 rounded-lg hover:bg-slate-800 hover:text-white transition-all group animate-fade-in"
+          routerLinkActive="active"
+          class="sidebar-menu-item group animate-fade-in"
         >
           <svg class="w-5 h-5 shrink-0 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
@@ -672,7 +628,7 @@
       <!-- SECTION: ANALYTICS & SYSTEM -->
       <div class="space-y-1">
         @if (!isSidebarCollapsed()) {
-          <div class="text-[9px] font-bold text-slate-500 uppercase tracking-widest px-3 pt-4 pb-1 select-none animate-fade-in">
+          <div class="sidebar-section-label text-[9px] font-bold uppercase tracking-widest px-3 pt-4 pb-1 select-none animate-fade-in">
             {{ 'navigation.system_admin' | translate }}
           </div>
         }
@@ -681,8 +637,8 @@
         <a 
           *appRole="['Super Admin', 'General Manager', 'Finance Manager', 'Procurement Manager', 'Operations Manager']"
           routerLink="/reports" 
-          routerLinkActive="bg-accent text-primary font-semibold"
-          class="flex items-center space-x-3 px-3 py-2.5 rounded-lg hover:bg-slate-800 hover:text-white transition-all group animate-fade-in"
+          routerLinkActive="active"
+          class="sidebar-menu-item group animate-fade-in"
         >
           <svg class="w-5 h-5 shrink-0 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -696,9 +652,10 @@
         <div *appRole="['Super Admin', 'General Manager']" class="space-y-1 animate-fade-in">
           <button 
             (click)="toggleAdminMenu()"
-            class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-slate-800 hover:text-white transition-all group"
+            class="sidebar-menu-item w-full justify-between group"
+            [class.active]="isAdminOpen()"
           >
-            <div class="flex items-center space-x-3">
+            <div class="flex items-center gap-3">
               <svg class="w-5 h-5 shrink-0 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
               </svg>
@@ -719,34 +676,34 @@
 
           <!-- Submenu links -->
           @if (isAdminOpen() && !isSidebarCollapsed()) {
-            <div class="pl-9 space-y-1.5 transition-all duration-300">
+            <div class="sidebar-submenu-container transition-all duration-300">
               <a 
                 routerLink="/settings" 
                 [queryParams]="{ tab: 'users' }"
-                routerLinkActive="text-accent font-semibold"
-                class="block py-1 text-xs text-slate-400 hover:text-white transition-colors"
+                routerLinkActive="active"
+                class="sidebar-submenu-item group/item"
               >
                 {{ 'navigation.users' | translate }}
               </a>
               <a 
                 routerLink="/settings" 
                 [queryParams]="{ tab: 'roles' }"
-                routerLinkActive="text-accent font-semibold"
-                class="block py-1 text-xs text-slate-400 hover:text-white transition-colors"
+                routerLinkActive="active"
+                class="sidebar-submenu-item group/item"
               >
                 {{ 'navigation.roles' | translate }}
               </a>
               <a 
                 routerLink="/activity-logs" 
-                routerLinkActive="text-accent font-semibold"
-                class="block py-1 text-xs text-slate-400 hover:text-white transition-colors"
+                routerLinkActive="active"
+                class="sidebar-submenu-item group/item"
               >
                 {{ 'navigation.audit_logs' | translate }}
               </a>
               <a 
                 routerLink="/audit-trail" 
-                routerLinkActive="text-accent font-semibold"
-                class="block py-1 text-xs text-slate-400 hover:text-white transition-colors"
+                routerLinkActive="active"
+                class="sidebar-submenu-item group/item"
               >
                 {{ 'navigation.activity_tracking' | translate }}
               </a>
@@ -759,13 +716,13 @@
     </div>
 
     <!-- Sidebar Footer / Collapsed indicator -->
-    <div class="p-4 border-t border-slate-800 bg-secondary flex items-center justify-between text-xs text-slate-500 overflow-hidden shrink-0">
+    <!-- <div class="sidebar-footer-area p-4 flex items-center justify-between text-xs overflow-hidden shrink-0">
       <div class="flex items-center space-x-2" [class.justify-center]="isSidebarCollapsed()">
         <span class="w-2.5 h-2.5 rounded-full bg-success animate-pulse shrink-0"></span>
         <span [class.hidden]="isSidebarCollapsed()" class="whitespace-nowrap">{{ 'navigation.server_online' | translate }}</span>
       </div>
       <span [class.hidden]="isSidebarCollapsed()" class="text-[10px]">v1.0.0</span>
-    </div>
+    </div> -->
   </aside>
 
   <!-- MOBILE OVERLAY -->
@@ -780,7 +737,7 @@
   <div class="flex-1 flex flex-col h-full overflow-hidden">
     
     <!-- TOP NAVBAR -->
-    <header class="flex items-center justify-between h-16 px-4 md:px-6 bg-white border-b border-slate-200 shadow-sm shrink-0">
+    <header class="flex items-center justify-between h-16 px-4 md:px-6 border-b shadow-sm shrink-0" style="background-color:var(--bg-card);border-color:var(--border-color)">
       <div class="flex items-center space-x-3">
         <!-- Mobile menu toggle -->
         <button 
@@ -820,6 +777,36 @@
       <!-- Action items: notifications, profile dropdown -->
       <div class="flex items-center space-x-3 md:space-x-4">
         
+        <!-- Quick Search Icon (Command Palette) -->
+        <button 
+          (click)="palette.togglePalette()"
+          class="p-2 rounded-full transition-colors focus:outline-none" style="color:var(--text-secondary)" onmouseenter="this.style.backgroundColor='var(--bg-secondary)'" onmouseleave="this.style.backgroundColor='transparent'"
+          title="Search (Ctrl + K)"
+        >
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+        </button>
+
+        <!-- Theme Toggle Button -->
+        <button 
+          (click)="themeService.setTheme(themeService.currentTheme() === 'light' ? 'dark' : 'light')"
+          class="p-2 rounded-full transition-colors focus:outline-none" style="color:var(--text-secondary)" onmouseenter="this.style.backgroundColor='var(--bg-secondary)'" onmouseleave="this.style.backgroundColor='transparent'"
+          [title]="'Theme: ' + themeService.currentTheme()"
+        >
+          @if (themeService.currentTheme() === 'light') {
+            <!-- Sun Icon -->
+            <svg class="w-5 h-5 text-amber-500" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.46 5.05l-.707-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486a1 1 0 01-1.414 0l-.707-.707a1 1 0 011.414-1.414l.707.707a1 1 0 010 1.414zM4 11a1 1 0 100-2H3a1 1 0 100 2h1z" clip-rule="evenodd" />
+            </svg>
+          } @else {
+            <!-- Moon Icon -->
+            <svg class="w-5 h-5 text-indigo-500" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" />
+            </svg>
+          }
+        </button>
+
         <!-- Language Switcher Component -->
         <app-language-switcher></app-language-switcher>
 
@@ -827,7 +814,7 @@
         <a 
           routerLink="/procurement/purchase-requests" 
           [queryParams]="{ openForm: 'true' }"
-          class="hidden lg:flex items-center space-x-1 px-3 py-1.5 rounded-lg bg-slate-900 text-white text-xs font-semibold hover:bg-slate-800 transition-colors shadow-sm"
+          class="hidden lg:flex items-center space-x-1 px-3 py-1.5 rounded-lg text-white text-xs font-semibold transition-colors shadow-sm" style="background-color:var(--navy)" onmouseenter="this.style.backgroundColor='var(--primary-dark)'" onmouseleave="this.style.backgroundColor='var(--navy)'"
         >
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
@@ -839,7 +826,7 @@
         <div class="relative">
           <button 
             (click)="toggleNotifications()"
-            class="relative p-2 rounded-full hover:bg-slate-100 text-slate-600 transition-colors focus:outline-none"
+            class="relative p-2 rounded-full transition-colors focus:outline-none" style="color:var(--text-secondary)" onmouseenter="this.style.backgroundColor='var(--bg-secondary)'" onmouseleave="this.style.backgroundColor='transparent'"
           >
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
@@ -853,26 +840,26 @@
 
           <!-- Dropdown List -->
           @if (isNotificationsOpen()) {
-            <div class="absolute right-0 rtl:left-0 rtl:right-auto mt-2.5 w-80 bg-white rounded-xl shadow-xl border border-slate-200 py-2 z-50 animate-fade-in divide-y divide-slate-100">
-              <div class="px-4 py-2 flex items-center justify-between font-semibold text-xs text-slate-500 bg-slate-50 uppercase tracking-wider rounded-t-xl">
+            <div class="absolute right-0 rtl:left-0 rtl:right-auto mt-2.5 w-80 rounded-xl shadow-xl py-2 z-50 animate-fade-in" style="background-color:var(--bg-card);border:1px solid var(--border-color)">
+              <div class="px-4 py-2 flex items-center justify-between font-semibold text-xs uppercase tracking-wider rounded-t-xl" style="color:var(--text-secondary);background-color:var(--bg-secondary);border-bottom:1px solid var(--border-color)">
                 <span>{{ 'common.alerts_and_logs' | translate }}</span>
                 @if (activeNotificationCount() > 0) {
                   <button (click)="clearNotifications()" class="text-accent hover:underline lowercase normal-case">{{ 'common.dismiss_all' | translate }}</button>
                 }
               </div>
-              <div class="max-h-72 overflow-y-auto divide-y divide-slate-100">
+              <div class="max-h-72 overflow-y-auto" style="border-top:1px solid var(--border-color)">
                 @for (notif of notifications(); track notif.id) {
-                  <div class="p-3.5 hover:bg-slate-50 transition-colors flex items-start space-x-3 text-xs text-left rtl:text-right">
+                  <div class="p-3.5 transition-colors flex items-start space-x-3 text-xs text-left rtl:text-right" style="border-bottom:1px solid var(--border-color)" onmouseenter="this.style.backgroundColor='var(--bg-secondary)'" onmouseleave="this.style.backgroundColor='transparent'">
                     <span [class]="getNotifBadgeClass(notif.type) + ' w-2 h-2 rounded-full mt-1.5 shrink-0'"></span>
                     <div class="flex-1 space-y-0.5 ml-2 rtl:mr-2 rtl:ml-0">
-                      <p class="font-bold text-slate-800">{{ 'notifications.items.' + notif.id + '_title' | translate }}</p>
-                      <p class="text-slate-500 leading-relaxed">{{ 'notifications.items.' + notif.id + '_message' | translate }}</p>
-                      <p class="text-[10px] text-slate-400 mt-1">{{ 'notifications.items.' + notif.id + '_time' | translate }}</p>
+                      <p class="font-bold" style="color:var(--text-primary)">{{ 'notifications.items.' + notif.id + '_title' | translate }}</p>
+                      <p class="leading-relaxed" style="color:var(--text-secondary)">{{ 'notifications.items.' + notif.id + '_message' | translate }}</p>
+                      <p class="text-[10px] mt-1" style="color:var(--text-secondary)">{{ 'notifications.items.' + notif.id + '_time' | translate }}</p>
                     </div>
                   </div>
                 } @empty {
-                  <div class="p-6 text-center text-slate-400">
-                    <svg class="w-8 h-8 mx-auto mb-2 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div class="p-6 text-center" style="color:var(--text-secondary)">
+                    <svg class="w-8 h-8 mx-auto mb-2" style="color:var(--border-color)" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                     </svg>
                     <span class="text-xs">{{ 'common.no_active_notifications' | translate }}</span>
@@ -887,16 +874,16 @@
         <div class="relative">
           <button 
             (click)="toggleUserMenu()"
-            class="flex items-center space-x-2 p-1 md:px-2 md:py-1.5 rounded-lg hover:bg-slate-100 text-slate-700 transition-colors focus:outline-none"
+            class="flex items-center space-x-2 p-1 md:px-2 md:py-1.5 rounded-lg transition-colors focus:outline-none" style="color:var(--text-primary)" onmouseenter="this.style.backgroundColor='var(--bg-secondary)'" onmouseleave="this.style.backgroundColor='transparent'"
           >
             <!-- User avatar -->
-            <div class="w-8 h-8 rounded-full bg-secondary text-accent font-bold text-xs flex items-center justify-center shadow-sm">
+            <div class="w-8 h-8 rounded-full font-bold text-xs flex items-center justify-center shadow-sm" style="background-color:var(--primary-dark);color:#ffffff">
               {{ authService.currentUser()?.avatar || 'US' }}
             </div>
             <!-- User Info (Desktop) -->
             <div class="hidden md:flex flex-col items-start text-left rtl:text-right">
-              <span class="text-xs font-bold leading-none text-slate-800">{{ authService.currentUser()?.fullName }}</span>
-              <span class="text-[9px] text-slate-400 mt-0.5">{{ authService.currentUser()?.role }}</span>
+              <span class="text-xs font-bold leading-none" style="color:var(--text-primary)">{{ authService.currentUser()?.fullName }}</span>
+              <span class="text-[9px] mt-0.5" style="color:var(--text-secondary)">{{ authService.currentUser()?.role }}</span>
             </div>
             <svg class="hidden md:block w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
@@ -905,22 +892,22 @@
 
           <!-- Profile Dropdown -->
           @if (isUserMenuOpen()) {
-            <div class="absolute right-0 rtl:left-0 rtl:right-auto mt-2.5 w-52 bg-white rounded-xl shadow-xl border border-slate-200 py-1.5 z-50 animate-fade-in font-medium text-xs">
-              <div class="px-4 py-2.5 border-b border-slate-100 flex flex-col text-left rtl:text-right">
-                <span class="font-bold text-slate-800">{{ authService.currentUser()?.fullName }}</span>
-                <span class="text-[10px] text-slate-500 truncate mt-0.5">{{ authService.currentUser()?.email }}</span>
+            <div class="absolute right-0 rtl:left-0 rtl:right-auto mt-2.5 w-52 rounded-xl shadow-xl py-1.5 z-50 animate-fade-in font-medium text-xs" style="background-color:var(--bg-card);border:1px solid var(--border-color)">
+              <div class="px-4 py-2.5 flex flex-col text-left rtl:text-right" style="border-bottom:1px solid var(--border-color)">
+                <span class="font-bold" style="color:var(--text-primary)">{{ authService.currentUser()?.fullName }}</span>
+                <span class="text-[10px] truncate mt-0.5" style="color:var(--text-secondary)">{{ authService.currentUser()?.email }}</span>
                 @if (authService.currentUser()?.lastLogin) {
-                  <span class="text-[9px] text-slate-400 mt-1 font-medium italic">
+                  <span class="text-[9px] mt-1 font-medium italic" style="color:var(--text-secondary)">
                     {{ 'common.last_login' | translate }}: {{ authService.currentUser()?.lastLogin | date:'MMM d, HH:mm' }}
                   </span>
                 }
               </div>
-              <a routerLink="/settings" (click)="isUserMenuOpen.set(false)" class="block px-4 py-2.5 text-slate-700 hover:bg-slate-50 transition-colors text-left rtl:text-right">{{ 'common.company_profile' | translate }}</a>
-              <a routerLink="/settings" (click)="isUserMenuOpen.set(false)" class="block px-4 py-2.5 text-slate-700 hover:bg-slate-50 transition-colors text-left rtl:text-right">{{ 'common.account_settings' | translate }}</a>
-              <a routerLink="/activity-logs" (click)="isUserMenuOpen.set(false)" class="block px-4 py-2.5 text-slate-700 hover:bg-slate-50 transition-colors text-left rtl:text-right">{{ 'common.activity_logs' | translate }}</a>
-              <a *appRole="['Super Admin', 'General Manager', 'Finance Manager']" routerLink="/audit-trail" (click)="isUserMenuOpen.set(false)" class="block px-4 py-2.5 text-slate-700 hover:bg-slate-50 transition-colors text-left rtl:text-right">{{ 'common.security_audit_trail' | translate }}</a>
-              <hr class="border-slate-100 my-1">
-              <button (click)="logout()" class="w-full px-4 py-2.5 text-danger hover:bg-red-50 transition-colors text-left rtl:text-right">{{ 'common.logout' | translate }}</button>
+              <a routerLink="/settings" (click)="isUserMenuOpen.set(false)" class="block px-4 py-2.5 transition-colors text-left rtl:text-right" style="color:var(--text-primary)" onmouseenter="this.style.backgroundColor='var(--bg-secondary)'" onmouseleave="this.style.backgroundColor='transparent'">{{ 'common.company_profile' | translate }}</a>
+              <a routerLink="/settings" (click)="isUserMenuOpen.set(false)" class="block px-4 py-2.5 transition-colors text-left rtl:text-right" style="color:var(--text-primary)" onmouseenter="this.style.backgroundColor='var(--bg-secondary)'" onmouseleave="this.style.backgroundColor='transparent'">{{ 'common.account_settings' | translate }}</a>
+              <a routerLink="/activity-logs" (click)="isUserMenuOpen.set(false)" class="block px-4 py-2.5 transition-colors text-left rtl:text-right" style="color:var(--text-primary)" onmouseenter="this.style.backgroundColor='var(--bg-secondary)'" onmouseleave="this.style.backgroundColor='transparent'">{{ 'common.activity_logs' | translate }}</a>
+              <a *appRole="['Super Admin', 'General Manager', 'Finance Manager']" routerLink="/audit-trail" (click)="isUserMenuOpen.set(false)" class="block px-4 py-2.5 transition-colors text-left rtl:text-right" style="color:var(--text-primary)" onmouseenter="this.style.backgroundColor='var(--bg-secondary)'" onmouseleave="this.style.backgroundColor='transparent'">{{ 'common.security_audit_trail' | translate }}</a>
+              <hr style="border-color:var(--border-color);margin:4px 0">
+              <button (click)="logout()" class="w-full px-4 py-2.5 text-danger transition-colors text-left rtl:text-right" onmouseenter="this.style.backgroundColor='rgba(239,68,68,0.08)'" onmouseleave="this.style.backgroundColor='transparent'">{{ 'common.logout' | translate }}</button>
             </div>
           }
         </div>
@@ -941,7 +928,7 @@
 <div class="fixed bottom-5 right-5 rtl:left-5 rtl:right-auto z-50 flex flex-col space-y-3 pointer-events-none w-full max-w-sm">
   @for (toast of toasts(); track toast.id) {
     <div 
-      class="p-4 rounded-xl border shadow-xl flex items-start space-x-3 pointer-events-auto bg-white transition-all transform duration-300 translate-y-0 text-left rtl:text-right"
+      class="p-4 rounded-xl border shadow-xl flex items-start space-x-3 pointer-events-auto transition-all transform duration-300 translate-y-0 text-left rtl:text-right" style="background-color:var(--bg-card)"
       [class.border-success]="toast.type === 'success'"
       [class.border-danger]="toast.type === 'danger'"
       [class.border-warning]="toast.type === 'warning'"
@@ -980,8 +967,8 @@
       }
 
       <div class="flex-1 space-y-0.5 ml-2 rtl:mr-2 rtl:ml-0">
-        <h4 class="text-xs font-bold text-slate-800">{{ toast.title }}</h4>
-        <p class="text-xs text-slate-500 leading-normal">{{ toast.message }}</p>
+        <h4 class="text-xs font-bold" style="color:var(--text-primary)">{{ toast.title }}</h4>
+        <p class="text-xs leading-normal" style="color:var(--text-secondary)">{{ toast.message }}</p>
       </div>
 
       <!-- Dismiss Button -->
@@ -996,3 +983,6 @@
     </div>
   }
 </div>
+
+<!-- Command Palette -->
+<app-command-palette #palette></app-command-palette>

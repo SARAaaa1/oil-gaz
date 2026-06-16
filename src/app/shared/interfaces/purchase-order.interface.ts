@@ -20,7 +20,11 @@ export interface POApprovalStep {
 
 export interface PurchaseOrder {
   id: string;
-  poNumber: string;
+  poNumber: string;              // PO-2026-0001 (4-digit)
+  chainId: string;               // PC-2026-0001
+  parentDocumentId?: string;     // source RFQ id
+  parentDocumentNumber?: string; // source RFQ number
+
   rfqId?: string;
   rfqNumber?: string;
   vendorId: string;
@@ -40,4 +44,11 @@ export interface PurchaseOrder {
   withholdingTaxAmount: number;
   totalAmount: number;
   approvalWorkflow: POApprovalStep[];
+
+  // Cost Allocation Dimensions (propagated from RFQ/PR)
+  chargeType?: string;
+  projectId?: string;
+  projectName?: string;
+  assetId?: string;
+  assetName?: string;
 }

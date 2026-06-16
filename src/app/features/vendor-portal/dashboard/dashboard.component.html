@@ -1,0 +1,193 @@
+<div class="space-y-6">
+
+  <!-- Welcome Banner -->
+  <div class="relative overflow-hidden rounded-3xl bg-linear-to-r from-navy to-primary p-6 md:p-8 text-white shadow-lg border border-white/10 animate-fade-in">
+    <div class="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,rgba(255,255,255,0.08),transparent)] pointer-events-none"></div>
+    <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div>
+        <h1 class="text-2xl md:text-3xl font-black tracking-tight">
+          {{ 'vendor.dashboard.welcome_back' | translate: { name: authService.currentUser()?.fullName || 'Vendor' } }}
+        </h1>
+        <p class="text-sm text-blue-100/90 mt-1.5 font-medium">
+          {{ 'vendor.dashboard.welcome_message' | translate }}
+        </p>
+      </div>
+      <div class="flex items-center space-x-2.5 rtl:space-x-reverse text-xs font-bold text-white bg-white/10 backdrop-blur-md px-4 py-2.5 rounded-2xl border border-white/20 shrink-0 shadow-sm">
+        <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+        <span>{{ 'vendor.dashboard.portal_live' | translate }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- KPI Cards -->
+  <div>
+    <p class="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-3">{{ 'vendor.dashboard.section_summary' | translate }}</p>
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      
+      <!-- Open RFQs -->
+      <div [routerLink]="['/vendor-portal/rfqs']" [queryParams]="{ status: 'Open' }" class="premium-card cursor-pointer group flex flex-col justify-between hover:border-amber-200">
+        <div class="flex justify-between items-start">
+          <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">{{ 'vendor.dashboard.kpi_open_rfqs' | translate }}</p>
+          <span class="text-amber-500 bg-amber-50 p-2 rounded-xl group-hover:scale-110 transition-transform">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+          </span>
+        </div>
+        <div class="mt-4">
+          <h3 class="text-3xl font-black text-amber-600 tracking-tight">{{ kpis().open }}</h3>
+          <div class="flex items-center justify-between mt-2 text-[10px] text-slate-400">
+            <span>{{ 'vendor.dashboard.kpi_action_required' | translate }}</span>
+            <span class="text-primary group-hover:translate-x-1 rtl:group-hover:-translate-x-1 transition-transform font-bold">{{ 'common.view' | translate }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Submitted Quotations -->
+      <div [routerLink]="['/vendor-portal/history']" class="premium-card cursor-pointer group flex flex-col justify-between hover:border-blue-200">
+        <div class="flex justify-between items-start">
+          <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">{{ 'vendor.dashboard.kpi_submitted' | translate }}</p>
+          <span class="text-primary bg-primary/10 p-2 rounded-xl group-hover:scale-110 transition-transform">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+            </svg>
+          </span>
+        </div>
+        <div class="mt-4">
+          <h3 class="text-3xl font-black text-primary tracking-tight">{{ kpis().submitted }}</h3>
+          <div class="flex items-center justify-between mt-2 text-[10px] text-slate-400">
+            <span>{{ 'vendor.dashboard.kpi_active_bids' | translate }}</span>
+            <span class="text-primary group-hover:translate-x-1 rtl:group-hover:-translate-x-1 transition-transform font-bold">{{ 'common.view' | translate }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Awarded Contracts -->
+      <div [routerLink]="['/vendor-portal/history']" class="premium-card cursor-pointer group flex flex-col justify-between hover:border-green-200">
+        <div class="flex justify-between items-start">
+          <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">{{ 'vendor.dashboard.kpi_awarded' | translate }}</p>
+          <span class="text-green-600 bg-green-50 p-2 rounded-xl group-hover:scale-110 transition-transform">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </span>
+        </div>
+        <div class="mt-4">
+          <h3 class="text-3xl font-black text-green-600 tracking-tight">{{ kpis().awarded }}</h3>
+          <div class="flex items-center justify-between mt-2 text-[10px] text-slate-400">
+            <span>{{ 'vendor.dashboard.kpi_contracts_won' | translate }}</span>
+            <span class="text-primary group-hover:translate-x-1 rtl:group-hover:-translate-x-1 transition-transform font-bold">{{ 'common.view' | translate }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Rejected Quotations -->
+      <div [routerLink]="['/vendor-portal/history']" class="premium-card cursor-pointer group flex flex-col justify-between hover:border-red-200">
+        <div class="flex justify-between items-start">
+          <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">{{ 'vendor.dashboard.kpi_rejected' | translate }}</p>
+          <span class="text-red-500 bg-red-50 p-2 rounded-xl group-hover:scale-110 transition-transform">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </span>
+        </div>
+        <div class="mt-4">
+          <h3 class="text-3xl font-black text-red-500 tracking-tight">{{ kpis().rejected }}</h3>
+          <div class="flex items-center justify-between mt-2 text-[10px] text-slate-400">
+            <span>{{ 'vendor.dashboard.kpi_unsuccessful' | translate }}</span>
+            <span class="text-primary group-hover:translate-x-1 rtl:group-hover:-translate-x-1 transition-transform font-bold">{{ 'common.view' | translate }}</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Recent RFQs Table -->
+  <div class="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden animate-fade-in">
+    <div class="p-5 border-b border-slate-100 flex items-center justify-between">
+      <div>
+        <h3 class="text-sm font-bold text-slate-800">{{ 'vendor.dashboard.recent_rfqs' | translate }}</h3>
+        <p class="text-[10px] text-slate-400 font-semibold mt-0.5">{{ 'vendor.dashboard.recent_rfqs_subtitle' | translate }}</p>
+      </div>
+      <a [routerLink]="['/vendor-portal/rfqs']" class="text-xs font-bold text-primary hover:text-blue-700 transition-colors flex items-center gap-1">
+        <span>{{ 'vendor.dashboard.view_all_rfqs' | translate }}</span>
+        <svg class="w-3.5 h-3.5 rtl:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+        </svg>
+      </a>
+    </div>
+
+    <div class="overflow-x-auto">
+      <table class="w-full text-left border-collapse text-xs">
+        <thead>
+          <tr class="text-slate-400 font-bold border-b border-slate-100 bg-slate-50/20">
+            <th class="p-4 py-3">{{ 'vendor.dashboard.col_rfq_number' | translate }}</th>
+            <th class="p-4 py-3">{{ 'vendor.dashboard.col_title' | translate }}</th>
+            <th class="p-4 py-3">{{ 'vendor.dashboard.col_created_date' | translate }}</th>
+            <th class="p-4 py-3">{{ 'vendor.dashboard.col_due_date' | translate }}</th>
+            <th class="p-4 py-3 text-center">{{ 'vendor.dashboard.col_your_status' | translate }}</th>
+            <th class="p-4 py-3 text-right">{{ 'vendor.dashboard.col_quoted_amount' | translate }}</th>
+            <th class="p-4 py-3 text-center">{{ 'vendor.dashboard.col_actions' | translate }}</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-50 font-medium text-slate-700">
+          @for (rfq of recentRFQs(); track rfq.id) {
+            <tr class="hover:bg-slate-50/50 transition-colors cursor-pointer" [routerLink]="['/vendor-portal/rfqs', rfq.id]">
+              <td class="p-4 font-mono font-bold text-slate-900">{{ rfq.rfqNumber }}</td>
+              <td class="p-4">
+                <span class="font-bold text-slate-900 block">{{ rfq.title }}</span>
+                <span class="text-[10px] text-slate-400 block">{{ 'vendor.dashboard.source_pr' | translate }}: {{ rfq.purchaseRequestNumber }}</span>
+              </td>
+              <td class="p-4 text-slate-500">{{ rfq.createdDate }}</td>
+              <td class="p-4 text-slate-500">{{ rfq.deadlineDate }}</td>
+              <td class="p-4 text-center">
+                <span 
+                  class="px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider"
+                  [class.bg-amber-100]="getVendorStatus(rfq) === 'Pending'"
+                  [class.text-accent]="getVendorStatus(rfq) === 'Pending'"
+                  [class.bg-blue-100]="getVendorStatus(rfq) === 'Submitted'"
+                  [class.text-primary]="getVendorStatus(rfq) === 'Submitted'"
+                  [class.bg-green-100]="getVendorStatus(rfq) === 'Accepted'"
+                  [class.text-success]="getVendorStatus(rfq) === 'Accepted'"
+                  [class.bg-red-100]="getVendorStatus(rfq) === 'Rejected'"
+                  [class.text-danger]="getVendorStatus(rfq) === 'Rejected'"
+                  [class.bg-purple-100]="getVendorStatus(rfq) === 'Revision Requested'"
+                  [class.text-purple-600]="getVendorStatus(rfq) === 'Revision Requested'"
+                >
+                  {{ 'vendor.portal.status_' + getVendorStatus(rfq).toLowerCase().replace(' ', '_') | translate }}
+                </span>
+              </td>
+              <td class="p-4 text-right font-mono font-bold text-slate-900">
+                @if (getQuotationAmount(rfq.id)) {
+                  ${{ getQuotationAmount(rfq.id) | number }}
+                } @else {
+                  <span class="text-slate-400">-</span>
+                }
+              </td>
+              <td class="p-4 text-center" (click)="$event.stopPropagation()">
+                <div class="flex items-center justify-center space-x-1.5 rtl:space-x-reverse">
+                  @if (getVendorStatus(rfq) === 'Pending' || getVendorStatus(rfq) === 'Revision Requested') {
+                    <a [routerLink]="['/vendor-portal/rfqs', rfq.id, 'submit']" class="px-2.5 py-1 bg-accent text-primary rounded text-[10px] font-bold hover:bg-amber-400 transition-colors shadow-xs">
+                      {{ 'vendor.dashboard.action_quote' | translate }}
+                    </a>
+                  }
+                  <a [routerLink]="['/vendor-portal/rfqs', rfq.id]" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-[10px] font-bold transition-colors">
+                    {{ 'common.details' | translate }}
+                  </a>
+                </div>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="7" class="p-8 text-center text-slate-400 font-bold">
+                {{ 'vendor.dashboard.no_recent_rfqs' | translate }}
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>

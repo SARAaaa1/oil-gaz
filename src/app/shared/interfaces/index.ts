@@ -16,6 +16,19 @@ export * from './finance-extended.interface';
 export * from './hse.interface';
 export * from './fuel.interface';
 export type { InventoryReservation, InventoryReservationItem } from './inventory.interface';
+export type {
+  VendorTimelineEvent,
+  VendorLedgerEntry,
+  VendorDocument,
+  VendorEventType,
+  VendorLedgerType,
+  VendorDocumentType,
+  VendorDocumentStatus,
+  VendorCategory,
+  VendorApprovalStatus
+} from './vendor.interface';
+export type { ChargeType, ItemType } from './purchase-request.interface';
+
 
 
 

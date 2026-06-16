@@ -2,7 +2,7 @@ import { Injectable, signal, computed } from '@angular/core';
 import { PurchaseRequest, PurchaseRequestItem, PurchaseRequestStatus } from '../../shared/interfaces/purchase-request.interface';
 import { RFQ, RFQQuotation, RFQStatus } from '../../shared/interfaces/rfq.interface';
 import { PurchaseOrder, POItem, PurchaseOrderStatus } from '../../shared/interfaces/purchase-order.interface';
-import { Vendor } from '../../shared/interfaces/vendor.interface';
+import { Vendor, VendorTimelineEvent, VendorLedgerEntry, VendorDocument } from '../../shared/interfaces/vendor.interface';
 import { Rig, RigTimesheet, TimesheetDayRow } from '../../shared/interfaces/operations.interface';
 import { 
   InventoryItem, Warehouse, WarehouseLocation, UOM, MaterialCategory, 
@@ -82,6 +82,11 @@ export class MockDataService {
   // Phase 4 signals — Inventory Reservations
   readonly inventoryReservations = signal<InventoryReservation[]>([]);
 
+  // Phase 5 signals — Vendor Enterprise
+  readonly vendorTimeline = signal<VendorTimelineEvent[]>([]);
+  readonly vendorLedger = signal<VendorLedgerEntry[]>([]);
+  readonly vendorDocuments = signal<VendorDocument[]>([]);
+
   constructor() {
     this.initializeMockData();
   }
@@ -91,96 +96,64 @@ export class MockDataService {
     // 1. Vendors
     const mockVendors: Vendor[] = [
       {
-        id: 'v1',
-        vendorCode: 'VND-GOS-001',
-        vendorName: 'Global Oilfield Solutions',
-        arabicName: 'الحلول العالمية لحقول النفط',
-        taxNumber: 'TX-88992211',
-        vatNumber: 'VAT-99001122',
-        commercialRegistration: 'CR-101009988',
-        address: '1220 Petroleum Way, Houston TX 77001',
-        contactPerson: 'Mark Peterson',
-        contactEmail: 'm.peterson@globaloilfield.com',
-        contactPhone: '+1-555-0199',
-        paymentTerms: 'Net 30',
-        currency: 'USD',
-        rating: 4.8,
-        status: 'Active',
-        bankAccounts: [
-          { bankName: 'HSBC Corporate', accountNumber: '120-889922-001', iban: 'AE12HSBC0000120889922001', currency: 'USD' }
-        ],
-        contactPersons: [
-          { name: 'Mark Peterson', role: 'Sales Account Manager', email: 'm.peterson@globaloilfield.com', phone: '+1-555-0199' }
-        ]
+        id: 'v1', vendorCode: 'VND-GOS-001', vendorName: 'Global Oilfield Solutions',
+        arabicName: 'الحلول العالمية لحقول النفط', taxNumber: 'TX-88992211',
+        vatNumber: 'VAT-99001122', commercialRegistration: 'CR-101009988',
+        address: '1220 Petroleum Way, Houston TX 77001', country: 'USA',
+        contactPerson: 'Mark Peterson', contactEmail: 'm.peterson@globaloilfield.com',
+        contactPhone: '+1-555-0199', paymentTerms: 'Net 30', currency: 'USD',
+        rating: 4.8, status: 'Active', category: 'Drilling Services', approvalStatus: 'Approved',
+        totalOrders: 14, totalSpend: 485000, lastTransactionDate: '2026-05-20',
+        totalRFQs: 18, awardedRFQs: 14, participatedRFQs: 18,
+        totalDeliveries: 14, onTimeDeliveries: 12, totalDeliveredQty: 420, acceptedQty: 408,
+        lateDeliveries: 2, rejectedDeliveries: 1, openInvoices: 2, paidInvoices: 12,
+        bankAccounts: [{ bankName: 'HSBC Corporate', accountNumber: '120-889922-001', iban: 'AE12HSBC0000120889922001', currency: 'USD' }],
+        contactPersons: [{ name: 'Mark Peterson', role: 'Sales Account Manager', email: 'm.peterson@globaloilfield.com', phone: '+1-555-0199' }]
       },
       {
-        id: 'v2',
-        vendorCode: 'VND-APX-002',
-        vendorName: 'APEX Industrial Supplies',
-        arabicName: 'أبيكس للتوريدات الصناعية',
-        taxNumber: 'TX-44558833',
-        vatNumber: 'VAT-44558833',
-        commercialRegistration: 'CR-101007766',
-        address: '850 Industrial Blvd, Dallas TX 75201',
-        contactPerson: 'Jane Sterling',
-        contactEmail: 'j.sterling@apexind.com',
-        contactPhone: '+1-555-0145',
-        paymentTerms: 'Net 45',
-        currency: 'USD',
-        rating: 4.2,
-        status: 'Active',
-        bankAccounts: [
-          { bankName: 'Chase Commercial', accountNumber: '5544-3322-11', iban: 'US88CHAS00005544332211', currency: 'USD' }
-        ],
-        contactPersons: [
-          { name: 'Jane Sterling', role: 'Customer Support Lead', email: 'j.sterling@apexind.com', phone: '+1-555-0145' }
-        ]
+        id: 'v2', vendorCode: 'VND-APX-002', vendorName: 'APEX Industrial Supplies',
+        arabicName: 'أبيكس للتوريدات الصناعية', taxNumber: 'TX-44558833',
+        vatNumber: 'VAT-44558833', commercialRegistration: 'CR-101007766',
+        address: '850 Industrial Blvd, Dallas TX 75201', country: 'USA',
+        contactPerson: 'Jane Sterling', contactEmail: 'j.sterling@apexind.com',
+        contactPhone: '+1-555-0145', paymentTerms: 'Net 45', currency: 'USD',
+        rating: 4.2, status: 'Active', category: 'General', approvalStatus: 'Approved',
+        totalOrders: 9, totalSpend: 178500, lastTransactionDate: '2026-05-19',
+        totalRFQs: 12, awardedRFQs: 9, participatedRFQs: 12,
+        totalDeliveries: 9, onTimeDeliveries: 7, totalDeliveredQty: 280, acceptedQty: 270,
+        lateDeliveries: 2, rejectedDeliveries: 1, openInvoices: 1, paidInvoices: 8,
+        bankAccounts: [{ bankName: 'Chase Commercial', accountNumber: '5544-3322-11', iban: 'US88CHAS00005544332211', currency: 'USD' }],
+        contactPersons: [{ name: 'Jane Sterling', role: 'Customer Support Lead', email: 'j.sterling@apexind.com', phone: '+1-555-0145' }]
       },
       {
-        id: 'v3',
-        vendorCode: 'VND-VAL-003',
-        vendorName: 'Valero Drilling Supplies',
-        arabicName: 'فاليرو لمستلزمات الحفر',
-        taxNumber: 'TX-11223344',
-        vatNumber: 'VAT-11223344',
-        commercialRegistration: 'CR-101005544',
-        address: '400 Refinery Rd, San Antonio TX 78201',
-        contactPerson: 'Carlos Ruiz',
-        contactEmail: 'c.ruiz@valerods.com',
-        contactPhone: '+1-555-0182',
-        paymentTerms: 'Net 15',
-        currency: 'SAR',
-        rating: 4.5,
-        status: 'Active',
-        bankAccounts: [
-          { bankName: 'Saudi National Bank', accountNumber: '2030-1122-002', iban: 'SA80SNB0000020301122002', currency: 'SAR' }
-        ],
-        contactPersons: [
-          { name: 'Carlos Ruiz', role: 'Operations Officer', email: 'c.ruiz@valerods.com', phone: '+1-555-0182' }
-        ]
+        id: 'v3', vendorCode: 'VND-VAL-003', vendorName: 'Valero Drilling Supplies',
+        arabicName: 'فاليرو لمستلزمات الحفر', taxNumber: 'TX-11223344',
+        vatNumber: 'VAT-11223344', commercialRegistration: 'CR-101005544',
+        address: '400 Refinery Rd, San Antonio TX 78201', country: 'Saudi Arabia',
+        contactPerson: 'Carlos Ruiz', contactEmail: 'c.ruiz@valerods.com',
+        contactPhone: '+1-555-0182', paymentTerms: 'Net 15', currency: 'SAR',
+        rating: 4.5, status: 'Active', category: 'Tubulars', approvalStatus: 'Approved',
+        totalOrders: 7, totalSpend: 312000, lastTransactionDate: '2026-05-18',
+        totalRFQs: 10, awardedRFQs: 7, participatedRFQs: 10,
+        totalDeliveries: 7, onTimeDeliveries: 7, totalDeliveredQty: 210, acceptedQty: 205,
+        lateDeliveries: 0, rejectedDeliveries: 0, openInvoices: 1, paidInvoices: 6,
+        bankAccounts: [{ bankName: 'Saudi National Bank', accountNumber: '2030-1122-002', iban: 'SA80SNB0000020301122002', currency: 'SAR' }],
+        contactPersons: [{ name: 'Carlos Ruiz', role: 'Operations Officer', email: 'c.ruiz@valerods.com', phone: '+1-555-0182' }]
       },
       {
-        id: 'v4',
-        vendorCode: 'VND-HSE-004',
-        vendorName: 'HSE Safety First Inc',
-        arabicName: 'بيئة وصحة أولاً للسلامة',
-        taxNumber: 'TX-55443322',
-        vatNumber: 'VAT-55443322',
-        commercialRegistration: 'CR-101003322',
-        address: '99 Safety Way, Houston TX 77002',
-        contactPerson: 'Sarah Connor',
-        contactEmail: 's.connor@hsesafety.com',
-        contactPhone: '+1-555-0123',
-        paymentTerms: 'Net 30',
-        currency: 'USD',
-        rating: 4.9,
-        status: 'Active',
-        bankAccounts: [
-          { bankName: 'Wells Fargo Corporate', accountNumber: '9988-7766-55', iban: 'US99WELS00009988776655', currency: 'USD' }
-        ],
-        contactPersons: [
-          { name: 'Sarah Connor', role: 'HSE Compliance Specialist', email: 's.connor@hsesafety.com', phone: '+1-555-0123' }
-        ]
+        id: 'v4', vendorCode: 'VND-HSE-004', vendorName: 'HSE Safety First Inc',
+        arabicName: 'بيئة وصحة أولاً للسلامة', taxNumber: 'TX-55443322',
+        vatNumber: 'VAT-55443322', commercialRegistration: 'CR-101003322',
+        address: '99 Safety Way, Houston TX 77002', country: 'USA',
+        contactPerson: 'Sarah Connor', contactEmail: 's.connor@hsesafety.com',
+        contactPhone: '+1-555-0123', paymentTerms: 'Net 30', currency: 'USD',
+        rating: 4.9, status: 'Active', category: 'HSE', approvalStatus: 'Approved',
+        totalOrders: 11, totalSpend: 95000, lastTransactionDate: '2026-06-01',
+        totalRFQs: 14, awardedRFQs: 11, participatedRFQs: 14,
+        totalDeliveries: 11, onTimeDeliveries: 11, totalDeliveredQty: 330, acceptedQty: 325,
+        lateDeliveries: 0, rejectedDeliveries: 1, openInvoices: 0, paidInvoices: 11,
+        bankAccounts: [{ bankName: 'Wells Fargo Corporate', accountNumber: '9988-7766-55', iban: 'US99WELS00009988776655', currency: 'USD' }],
+        contactPersons: [{ name: 'Sarah Connor', role: 'HSE Compliance Specialist', email: 's.connor@hsesafety.com', phone: '+1-555-0123' }]
       }
     ];
     this.vendors.set(mockVendors);
@@ -266,61 +239,49 @@ export class MockDataService {
     // 3. Purchase Requests
     const mockPRs: PurchaseRequest[] = [
       {
-        id: 'pr1',
-        requestNumber: 'PR-2026-001',
-        department: 'Drilling Operations',
-        costCenter: 'CC-DRL-001',
-        requestDate: '2026-05-10',
-        requiredDate: '2026-06-15',
-        status: 'Approved',
+        id: 'pr1', requestNumber: 'PR-2026-0001', chainId: 'PC-2026-0001',
+        department: 'Drilling Operations', costCenter: 'CC-DRL-001',
+        chargeType: 'Project Cost', projectId: 'PRJ-001', projectName: 'Permian Overland Drilling',
+        requestDate: '2026-05-10', requiredDate: '2026-06-15', status: 'Approved',
         description: 'Critical drill bits and casing joints required for Rig Alpha offshore drilling.',
-        requestedBy: 'Robert Vance',
+        requestedBy: 'Robert Vance', reservationCreated: true,
         items: [
-          { id: 'pri1', itemCode: 'DR-BIT-8.5-PDC', itemName: 'Drill Bit 8.5in PDC Premium', quantity: 2, uom: 'EA', notes: 'Needed for sandstone segment' },
-          { id: 'pri2', itemCode: 'TUB-PIPE-5IN', itemName: 'Steel Pipes 5in Casing joints', quantity: 40, uom: 'JOINTS', notes: 'Grade L80' }
+          { id: 'pri1', itemType: 'Inventory Item', itemCode: 'DR-BIT-8.5-PDC', itemName: 'Drill Bit 8.5in PDC Premium', quantity: 2, uom: 'EA', notes: 'Needed for sandstone segment', currentStock: 8, reservedQty: 2, availableQty: 6, shortageQty: 0 },
+          { id: 'pri2', itemType: 'Inventory Item', itemCode: 'TUB-PIPE-5IN', itemName: 'Steel Pipes 5in Casing joints', quantity: 40, uom: 'JOINTS', notes: 'Grade L80', currentStock: 200, reservedQty: 40, availableQty: 160, shortageQty: 0 }
         ]
       },
       {
-        id: 'pr2',
-        requestNumber: 'PR-2026-002',
-        department: 'Maintenance & Engineering',
-        costCenter: 'CC-MNT-002',
-        requestDate: '2026-05-15',
-        requiredDate: '2026-06-10',
-        status: 'RFQ Created',
+        id: 'pr2', requestNumber: 'PR-2026-0002', chainId: 'PC-2026-0002',
+        department: 'Maintenance & Engineering', costCenter: 'CC-MNT-002',
+        chargeType: 'Asset Cost', assetId: 'eq1', assetName: 'Rig Beta — Mud Pump A',
+        requestDate: '2026-05-15', requiredDate: '2026-06-10', status: 'RFQ Created',
         description: 'Replacement hydraulic pump unit and seals for Rig Beta overhaul.',
         requestedBy: 'Sarah Jenkins',
         items: [
-          { id: 'pri3', itemCode: 'HY-PUMP-HP450', itemName: 'Hydraulic Pump HP-450 Seal Unit', quantity: 1, uom: 'EA', notes: 'Immediate replacement needed' }
+          { id: 'pri3', itemType: 'Inventory Item', itemCode: 'HY-PUMP-HP450', itemName: 'Hydraulic Pump HP-450 Seal Unit', quantity: 1, uom: 'EA', notes: 'Immediate replacement needed', currentStock: 2, reservedQty: 1, availableQty: 1, shortageQty: 0 }
         ]
       },
       {
-        id: 'pr3',
-        requestNumber: 'PR-2026-003',
-        department: 'HSE & Safety',
-        costCenter: 'CC-HSE-001',
-        requestDate: '2026-05-28',
-        requiredDate: '2026-06-20',
-        status: 'Pending Approval',
+        id: 'pr3', requestNumber: 'PR-2026-0003', chainId: 'PC-2026-0003',
+        department: 'HSE & Safety', costCenter: 'CC-HSE-001',
+        chargeType: 'General Overhead',
+        requestDate: '2026-05-28', requiredDate: '2026-06-20', status: 'Pending Approval',
         description: 'Annual safety gear replenishing and multi-gas detector replacement.',
         requestedBy: 'David Miller',
         items: [
-          { id: 'pri4', itemCode: 'HSE-HARN-CLA', itemName: 'Safety Harness Class A Full Body', quantity: 20, uom: 'EA', notes: 'For offshore rig crews' },
-          { id: 'pri5', itemCode: 'HSE-DET-GAS', itemName: 'Multi-Gas Detector Portable', quantity: 12, uom: 'EA', notes: 'Must be calibrated for H2S' }
+          { id: 'pri4', itemType: 'Inventory Item', itemCode: 'HSE-HARN-CLA', itemName: 'Safety Harness Class A Full Body', quantity: 20, uom: 'EA', notes: 'For offshore rig crews', currentStock: 45, reservedQty: 10, availableQty: 35, shortageQty: 0 },
+          { id: 'pri5', itemType: 'Inventory Item', itemCode: 'HSE-DET-GAS', itemName: 'Multi-Gas Detector Portable', quantity: 12, uom: 'EA', notes: 'Must be calibrated for H2S', currentStock: 5, reservedQty: 0, availableQty: 5, shortageQty: 7, allowPartialIssue: true, fulfillFromStock: 5, fulfillByPurchase: 7 }
         ]
       },
       {
-        id: 'pr4',
-        requestNumber: 'PR-2026-004',
-        department: 'Logistics',
-        costCenter: 'CC-LOG-004',
-        requestDate: '2026-06-01',
-        requiredDate: '2026-07-01',
-        status: 'Draft',
+        id: 'pr4', requestNumber: 'PR-2026-0004', chainId: 'PC-2026-0004',
+        department: 'Logistics', costCenter: 'CC-LOG-004',
+        chargeType: 'General Overhead',
+        requestDate: '2026-06-01', requiredDate: '2026-07-01', status: 'Draft',
         description: 'Heavy duty grease drums and lifting straps for Warehouse B.',
         requestedBy: 'System Scheduler',
         items: [
-          { id: 'pri6', itemCode: 'LUB-GRE-DRUM', itemName: 'Premium Rig Grease (55 Gal)', quantity: 15, uom: 'DRUM', notes: 'Restock min level' }
+          { id: 'pri6', itemType: 'Inventory Item', itemCode: 'LUB-GRE-DRUM', itemName: 'Premium Rig Grease (55 Gal)', quantity: 15, uom: 'DRUM', notes: 'Restock min level', currentStock: 8, reservedQty: 0, availableQty: 8, shortageQty: 7, allowPartialIssue: true, fulfillFromStock: 8, fulfillByPurchase: 7 }
         ]
       }
     ];
@@ -330,17 +291,21 @@ export class MockDataService {
     const mockRFQs: RFQ[] = [
       {
         id: 'rfq1',
-        rfqNumber: 'RFQ-2026-001',
+        rfqNumber: 'RFQ-2026-0001',
+        chainId: 'PC-2026-0002',
+        parentDocumentId: 'pr2',
+        parentDocumentNumber: 'PR-2026-0002',
         purchaseRequestId: 'pr2',
-        purchaseRequestNumber: 'PR-2026-002',
+        purchaseRequestNumber: 'PR-2026-0002',
+        chargeType: 'Asset Cost', assetId: 'eq1', assetName: 'Rig Beta — Mud Pump A', costCenter: 'CC-MNT-002',
         title: 'Hydraulic Pump HP-450 & Seal Kits',
         createdDate: '2026-05-16',
         deadlineDate: '2026-05-25',
-        status: 'Quotations Received',
+        status: 'Fully Responded',
         vendors: [
-          { vendorId: 'v1', vendorName: 'Global Oilfield Solutions', contactEmail: 'm.peterson@globaloilfield.com', status: 'Submitted' },
-          { vendorId: 'v2', vendorName: 'APEX Industrial Supplies', contactEmail: 'j.sterling@apexind.com', status: 'Submitted' },
-          { vendorId: 'v3', vendorName: 'Valero Drilling Supplies', contactEmail: 'c.ruiz@valerods.com', status: 'Submitted' }
+          { vendorId: 'v1', vendorName: 'Global Oilfield Solutions', contactEmail: 'm.peterson@globaloilfield.com', status: 'Submitted', invitationSentDate: '2026-05-16', quotationSubmittedDate: '2026-05-20' },
+          { vendorId: 'v2', vendorName: 'APEX Industrial Supplies', contactEmail: 'j.sterling@apexind.com', status: 'Submitted', invitationSentDate: '2026-05-16', quotationSubmittedDate: '2026-05-19' },
+          { vendorId: 'v3', vendorName: 'Valero Drilling Supplies', contactEmail: 'c.ruiz@valerods.com', status: 'Submitted', invitationSentDate: '2026-05-16', quotationSubmittedDate: '2026-05-18' }
         ],
         quotations: [
           {
@@ -352,7 +317,16 @@ export class MockDataService {
             taxPercent: 15,
             taxAmount: 1875,
             totalAmount: 14375,
-            notes: 'Ex-stocks. Standard 1 year warranty included.'
+            notes: 'Ex-stocks. Standard 1 year warranty included.',
+            submissionDate: '2026-05-19',
+            status: 'Submitted',
+            paymentTerms: 'Net 30',
+            attachments: [
+              { name: 'APEX-Quote-1982.pdf', size: '1.2 MB', type: 'application/pdf', url: '#' }
+            ],
+            items: [
+              { itemCode: 'HY-PUMP-HP450', itemName: 'Hydraulic Pump HP-450 Seal Unit', uom: 'EA', quantity: 1, unitPrice: 12500, totalPrice: 12500 }
+            ]
           },
           {
             id: 'q2',
@@ -364,7 +338,16 @@ export class MockDataService {
             taxAmount: 1680,
             totalAmount: 12880,
             isBestPrice: true,
-            notes: 'Direct factory pricing. Lead time 4 weeks ship.'
+            notes: 'Direct factory pricing. Lead time 4 weeks ship.',
+            submissionDate: '2026-05-20',
+            status: 'Submitted',
+            paymentTerms: 'Net 30',
+            attachments: [
+              { name: 'GOS-RFQ-PriceList.xlsx', size: '420 KB', type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', url: '#' }
+            ],
+            items: [
+              { itemCode: 'HY-PUMP-HP450', itemName: 'Hydraulic Pump HP-450 Seal Unit', uom: 'EA', quantity: 1, unitPrice: 11200, totalPrice: 11200 }
+            ]
           },
           {
             id: 'q3',
@@ -376,22 +359,35 @@ export class MockDataService {
             taxAmount: 2070,
             totalAmount: 15870,
             isRecommended: true,
-            notes: 'Expedited shipping. Available for next-day dispatch.'
+            notes: 'Expedited shipping. Available for next-day dispatch.',
+            submissionDate: '2026-05-18',
+            status: 'Submitted',
+            paymentTerms: 'Net 15',
+            attachments: [
+              { name: 'Valero-Drilling-Proposal.pdf', size: '2.5 MB', type: 'application/pdf', url: '#' }
+            ],
+            items: [
+              { itemCode: 'HY-PUMP-HP450', itemName: 'Hydraulic Pump HP-450 Seal Unit', uom: 'EA', quantity: 1, unitPrice: 13800, totalPrice: 13800 }
+            ]
           }
         ]
       },
       {
         id: 'rfq2',
-        rfqNumber: 'RFQ-2026-002',
+        rfqNumber: 'RFQ-2026-0002',
+        chainId: 'PC-2026-0003',
+        parentDocumentId: 'pr3',
+        parentDocumentNumber: 'PR-2026-0003',
         purchaseRequestId: 'pr3',
-        purchaseRequestNumber: 'PR-2026-003',
+        purchaseRequestNumber: 'PR-2026-0003',
+        chargeType: 'General Overhead', costCenter: 'CC-HSE-001',
         title: 'Safety Gear & H2S Multi-Gas Detectors',
         createdDate: '2026-05-29',
         deadlineDate: '2026-06-08',
         status: 'Sent',
         vendors: [
-          { vendorId: 'v4', vendorName: 'HSE Safety First Inc', contactEmail: 's.connor@hsesafety.com', status: 'Invited' },
-          { vendorId: 'v2', vendorName: 'APEX Industrial Supplies', contactEmail: 'j.sterling@apexind.com', status: 'Invited' }
+          { vendorId: 'v4', vendorName: 'HSE Safety First Inc', contactEmail: 's.connor@hsesafety.com', status: 'Pending', invitationSentDate: '2026-05-29' },
+          { vendorId: 'v2', vendorName: 'APEX Industrial Supplies', contactEmail: 'j.sterling@apexind.com', status: 'Pending', invitationSentDate: '2026-05-29' }
         ],
         quotations: []
       }
@@ -403,6 +399,9 @@ export class MockDataService {
       {
         id: 'po1',
         poNumber: 'PO-2026-001',
+        chainId: 'PC-2026-0001',
+        parentDocumentId: 'rfq1',
+        parentDocumentNumber: 'RFQ-2026-0001',
         rfqId: 'rfq1',
         rfqNumber: 'RFQ-2026-001',
         vendorId: 'v1',
@@ -420,6 +419,9 @@ export class MockDataService {
         withholdingTaxPercent: 2,
         withholdingTaxAmount: 224,
         totalAmount: 12656, // subtotal + tax - wht
+        chargeType: 'Project Cost',
+        projectId: 'PRJ-001',
+        projectName: 'Permian Overland Drilling',
         items: [
           {
             id: 'poi1',
@@ -440,6 +442,9 @@ export class MockDataService {
       {
         id: 'po2',
         poNumber: 'PO-2026-002',
+        chainId: 'PC-2026-0002',
+        parentDocumentId: 'rfq2',
+        parentDocumentNumber: 'RFQ-2026-0002',
         vendorId: 'v2',
         vendorName: 'APEX Industrial Supplies',
         vendorTaxNumber: 'TX-44558833',
@@ -455,6 +460,9 @@ export class MockDataService {
         withholdingTaxPercent: 2,
         withholdingTaxAmount: 340,
         totalAmount: 19210,
+        chargeType: 'Project Cost',
+        projectId: 'PRJ-002',
+        projectName: 'Midland Basin Support',
         items: [
           {
             id: 'poi2',
@@ -1123,7 +1131,7 @@ export class MockDataService {
 
     return {
       totalPRs: prs.length,
-      openRFQs: rfqs.filter(r => r.status === 'Sent' || r.status === 'Quotations Received').length,
+      openRFQs: rfqs.filter(r => r.status === 'Sent' || r.status === 'Partially Responded' || r.status === 'Fully Responded').length,
       activePOs: pos.filter(p => p.status === 'Approved' || p.status === 'Pending Approval').length,
       vendorsCount: vends.length,
       equipmentCount: items.reduce((acc, i) => acc + i.quantity, 0),
@@ -1133,13 +1141,17 @@ export class MockDataService {
 
   // --- ACTIONS & MUTATORS ---
 
-  addPurchaseRequest(pr: Omit<PurchaseRequest, 'id' | 'requestNumber' | 'status' | 'requestDate'>) {
+  addPurchaseRequest(pr: Omit<PurchaseRequest, 'id' | 'requestNumber' | 'chainId' | 'status' | 'requestDate'>) {
     const prs = this.purchaseRequests();
-    const num = `PR-2026-0${prs.length + 1}`;
+    const seq = String(prs.length + 1).padStart(4, '0');
+    const year = new Date().getFullYear();
+    const num = `PR-${year}-${seq}`;
+    const chainId = `PC-${year}-${seq}`;
     const newPr: PurchaseRequest = {
       ...pr,
       id: `pr${prs.length + 1}`,
       requestNumber: num,
+      chainId,
       requestDate: new Date().toISOString().split('T')[0],
       status: 'Pending Approval'
     };
@@ -1151,24 +1163,144 @@ export class MockDataService {
     this.purchaseRequests.update(prs =>
       prs.map(p => p.id === prId ? { ...p, status } : p)
     );
+    // Auto-create reservation and stock issue MIV on approval
+    if (status === 'Approved') {
+      const pr = this.purchaseRequests().find(p => p.id === prId);
+      if (pr) {
+        if (!pr.reservationCreated) {
+          this.createReservationFromPR(pr);
+        }
+
+        // Auto-create Store Issue Voucher (MIV) for in-stock inventory items
+        const mivItems: MIVItem[] = [];
+        let totalVal = 0;
+        pr.items.forEach(item => {
+          if (item.itemType === 'Inventory Item') {
+            const avail = this.getInventoryAvailability(item.itemCode);
+            const issueQty = item.fulfillFromStock ?? Math.min(item.quantity, avail.availableQty);
+            if (issueQty > 0) {
+              const matchedInv = this.inventoryItems().find(inv => inv.itemCode === item.itemCode);
+              const price = matchedInv?.unitPrice ?? 0;
+              mivItems.push({
+                itemCode: item.itemCode,
+                itemName: item.itemName,
+                quantityRequested: item.quantity,
+                quantityIssued: issueQty,
+                unitPrice: price,
+                totalPrice: price * issueQty,
+                uom: item.uom,
+                inventoryCreditAcc: '1201-01',
+                consumptionDebitAcc: '5102-04'
+              });
+              totalVal += price * issueQty;
+            }
+          }
+        });
+
+        if (mivItems.length > 0) {
+          const list = this.mivs();
+          const num = `MIV-2026-0${list.length + 1}`;
+          const newMIV: MIV = {
+            id: `miv-${pr.id}`,
+            voucherNumber: num,
+            issueTo: pr.chargeType === 'Project Cost' ? 'Project' : 'Cost Center',
+            destinationId: pr.projectId || pr.projectName || pr.costCenter,
+            referenceNumber: pr.requestNumber,
+            requestedBy: pr.requestedBy,
+            approvedBy: 'Auto System',
+            issueDate: new Date().toISOString().split('T')[0],
+            status: 'Posted',
+            items: mivItems,
+            totalAmount: totalVal
+          };
+
+          // Append MIV record
+          this.mivs.update(val => [...val, newMIV]);
+
+          // Deduct from warehouse stock
+          mivItems.forEach(vitem => {
+            const matched = this.inventoryItems().find(inv => inv.itemCode === vitem.itemCode);
+            if (matched) {
+              const newQty = Math.max(0, matched.quantity - vitem.quantityIssued);
+              this.updateInventoryItem(matched.id, {
+                quantity: newQty,
+                status: newQty === 0 ? 'Out of Stock' : newQty <= matched.minQuantity ? 'Low Stock' : 'In Stock'
+              });
+            }
+          });
+        }
+      }
+    }
   }
 
-  addRFQ(rfq: Omit<RFQ, 'id' | 'rfqNumber' | 'status' | 'createdDate' | 'quotations'>) {
+  addRFQ(rfq: Omit<RFQ, 'id' | 'rfqNumber' | 'status' | 'createdDate' | 'quotations' | 'chainId' | 'parentDocumentId' | 'parentDocumentNumber'> & { chainId?: string; parentDocumentId?: string; parentDocumentNumber?: string; }) {
     const rfqs = this.rfqs();
-    const num = `RFQ-2026-0${rfqs.length + 1}`;
+    const seq = String(rfqs.length + 1).padStart(4, '0');
+    const year = new Date().getFullYear();
+    const num = `RFQ-${year}-${seq}`;
+    // Inherit dimensions from source PR
+    const sourcePR = this.purchaseRequests().find(p => p.id === rfq.purchaseRequestId);
     const newRfq: RFQ = {
       ...rfq,
       id: `rfq${rfqs.length + 1}`,
       rfqNumber: num,
+      chainId: rfq.chainId || sourcePR?.chainId || `PC-${year}-${seq}`,
+      parentDocumentId: rfq.parentDocumentId || rfq.purchaseRequestId,
+      parentDocumentNumber: rfq.parentDocumentNumber || sourcePR?.requestNumber || '',
+      chargeType: rfq.chargeType || sourcePR?.chargeType,
+      projectId: rfq.projectId || sourcePR?.projectId,
+      projectName: rfq.projectName || sourcePR?.projectName,
+      assetId: rfq.assetId || sourcePR?.assetId,
+      assetName: rfq.assetName || sourcePR?.assetName,
+      costCenter: rfq.costCenter || sourcePR?.costCenter,
       createdDate: new Date().toISOString().split('T')[0],
       status: 'Sent',
       quotations: []
     };
     this.rfqs.update(val => [...val, newRfq]);
-
-    // Automatically update the source PR to "RFQ Created"
     this.updatePRStatus(rfq.purchaseRequestId, 'RFQ Created');
     return newRfq;
+  }
+
+  // ── Inventory Availability ────────────────────────────────────────────────
+  getInventoryAvailability(itemCode: string): { currentStock: number; reservedQty: number; availableQty: number } {
+    const item = this.inventoryItems().find(i => i.itemCode === itemCode);
+    if (!item) return { currentStock: 0, reservedQty: 0, availableQty: 0 };
+    const reserved = this.inventoryReservations()
+      .filter(r => r.status === 'Approved' || r.status === 'Partially Reserved')
+      .reduce((sum, res) => {
+        const ri = res.items.find(i => i.itemCode === itemCode);
+        return sum + (ri?.reservedQuantity ?? 0);
+      }, 0);
+    return { currentStock: item.quantity, reservedQty: reserved, availableQty: Math.max(0, item.quantity - reserved) };
+  }
+
+  // ── Reservation from PR ──────────────────────────────────────────────────
+  createReservationFromPR(pr: PurchaseRequest) {
+    const inventoryItems = pr.items.filter(i => i.itemType === 'Inventory Item' && (i.availableQty ?? 0) > 0);
+    if (inventoryItems.length === 0) return;
+    const seq = String(this.inventoryReservations().length + 1).padStart(4, '0');
+    const reservation: InventoryReservation = {
+      id: `res-${pr.id}`,
+      reservationNumber: `RES-${new Date().getFullYear()}-${seq}`,
+      projectCode: pr.projectId || pr.costCenter,
+      projectName: pr.projectName || pr.department,
+      requestedBy: pr.requestedBy,
+      requestDate: new Date().toISOString().split('T')[0],
+      requiredDate: pr.requiredDate,
+      status: 'Approved',
+      items: inventoryItems.map(i => ({
+        itemCode: i.itemCode, itemName: i.itemName, uom: i.uom,
+        requestedQuantity: i.fulfillFromStock ?? Math.min(i.quantity, i.availableQty ?? i.quantity),
+        reservedQuantity: i.fulfillFromStock ?? Math.min(i.quantity, i.availableQty ?? i.quantity),
+        unitPrice: this.inventoryItems().find(inv => inv.itemCode === i.itemCode)?.unitPrice ?? 0
+      })),
+      totalValue: 0,
+      notes: `Auto-reserved from PR ${pr.requestNumber}`
+    };
+    this.inventoryReservations.update(v => [...v, reservation]);
+    // Mark PR as reservation created
+    this.purchaseRequests.update(prs => prs.map(p => p.id === pr.id ? { ...p, reservationCreated: true } : p));
   }
 
   submitQuotation(rfqId: string, quotation: Omit<RFQQuotation, 'id'>) {
@@ -1177,9 +1309,10 @@ export class MockDataService {
         if (r.id !== rfqId) return r;
         const newQ: RFQQuotation = {
           ...quotation,
-          id: `q${r.quotations.length + 1}`
+          id: `q${r.quotations.length + 1}`,
+          status: 'Submitted'
         };
-        const updatedQuotes = [...r.quotations, newQ];
+        const updatedQuotes = [...r.quotations.filter(q => q.vendorId !== quotation.vendorId), newQ];
 
         // Recalculate best price
         let minPrice = Infinity;
@@ -1190,14 +1323,86 @@ export class MockDataService {
         const checkedQuotes = updatedQuotes.map(q => ({
           ...q,
           isBestPrice: q.price === minPrice,
-          // Let's recommend if best price or low delivery time
           isRecommended: q.price === minPrice || q.deliveryWeeks <= 1
         }));
 
+        const updatedVendors = r.vendors.map(v => 
+          v.vendorId === quotation.vendorId
+            ? { ...v, status: 'Submitted' as const, quotationSubmittedDate: new Date().toISOString().split('T')[0] }
+            : v
+        );
+
+        const submittedCount = updatedVendors.filter(v => v.status === 'Submitted' || v.status === 'Under Review').length;
+        const totalCount = updatedVendors.length;
+        const newStatus = submittedCount === totalCount ? 'Fully Responded' as const : 'Partially Responded' as const;
+
         return {
           ...r,
-          status: 'Quotations Received',
+          status: newStatus,
+          vendors: updatedVendors,
           quotations: checkedQuotes
+        };
+      })
+    );
+  }
+
+  awardQuotation(rfqId: string, vendorId: string) {
+    this.rfqs.update(rfqs =>
+      rfqs.map(r => {
+        if (r.id !== rfqId) return r;
+        const updatedVendors = r.vendors.map(v => 
+          v.vendorId === vendorId
+            ? { ...v, status: 'Accepted' as const }
+            : { ...v, status: v.status === 'Submitted' ? 'Rejected' as const : v.status }
+        );
+        const updatedQuotes = r.quotations.map(q => 
+          q.vendorId === vendorId
+            ? { ...q, status: 'Accepted' as const }
+            : { ...q, status: q.status === 'Submitted' ? 'Rejected' as const : q.status }
+        );
+        return {
+          ...r,
+          status: 'Awarded' as const,
+          vendors: updatedVendors,
+          quotations: updatedQuotes
+        };
+      })
+    );
+  }
+
+  rejectQuotation(rfqId: string, vendorId: string) {
+    this.rfqs.update(rfqs =>
+      rfqs.map(r => {
+        if (r.id !== rfqId) return r;
+        const updatedVendors = r.vendors.map(v => 
+          v.vendorId === vendorId ? { ...v, status: 'Rejected' as const } : v
+        );
+        const updatedQuotes = r.quotations.map(q => 
+          q.vendorId === vendorId ? { ...q, status: 'Rejected' as const } : q
+        );
+        return {
+          ...r,
+          vendors: updatedVendors,
+          quotations: updatedQuotes
+        };
+      })
+    );
+  }
+
+  requestRevision(rfqId: string, vendorId: string) {
+    this.rfqs.update(rfqs =>
+      rfqs.map(r => {
+        if (r.id !== rfqId) return r;
+        const updatedVendors = r.vendors.map(v => 
+          v.vendorId === vendorId ? { ...v, status: 'Revision Requested' as const } : v
+        );
+        const updatedQuotes = r.quotations.map(q => 
+          q.vendorId === vendorId ? { ...q, status: 'Revision Requested' as const } : q
+        );
+        return {
+          ...r,
+          vendors: updatedVendors,
+          quotations: updatedQuotes
         };
       })
     );
@@ -1233,6 +1438,9 @@ export class MockDataService {
     const newPO: PurchaseOrder = {
       id: `po${pos.length + 1}`,
       poNumber: poNum,
+      chainId: rfq.chainId || pr.chainId || `PC-${new Date().getFullYear()}-${String(pos.length + 1).padStart(4, '0')}`,
+      parentDocumentId: rfq.id,
+      parentDocumentNumber: rfq.rfqNumber,
       rfqId: rfq.id,
       rfqNumber: rfq.rfqNumber,
       vendorId: vendor.id,
@@ -1251,6 +1459,11 @@ export class MockDataService {
       withholdingTaxPercent: whtPercent,
       withholdingTaxAmount: whtAmount,
       totalAmount,
+      chargeType: pr.chargeType,
+      projectId: pr.projectId,
+      projectName: pr.projectName,
+      assetId: pr.assetId,
+      assetName: pr.assetName,
       approvalWorkflow: [
         { role: 'Procurement Specialist', approverName: 'Jane Smith', status: 'Approved', actionDate: new Date().toISOString().split('T')[0], comments: 'Generated from quotation comparison recommendation.' },
         { role: 'Procurement Manager', approverName: 'Frank Jones', status: 'Pending' },
@@ -1260,10 +1473,10 @@ export class MockDataService {
 
     this.purchaseOrders.update(val => [...val, newPO]);
 
-    // Update RFQ status
-    this.rfqs.update(list =>
-      list.map(r => r.id === rfqId ? { ...r, status: 'PO Created' } : r)
-    );
+     // Update RFQ status
+     this.rfqs.update(list =>
+       list.map(r => r.id === rfqId ? { ...r, status: 'Awarded' as const } : r)
+     );
 
     return newPO;
   }

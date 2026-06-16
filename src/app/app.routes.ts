@@ -48,6 +48,33 @@ export const routes: Routes = [
         ]
       },
       {
+        path: 'vendor-portal',
+        data: { permission: 'view:vendor_portal' },
+        children: [
+          { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
+          {
+            path: 'dashboard',
+            loadComponent: () => import('./features/vendor-portal/dashboard/dashboard.component').then(m => m.DashboardComponent)
+          },
+          {
+            path: 'rfqs',
+            loadComponent: () => import('./features/vendor-portal/rfqs/rfqs.component').then(m => m.RfqsComponent)
+          },
+          {
+            path: 'rfqs/:id',
+            loadComponent: () => import('./features/vendor-portal/rfq-details/rfq-details.component').then(m => m.RfqDetailsComponent)
+          },
+          {
+            path: 'rfqs/:id/submit',
+            loadComponent: () => import('./features/vendor-portal/submit-quotation/submit-quotation.component').then(m => m.SubmitQuotationComponent)
+          },
+          {
+            path: 'history',
+            loadComponent: () => import('./features/vendor-portal/history/history.component').then(m => m.HistoryComponent)
+          }
+        ]
+      },
+      {
         path: 'inventory',
         loadComponent: () => import('./features/inventory/inventory.component').then(m => m.InventoryComponent),
         data: { permission: 'view:inventory' }

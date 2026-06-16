@@ -6,6 +6,8 @@ import { BreadcrumbService } from '../../core/services/breadcrumb.service';
 import { ActivityTimelineComponent } from '../../shared/components/activity-timeline/activity-timeline.component';
 import { AuditService } from '../../core/services/audit.service';
 import { TranslateModule } from '@ngx-translate/core';
+import { AuthService } from '../../core/services/auth.service';
+import { WorkflowService } from '../../core/services/workflow.service';
 
 @Component({
   selector: 'app-dashboard',
@@ -20,11 +22,14 @@ export class DashboardComponent implements OnInit {
   private readonly breadcrumbService = inject(BreadcrumbService);
   readonly auditService = inject(AuditService);
   private readonly router = inject(Router);
+  readonly authService = inject(AuthService);
+  readonly workflowService = inject(WorkflowService);
 
   readonly stats = this.mockDataService.stats;
   readonly bankAccounts = this.mockDataService.bankAccountsDetails;
   readonly cashAccounts = this.mockDataService.cashAccountsDetails;
   readonly hseIncidents = this.mockDataService.hseIncidents;
+  readonly currentUser = this.authService.currentUser;
 
   // Procurement
   readonly purchaseRequests = this.mockDataService.purchaseRequests;
@@ -46,7 +51,7 @@ export class DashboardComponent implements OnInit {
     this.purchaseRequests().filter(pr => pr.status === 'Pending Approval' || pr.status === 'Draft').length
   );
   readonly openRFQs = computed(() =>
-    this.rfqs().filter(r => r.status === 'Sent' || r.status === 'Quotations Received').length
+    this.rfqs().filter(r => r.status === 'Sent' || r.status === 'Partially Responded' || r.status === 'Fully Responded').length
   );
   readonly openPOs = computed(() =>
     this.purchaseOrders().filter(po => po.status === 'Pending Approval' || po.status === 'Approved').length
@@ -87,15 +92,38 @@ export class DashboardComponent implements OnInit {
     this.hseIncidents().filter(i => i.type === 'LTI').length === 0 ? 365 : 12
   );
   readonly activeRigs = computed(() => this.mockDataService.rigs().slice(0, 3));
+  
+  // My Tasks
   readonly pendingPRs = computed(() =>
     this.purchaseRequests().filter(pr => pr.status === 'Pending Approval')
   );
   readonly biddedRFQs = computed(() =>
-    this.rfqs().filter(rfq => rfq.status === 'Quotations Received')
+    this.rfqs().filter(rfq => rfq.status === 'Partially Responded' || rfq.status === 'Fully Responded')
   );
   readonly pendingPOs = computed(() =>
     this.purchaseOrders().filter(po => po.status === 'Pending Approval')
   );
+  readonly pendingWCCs = computed(() =>
+    this.workflowService.wccs().filter(w => w.status === 'Draft' || w.status === 'Pending Approval')
+  );
+  readonly pendingInspectionsList = computed(() =>
+    this.inspectionRequests().filter(i => i.status === 'Pending')
+  );
+
+  // Critical Alerts
+  readonly criticalStockItems = computed(() =>
+    this.inventoryItems().filter(i => i.status === 'Out of Stock' || i.status === 'Low Stock').slice(0, 5)
+  );
+  readonly breakdownWorkOrders = computed(() =>
+    this.workOrders().filter(wo => wo.type === 'Breakdown' && wo.status !== 'Completed').slice(0, 5)
+  );
+  readonly expiredPermits = computed(() =>
+    this.mockDataService.ptws().filter(p => p.status === 'Expired').slice(0, 5)
+  );
+  readonly criticalAlertsCount = computed(() =>
+    this.criticalStock() + this.breakdownWorkOrders().length + this.expiredPermits().length
+  );
+
   readonly recentLogCount = computed(() => this.auditService.logs().length);
 
   navigate(path: string) { this.router.navigate([path]); }

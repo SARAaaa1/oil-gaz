@@ -95,4 +95,22 @@ export class NotificationService {
   info(title: string, message: string, params?: any) {
     this.show('info', title, message, 4000, params);
   }
+
+  addNotification(title: string, message: string, type: 'info' | 'success' | 'warning' | 'danger' = 'info', params?: any) {
+    const id = Math.random().toString(36).substring(2, 9);
+    const translatedTitle = this.translate.instant(title, params);
+    const translatedMessage = this.translate.instant(message, params);
+
+    const newNotif: NotificationItem = {
+      id,
+      title: translatedTitle,
+      message: translatedMessage,
+      time: 'Just now',
+      type,
+      isRead: false
+    };
+
+    this.notifications.update(val => [newNotif, ...val]);
+    this.show(type, title, message, 4000, params);
+  }
 }

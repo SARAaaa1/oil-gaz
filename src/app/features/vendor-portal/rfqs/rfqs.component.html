@@ -1,0 +1,165 @@
+<div class="space-y-6">
+
+  <!-- Header -->
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="text-2xl font-black text-slate-800 tracking-tight">{{ 'vendor.portal.my_rfqs' | translate }}</h1>
+      <p class="text-xs text-slate-500 font-semibold mt-1">{{ 'vendor.dashboard.recent_rfqs_subtitle' | translate }}</p>
+    </div>
+  </div>
+
+  <!-- Filters & Search Bar -->
+  <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-xs font-semibold text-slate-600">
+    <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 flex-1">
+      
+      <!-- Search Input -->
+      <div class="relative flex-1 max-w-sm">
+        <input 
+          type="text" 
+          [ngModel]="searchQuery()" 
+          (ngModelChange)="searchQuery.set($event); currentPage.set(1)"
+          [placeholder]="'vendor.portal.search_rfqs_placeholder' | translate" 
+          class="w-full bg-slate-50 border border-slate-200 rounded-lg pl-8 pr-3 py-2 text-slate-850 focus:outline-none"
+        >
+        <svg class="w-4 h-4 text-slate-400 absolute left-2.5 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+        </svg>
+      </div>
+
+      <!-- Status Filter -->
+      <div class="flex items-center gap-2">
+        <span class="shrink-0">{{ 'procurement.rfqs.filter_label' | translate }}</span>
+        <select 
+          [ngModel]="statusFilter()" 
+          (ngModelChange)="statusFilter.set($event); currentPage.set(1)"
+          class="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-850 focus:outline-none focus:border-primary"
+        >
+          <option value="ALL">{{ 'procurement.rfqs.all_stages' | translate }}</option>
+          <option value="Open">{{ 'vendor.portal.filter_open' | translate }}</option>
+          <option value="Submitted">{{ 'vendor.portal.filter_submitted' | translate }}</option>
+          <option value="Accepted">{{ 'vendor.portal.filter_accepted' | translate }}</option>
+          <option value="Rejected">{{ 'vendor.portal.filter_rejected' | translate }}</option>
+          <option value="Revision Requested">{{ 'vendor.portal.filter_revision_requested' | translate }}</option>
+        </select>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- RFQs Grid / Table -->
+  <div class="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden animate-fade-in">
+    <div class="overflow-x-auto">
+      <table class="w-full text-left border-collapse text-xs">
+        <thead>
+          <tr class="text-slate-400 font-bold border-b border-slate-100 bg-slate-50/20">
+            <th class="p-4 py-3">{{ 'vendor.dashboard.col_rfq_number' | translate }}</th>
+            <th class="p-4 py-3">{{ 'vendor.dashboard.col_title' | translate }}</th>
+            <th class="p-4 py-3">{{ 'vendor.dashboard.col_created_date' | translate }}</th>
+            <th class="p-4 py-3">{{ 'vendor.dashboard.col_due_date' | translate }}</th>
+            <th class="p-4 py-3 text-center">{{ 'vendor.dashboard.col_your_status' | translate }}</th>
+            <th class="p-4 py-3 text-right">{{ 'vendor.dashboard.col_quoted_amount' | translate }}</th>
+            <th class="p-4 py-3 text-center">{{ 'vendor.dashboard.col_actions' | translate }}</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-50 font-medium text-slate-700">
+          @for (rfq of paginatedRFQs(); track rfq.id) {
+            <tr class="hover:bg-slate-50/50 transition-colors cursor-pointer" [routerLink]="['/vendor-portal/rfqs', rfq.id]">
+              <td class="p-4 font-mono font-bold text-slate-900">{{ rfq.rfqNumber }}</td>
+              <td class="p-4">
+                <span class="font-bold text-slate-900 block">{{ rfq.title }}</span>
+                <span class="text-[10px] text-slate-400 block">{{ 'vendor.dashboard.source_pr' | translate }}: {{ rfq.purchaseRequestNumber }}</span>
+              </td>
+              <td class="p-4 text-slate-500">{{ rfq.createdDate }}</td>
+              <td class="p-4 text-slate-500">{{ rfq.deadlineDate }}</td>
+              <td class="p-4 text-center">
+                <span 
+                  class="px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider"
+                  [class.bg-amber-100]="getVendorStatus(rfq) === 'Pending'"
+                  [class.text-accent]="getVendorStatus(rfq) === 'Pending'"
+                  [class.bg-blue-100]="getVendorStatus(rfq) === 'Submitted'"
+                  [class.text-primary]="getVendorStatus(rfq) === 'Submitted'"
+                  [class.bg-green-100]="getVendorStatus(rfq) === 'Accepted'"
+                  [class.text-success]="getVendorStatus(rfq) === 'Accepted'"
+                  [class.bg-red-100]="getVendorStatus(rfq) === 'Rejected'"
+                  [class.text-danger]="getVendorStatus(rfq) === 'Rejected'"
+                  [class.bg-purple-100]="getVendorStatus(rfq) === 'Revision Requested'"
+                  [class.text-purple-600]="getVendorStatus(rfq) === 'Revision Requested'"
+                >
+                  {{ 'vendor.portal.status_' + getVendorStatus(rfq).toLowerCase().replace(' ', '_') | translate }}
+                </span>
+              </td>
+              <td class="p-4 text-right font-mono font-bold text-slate-900">
+                @if (getQuotationAmount(rfq.id)) {
+                  ${{ getQuotationAmount(rfq.id) | number }}
+                } @else {
+                  <span class="text-slate-400">-</span>
+                }
+              </td>
+              <td class="p-4 text-center" (click)="$event.stopPropagation()">
+                <div class="flex items-center justify-center space-x-1.5 rtl:space-x-reverse">
+                  @if (getVendorStatus(rfq) === 'Pending' || getVendorStatus(rfq) === 'Revision Requested') {
+                    <a [routerLink]="['/vendor-portal/rfqs', rfq.id, 'submit']" class="px-2.5 py-1 bg-accent text-primary rounded text-[10px] font-bold hover:bg-amber-400 transition-colors shadow-xs">
+                      {{ 'vendor.dashboard.action_quote' | translate }}
+                    </a>
+                  }
+                  <a [routerLink]="['/vendor-portal/rfqs', rfq.id]" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-[10px] font-bold transition-colors">
+                    {{ 'common.details' | translate }}
+                  </a>
+                </div>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="7" class="p-8 text-center text-slate-400 font-bold">
+                {{ 'vendor.portal.no_rfqs_found' | translate }}
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    @if (totalPages() > 1) {
+      <div class="p-4 bg-slate-50/50 border-t border-slate-100 flex items-center justify-between text-slate-500 font-semibold">
+        <span>{{ 'vendor.portal.page_indicator' | translate: {current: currentPage(), total: totalPages()} }}</span>
+        <div class="flex items-center space-x-1 rtl:space-x-reverse">
+          <button 
+            (click)="setPage(currentPage() - 1)" 
+            [disabled]="currentPage() === 1"
+            class="px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 transition-colors disabled:opacity-50 disabled:pointer-events-none"
+          >
+            <svg class="w-3.5 h-3.5 rtl:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+          
+          @for (p of [].constructor(totalPages()); track $index) {
+            <button 
+              (click)="setPage($index + 1)"
+              [class.bg-primary]="$index + 1 === currentPage()"
+              [class.text-white]="$index + 1 === currentPage()"
+              [class.border-primary]="$index + 1 === currentPage()"
+              [class.bg-white]="$index + 1 !== currentPage()"
+              [class.border-slate-200]="$index + 1 !== currentPage()"
+              class="w-7 h-7 rounded-lg border text-center text-[11px] font-bold transition-colors hover:bg-slate-50"
+            >
+              {{ $index + 1 }}
+            </button>
+          }
+
+          <button 
+            (click)="setPage(currentPage() + 1)" 
+            [disabled]="currentPage() === totalPages()"
+            class="px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 transition-colors disabled:opacity-50 disabled:pointer-events-none"
+          >
+            <svg class="w-3.5 h-3.5 rtl:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
+        </div>
+      </div>
+    }
+  </div>
+
+</div>

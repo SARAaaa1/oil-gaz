@@ -1,7 +1,7 @@
 import { Component, OnInit, signal, inject, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router, ActivatedRoute } from '@angular/router';
+import { Router, ActivatedRoute, RouterModule } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
 import { NotificationService } from '../../../core/services/notification.service';
 import { UserRole } from '../../../shared/interfaces/auth.interface';
@@ -12,7 +12,7 @@ import { DascoLogoComponent } from '../../../shared/components/dasco-logo/dasco-
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [CommonModule, FormsModule, TranslateModule, LanguageSwitcherComponent, DascoLogoComponent],
+  imports: [CommonModule, FormsModule, RouterModule, TranslateModule, LanguageSwitcherComponent, DascoLogoComponent],
   templateUrl: './login.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
@@ -49,7 +49,8 @@ export class LoginComponent implements OnInit {
     { label: 'Operations Mgr', username: 'operations', pass: 'ops123', desc: 'Rigs & Timesheets' },
     { label: 'Store Keeper', username: 'store', pass: 'store123', desc: 'Warehouse & Inventory' },
     { label: 'Project Manager', username: 'project', pass: 'project123', desc: 'Operations & Timesheets' },
-    { label: 'Employee Crew', username: 'employee', pass: 'emp123', desc: 'Read-only logs' }
+    { label: 'Employee Crew', username: 'employee', pass: 'emp123', desc: 'Read-only logs' },
+    { label: 'Vendor Portal', username: 'vendor', pass: 'vendor123', desc: 'Supplier RFQs & Quotations' }
   ];
 
   ngOnInit(): void {

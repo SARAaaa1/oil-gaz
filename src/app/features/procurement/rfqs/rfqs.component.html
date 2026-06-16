@@ -132,9 +132,11 @@
             class="bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-700 focus:outline-none"
           >
             <option value="ALL">{{ 'procurement.rfqs.all_stages' | translate }}</option>
+            <option value="Draft">{{ 'procurement.rfqs.status_draft' | translate }}</option>
             <option value="Sent">{{ 'procurement.rfqs.status_sent' | translate }}</option>
-            <option value="Quotations Received">{{ 'procurement.rfqs.status_received' | translate }}</option>
-            <option value="PO Created">{{ 'procurement.rfqs.status_po_created' | translate }}</option>
+            <option value="Partially Responded">{{ 'procurement.rfqs.status_partially_responded' | translate }}</option>
+            <option value="Fully Responded">{{ 'procurement.rfqs.status_received' | translate }}</option>
+            <option value="Awarded">{{ 'procurement.rfqs.status_awarded' | translate }}</option>
             <option value="Closed">{{ 'procurement.rfqs.status_closed' | translate }}</option>
           </select>
         </div>
@@ -169,21 +171,29 @@
                 <td class="p-4 text-center">
                   <span 
                     class="px-2.5 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider"
+                    [class.bg-slate-100]="rfq.status === 'Draft'"
+                    [class.text-slate-500]="rfq.status === 'Draft'"
                     [class.bg-amber-50]="rfq.status === 'Sent'"
                     [class.text-accent]="rfq.status === 'Sent'"
-                    [class.bg-green-50]="rfq.status === 'Quotations Received'"
-                    [class.text-success]="rfq.status === 'Quotations Received'"
-                    [class.bg-slate-900]="rfq.status === 'PO Created'"
-                    [class.text-white]="rfq.status === 'PO Created'"
+                    [class.bg-blue-50]="rfq.status === 'Partially Responded'"
+                    [class.text-blue-600]="rfq.status === 'Partially Responded'"
+                    [class.bg-green-50]="rfq.status === 'Fully Responded'"
+                    [class.text-success]="rfq.status === 'Fully Responded'"
+                    [class.bg-slate-900]="rfq.status === 'Awarded'"
+                    [class.text-white]="rfq.status === 'Awarded'"
                     [class.bg-slate-100]="rfq.status === 'Closed'"
                     [class.text-slate-500]="rfq.status === 'Closed'"
                   >
-                    @if (rfq.status === 'Sent') {
+                    @if (rfq.status === 'Draft') {
+                      {{ 'procurement.rfqs.status_draft' | translate }}
+                    } @else if (rfq.status === 'Sent') {
                       {{ 'procurement.rfqs.status_sent' | translate }}
-                    } @else if (rfq.status === 'Quotations Received') {
+                    } @else if (rfq.status === 'Partially Responded') {
+                      {{ 'procurement.rfqs.status_partially_responded' | translate }}
+                    } @else if (rfq.status === 'Fully Responded') {
                       {{ 'procurement.rfqs.status_received' | translate }}
-                    } @else if (rfq.status === 'PO Created') {
-                      {{ 'procurement.rfqs.status_po_created' | translate }}
+                    } @else if (rfq.status === 'Awarded') {
+                      {{ 'procurement.rfqs.status_awarded' | translate }}
                     } @else if (rfq.status === 'Closed') {
                       {{ 'procurement.rfqs.status_closed' | translate }}
                     } @else {
@@ -207,14 +217,14 @@
                         {{ 'procurement.rfqs.simulate_bid' | translate }}
                       </button>
                     }
-                    @if (rfq.status === 'Quotations Received') {
-                      <a 
-                        [routerLink]="['/procurement/quotation-comparison']" 
-                        [queryParams]="{ rfqId: rfq.id }"
+                    @if (rfq.status === 'Fully Responded' || rfq.status === 'Partially Responded') {
+                      <button
+                        type="button"
+                        (click)="viewRFQDetails(rfq); activeDetailsTab.set('comparison')"
                         class="px-2.5 py-1.5 rounded-md bg-green-50 hover:bg-green-100 text-success font-bold border border-green-100 transition-colors"
                       >
                         {{ 'procurement.rfqs.compare_bids' | translate }}
-                      </a>
+                      </button>
                     }
                   </div>
                 </td>
@@ -238,16 +248,16 @@
     </div>
   }
 
-  <!-- RFQ DETAILS DRAWER MODAL -->
+  <!-- RFQ DETAILS DRAWER MODAL (WIDE VIEW) -->
   @if (selectedRFQ()) {
-    <div class="fixed inset-0 z-50 flex justify-end animate-fade-in text-xs">
+    <div class="fixed inset-0 z-50 flex justify-end animate-fade-in text-xs font-semibold text-slate-650">
       <div (click)="closeRFQDetails()" class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"></div>
 
       <!-- Drawer Content -->
-      <div class="relative w-full max-w-xl bg-white h-full shadow-2xl flex flex-col p-6 overflow-y-auto animate-slide-left z-10 border-l border-slate-200">
+      <div class="relative w-full max-w-4xl bg-white h-full shadow-2xl flex flex-col p-6 overflow-y-auto animate-slide-left z-10 border-l border-slate-200">
         
         <!-- Header -->
-        <div class="flex items-center justify-between pb-4 mb-4 border-b border-slate-150">
+        <div class="flex items-center justify-between pb-4 border-b border-slate-150 shrink-0">
           <div>
             <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">{{ 'procurement.rfqs.drawer_title' | translate }}</span>
             <h2 class="text-base font-bold text-slate-800 mt-0.5">{{ selectedRFQ()?.rfqNumber }}</h2>
@@ -259,99 +269,279 @@
           </button>
         </div>
 
-        <div class="space-y-4 font-semibold text-slate-600">
+        <!-- RFQ Brief Summary -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 py-4 border-b border-slate-100 shrink-0">
           <div>
             <span class="block text-[10px] text-slate-400 uppercase">{{ 'procurement.rfqs.rfq_title' | translate }}</span>
-            <span class="text-slate-800 font-bold text-sm">{{ selectedRFQ()?.title }}</span>
+            <span class="text-slate-850 font-bold text-xs">{{ selectedRFQ()?.title }}</span>
           </div>
-
-          <div class="grid grid-cols-2 gap-4 pb-4 border-b border-slate-100">
-            <div>
-              <span class="block text-[10px] text-slate-400 uppercase">{{ 'procurement.rfqs.linked_requisition' | translate }}</span>
-              <span class="text-slate-800">{{ selectedRFQ()?.purchaseRequestNumber }}</span>
-            </div>
-            <div>
-              <span class="block text-[10px] text-slate-400 uppercase">{{ 'procurement.rfqs.bidding_deadline' | translate }}</span>
-              <span class="text-slate-800">{{ selectedRFQ()?.deadlineDate }}</span>
-            </div>
-          </div>
-
-          <!-- Invited Vendors status -->
-          <div class="pb-4 border-b border-slate-100">
-            <span class="block text-[10px] text-slate-400 uppercase mb-2">{{ 'procurement.rfqs.vendors_status' | translate }}</span>
-            <div class="space-y-2">
-              @for (v of selectedRFQ()?.vendors; track v.vendorId) {
-                <div class="p-2.5 bg-slate-50 border border-slate-100 rounded-md flex items-center justify-between">
-                  <span class="font-bold text-slate-700">{{ v.vendorName }}</span>
-                  <span 
-                    class="px-2 py-0.5 rounded text-[8px] font-extrabold uppercase"
-                    [class.bg-amber-100]="v.status === 'Invited'"
-                    [class.text-accent]="v.status === 'Invited'"
-                    [class.bg-green-100]="v.status === 'Submitted'"
-                    [class.text-success]="v.status === 'Submitted'"
-                  >
-                    @if (v.status === 'Invited') {
-                      {{ 'procurement.rfqs.invited' | translate }}
-                    } @else if (v.status === 'Submitted') {
-                      {{ 'procurement.rfqs.submitted' | translate }}
-                    } @else {
-                      {{ v.status }}
-                    }
-                  </span>
-                </div>
-              }
-            </div>
-          </div>
-
-          <!-- Quotations summary -->
           <div>
-            <span class="block text-[10px] text-slate-400 uppercase mb-2">{{ 'procurement.rfqs.quotations_logged' | translate }}</span>
-            <div class="space-y-2">
-              @for (q of selectedRFQ()?.quotations; track q.id) {
-                <div class="p-3 bg-slate-50 border border-slate-150 rounded-lg flex justify-between items-center">
-                  <div>
-                    <p class="font-bold text-slate-800">{{ q.vendorName }}</p>
-                    <p class="text-[10px] text-slate-400">{{ 'procurement.rfqs.delivery_weeks' | translate: {weeks: q.deliveryWeeks, notes: q.notes} }}</p>
-                  </div>
-                  <div class="text-right">
-                    <p class="text-sm font-black text-slate-900">${{ q.totalAmount | number }}</p>
-                    <span class="text-[9px] text-slate-400 font-bold">{{ 'procurement.rfqs.incl_tax' | translate: {pct: q.taxPercent} }}</span>
-                  </div>
-                </div>
-              } @empty {
-                <p class="text-[11px] text-slate-400 py-3 text-center bg-slate-50 rounded-md border border-dashed border-slate-200">{{ 'procurement.rfqs.no_quotations' | translate }}</p>
-              }
-            </div>
+            <span class="block text-[10px] text-slate-400 uppercase">{{ 'procurement.rfqs.linked_requisition' | translate }}</span>
+            <span class="text-slate-800">{{ selectedRFQ()?.purchaseRequestNumber }}</span>
+          </div>
+          <div>
+            <span class="block text-[10px] text-slate-400 uppercase">{{ 'procurement.rfqs.bidding_deadline' | translate }}</span>
+            <span class="text-danger font-bold">{{ selectedRFQ()?.deadlineDate }}</span>
           </div>
         </div>
 
-        <div class="pt-6 mt-auto border-t border-slate-150">
-          @if (selectedRFQ()?.status === 'Quotations Received') {
-            <a 
-              [routerLink]="['/procurement/quotation-comparison']" 
-              [queryParams]="{ rfqId: selectedRFQ()?.id }"
-              (click)="closeRFQDetails()"
-              class="w-full block text-center py-2.5 bg-green-600 hover:bg-green-500 text-white font-bold rounded-lg transition-colors shadow-sm"
-            >
-              {{ 'procurement.rfqs.open_analysis' | translate }}
-            </a>
-          } @else if (selectedRFQ()?.status === 'Sent') {
+        <!-- Details Tab headers -->
+        <div class="flex border-b border-slate-150 text-xs font-bold space-x-6 shrink-0 py-3 mb-4">
+          <button 
+            type="button"
+            (click)="activeDetailsTab.set('vendors')" 
+            [class.border-primary]="activeDetailsTab() === 'vendors'" 
+            [class.text-primary]="activeDetailsTab() === 'vendors'" 
+            [class.border-transparent]="activeDetailsTab() !== 'vendors'" 
+            [class.text-slate-500]="activeDetailsTab() !== 'vendors'" 
+            class="pb-2.5 border-b-2 transition-all"
+          >
+            {{ 'procurement.rfq.tab_vendors' | translate }} ({{ selectedRFQ()?.vendors?.length || 0 }})
+          </button>
+          <button 
+            type="button"
+            (click)="activeDetailsTab.set('responses')" 
+            [class.border-primary]="activeDetailsTab() === 'responses'" 
+            [class.text-primary]="activeDetailsTab() === 'responses'" 
+            [class.border-transparent]="activeDetailsTab() !== 'responses'" 
+            [class.text-slate-500]="activeDetailsTab() !== 'responses'" 
+            class="pb-2.5 border-b-2 transition-all"
+          >
+            {{ 'procurement.rfq.tab_responses' | translate }} ({{ selectedRFQ()?.quotations?.length || 0 }})
+          </button>
+          <button 
+            type="button"
+            (click)="activeDetailsTab.set('comparison')" 
+            [class.border-primary]="activeDetailsTab() === 'comparison'" 
+            [class.text-primary]="activeDetailsTab() === 'comparison'" 
+            [class.border-transparent]="activeDetailsTab() !== 'comparison'" 
+            [class.text-slate-500]="activeDetailsTab() !== 'comparison'" 
+            class="pb-2.5 border-b-2 transition-all"
+          >
+            {{ 'procurement.rfq.tab_comparison' | translate }}
+          </button>
+        </div>
+
+        <!-- Scrollable Tab Content Area -->
+        <div class="flex-1 overflow-y-auto space-y-4">
+          
+          <!-- TAB 1: VENDORS -->
+          @if (activeDetailsTab() === 'vendors') {
+            <div class="space-y-3 animate-fade-in">
+              <span class="block text-[10px] text-slate-400 uppercase mb-2">{{ 'procurement.rfqs.vendors_status' | translate }}</span>
+              <div class="space-y-2">
+                @for (v of selectedRFQ()?.vendors; track v.vendorId) {
+                  <div class="p-3 bg-slate-50 border border-slate-150 rounded-lg flex items-center justify-between">
+                    <div>
+                      <span class="font-bold text-slate-800 block text-xs">{{ v.vendorName }}</span>
+                      <span class="text-[9px] text-slate-400 block mt-0.5 font-mono">
+                        {{ 'procurement.rfq.invitation_sent' | translate }}: {{ v.invitationSentDate || selectedRFQ()?.createdDate }}
+                        @if (v.quotationSubmittedDate) {
+                          | {{ 'procurement.rfq.quotation_date' | translate }}: {{ v.quotationSubmittedDate }}
+                        }
+                      </span>
+                    </div>
+                    <span 
+                      class="px-2.5 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider"
+                      [class.bg-amber-100]="v.status === 'Pending'"
+                      [class.text-accent]="v.status === 'Pending'"
+                      [class.bg-blue-100]="v.status === 'Submitted'"
+                      [class.text-primary]="v.status === 'Submitted'"
+                      [class.bg-green-100]="v.status === 'Accepted'"
+                      [class.text-success]="v.status === 'Accepted'"
+                      [class.bg-red-100]="v.status === 'Rejected'"
+                      [class.text-danger]="v.status === 'Rejected'"
+                      [class.bg-purple-100]="v.status === 'Revision Requested'"
+                      [class.text-purple-600]="v.status === 'Revision Requested'"
+                    >
+                      {{ 'vendor.portal.status_' + v.status.toLowerCase().replace(' ', '_') | translate }}
+                    </span>
+                  </div>
+                }
+              </div>
+            </div>
+          }
+
+          <!-- TAB 2: RESPONSES -->
+          @if (activeDetailsTab() === 'responses') {
+            <div class="space-y-3 animate-fade-in">
+              <span class="block text-[10px] text-slate-400 uppercase mb-2">{{ 'procurement.rfqs.quotations_logged' | translate }}</span>
+              <div class="space-y-3">
+                @for (q of selectedRFQ()?.quotations; track q.id) {
+                  <div class="p-4 bg-slate-50 border border-slate-150 rounded-xl space-y-3">
+                    <div class="flex justify-between items-center pb-2 border-b border-slate-100">
+                      <div>
+                        <span class="font-bold text-slate-800 text-xs block">{{ q.vendorName }}</span>
+                        <span class="text-[9px] text-slate-400 font-mono">{{ 'vendor.quotation.submitted_on' | translate: {date: q.submissionDate || selectedRFQ()?.createdDate} }}</span>
+                      </div>
+                      <div class="text-right">
+                        <span class="text-sm font-black text-slate-900 block">${{ q.totalAmount | number }}</span>
+                        <span class="text-[9px] text-slate-400 font-bold block">{{ 'procurement.rfqs.incl_tax' | translate: {pct: q.taxPercent} }}</span>
+                      </div>
+                    </div>
+
+                    <!-- Items & files breakdown -->
+                    <div class="grid grid-cols-2 gap-4 text-[11px]">
+                      <div>
+                        <span class="text-slate-400 block font-bold">{{ 'procurement.quotation_comparison.delivery_time' | translate }}</span>
+                        <span class="text-slate-800">{{ q.deliveryWeeks }} {{ 'procurement.quotation_comparison.weeks' | translate }}</span>
+                      </div>
+                      <div>
+                        <span class="text-slate-400 block font-bold">{{ 'vendor.quotation.payment_terms' | translate }}</span>
+                        <span class="text-slate-800">{{ q.paymentTerms || 'Net 30' }}</span>
+                      </div>
+                    </div>
+
+                    @if (q.notes) {
+                      <p class="text-slate-500 italic p-2.5 bg-white border border-slate-100 rounded-lg">"{{ q.notes }}"</p>
+                    }
+
+                    @if (q.attachments?.length) {
+                      <div>
+                        <p class="text-[9px] font-bold text-slate-400 uppercase tracking-wide mb-1.5">{{ 'vendor.quotation.attached_files' | translate }}</p>
+                        <div class="flex flex-wrap gap-2">
+                          @for (file of q.attachments; track file.name) {
+                            <div class="flex items-center gap-1.5 bg-white border border-slate-100 px-2 py-1 rounded font-mono font-bold text-slate-700">
+                              <svg class="w-3.5 h-3.5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                              </svg>
+                              <span>{{ file.name }}</span>
+                              <span class="text-[9px] text-slate-400 font-normal">({{ file.size }})</span>
+                            </div>
+                          }
+                        </div>
+                      </div>
+                    }
+                  </div>
+                } @empty {
+                  <p class="text-slate-400 py-6 text-center bg-slate-50 rounded-md border border-dashed border-slate-200">
+                    {{ 'procurement.rfqs.no_quotations' | translate }}
+                  </p>
+                }
+              </div>
+            </div>
+          }
+
+          <!-- TAB 3: COMPARISON -->
+          @if (activeDetailsTab() === 'comparison') {
+            <div class="space-y-3 animate-fade-in">
+              <span class="block text-[10px] text-slate-400 uppercase mb-2">{{ 'procurement.quotation_comparison.comparison_header' | translate }}</span>
+              
+              <div class="bg-white rounded-xl border border-slate-150 overflow-hidden shadow-sm">
+                <table class="w-full text-left border-collapse text-xs">
+                  <thead>
+                    <tr class="text-slate-400 font-bold border-b border-slate-150 bg-slate-50/20">
+                      <th class="p-4 py-3">{{ 'procurement.quotation_comparison.vendor_bidder' | translate }}</th>
+                      <th class="p-4 py-3 text-right">{{ 'procurement.rfqs.bid_price_label' | translate }}</th>
+                      <th class="p-4 py-3 text-center">{{ 'procurement.quotation_comparison.delivery_time' | translate }}</th>
+                      <th class="p-4 py-3 text-right">{{ 'procurement.quotation_comparison.total' | translate }}</th>
+                      <th class="p-4 py-3 text-center">{{ 'procurement.quotation_comparison.score_highlights' | translate }}</th>
+                      <th class="p-4 py-3 text-center" style="width: 200px;">{{ 'procurement.quotation_comparison.contract_action' | translate }}</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-slate-100 font-medium text-slate-700">
+                    @for (quote of selectedRFQ()?.quotations; track quote.id) {
+                      <tr [ngClass]="{'bg-green-50': quote.isRecommended}">
+                        <td class="p-4">
+                          <span class="font-bold text-slate-900 block">{{ quote.vendorName }}</span>
+                          <span class="text-[9px] text-slate-450 block font-normal">{{ 'vendor.quotation.payment_terms' | translate }}: {{ quote.paymentTerms || 'Net 30' }}</span>
+                          @if (quote.notes) {
+                            <span class="text-[10px] text-slate-400 italic block mt-0.5 font-normal">"{{ quote.notes }}"</span>
+                          }
+                        </td>
+                        <td class="p-4 text-right font-mono font-bold">${{ quote.price | number }}</td>
+                        <td class="p-4 text-center">
+                          <span 
+                            class="px-2 py-0.5 rounded text-[10px] font-bold"
+                            [class.bg-green-100]="quote.deliveryWeeks <= 1"
+                            [class.text-success]="quote.deliveryWeeks <= 1"
+                            [class.bg-slate-100]="quote.deliveryWeeks > 1"
+                            [class.text-slate-700]="quote.deliveryWeeks > 1"
+                          >
+                            {{ quote.deliveryWeeks }} {{ 'procurement.quotation_comparison.weeks' | translate }}
+                          </span>
+                        </td>
+                        <td class="p-4 text-right font-mono font-black text-slate-950">${{ quote.totalAmount | number }}</td>
+                        <td class="p-4 text-center">
+                          <div class="flex items-center justify-center gap-1.5">
+                            @if (quote.isBestPrice) {
+                              <span class="px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase bg-green-50 text-success border border-green-150">
+                                {{ 'procurement.quotation_comparison.best_price' | translate }}
+                              </span>
+                            }
+                            @if (quote.isRecommended) {
+                              <span class="px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase bg-accent text-primary border border-amber-300">
+                                {{ 'procurement.quotation_comparison.recommended' | translate }}
+                              </span>
+                            }
+                          </div>
+                        </td>
+                        <td class="p-4 text-center">
+                          @if (selectedRFQ()?.status === 'Fully Responded' || selectedRFQ()?.status === 'Partially Responded') {
+                            <div class="flex items-center justify-center gap-1.5">
+                              <button 
+                                type="button"
+                                (click)="awardVendor(quote)"
+                                class="px-2.5 py-1 bg-green-600 hover:bg-green-500 text-white font-bold rounded text-[10px] shadow-xs"
+                              >
+                                {{ 'procurement.rfq.action_award' | translate }}
+                              </button>
+                              <button 
+                                type="button"
+                                (click)="requestRevisionVendor(quote)"
+                                class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-750 font-bold rounded text-[10px]"
+                              >
+                                {{ 'procurement.rfq.action_revision' | translate }}
+                              </button>
+                              <button 
+                                type="button"
+                                (click)="rejectVendor(quote)"
+                                class="px-2.5 py-1 bg-red-50 hover:bg-red-100 text-red-650 font-bold rounded text-[10px]"
+                              >
+                                {{ 'procurement.rfq.action_reject' | translate }}
+                              </button>
+                            </div>
+                          } @else if (quote.status === 'Accepted') {
+                            <span class="text-[10px] text-green-600 font-extrabold uppercase">{{ 'procurement.quotation_comparison.awarded' | translate }}</span>
+                          } @else if (quote.status === 'Rejected') {
+                            <span class="text-[10px] text-red-500 font-extrabold uppercase">{{ 'vendor.portal.status_rejected' | translate }}</span>
+                          } @else {
+                            <span class="text-[10px] text-slate-400 font-bold font-mono">{{ quote.status || '-' }}</span>
+                          }
+                        </td>
+                      </tr>
+                    } @empty {
+                      <tr>
+                        <td colspan="6" class="p-8 text-center text-slate-450">
+                          {{ 'procurement.quotation_comparison.awaiting_quotes' | translate }}
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          }
+
+        </div>
+
+        <!-- Footer Actions -->
+        <div class="pt-6 mt-auto border-t border-slate-150 shrink-0 flex items-center justify-end gap-3">
+          @if (selectedRFQ()?.status === 'Sent' && selectedRFQ()?.quotations?.length === 0) {
             <button 
               (click)="openBiddingModal(selectedRFQ()!); closeRFQDetails();"
-              class="w-full py-2.5 bg-accent text-primary font-bold rounded-lg hover:bg-amber-400 transition-colors shadow-sm"
+              class="px-4 py-2 bg-accent text-primary font-bold rounded-lg hover:bg-amber-400 transition-colors shadow-sm text-xs"
             >
               {{ 'procurement.rfqs.simulate_vendor' | translate }}
             </button>
-          } @else {
-            <button 
-              (click)="closeRFQDetails()"
-              class="w-full py-2.5 border border-slate-200 rounded-lg hover:bg-slate-50 text-slate-600 font-bold text-xs transition-colors"
-            >
-              {{ 'procurement.rfqs.close_panel' | translate }}
-            </button>
           }
+          <button 
+            (click)="closeRFQDetails()"
+            class="px-4 py-2 border border-slate-200 rounded-lg hover:bg-slate-50 text-slate-650 font-bold text-xs transition-colors"
+          >
+            {{ 'procurement.rfqs.close_panel' | translate }}
+          </button>
         </div>
-
       </div>
     </div>
   }

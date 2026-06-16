@@ -18,7 +18,7 @@
         >
           <option value="">{{ 'procurement.quotation_comparison.choose_rfq' | translate }}</option>
           @for (r of rfqs(); track r.id) {
-            @if (r.status === 'Quotations Received' || r.status === 'PO Created' || r.status === 'Closed') {
+            @if (r.status === 'Partially Responded' || r.status === 'Fully Responded' || r.status === 'Awarded' || r.status === 'Closed') {
               <option [value]="r.id">{{ r.rfqNumber }} - {{ r.title }} ({{ 'procurement.quotation_comparison.bids_count_label' | translate: {count: r.quotations.length} }})</option>
             }
           }
@@ -46,10 +46,10 @@
         </div>
         <span 
           class="px-2 py-0.5 text-[9px] font-extrabold uppercase rounded"
-          [class.bg-green-50]="activeRFQ()?.status === 'Quotations Received'"
-          [class.text-success]="activeRFQ()?.status === 'Quotations Received'"
-          [class.bg-slate-900]="activeRFQ()?.status === 'PO Created'"
-          [class.text-white]="activeRFQ()?.status === 'PO Created'"
+          [class.bg-green-50]="activeRFQ()?.status === 'Partially Responded' || activeRFQ()?.status === 'Fully Responded'"
+          [class.text-success]="activeRFQ()?.status === 'Partially Responded' || activeRFQ()?.status === 'Fully Responded'"
+          [class.bg-slate-900]="activeRFQ()?.status === 'Awarded'"
+          [class.text-white]="activeRFQ()?.status === 'Awarded'"
         >
           {{ 'procurement.quotation_comparison.rfq_status' | translate }}: {{ activeRFQ()?.status }}
         </span>
@@ -148,7 +148,7 @@
                 </td>
                 <!-- Actions -->
                 <td class="p-4 text-right">
-                  @if (activeRFQ()?.status === 'Quotations Received') {
+                  @if (activeRFQ()?.status === 'Partially Responded' || activeRFQ()?.status === 'Fully Responded') {
                     <button 
                       (click)="awardContract(quote)"
                       class="px-3 py-1.5 rounded-lg text-white font-bold text-[11px] shadow-sm transition-all"

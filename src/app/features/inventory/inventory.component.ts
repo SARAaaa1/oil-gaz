@@ -1,6 +1,7 @@
 import { Component, OnInit, signal, computed, inject, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { MockDataService } from '../../core/services/mock-data.service';
 import { BreadcrumbService } from '../../core/services/breadcrumb.service';
@@ -30,6 +31,7 @@ export class InventoryComponent implements OnInit {
   private readonly financeService = inject(FinanceCoreService);
   private readonly notificationService = inject(NotificationService);
   private readonly translate = inject(TranslateService);
+  private readonly route = inject(ActivatedRoute);
 
   // Core Data Stores (Signals)
   readonly inventory = this.mockDataService.inventoryItems;
@@ -176,6 +178,21 @@ export class InventoryComponent implements OnInit {
     this.breadcrumbService.setBreadcrumbs([
       { label: 'navigation.inventory' }
     ]);
+
+    // Check query params for active tab and selected MIV
+    this.route.queryParams.subscribe(params => {
+      const tab = params['tab'];
+      if (tab) {
+        this.activeTab.set(tab as any);
+      }
+      const mivId = params['mivId'];
+      if (mivId) {
+        const miv = this.mivs().find(m => m.id === mivId);
+        if (miv) {
+          this.selectedMIV.set(miv);
+        }
+      }
+    });
   }
 
   // --- ITEM METHODS ---
