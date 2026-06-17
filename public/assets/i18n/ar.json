@@ -1156,6 +1156,12 @@
     }
   },
   "procurement": {
+    "chain": {
+      "title": "خريطة رحلة التوريد",
+      "trace": "تتبع النظام",
+      "pending": "قيد الانتظار",
+      "not_awarded": "لم يُرسى"
+    },
     "purchase_orders": {
       "breadcrumb": "أوامر الشراء",
       "title": "سجل أوامر الشراء",

@@ -20,8 +20,12 @@ export interface POApprovalStep {
 
 export interface PurchaseOrder {
   id: string;
-  poNumber: string;              // PO-2026-0001 (4-digit)
-  chainId: string;               // PC-2026-0001
+  poNumber: string;              // legacy, same as documentNumber
+  documentNumber: string;        // PO-2026-0001-0001-0002-0001 — hierarchical
+  procurementChain: string;      // "0001-0001-0002-0001"
+  rootProcurementNumber: string; // "PR-2026-0001"
+  quotationNumber?: string;      // "QTN-2026-0001-0001-0002" — winning quotation
+  chainId: string;               // PC-2026-0001 (backward compat)
   parentDocumentId?: string;     // source RFQ id
   parentDocumentNumber?: string; // source RFQ number
 

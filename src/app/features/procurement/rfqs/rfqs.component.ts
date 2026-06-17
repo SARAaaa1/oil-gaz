@@ -8,11 +8,12 @@ import { BreadcrumbService } from '../../../core/services/breadcrumb.service';
 import { NotificationService } from '../../../core/services/notification.service';
 import { RFQ, RFQVendor, RFQQuotation } from '../../../shared/interfaces/rfq.interface';
 import { PurchaseRequest } from '../../../shared/interfaces/purchase-request.interface';
+import { ProcurementChainComponent } from '../../../shared/components/procurement-chain/procurement-chain.component';
 
 @Component({
   selector: 'app-rfqs',
   standalone: true,
-  imports: [CommonModule, FormsModule, TranslateModule],
+  imports: [CommonModule, FormsModule, TranslateModule, ProcurementChainComponent],
   templateUrl: './rfqs.component.html',
   styles: [],
   changeDetection: ChangeDetectionStrategy.OnPush

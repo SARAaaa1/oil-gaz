@@ -304,6 +304,11 @@
 
         </div>
 
+        <!-- Procurement Journey Stepper (Timeline Navigation) -->
+        @if (activePO()?.documentNumber) {
+          <app-procurement-chain [documentNumber]="activePO()!.documentNumber"></app-procurement-chain>
+        }
+
       </div>
     } @else {
       <!-- Empty details state -->

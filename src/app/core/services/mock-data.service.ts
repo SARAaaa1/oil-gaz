@@ -239,7 +239,9 @@ export class MockDataService {
     // 3. Purchase Requests
     const mockPRs: PurchaseRequest[] = [
       {
-        id: 'pr1', requestNumber: 'PR-2026-0001', chainId: 'PC-2026-0001',
+        id: 'pr1', requestNumber: 'PR-2026-0001',
+        documentNumber: 'PR-2026-0001', procurementChain: '0001', rootProcurementNumber: 'PR-2026-0001',
+        chainId: 'PC-2026-0001',
         department: 'Drilling Operations', costCenter: 'CC-DRL-001',
         chargeType: 'Project Cost', projectId: 'PRJ-001', projectName: 'Permian Overland Drilling',
         requestDate: '2026-05-10', requiredDate: '2026-06-15', status: 'Approved',
@@ -251,7 +253,9 @@ export class MockDataService {
         ]
       },
       {
-        id: 'pr2', requestNumber: 'PR-2026-0002', chainId: 'PC-2026-0002',
+        id: 'pr2', requestNumber: 'PR-2026-0002',
+        documentNumber: 'PR-2026-0002', procurementChain: '0002', rootProcurementNumber: 'PR-2026-0002',
+        chainId: 'PC-2026-0002',
         department: 'Maintenance & Engineering', costCenter: 'CC-MNT-002',
         chargeType: 'Asset Cost', assetId: 'eq1', assetName: 'Rig Beta — Mud Pump A',
         requestDate: '2026-05-15', requiredDate: '2026-06-10', status: 'RFQ Created',
@@ -262,7 +266,9 @@ export class MockDataService {
         ]
       },
       {
-        id: 'pr3', requestNumber: 'PR-2026-0003', chainId: 'PC-2026-0003',
+        id: 'pr3', requestNumber: 'PR-2026-0003',
+        documentNumber: 'PR-2026-0003', procurementChain: '0003', rootProcurementNumber: 'PR-2026-0003',
+        chainId: 'PC-2026-0003',
         department: 'HSE & Safety', costCenter: 'CC-HSE-001',
         chargeType: 'General Overhead',
         requestDate: '2026-05-28', requiredDate: '2026-06-20', status: 'Pending Approval',
@@ -274,7 +280,9 @@ export class MockDataService {
         ]
       },
       {
-        id: 'pr4', requestNumber: 'PR-2026-0004', chainId: 'PC-2026-0004',
+        id: 'pr4', requestNumber: 'PR-2026-0004',
+        documentNumber: 'PR-2026-0004', procurementChain: '0004', rootProcurementNumber: 'PR-2026-0004',
+        chainId: 'PC-2026-0004',
         department: 'Logistics', costCenter: 'CC-LOG-004',
         chargeType: 'General Overhead',
         requestDate: '2026-06-01', requiredDate: '2026-07-01', status: 'Draft',
@@ -287,11 +295,15 @@ export class MockDataService {
     ];
     this.purchaseRequests.set(mockPRs);
 
-    // 4. RFQs & Quotations
+    // RFQ-2026-0002-0001 is the 1st RFQ under PR-0002
+    // RFQ-2026-0003-0001 is the 1st RFQ under PR-0003
     const mockRFQs: RFQ[] = [
       {
         id: 'rfq1',
-        rfqNumber: 'RFQ-2026-0001',
+        rfqNumber: 'RFQ-2026-0002-0001',
+        documentNumber: 'RFQ-2026-0002-0001',
+        procurementChain: '0002-0001',
+        rootProcurementNumber: 'PR-2026-0002',
         chainId: 'PC-2026-0002',
         parentDocumentId: 'pr2',
         parentDocumentNumber: 'PR-2026-0002',
@@ -309,72 +321,48 @@ export class MockDataService {
         ],
         quotations: [
           {
-            id: 'q1',
-            vendorId: 'v2',
-            vendorName: 'APEX Industrial Supplies',
-            price: 12500,
-            deliveryWeeks: 2,
-            taxPercent: 15,
-            taxAmount: 1875,
-            totalAmount: 14375,
+            id: 'q1', quotationSequence: 1,
+            quotationNumber: 'QTN-2026-0002-0001-0001',
+            procurementChain: '0002-0001-0001',
+            vendorId: 'v2', vendorName: 'APEX Industrial Supplies',
+            price: 12500, deliveryWeeks: 2, taxPercent: 15, taxAmount: 1875, totalAmount: 14375,
             notes: 'Ex-stocks. Standard 1 year warranty included.',
-            submissionDate: '2026-05-19',
-            status: 'Submitted',
-            paymentTerms: 'Net 30',
-            attachments: [
-              { name: 'APEX-Quote-1982.pdf', size: '1.2 MB', type: 'application/pdf', url: '#' }
-            ],
-            items: [
-              { itemCode: 'HY-PUMP-HP450', itemName: 'Hydraulic Pump HP-450 Seal Unit', uom: 'EA', quantity: 1, unitPrice: 12500, totalPrice: 12500 }
-            ]
+            submissionDate: '2026-05-19', status: 'Submitted', paymentTerms: 'Net 30',
+            attachments: [{ name: 'APEX-Quote-1982.pdf', size: '1.2 MB', type: 'application/pdf', url: '#' }],
+            items: [{ itemCode: 'HY-PUMP-HP450', itemName: 'Hydraulic Pump HP-450 Seal Unit', uom: 'EA', quantity: 1, unitPrice: 12500, totalPrice: 12500 }]
           },
           {
-            id: 'q2',
-            vendorId: 'v1',
-            vendorName: 'Global Oilfield Solutions',
-            price: 11200,
-            deliveryWeeks: 4,
-            taxPercent: 15,
-            taxAmount: 1680,
-            totalAmount: 12880,
+            id: 'q2', quotationSequence: 2,
+            quotationNumber: 'QTN-2026-0002-0001-0002',
+            procurementChain: '0002-0001-0002',
+            vendorId: 'v1', vendorName: 'Global Oilfield Solutions',
+            price: 11200, deliveryWeeks: 4, taxPercent: 15, taxAmount: 1680, totalAmount: 12880,
             isBestPrice: true,
             notes: 'Direct factory pricing. Lead time 4 weeks ship.',
-            submissionDate: '2026-05-20',
-            status: 'Submitted',
-            paymentTerms: 'Net 30',
-            attachments: [
-              { name: 'GOS-RFQ-PriceList.xlsx', size: '420 KB', type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', url: '#' }
-            ],
-            items: [
-              { itemCode: 'HY-PUMP-HP450', itemName: 'Hydraulic Pump HP-450 Seal Unit', uom: 'EA', quantity: 1, unitPrice: 11200, totalPrice: 11200 }
-            ]
+            submissionDate: '2026-05-20', status: 'Submitted', paymentTerms: 'Net 30',
+            attachments: [{ name: 'GOS-RFQ-PriceList.xlsx', size: '420 KB', type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', url: '#' }],
+            items: [{ itemCode: 'HY-PUMP-HP450', itemName: 'Hydraulic Pump HP-450 Seal Unit', uom: 'EA', quantity: 1, unitPrice: 11200, totalPrice: 11200 }]
           },
           {
-            id: 'q3',
-            vendorId: 'v3',
-            vendorName: 'Valero Drilling Supplies',
-            price: 13800,
-            deliveryWeeks: 1,
-            taxPercent: 15,
-            taxAmount: 2070,
-            totalAmount: 15870,
+            id: 'q3', quotationSequence: 3,
+            quotationNumber: 'QTN-2026-0002-0001-0003',
+            procurementChain: '0002-0001-0003',
+            vendorId: 'v3', vendorName: 'Valero Drilling Supplies',
+            price: 13800, deliveryWeeks: 1, taxPercent: 15, taxAmount: 2070, totalAmount: 15870,
             isRecommended: true,
             notes: 'Expedited shipping. Available for next-day dispatch.',
-            submissionDate: '2026-05-18',
-            status: 'Submitted',
-            paymentTerms: 'Net 15',
-            attachments: [
-              { name: 'Valero-Drilling-Proposal.pdf', size: '2.5 MB', type: 'application/pdf', url: '#' }
-            ],
-            items: [
-              { itemCode: 'HY-PUMP-HP450', itemName: 'Hydraulic Pump HP-450 Seal Unit', uom: 'EA', quantity: 1, unitPrice: 13800, totalPrice: 13800 }
-            ]
+            submissionDate: '2026-05-18', status: 'Submitted', paymentTerms: 'Net 15',
+            attachments: [{ name: 'Valero-Drilling-Proposal.pdf', size: '2.5 MB', type: 'application/pdf', url: '#' }],
+            items: [{ itemCode: 'HY-PUMP-HP450', itemName: 'Hydraulic Pump HP-450 Seal Unit', uom: 'EA', quantity: 1, unitPrice: 13800, totalPrice: 13800 }]
           }
         ]
       },
       {
         id: 'rfq2',
-        rfqNumber: 'RFQ-2026-0002',
+        rfqNumber: 'RFQ-2026-0003-0001',
+        documentNumber: 'RFQ-2026-0003-0001',
+        procurementChain: '0003-0001',
+        rootProcurementNumber: 'PR-2026-0003',
         chainId: 'PC-2026-0003',
         parentDocumentId: 'pr3',
         parentDocumentNumber: 'PR-2026-0003',
@@ -384,26 +372,43 @@ export class MockDataService {
         title: 'Safety Gear & H2S Multi-Gas Detectors',
         createdDate: '2026-05-29',
         deadlineDate: '2026-06-08',
-        status: 'Sent',
+        status: 'Awarded',
         vendors: [
           { vendorId: 'v4', vendorName: 'HSE Safety First Inc', contactEmail: 's.connor@hsesafety.com', status: 'Pending', invitationSentDate: '2026-05-29' },
-          { vendorId: 'v2', vendorName: 'APEX Industrial Supplies', contactEmail: 'j.sterling@apexind.com', status: 'Pending', invitationSentDate: '2026-05-29' }
+          { vendorId: 'v2', vendorName: 'APEX Industrial Supplies', contactEmail: 'j.sterling@apexind.com', status: 'Accepted', invitationSentDate: '2026-05-29', quotationSubmittedDate: '2026-06-01' }
         ],
-        quotations: []
+        quotations: [
+          {
+            id: 'q4', quotationSequence: 1,
+            quotationNumber: 'QTN-2026-0003-0001-0001',
+            procurementChain: '0003-0001-0001',
+            vendorId: 'v2', vendorName: 'APEX Industrial Supplies',
+            price: 17000, deliveryWeeks: 2, taxPercent: 15, taxAmount: 2550, totalAmount: 19550,
+            notes: 'Available from stock.',
+            submissionDate: '2026-06-01', status: 'Accepted', paymentTerms: 'Net 45',
+            items: [
+              { itemCode: 'DR-BIT-8.5-PDC', itemName: 'Drill Bit 8.5in PDC Premium', uom: 'EA', quantity: 2, unitPrice: 8500, totalPrice: 17000 }
+            ]
+          }
+        ]
       }
     ];
     this.rfqs.set(mockRFQs);
 
-    // 5. Purchase Orders
+    // PO-2026-0002-0001-0002-0001 → PR-0002, RFQ-0001, QTN-0002 (best price from Global Oilfield), PO seq 0001
     const mockPOs: PurchaseOrder[] = [
       {
         id: 'po1',
-        poNumber: 'PO-2026-001',
-        chainId: 'PC-2026-0001',
+        poNumber: 'PO-2026-0002-0001-0002-0001',
+        documentNumber: 'PO-2026-0002-0001-0002-0001',
+        procurementChain: '0002-0001-0002-0001',
+        rootProcurementNumber: 'PR-2026-0002',
+        quotationNumber: 'QTN-2026-0002-0001-0002',
+        chainId: 'PC-2026-0002',
         parentDocumentId: 'rfq1',
-        parentDocumentNumber: 'RFQ-2026-0001',
+        parentDocumentNumber: 'RFQ-2026-0002-0001',
         rfqId: 'rfq1',
-        rfqNumber: 'RFQ-2026-001',
+        rfqNumber: 'RFQ-2026-0002-0001',
         vendorId: 'v1',
         vendorName: 'Global Oilfield Solutions',
         vendorTaxNumber: 'TX-88992211',
@@ -418,21 +423,14 @@ export class MockDataService {
         taxAmount: 1680,
         withholdingTaxPercent: 2,
         withholdingTaxAmount: 224,
-        totalAmount: 12656, // subtotal + tax - wht
+        totalAmount: 12656,
         chargeType: 'Project Cost',
         projectId: 'PRJ-001',
         projectName: 'Permian Overland Drilling',
-        items: [
-          {
-            id: 'poi1',
-            itemCode: 'HY-PUMP-HP450',
-            itemName: 'Hydraulic Pump HP-450 Seal Unit',
-            quantity: 1,
-            unitPrice: 11200,
-            uom: 'EA',
-            totalPrice: 11200
-          }
-        ],
+        items: [{
+          id: 'poi1', itemCode: 'HY-PUMP-HP450', itemName: 'Hydraulic Pump HP-450 Seal Unit',
+          quantity: 1, unitPrice: 11200, uom: 'EA', totalPrice: 11200
+        }],
         approvalWorkflow: [
           { role: 'Procurement Specialist', approverName: 'Jane Smith', status: 'Approved', actionDate: '2026-05-25', comments: 'Cheapest option selected from RFQ' },
           { role: 'Procurement Manager', approverName: 'Frank Jones', status: 'Approved', actionDate: '2026-05-26', comments: 'Budget matches cost center allocations' },
@@ -441,10 +439,16 @@ export class MockDataService {
       },
       {
         id: 'po2',
-        poNumber: 'PO-2026-002',
-        chainId: 'PC-2026-0002',
+        poNumber: 'PO-2026-0003-0001-0001-0001',
+        documentNumber: 'PO-2026-0003-0001-0001-0001',
+        procurementChain: '0003-0001-0001-0001',
+        rootProcurementNumber: 'PR-2026-0003',
+        quotationNumber: 'QTN-2026-0003-0001-0001',
+        chainId: 'PC-2026-0003',
         parentDocumentId: 'rfq2',
-        parentDocumentNumber: 'RFQ-2026-0002',
+        parentDocumentNumber: 'RFQ-2026-0003-0001',
+        rfqId: 'rfq2',
+        rfqNumber: 'RFQ-2026-0003-0001',
         vendorId: 'v2',
         vendorName: 'APEX Industrial Supplies',
         vendorTaxNumber: 'TX-44558833',
@@ -1141,7 +1145,7 @@ export class MockDataService {
 
   // --- ACTIONS & MUTATORS ---
 
-  addPurchaseRequest(pr: Omit<PurchaseRequest, 'id' | 'requestNumber' | 'chainId' | 'status' | 'requestDate'>) {
+  addPurchaseRequest(pr: Omit<PurchaseRequest, 'id' | 'requestNumber' | 'chainId' | 'status' | 'requestDate' | 'documentNumber' | 'procurementChain' | 'rootProcurementNumber'>) {
     const prs = this.purchaseRequests();
     const seq = String(prs.length + 1).padStart(4, '0');
     const year = new Date().getFullYear();
@@ -1151,6 +1155,9 @@ export class MockDataService {
       ...pr,
       id: `pr${prs.length + 1}`,
       requestNumber: num,
+      documentNumber: num,
+      procurementChain: seq,
+      rootProcurementNumber: num,
       chainId,
       requestDate: new Date().toISOString().split('T')[0],
       status: 'Pending Approval'
@@ -1233,18 +1240,24 @@ export class MockDataService {
     }
   }
 
-  addRFQ(rfq: Omit<RFQ, 'id' | 'rfqNumber' | 'status' | 'createdDate' | 'quotations' | 'chainId' | 'parentDocumentId' | 'parentDocumentNumber'> & { chainId?: string; parentDocumentId?: string; parentDocumentNumber?: string; }) {
+  addRFQ(rfq: Omit<RFQ, 'id' | 'rfqNumber' | 'status' | 'createdDate' | 'quotations' | 'chainId' | 'parentDocumentId' | 'parentDocumentNumber' | 'documentNumber' | 'procurementChain' | 'rootProcurementNumber'> & { chainId?: string; parentDocumentId?: string; parentDocumentNumber?: string; }) {
     const rfqs = this.rfqs();
-    const seq = String(rfqs.length + 1).padStart(4, '0');
-    const year = new Date().getFullYear();
-    const num = `RFQ-${year}-${seq}`;
     // Inherit dimensions from source PR
     const sourcePR = this.purchaseRequests().find(p => p.id === rfq.purchaseRequestId);
+    const prChain = sourcePR?.procurementChain || '0000';
+    const prRFQs = rfqs.filter(r => r.purchaseRequestId === rfq.purchaseRequestId);
+    const rfqSeq = String(prRFQs.length + 1).padStart(4, '0');
+    const year = new Date().getFullYear();
+    const num = `RFQ-${year}-${prChain}-${rfqSeq}`;
+
     const newRfq: RFQ = {
       ...rfq,
       id: `rfq${rfqs.length + 1}`,
       rfqNumber: num,
-      chainId: rfq.chainId || sourcePR?.chainId || `PC-${year}-${seq}`,
+      documentNumber: num,
+      procurementChain: `${prChain}-${rfqSeq}`,
+      rootProcurementNumber: sourcePR?.documentNumber || '',
+      chainId: rfq.chainId || sourcePR?.chainId || `PC-${year}-${prChain}`,
       parentDocumentId: rfq.parentDocumentId || rfq.purchaseRequestId,
       parentDocumentNumber: rfq.parentDocumentNumber || sourcePR?.requestNumber || '',
       chargeType: rfq.chargeType || sourcePR?.chargeType,
@@ -1303,13 +1316,21 @@ export class MockDataService {
     this.purchaseRequests.update(prs => prs.map(p => p.id === pr.id ? { ...p, reservationCreated: true } : p));
   }
 
-  submitQuotation(rfqId: string, quotation: Omit<RFQQuotation, 'id'>) {
+  submitQuotation(rfqId: string, quotation: Omit<RFQQuotation, 'id' | 'procurementChain' | 'quotationNumber' | 'quotationSequence'>) {
     this.rfqs.update(rfqs =>
       rfqs.map(r => {
         if (r.id !== rfqId) return r;
+        const qtnSeq = r.quotations.length + 1;
+        const qtnSeqStr = String(qtnSeq).padStart(4, '0');
+        const year = new Date().getFullYear();
+        const qtnNum = `QTN-${year}-${r.procurementChain}-${qtnSeqStr}`;
+
         const newQ: RFQQuotation = {
           ...quotation,
           id: `q${r.quotations.length + 1}`,
+          quotationNumber: qtnNum,
+          quotationSequence: qtnSeq,
+          procurementChain: `${r.procurementChain}-${qtnSeqStr}`,
           status: 'Submitted'
         };
         const updatedQuotes = [...r.quotations.filter(q => q.vendorId !== quotation.vendorId), newQ];
@@ -1417,7 +1438,10 @@ export class MockDataService {
     if (!rfq || !quote || !vendor || !pr) return null;
 
     const pos = this.purchaseOrders();
-    const poNum = `PO-2026-0${pos.length + 1}`;
+    const quotePOList = pos.filter(p => p.quotationNumber === quote.quotationNumber);
+    const poSeq = String(quotePOList.length + 1).padStart(4, '0');
+    const year = new Date().getFullYear();
+    const poNum = `PO-${year}-${quote.procurementChain}-${poSeq}`;
 
     const subtotal = quote.price;
     const taxAmount = Math.round(subtotal * (quote.taxPercent / 100));
@@ -1438,11 +1462,15 @@ export class MockDataService {
     const newPO: PurchaseOrder = {
       id: `po${pos.length + 1}`,
       poNumber: poNum,
-      chainId: rfq.chainId || pr.chainId || `PC-${new Date().getFullYear()}-${String(pos.length + 1).padStart(4, '0')}`,
+      documentNumber: poNum,
+      procurementChain: `${quote.procurementChain}-${poSeq}`,
+      rootProcurementNumber: pr.documentNumber,
+      quotationNumber: quote.quotationNumber,
+      chainId: rfq.chainId || pr.chainId || `PC-${year}-${quote.procurementChain}`,
       parentDocumentId: rfq.id,
-      parentDocumentNumber: rfq.rfqNumber,
+      parentDocumentNumber: rfq.documentNumber,
       rfqId: rfq.id,
-      rfqNumber: rfq.rfqNumber,
+      rfqNumber: rfq.documentNumber,
       vendorId: vendor.id,
       vendorName: vendor.vendorName,
       vendorTaxNumber: vendor.taxNumber,

@@ -1158,6 +1158,12 @@
     }
   },
   "procurement": {
+    "chain": {
+      "title": "Procurement Journey Map",
+      "trace": "System Traceability",
+      "pending": "Pending",
+      "not_awarded": "Not Awarded"
+    },
     "purchase_orders": {
       "breadcrumb": "Purchase Orders",
       "title": "Purchase Orders Registry",

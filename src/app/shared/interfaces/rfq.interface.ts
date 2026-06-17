@@ -31,6 +31,9 @@ export interface QuotationAttachment {
 
 export interface RFQQuotation {
   id: string;
+  quotationNumber: string;       // QTN-2026-0001-0001-0002 — hierarchical
+  quotationSequence: number;     // sequential index within the RFQ (1, 2, 3…)
+  procurementChain: string;      // "0001-0001-0002"
   vendorId: string;
   vendorName: string;
   price: number;
@@ -52,8 +55,11 @@ export interface RFQQuotation {
 
 export interface RFQ {
   id: string;
-  rfqNumber: string;             // RFQ-2026-0001 (4-digit)
-  chainId: string;               // PC-2026-0001
+  rfqNumber: string;             // legacy, same as documentNumber
+  documentNumber: string;        // RFQ-2026-0001-0001 — hierarchical
+  procurementChain: string;      // "0001-0001"
+  rootProcurementNumber: string; // "PR-2026-0001"
+  chainId: string;               // PC-2026-0001 (backward compat)
   parentDocumentId: string;      // source PR id
   parentDocumentNumber: string;  // source PR number
 

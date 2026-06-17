@@ -8,11 +8,12 @@ import { BreadcrumbService } from '../../../core/services/breadcrumb.service';
 import { NotificationService } from '../../../core/services/notification.service';
 import { PurchaseOrder } from '../../../shared/interfaces/purchase-order.interface';
 import { AuditService } from '../../../core/services/audit.service';
+import { ProcurementChainComponent } from '../../../shared/components/procurement-chain/procurement-chain.component';
 
 @Component({
   selector: 'app-purchase-orders',
   standalone: true,
-  imports: [CommonModule, FormsModule, TranslateModule],
+  imports: [CommonModule, FormsModule, TranslateModule, ProcurementChainComponent],
   templateUrl: './purchase-orders.component.html',
   styles: [],
   changeDetection: ChangeDetectionStrategy.OnPush

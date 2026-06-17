@@ -525,6 +525,11 @@
 
         </div>
 
+        <!-- Procurement Journey Stepper (Timeline Navigation) -->
+        @if (selectedRFQ()?.documentNumber) {
+          <app-procurement-chain [documentNumber]="selectedRFQ()!.documentNumber"></app-procurement-chain>
+        }
+
         <!-- Footer Actions -->
         <div class="pt-6 mt-auto border-t border-slate-150 shrink-0 flex items-center justify-end gap-3">
           @if (selectedRFQ()?.status === 'Sent' && selectedRFQ()?.quotations?.length === 0) {

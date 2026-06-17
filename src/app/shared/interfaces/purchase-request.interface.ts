@@ -38,8 +38,11 @@ export interface PurchaseRequestItem {
 
 export interface PurchaseRequest {
   id: string;
-  requestNumber: string;         // PR-2026-0001 (4-digit)
-  chainId: string;               // PC-2026-0001
+  requestNumber: string;           // PR-2026-0001 (legacy, same as documentNumber)
+  documentNumber: string;          // PR-2026-0001  — canonical hierarchical number
+  procurementChain: string;        // "0001"         — 4-digit root segment only
+  rootProcurementNumber: string;   // "PR-2026-0001" — always the PR (self for PR)
+  chainId: string;                 // PC-2026-0001  (kept for backward compat)
   parentDocumentId?: string;
   parentDocumentNumber?: string;
 

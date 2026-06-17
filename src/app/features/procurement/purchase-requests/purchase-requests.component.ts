@@ -9,11 +9,12 @@ import { NotificationService } from '../../../core/services/notification.service
 import { PurchaseRequest, PurchaseRequestItem, ChargeType, ItemType } from '../../../shared/interfaces/purchase-request.interface';
 import { AuditService } from '../../../core/services/audit.service';
 import { ApprovalHistoryComponent } from '../../../shared/components/approval-history/approval-history.component';
+import { ProcurementChainComponent } from '../../../shared/components/procurement-chain/procurement-chain.component';
 
 @Component({
   selector: 'app-purchase-requests',
   standalone: true,
-  imports: [CommonModule, FormsModule, TranslateModule, ApprovalHistoryComponent],
+  imports: [CommonModule, FormsModule, TranslateModule, ApprovalHistoryComponent, ProcurementChainComponent],
   templateUrl: './purchase-requests.component.html',
   styles: [],
   changeDetection: ChangeDetectionStrategy.OnPush
