@@ -1,266 +1,477 @@
-<div class="grid grid-cols-1 xl:grid-cols-12 gap-6 h-[calc(100vh-10rem)] overflow-hidden text-xs">
+<div class="space-y-5">
 
-  <!-- LEFT COLUMN: PO MASTER LIST (col-span-4) -->
-  <div class="xl:col-span-4 bg-white rounded-xl border border-slate-100 shadow-sm flex flex-col h-full overflow-hidden">
-    <div class="p-4 border-b border-slate-100 bg-slate-50/50 flex flex-col gap-2.5">
-      <h2 class="text-sm font-bold text-slate-800">{{ 'procurement.purchase_orders.title' | translate }}</h2>
-      <div class="relative">
-        <input 
-          type="text" 
-          placeholder="{{ 'procurement.purchase_orders.search_placeholder' | translate }}" 
-          (input)="searchQuery.set($any($event.target).value)"
-          class="w-full bg-white border border-slate-200 rounded-lg pl-8 pr-3 py-2 text-slate-800 focus:outline-none"
-        >
-        <svg class="w-4 h-4 text-slate-400 absolute left-2.5 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-        </svg>
-      </div>
+  <!-- ── PAGE HEADER ── -->
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+    <div>
+      <h1 class="text-2xl font-black text-slate-800 tracking-tight">
+        {{ 'procurement.purchase_orders.title' | translate }}
+      </h1>
+      <p class="text-xs text-slate-500 font-semibold mt-1">
+        {{ 'procurement.purchase_orders.breadcrumb' | translate }} — Registry & Approval Workflow
+      </p>
     </div>
-
-    <!-- PO List Scroll Container -->
-    <div class="flex-1 overflow-y-auto divide-y divide-slate-100">
-      @for (po of filteredPOs(); track po.id) {
-        <div 
-          (click)="selectPO(po)"
-          [class.bg-slate-50]="selectedPOId() === po.id"
-          [class.border-l-4]="selectedPOId() === po.id"
-          [class.border-accent]="selectedPOId() === po.id"
-          class="p-4 cursor-pointer hover:bg-slate-50/50 transition-all font-semibold"
-        >
-          <div class="flex justify-between items-start">
-            <span class="font-bold text-slate-900 text-sm">{{ po.poNumber }}</span>
-            <span 
-              class="px-2 py-0.5 rounded text-[8px] font-extrabold uppercase tracking-wider"
-              [class.bg-amber-50]="po.status === 'Pending Approval'"
-              [class.text-accent]="po.status === 'Pending Approval'"
-              [class.bg-green-50]="po.status === 'Approved'"
-              [class.text-success]="po.status === 'Approved'"
-              [class.bg-blue-50]="po.status === 'Issued'"
-              [class.text-blue-600]="po.status === 'Issued'"
-            >
-              {{ po.status }}
-            </span>
-          </div>
-          
-          <p class="text-slate-600 mt-1.5 truncate">{{ 'procurement.purchase_orders.vendor_label' | translate }}: {{ po.vendorName }}</p>
-          
-          <div class="flex justify-between items-center mt-3 text-[10px] text-slate-400">
-            <span>{{ 'procurement.purchase_orders.date_label' | translate }}: {{ po.date }}</span>
-            <span class="font-bold text-slate-800 text-xs">${{ po.totalAmount | number }}</span>
-          </div>
-        </div>
-      } @empty {
-        <div class="p-8 text-center text-slate-400">
-          <span class="font-bold">{{ 'procurement.purchase_orders.no_records' | translate }}</span>
-        </div>
-      }
+    <!-- Stats Pills -->
+    <div class="flex items-center gap-2 flex-wrap">
+      <div class="flex items-center gap-1.5 bg-white border border-slate-100 rounded-lg px-3 py-1.5 shadow-xs">
+        <span class="w-2 h-2 rounded-full bg-amber-400"></span>
+        <span class="text-[11px] font-bold text-slate-600">
+          {{ filteredPOs().length }} POs Total
+        </span>
+      </div>
+      <div class="flex items-center gap-1.5 bg-white border border-slate-100 rounded-lg px-3 py-1.5 shadow-xs">
+        <span class="w-2 h-2 rounded-full bg-green-500"></span>
+        <span class="text-[11px] font-bold text-slate-600">
+          {{ approvedPOCount() }} Approved
+        </span>
+      </div>
     </div>
   </div>
 
-  <!-- RIGHT COLUMN: PO DETAIL VIEW (col-span-8) -->
-  <div class="xl:col-span-8 flex flex-col h-full overflow-hidden">
-    @if (activePO()) {
-      <!-- Scroll container for document and workflow -->
-      <div class="flex-1 overflow-y-auto space-y-6 pr-1">
-        
-        <!-- PRINT-READY PURCHASE ORDER SHEET -->
-        <div class="bg-white rounded-xl border border-slate-100 shadow-sm p-6 sm:p-8 space-y-6 relative border-t-8 border-slate-900">
-          
-          <!-- Document Header -->
-          <div class="flex flex-col sm:flex-row justify-between items-start gap-4 pb-6 border-b border-slate-100">
-            <div>
-              <div class="flex items-center space-x-2.5">
-                <div class="w-8 h-8 rounded-lg bg-slate-900 text-accent font-black text-sm flex items-center justify-center">O&G</div>
-                <span class="font-bold text-sm text-slate-800 tracking-wider">PETROFLOW SERVICES LTD</span>
-              </div>
-              <p class="text-[10px] text-slate-450 mt-1 leading-normal">
-                100 Drilling Boulevard, Suite 500<br>
-                Houston, TX 77002, United States<br>
-                Tax ID: US-1122334455
-              </p>
-            </div>
+  <!-- ── MAIN GRID ── -->
+  <div class="grid grid-cols-1 xl:grid-cols-12 gap-5" style="min-height: calc(100vh - 12rem)">
 
-            <div class="text-left sm:text-right">
-              <h2 class="text-lg font-black text-slate-800 tracking-tight">{{ 'procurement.purchase_orders.breadcrumb' | translate | uppercase }}</h2>
-              <p class="text-sm font-bold text-slate-900 mt-1">{{ activePO()?.poNumber }}</p>
-              <div class="mt-2.5 flex items-center sm:justify-end space-x-2">
-                <span class="text-[10px] text-slate-400">{{ 'procurement.purchase_orders.col_status' | translate }}:</span>
-                <span 
-                  class="px-2 py-0.5 rounded text-[9px] font-extrabold uppercase tracking-wider"
-                  [class.bg-amber-50]="activePO()?.status === 'Pending Approval'"
-                  [class.text-accent]="activePO()?.status === 'Pending Approval'"
-                  [class.bg-green-50]="activePO()?.status === 'Approved'"
-                  [class.text-success]="activePO()?.status === 'Approved'"
+    <!-- ══ LEFT: PO LIST (col-span-4) ══ -->
+    <div class="xl:col-span-4 bg-white rounded-2xl border border-slate-100 shadow-sm flex flex-col overflow-hidden">
+
+      <!-- Search -->
+      <div class="p-4 border-b border-slate-100">
+        <div class="relative">
+          <svg class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+          </svg>
+          <input
+            type="text"
+            placeholder="{{ 'procurement.purchase_orders.search_placeholder' | translate }}"
+            (input)="searchQuery.set($any($event.target).value)"
+            class="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-3 py-2.5 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all"
+          >
+        </div>
+      </div>
+
+      <!-- PO Rows -->
+      <div class="flex-1 overflow-y-auto divide-y divide-slate-50">
+        @for (po of filteredPOs(); track po.id) {
+          <div
+            (click)="selectPO(po)"
+            [class.bg-blue-50]="selectedPOId() === po.id"
+            [class.border-l-4]="selectedPOId() === po.id"
+            [class.border-l-primary]="selectedPOId() === po.id"
+            class="p-4 cursor-pointer hover:bg-slate-50/70 transition-all group"
+          >
+            <div class="flex items-start justify-between gap-2">
+              <!-- PO Number + Vendor -->
+              <div class="min-w-0">
+                <div class="flex items-center gap-2">
+                  <span class="font-black text-slate-900 text-sm truncate">{{ po.poNumber }}</span>
+                </div>
+                <p class="text-[11px] text-slate-500 font-semibold mt-0.5 truncate">{{ po.vendorName }}</p>
+                <p class="text-[10px] text-slate-400 mt-1">{{ po.date }}</p>
+              </div>
+
+              <!-- Status + Amount -->
+              <div class="shrink-0 text-right space-y-1.5">
+                <span
+                  class="inline-block px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider"
+                  [class.bg-amber-100]="po.status === 'Pending Approval'"
+                  [class.text-amber-700]="po.status === 'Pending Approval'"
+                  [class.bg-green-100]="po.status === 'Approved'"
+                  [class.text-green-700]="po.status === 'Approved'"
+                  [class.bg-blue-100]="po.status === 'Issued'"
+                  [class.text-blue-700]="po.status === 'Issued'"
+                  [class.bg-slate-100]="po.status === 'Draft'"
+                  [class.text-slate-600]="po.status === 'Draft'"
                 >
-                  {{ activePO()?.status }}
+                  {{ po.status }}
                 </span>
+                <p class="text-xs font-black text-slate-800">${{ po.totalAmount | number:'1.0-0' }}</p>
               </div>
+            </div>
+
+            <!-- Cost Center pill -->
+            <div class="mt-2.5 flex items-center gap-1.5">
+              <span class="inline-flex items-center gap-1 bg-slate-100 text-slate-500 px-2 py-0.5 rounded text-[9px] font-bold">
+                <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                </svg>
+                {{ po.costCenter }}
+              </span>
+              @if (po.rfqNumber) {
+                <span class="inline-flex items-center gap-1 bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded text-[9px] font-bold font-mono">
+                  {{ po.rfqNumber }}
+                </span>
+              }
+            </div>
+          </div>
+        } @empty {
+          <div class="p-12 text-center text-slate-400">
+            <svg class="w-10 h-10 mx-auto text-slate-200 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+            </svg>
+            <span class="text-xs font-semibold">{{ 'procurement.purchase_orders.no_records' | translate }}</span>
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- ══ RIGHT: PO DETAIL (col-span-8) ══ -->
+    <div class="xl:col-span-8 flex flex-col gap-5 overflow-y-auto" style="max-height: calc(100vh - 12rem)">
+
+      @if (activePO()) {
+
+        <!-- ── 1. PO DOCUMENT CARD ── -->
+        <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+
+          <!-- Top accent bar -->
+          <div class="h-1.5 w-full bg-gradient-to-r from-slate-800 via-primary to-accent"></div>
+
+          <div class="p-6 space-y-6">
+
+            <!-- Document Header -->
+            <div class="flex flex-col sm:flex-row justify-between items-start gap-4">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-slate-900 text-accent font-black text-sm flex items-center justify-center shrink-0">O&G</div>
+                <div>
+                  <span class="font-black text-sm text-slate-800 tracking-wide block">PETROFLOW SERVICES LTD</span>
+                  <p class="text-[10px] text-slate-400 leading-relaxed">100 Drilling Boulevard, Suite 500 · Houston, TX 77002</p>
+                </div>
+              </div>
+
+              <div class="sm:text-right space-y-1">
+                <div class="flex items-center sm:justify-end gap-2">
+                  <span class="text-[10px] text-slate-400 font-semibold uppercase tracking-widest">PURCHASE ORDER</span>
+                </div>
+                <p class="text-lg font-black text-slate-900 tracking-tight">{{ activePO()?.poNumber }}</p>
+                <div class="flex items-center sm:justify-end gap-2">
+                  <span class="text-[10px] text-slate-400">{{ 'procurement.purchase_orders.col_status' | translate }}</span>
+                  <span
+                    class="px-2.5 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-widest"
+                    [class.bg-amber-100]="activePO()?.status === 'Pending Approval'"
+                    [class.text-amber-700]="activePO()?.status === 'Pending Approval'"
+                    [class.bg-green-100]="activePO()?.status === 'Approved'"
+                    [class.text-green-700]="activePO()?.status === 'Approved'"
+                    [class.bg-blue-100]="activePO()?.status === 'Issued'"
+                    [class.text-blue-700]="activePO()?.status === 'Issued'"
+                  >
+                    {{ activePO()?.status }}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Divider -->
+            <div class="border-t border-slate-100"></div>
+
+            <!-- Parties Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+              <!-- Vendor -->
+              <div class="bg-slate-50 rounded-xl border border-slate-100 p-4 space-y-2">
+                <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest block">{{ 'procurement.purchase_orders.winning_vendor' | translate }}</span>
+                <p class="font-black text-slate-800 text-sm">{{ activePO()?.vendorName }}</p>
+                <p class="text-[11px] text-slate-500 leading-relaxed">{{ activePO()?.vendorAddress }}</p>
+                <p class="text-[10px] text-slate-400 font-mono">Tax ID: {{ activePO()?.vendorTaxNumber }}</p>
+              </div>
+
+              <!-- Logistics -->
+              <div class="bg-slate-50 rounded-xl border border-slate-100 p-4 space-y-3">
+                <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest block">{{ 'procurement.purchase_orders.logistics_budgeting' | translate }}</span>
+                <div class="grid grid-cols-2 gap-3 text-[11px]">
+                  <div>
+                    <span class="text-slate-400 block mb-0.5">{{ 'procurement.purchase_orders.required_date' | translate }}</span>
+                    <span class="text-slate-800 font-bold">{{ activePO()?.deliveryDate }}</span>
+                  </div>
+                  <div>
+                    <span class="text-slate-400 block mb-0.5">{{ 'procurement.purchase_orders.cost_center' | translate }}</span>
+                    <span class="text-slate-800 font-bold font-mono">{{ activePO()?.costCenter }}</span>
+                  </div>
+                  <div>
+                    <span class="text-slate-400 block mb-0.5">{{ 'procurement.purchase_orders.payment_terms' | translate }}</span>
+                    <span class="text-slate-800 font-bold">{{ activePO()?.paymentTerms }}</span>
+                  </div>
+                  <div>
+                    <span class="text-slate-400 block mb-0.5">{{ 'procurement.purchase_orders.linked_rfq' | translate }}</span>
+                    <span class="text-primary font-bold font-mono">{{ activePO()?.rfqNumber || 'N/A' }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Line Items Table -->
+            <div>
+              <div class="flex items-center gap-2 mb-3">
+                <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">{{ 'procurement.purchase_orders.line_items' | translate }}</span>
+                <div class="flex-1 h-px bg-slate-100"></div>
+              </div>
+
+              <div class="overflow-x-auto rounded-xl border border-slate-100">
+                <table class="w-full text-left text-xs">
+                  <thead>
+                    <tr class="bg-slate-50 text-slate-400 font-bold border-b border-slate-100">
+                      <th class="px-4 py-3">{{ 'procurement.quotation_comparison.col_code' | translate }}</th>
+                      <th class="px-4 py-3">{{ 'procurement.purchase_orders.col_description' | translate }}</th>
+                      <th class="px-4 py-3 text-right">{{ 'procurement.purchase_orders.col_qty' | translate }}</th>
+                      <th class="px-4 py-3 text-center">{{ 'procurement.purchase_orders.col_uom' | translate }}</th>
+                      <th class="px-4 py-3 text-right">{{ 'procurement.purchase_orders.col_unit_price' | translate }}</th>
+                      <th class="px-4 py-3 text-right">{{ 'procurement.purchase_orders.col_total' | translate }}</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-slate-50 font-semibold text-slate-700 bg-white">
+                    @for (item of activePO()?.items; track item.id) {
+                      <tr class="hover:bg-slate-50/50 transition-colors">
+                        <td class="px-4 py-3 font-mono text-slate-400 text-[10px]">{{ item.itemCode }}</td>
+                        <td class="px-4 py-3 font-bold text-slate-800">{{ item.itemName }}</td>
+                        <td class="px-4 py-3 text-right font-mono">{{ item.quantity }}</td>
+                        <td class="px-4 py-3 text-center text-slate-400">{{ item.uom }}</td>
+                        <td class="px-4 py-3 text-right font-mono">${{ item.unitPrice | number:'1.2-2' }}</td>
+                        <td class="px-4 py-3 text-right font-mono font-black text-slate-800">${{ item.totalPrice | number:'1.0-0' }}</td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Totals -->
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 pt-4 border-t border-slate-100">
+              <!-- WHT Note -->
+              <div class="text-[10px] text-slate-400 leading-relaxed max-w-sm bg-slate-50 rounded-xl p-3 border border-slate-100">
+                <span class="font-black text-slate-500 uppercase tracking-wider block mb-1">{{ 'procurement.purchase_orders.wht_note_title' | translate }}</span>
+                {{ 'procurement.purchase_orders.wht_note_desc' | translate: {pct: activePO()?.withholdingTaxPercent} }}
+              </div>
+
+              <!-- Calculation Box -->
+              <div class="w-full md:w-72 bg-slate-50 rounded-xl border border-slate-100 p-4 space-y-2 text-xs font-semibold text-slate-600">
+                <div class="flex justify-between">
+                  <span>{{ 'procurement.purchase_orders.subtotal' | translate }}</span>
+                  <span class="font-mono text-slate-800">${{ activePO()?.subtotal | number:'1.0-0' }}</span>
+                </div>
+                <div class="flex justify-between">
+                  <span>{{ 'procurement.purchase_orders.vat' | translate: {pct: activePO()?.taxPercent} }}</span>
+                  <span class="font-mono text-slate-700">${{ activePO()?.taxAmount | number:'1.0-0' }}</span>
+                </div>
+                <div class="flex justify-between text-red-500">
+                  <span>{{ 'procurement.purchase_orders.wht_retained' | translate: {pct: activePO()?.withholdingTaxPercent} }}</span>
+                  <span class="font-mono">-${{ activePO()?.withholdingTaxAmount | number:'1.0-0' }}</span>
+                </div>
+                <div class="pt-2 border-t border-slate-200 flex justify-between text-sm font-black text-slate-900">
+                  <span>{{ 'procurement.purchase_orders.grand_total' | translate }}</span>
+                  <span class="font-mono text-primary">${{ activePO()?.totalAmount | number:'1.0-0' }}</span>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- ── 2. CONTRACT SECTION ── -->
+        <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
+
+          <div class="flex items-center justify-between mb-5">
+            <div class="flex items-center gap-3">
+              <div class="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
+                <svg class="w-4.5 h-4.5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414A1 1 0 0121 9.414V19a2 2 0 01-2 2z"/>
+                </svg>
+              </div>
+              <div>
+                <h3 class="text-sm font-black text-slate-800">Contract Document</h3>
+                <p class="text-[10px] text-slate-400 font-semibold">العقد المرتبط بأمر الشراء</p>
+              </div>
+            </div>
+            <button
+              (click)="downloadContract()"
+              class="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary hover:bg-primary-dark text-white text-xs font-bold shadow-sm transition-all active:scale-95"
+            >
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                  d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+              </svg>
+              <span>تحميل العقد</span>
+            </button>
+          </div>
+
+          <!-- Contract Info -->
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-[11px] mb-4">
+            <div class="bg-slate-50 rounded-xl p-3 border border-slate-100">
+              <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Contract No.</span>
+              <span class="font-black text-slate-800 font-mono">{{ activePO()?.contractNumber || ('CNT-' + activePO()?.poNumber) }}</span>
+            </div>
+            <div class="bg-slate-50 rounded-xl p-3 border border-slate-100 md:col-span-2">
+              <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Title</span>
+              <span class="font-bold text-slate-700">{{ activePO()?.contractTitle || ('Supply Contract — ' + activePO()?.vendorName) }}</span>
+            </div>
+            <div class="bg-slate-50 rounded-xl p-3 border border-slate-100">
+              <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Expiry Date</span>
+              <span class="font-bold text-slate-700">{{ activePO()?.contractExpiryDate || activePO()?.deliveryDate }}</span>
             </div>
           </div>
 
-          <!-- PO Parties (Buyer vs Vendor) -->
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-slate-600 font-semibold">
-            <!-- Vendor Details -->
-            <div class="bg-slate-50/50 p-4 rounded-lg border border-slate-100">
-              <span class="block text-[10px] text-slate-400 uppercase mb-1.5 tracking-wider font-bold">{{ 'procurement.purchase_orders.winning_vendor' | translate }}</span>
-              <p class="text-slate-850 font-bold text-sm">{{ activePO()?.vendorName }}</p>
-              <p class="text-[10px] text-slate-500 leading-normal mt-1">{{ activePO()?.vendorAddress }}</p>
-              <p class="text-[10px] text-slate-500 mt-1.5 font-mono">{{ 'procurement.purchase_orders.tax_id' | translate }}: {{ activePO()?.vendorTaxNumber }}</p>
+          <!-- Contract Items Table -->
+          <div class="mb-4">
+            <div class="flex items-center gap-2 mb-3">
+              <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest">Contract Items — عناصر العقد</span>
+              <div class="flex-1 h-px bg-slate-100"></div>
+              <span class="text-[9px] font-bold text-slate-400 bg-slate-50 px-2 py-0.5 rounded-full">
+                {{ activePO()?.items?.length }} items
+              </span>
             </div>
 
-            <!-- Delivery / Reference details -->
-            <div class="bg-slate-50/50 p-4 rounded-lg border border-slate-100 space-y-2">
-              <span class="block text-[10px] text-slate-400 uppercase mb-1 tracking-wider font-bold">{{ 'procurement.purchase_orders.logistics_budgeting' | translate }}</span>
-              <div class="grid grid-cols-2 gap-2 text-[10px]">
-                <div>
-                  <span class="text-slate-400 block">{{ 'procurement.purchase_orders.required_date' | translate }}</span>
-                  <span class="text-slate-800 font-bold">{{ activePO()?.deliveryDate }}</span>
-                </div>
-                <div>
-                  <span class="text-slate-400 block">{{ 'procurement.purchase_orders.cost_center' | translate }}</span>
-                  <span class="text-slate-850 font-mono font-bold">{{ activePO()?.costCenter }}</span>
-                </div>
-                <div>
-                  <span class="text-slate-400 block">{{ 'procurement.purchase_orders.payment_terms' | translate }}</span>
-                  <span class="text-slate-800 font-bold">{{ activePO()?.paymentTerms }}</span>
-                </div>
-                <div>
-                  <span class="text-slate-400 block">{{ 'procurement.purchase_orders.linked_rfq' | translate }}</span>
-                  <span class="text-slate-850 font-bold font-mono">{{ activePO()?.rfqNumber || 'N/A' }}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Material items table -->
-          <div>
-            <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-widest pb-1 border-b border-slate-250 mb-3">{{ 'procurement.purchase_orders.line_items' | translate }}</h3>
-            <table class="w-full text-left border-collapse">
-              <thead>
-                <tr class="text-slate-400 font-bold border-b border-slate-100">
-                  <th class="py-2">{{ 'procurement.quotation_comparison.col_code' | translate }}</th>
-                  <th class="py-2">{{ 'procurement.purchase_orders.col_description' | translate }}</th>
-                  <th class="py-2 text-right">{{ 'procurement.purchase_orders.col_qty' | translate }}</th>
-                  <th class="py-2 text-center">{{ 'procurement.purchase_orders.col_uom' | translate }}</th>
-                  <th class="py-2 text-right">{{ 'procurement.purchase_orders.col_unit_price' | translate }}</th>
-                  <th class="py-2 text-right">{{ 'procurement.purchase_orders.col_total' | translate }}</th>
-                </tr>
-              </thead>
-              <tbody class="divide-y divide-slate-50 font-semibold text-slate-700">
-                @for (item of activePO()?.items; track item.id) {
-                  <tr>
-                    <td class="py-2.5 font-mono text-slate-500">{{ item.itemCode }}</td>
-                    <td class="py-2.5 font-bold text-slate-900">{{ item.itemName }}</td>
-                    <td class="py-2.5 text-right font-mono">{{ item.quantity }}</td>
-                    <td class="py-2.5 text-center text-slate-400">{{ item.uom }}</td>
-                    <td class="py-2.5 text-right font-mono">${{ item.unitPrice | number }}</td>
-                    <td class="py-2.5 text-right font-mono font-bold text-slate-800">${{ item.totalPrice | number }}</td>
+            <div class="overflow-x-auto rounded-xl border border-slate-100">
+              <table class="w-full text-left text-[11px]">
+                <thead>
+                  <tr class="bg-slate-50 text-slate-400 font-bold border-b border-slate-100">
+                    <th class="px-3 py-2.5 w-8">#</th>
+                    <th class="px-3 py-2.5">Item Code</th>
+                    <th class="px-3 py-2.5">Description</th>
+                    <th class="px-3 py-2.5 text-right">Qty</th>
+                    <th class="px-3 py-2.5 text-center">UOM</th>
+                    <th class="px-3 py-2.5 text-right">Unit Price</th>
+                    <th class="px-3 py-2.5 text-right">Line Total</th>
                   </tr>
-                }
-              </tbody>
-            </table>
+                </thead>
+                <tbody class="divide-y divide-slate-50 font-semibold text-slate-700 bg-white">
+                  @for (item of activePO()?.items; track item.id; let idx = $index) {
+                    <tr class="hover:bg-slate-50/50 transition-colors">
+                      <td class="px-3 py-2.5 text-slate-400 font-bold">{{ idx + 1 }}</td>
+                      <td class="px-3 py-2.5 font-mono text-slate-500 text-[10px]">{{ item.itemCode }}</td>
+                      <td class="px-3 py-2.5 font-bold text-slate-800">{{ item.itemName }}</td>
+                      <td class="px-3 py-2.5 text-right font-mono">{{ item.quantity }}</td>
+                      <td class="px-3 py-2.5 text-center text-slate-400">{{ item.uom }}</td>
+                      <td class="px-3 py-2.5 text-right font-mono">${{ item.unitPrice | number:'1.2-2' }}</td>
+                      <td class="px-3 py-2.5 text-right font-mono font-black text-slate-800">${{ item.totalPrice | number:'1.0-0' }}</td>
+                    </tr>
+                  }
+                </tbody>
+                <!-- Table footer totals -->
+                <tfoot class="border-t-2 border-slate-200 bg-slate-50/50">
+                  <tr class="text-[11px] text-slate-500 font-semibold">
+                    <td colspan="6" class="px-3 py-2 text-right">Subtotal</td>
+                    <td class="px-3 py-2 text-right font-mono font-bold text-slate-700">${{ activePO()?.subtotal | number:'1.0-0' }}</td>
+                  </tr>
+                  <tr class="text-[11px] text-slate-500 font-semibold">
+                    <td colspan="6" class="px-3 py-1.5 text-right">VAT ({{ activePO()?.taxPercent }}%)</td>
+                    <td class="px-3 py-1.5 text-right font-mono text-slate-600">${{ activePO()?.taxAmount | number:'1.0-0' }}</td>
+                  </tr>
+                  <tr class="text-[11px] text-red-500 font-semibold">
+                    <td colspan="6" class="px-3 py-1.5 text-right">WHT ({{ activePO()?.withholdingTaxPercent }}%)</td>
+                    <td class="px-3 py-1.5 text-right font-mono">-${{ activePO()?.withholdingTaxAmount | number:'1.0-0' }}</td>
+                  </tr>
+                  <tr class="text-xs font-black text-slate-900 border-t border-slate-200">
+                    <td colspan="6" class="px-3 py-2.5 text-right">Grand Total</td>
+                    <td class="px-3 py-2.5 text-right font-mono text-primary">${{ activePO()?.totalAmount | number:'1.0-0' }}</td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
           </div>
 
-          <!-- Totals Summary & Withholding Tax details -->
-          <div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 pt-4 border-t border-slate-150">
-            <!-- Tax & WHT Note -->
-            <div class="text-[10px] text-slate-450 leading-relaxed max-w-sm">
-              <span class="font-bold text-slate-500 uppercase tracking-wider block mb-1">{{ 'procurement.purchase_orders.wht_note_title' | translate }}</span>
-              {{ 'procurement.purchase_orders.wht_note_desc' | translate: {pct: activePO()?.withholdingTaxPercent} }}
+          <!-- File Row -->
+          <div class="flex items-center justify-between bg-primary/5 border border-primary/20 rounded-xl px-4 py-3 group hover:bg-primary/10 transition-colors cursor-pointer" (click)="downloadContract()">
+            <div class="flex items-center gap-3">
+              <div class="w-9 h-9 rounded-lg bg-primary/15 flex items-center justify-center">
+                <svg class="w-4 h-4 text-primary" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd"/>
+                </svg>
+              </div>
+              <div>
+                <p class="text-xs font-black text-slate-800">{{ activePO()?.contractFileName || ('Contract_' + activePO()?.poNumber + '.pdf') }}</p>
+                <p class="text-[10px] text-slate-400 mt-0.5">
+                  Includes {{ activePO()?.items?.length }} items · Grand Total: ${{ activePO()?.totalAmount | number:'1.0-0' }}
+                  @if (activePO()?.contractFileSizeKb) { · {{ formatFileSizeKb(activePO()?.contractFileSizeKb) }} }
+                </p>
+              </div>
             </div>
-
-            <!-- Calculation Grid -->
-            <div class="w-full md:w-80 space-y-1.5 text-slate-600 font-semibold">
-              <div class="flex justify-between">
-                <span>{{ 'procurement.purchase_orders.subtotal' | translate }}</span>
-                <span class="font-mono">${{ activePO()?.subtotal | number }}</span>
-              </div>
-              <div class="flex justify-between">
-                <span>{{ 'procurement.purchase_orders.vat' | translate: {pct: activePO()?.taxPercent} }}</span>
-                <span class="font-mono text-slate-700">${{ activePO()?.taxAmount | number }}</span>
-              </div>
-              <div class="flex justify-between pb-1.5 border-b border-slate-100 text-danger">
-                <span>{{ 'procurement.purchase_orders.wht_retained' | translate: {pct: activePO()?.withholdingTaxPercent} }}</span>
-                <span class="font-mono">-${{ activePO()?.withholdingTaxAmount | number }}</span>
-              </div>
-              <div class="flex justify-between text-base font-black text-slate-900 pt-1.5">
-                <span>{{ 'procurement.purchase_orders.grand_total' | translate }}</span>
-                <span class="font-mono">${{ activePO()?.totalAmount | number }}</span>
-              </div>
+            <div class="flex items-center gap-2">
+              <span class="px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-widest bg-green-100 text-green-700">Ready</span>
+              <svg class="w-4 h-4 text-primary group-hover:translate-y-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+              </svg>
             </div>
           </div>
 
         </div>
 
-        <!-- APPROVAL WORKFLOW TRACKER SECTION -->
-        <div class="bg-white rounded-xl border border-slate-100 shadow-sm p-6 space-y-6">
-          <div class="pb-3 border-b border-slate-50">
-            <h3 class="text-sm font-bold text-slate-800">{{ 'procurement.purchase_orders.audit_log' | translate }}</h3>
-            <p class="text-[10px] text-slate-400 font-semibold mt-0.5">{{ 'procurement.purchase_orders.audit_log_subtitle' | translate }}</p>
+        <!-- ── 3. APPROVAL WORKFLOW ── -->
+        <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
+
+          <div class="flex items-center gap-3 mb-5">
+            <div class="w-9 h-9 rounded-xl bg-amber-50 flex items-center justify-center">
+              <svg class="w-4.5 h-4.5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+              </svg>
+            </div>
+            <div>
+              <h3 class="text-sm font-black text-slate-800">{{ 'procurement.purchase_orders.audit_log' | translate }}</h3>
+              <p class="text-[10px] text-slate-400 font-semibold">{{ 'procurement.purchase_orders.audit_log_subtitle' | translate }}</p>
+            </div>
           </div>
 
-          <!-- Vertical Stepper -->
-          <div class="relative border-l-2 border-slate-100 ml-3 space-y-6">
+          <!-- Steps -->
+          <div class="relative border-l-2 border-slate-100 ml-4 space-y-5">
             @for (step of activePO()?.approvalWorkflow; track step.role) {
               <div class="relative pl-6">
-                <!-- Bullet Icon indicator -->
-                <span 
+                <!-- Bullet -->
+                <span
                   [class]="getStepBulletClass(step.status)"
                   class="absolute -left-[9px] top-1 w-4.5 h-4.5 rounded-full flex items-center justify-center border-2 border-white shadow-sm shrink-0"
                 >
                   @if (step.status === 'Approved') {
                     <svg class="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
                     </svg>
                   }
                 </span>
 
-                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5">
-                  <div>
-                    <h4 class="font-bold text-slate-800">{{ step.role }}</h4>
-                    <p class="text-[10px] text-slate-450 mt-0.5">
-                      @if (step.status === 'Approved') {
-                        {{ 'procurement.purchase_orders.signed_by' | translate: {approver: step.approverName, date: step.actionDate} }}
-                      } @else {
-                        {{ 'procurement.purchase_orders.awaiting_signature' | translate }}
-                      }
-                    </p>
+                <!-- Content -->
+                <div class="bg-slate-50 rounded-xl border border-slate-100 p-3.5 space-y-1.5">
+                  <div class="flex items-center justify-between gap-2">
+                    <div>
+                      <h4 class="font-black text-slate-800 text-xs">{{ step.role }}</h4>
+                      <p class="text-[10px] text-slate-400 font-semibold mt-0.5">
+                        @if (step.status === 'Approved') {
+                          {{ 'procurement.purchase_orders.signed_by' | translate: {approver: step.approverName, date: step.actionDate} }}
+                        } @else {
+                          {{ 'procurement.purchase_orders.awaiting_signature' | translate }}
+                        }
+                      </p>
+                    </div>
+                    <span
+                      class="px-2 py-0.5 rounded-full text-[8px] font-extrabold uppercase tracking-widest shrink-0"
+                      [class.bg-green-100]="step.status === 'Approved'"
+                      [class.text-green-700]="step.status === 'Approved'"
+                      [class.bg-amber-100]="step.status === 'Pending'"
+                      [class.text-amber-700]="step.status === 'Pending'"
+                    >
+                      {{ step.status }}
+                    </span>
                   </div>
-                  <span 
-                    class="px-2 py-0.5 rounded text-[8px] font-extrabold uppercase tracking-widest self-start sm:self-center"
-                    [class.bg-green-50]="step.status === 'Approved'"
-                    [class.text-success]="step.status === 'Approved'"
-                    [class.bg-amber-50]="step.status === 'Pending'"
-                    [class.text-accent]="step.status === 'Pending'"
-                  >
-                    {{ step.status }}
-                  </span>
+                  @if (step.comments) {
+                    <p class="bg-white border border-slate-100 rounded-lg px-3 py-2 text-[10px] text-slate-500 italic leading-relaxed">
+                      "{{ step.comments }}"
+                    </p>
+                  }
                 </div>
-
-                @if (step.comments) {
-                  <p class="bg-slate-50 p-2 border border-slate-100 rounded text-slate-500 italic mt-2.5 leading-normal">
-                    "{{ step.comments }}"
-                  </p>
-                }
               </div>
             }
           </div>
 
-          <!-- Pending Action Form Panel -->
+          <!-- Approve Form -->
           @if (isNextApprover()) {
-            <div class="bg-slate-50 p-4 border border-slate-200 rounded-xl space-y-4 font-semibold text-slate-650">
+            <div class="mt-6 bg-gradient-to-br from-slate-50 to-blue-50/30 border border-slate-200 rounded-xl p-5 space-y-4">
               <div>
-                <h4 class="text-xs font-bold text-slate-800">{{ 'procurement.purchase_orders.authorize_po' | translate }}</h4>
+                <h4 class="text-xs font-black text-slate-800">{{ 'procurement.purchase_orders.authorize_po' | translate }}</h4>
                 <p class="text-[10px] text-slate-400 font-semibold mt-0.5">{{ 'procurement.purchase_orders.authorize_po_desc' | translate }}</p>
               </div>
 
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs font-semibold text-slate-600">
                 <div>
-                  <label class="block mb-1">{{ 'procurement.purchase_orders.your_role' | translate }}</label>
-                  <select 
-                    name="signRole" 
+                  <label class="block mb-1.5">{{ 'procurement.purchase_orders.your_role' | translate }}</label>
+                  <select
+                    name="signRole"
                     [(ngModel)]="approvalForm.role"
-                    class="w-full bg-white border border-slate-200 rounded-lg p-2 text-slate-800 focus:outline-none"
+                    class="w-full bg-white border border-slate-200 rounded-lg p-2.5 text-slate-800 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/10"
                   >
                     @for (step of activePO()?.approvalWorkflow; track step.role) {
                       @if (step.status === 'Pending') {
@@ -270,56 +481,77 @@
                   </select>
                 </div>
                 <div>
-                  <label class="block mb-1">{{ 'procurement.purchase_orders.approver_name' | translate }}</label>
-                  <input 
-                    type="text" 
-                    name="signName" 
+                  <label class="block mb-1.5">{{ 'procurement.purchase_orders.approver_name' | translate }}</label>
+                  <input
+                    type="text"
+                    name="signName"
                     [(ngModel)]="approvalForm.approverName"
-                    class="w-full bg-white border border-slate-200 rounded-lg p-2 text-slate-800 focus:outline-none"
+                    class="w-full bg-white border border-slate-200 rounded-lg p-2.5 text-slate-800 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/10"
                   >
                 </div>
               </div>
 
-              <div>
-                <label class="block mb-1">{{ 'procurement.purchase_orders.comments_label' | translate }}</label>
-                <input 
-                  type="text" 
-                  name="signComments" 
+              <div class="text-xs font-semibold text-slate-600">
+                <label class="block mb-1.5">{{ 'procurement.purchase_orders.comments_label' | translate }}</label>
+                <input
+                  type="text"
+                  name="signComments"
                   [(ngModel)]="approvalForm.comments"
                   [placeholder]="'procurement.purchase_orders.comments_placeholder' | translate"
-                  class="w-full bg-white border border-slate-200 rounded-lg p-2 text-slate-800 focus:outline-none"
+                  class="w-full bg-white border border-slate-200 rounded-lg p-2.5 text-slate-800 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/10"
                 >
               </div>
 
-              <div class="flex justify-end space-x-2.5">
-                <button 
+              <div class="flex justify-end">
+                <button
                   (click)="submitApproval()"
-                  class="px-5 py-2 rounded-lg bg-green-600 hover:bg-green-500 text-white font-bold text-xs shadow-sm transition-all"
+                  class="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-green-600 hover:bg-green-500 text-white font-black text-xs shadow-sm transition-all active:scale-95"
                 >
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+                  </svg>
                   {{ 'procurement.purchase_orders.approve_and_sign' | translate }}
                 </button>
               </div>
             </div>
           }
-
         </div>
 
-        <!-- Procurement Journey Stepper (Timeline Navigation) -->
+        <!-- ── 4. PROCUREMENT JOURNEY ── -->
         @if (activePO()?.documentNumber) {
-          <app-procurement-chain [documentNumber]="activePO()!.documentNumber"></app-procurement-chain>
+          <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
+            <div class="flex items-center gap-3 mb-5">
+              <div class="w-9 h-9 rounded-xl bg-indigo-50 flex items-center justify-center">
+                <svg class="w-4.5 h-4.5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+                </svg>
+              </div>
+              <div>
+                <h3 class="text-sm font-black text-slate-800">Procurement Journey</h3>
+                <p class="text-[10px] text-slate-400 font-semibold">Full lifecycle traceability</p>
+              </div>
+            </div>
+            <app-procurement-chain [documentNumber]="activePO()!.documentNumber"></app-procurement-chain>
+          </div>
         }
 
-      </div>
-    } @else {
-      <!-- Empty details state -->
-      <div class="bg-white rounded-xl border border-slate-100 shadow-sm p-16 text-center text-slate-450 h-full flex flex-col items-center justify-center">
-        <svg class="w-16 h-16 text-slate-305 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-        </svg>
-        <h3 class="text-sm font-bold text-slate-800">{{ 'procurement.purchase_orders.drawer_title' | translate }}</h3>
-        <p class="text-xs text-slate-400 mt-1 max-w-xs mx-auto">{{ 'procurement.purchase_orders.empty_desc' | translate }}</p>
-      </div>
-    }
+      } @else {
+        <!-- Empty State -->
+        <div class="bg-white rounded-2xl border border-slate-100 shadow-sm flex flex-col items-center justify-center p-16 text-center" style="min-height: 400px">
+          <div class="w-16 h-16 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center mb-4">
+            <svg class="w-8 h-8 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+            </svg>
+          </div>
+          <h3 class="text-sm font-black text-slate-700">{{ 'procurement.purchase_orders.drawer_title' | translate }}</h3>
+          <p class="text-xs text-slate-400 mt-2 max-w-xs font-semibold">
+            {{ 'procurement.purchase_orders.empty_desc' | translate }}
+          </p>
+        </div>
+      }
+
+    </div>
   </div>
 
 </div>

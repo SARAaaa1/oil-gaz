@@ -291,6 +291,19 @@ export class MockDataService {
         items: [
           { id: 'pri6', itemType: 'Inventory Item', itemCode: 'LUB-GRE-DRUM', itemName: 'Premium Rig Grease (55 Gal)', quantity: 15, uom: 'DRUM', notes: 'Restock min level', currentStock: 8, reservedQty: 0, availableQty: 8, shortageQty: 7, allowPartialIssue: true, fulfillFromStock: 8, fulfillByPurchase: 7 }
         ]
+      },
+      {
+        id: 'pr5', requestNumber: 'PR-2026-0005',
+        documentNumber: 'PR-2026-0005', procurementChain: '0005', rootProcurementNumber: 'PR-2026-0005',
+        chainId: 'PC-2026-0005',
+        department: 'HSE & Safety', costCenter: 'CC-HSE-003',
+        chargeType: 'General Overhead',
+        requestDate: '2026-06-01', requiredDate: '2026-06-25', status: 'Approved',
+        description: 'HSE compliance equipment and safety upgrades.',
+        requestedBy: 'David Miller',
+        items: [
+          { id: 'pri7', itemType: 'Inventory Item', itemCode: 'HSE-DET-GAS', itemName: 'Multi-Gas Detector Portable', quantity: 5, uom: 'EA', notes: 'Must be calibrated for H2S', currentStock: 5, reservedQty: 0, availableQty: 5, shortageQty: 0 }
+        ]
       }
     ];
     this.purchaseRequests.set(mockPRs);
@@ -391,6 +404,29 @@ export class MockDataService {
             ]
           }
         ]
+      },
+      {
+        id: 'rfq3',
+        rfqNumber: 'RFQ-2026-0005-0001',
+        documentNumber: 'RFQ-2026-0005-0001',
+        procurementChain: '0005-0001',
+        rootProcurementNumber: 'PR-2026-0005',
+        chainId: 'PC-2026-0005',
+        parentDocumentId: 'pr5',
+        parentDocumentNumber: 'PR-2026-0005',
+        purchaseRequestId: 'pr5',
+        purchaseRequestNumber: 'PR-2026-0005',
+        chargeType: 'Direct Cost', costCenter: 'CC-HSE-003',
+        title: 'HSE Compliance Equipment',
+        createdDate: '2026-06-05',
+        deadlineDate: '2026-06-15',
+        status: 'Sent',
+        vendors: [
+          { vendorId: 'v3', vendorName: 'SafeGuard HSE Solutions', contactEmail: 'contact@safeguard.com', status: 'Pending', invitationSentDate: '2026-06-05' },
+          { vendorId: 'v4', vendorName: 'HSE Safety First Inc', contactEmail: 's.connor@hsesafety.com', status: 'Pending', invitationSentDate: '2026-06-05' },
+          { vendorId: 'v2', vendorName: 'APEX Industrial Supplies', contactEmail: 'j.sterling@apexind.com', status: 'Pending', invitationSentDate: '2026-06-05' }
+        ],
+        quotations: []
       }
     ];
     this.rfqs.set(mockRFQs);
@@ -482,6 +518,47 @@ export class MockDataService {
           { role: 'Procurement Specialist', approverName: 'Jane Smith', status: 'Approved', actionDate: '2026-06-02', comments: 'Emergency order for drilling operations' },
           { role: 'Procurement Manager', approverName: 'Frank Jones', status: 'Pending', comments: 'Awaiting secondary cost center sign-off' },
           { role: 'VP Operations', approverName: 'Marcus Aurelius', status: 'Pending' }
+        ]
+      },
+      {
+        id: 'po3',
+        poNumber: 'PO-2026-0005-0001-0001-0001',
+        documentNumber: 'PO-2026-0005-0001-0001-0001',
+        procurementChain: '0005-0001-0001-0001',
+        rootProcurementNumber: 'PR-2026-0005',
+        quotationNumber: 'QTN-2026-0005-0001-0001',
+        chainId: 'PC-2026-0005',
+        parentDocumentId: 'rfq3',
+        parentDocumentNumber: 'RFQ-2026-0005-0001',
+        rfqId: 'rfq3',
+        rfqNumber: 'RFQ-2026-0005-0001',
+        vendorId: 'v3',
+        vendorName: 'SafeGuard HSE Solutions',
+        vendorTaxNumber: 'TX-99001144',
+        vendorAddress: '200 Safety Blvd, Odessa TX 79761',
+        date: '2026-06-10',
+        deliveryDate: '2026-06-28',
+        costCenter: 'CC-HSE-003',
+        paymentTerms: 'Net 30',
+        status: 'Approved',
+        subtotal: 8400,
+        taxPercent: 15,
+        taxAmount: 1260,
+        withholdingTaxPercent: 2,
+        withholdingTaxAmount: 168,
+        totalAmount: 9492,
+        chargeType: 'Direct Cost',
+        projectId: 'PRJ-003',
+        projectName: 'Rig Delta HSE Compliance',
+        items: [
+          { id: 'poi3a', itemCode: 'HSE-HARN-CLA', itemName: 'Safety Harness Class A Full Body', quantity: 20, unitPrice: 150, uom: 'EA', totalPrice: 3000 },
+          { id: 'poi3b', itemCode: 'HSE-DET-GAS', itemName: 'Multi-Gas Detector Portable', quantity: 8, unitPrice: 420, uom: 'EA', totalPrice: 3360 },
+          { id: 'poi3c', itemCode: 'LUB-GRE-DRUM', itemName: 'Premium Rig Grease (55 Gal)', quantity: 6, unitPrice: 350, uom: 'DRUM', totalPrice: 2100 }
+        ],
+        approvalWorkflow: [
+          { role: 'Procurement Specialist', approverName: 'Jane Smith', status: 'Approved', actionDate: '2026-06-10', comments: 'HSE compliance order - priority.' },
+          { role: 'Procurement Manager', approverName: 'Frank Jones', status: 'Approved', actionDate: '2026-06-11', comments: 'Approved within HSE budget envelope.' },
+          { role: 'VP Operations', approverName: 'Marcus Aurelius', status: 'Approved', actionDate: '2026-06-12', comments: 'Mandatory safety compliance. Approved.' }
         ]
       }
     ];
@@ -871,6 +948,21 @@ export class MockDataService {
         ncrId: 'ncr1',
         items: [
           { itemCode: 'DR-BIT-8.5-PDC', itemName: 'Drill Bit 8.5in PDC Premium', quantityOrdered: 2, quantityReceived: 2, quantityAccepted: 0, quantityRejected: 2, status: 'Failed', remarks: 'Outer cutters cracked.' }
+        ]
+      },
+      {
+        id: 'ins3',
+        requestNumber: 'IR-2026-003',
+        poId: 'po3',
+        poNumber: 'PO-2026-0005-0001-0001-0001',
+        vendorId: 'v3',
+        vendorName: 'SafeGuard HSE Solutions',
+        requestDate: '2026-06-13',
+        status: 'Pending',
+        items: [
+          { itemCode: 'HSE-HARN-CLA', itemName: 'Safety Harness Class A Full Body', uom: 'EA', quantityOrdered: 20, quantityReceived: 20, quantityAccepted: 20, quantityRejected: 0, status: 'Pending' },
+          { itemCode: 'HSE-DET-GAS', itemName: 'Multi-Gas Detector Portable', uom: 'EA', quantityOrdered: 8, quantityReceived: 8, quantityAccepted: 8, quantityRejected: 0, status: 'Pending' },
+          { itemCode: 'LUB-GRE-DRUM', itemName: 'Premium Rig Grease (55 Gal)', uom: 'DRUM', quantityOrdered: 6, quantityReceived: 6, quantityAccepted: 6, quantityRejected: 0, status: 'Pending' }
         ]
       }
     ];
@@ -1266,14 +1358,98 @@ export class MockDataService {
       assetId: rfq.assetId || sourcePR?.assetId,
       assetName: rfq.assetName || sourcePR?.assetName,
       costCenter: rfq.costCenter || sourcePR?.costCenter,
+      requiredDeliveryDate: sourcePR?.requiredDate || '',
+      requester: sourcePR?.requestedBy || '',
       createdDate: new Date().toISOString().split('T')[0],
-      status: 'Sent',
+      status: 'Draft',
       quotations: []
     };
     this.rfqs.update(val => [...val, newRfq]);
     this.updatePRStatus(rfq.purchaseRequestId, 'RFQ Created');
     return newRfq;
   }
+
+  sendRFQ(rfqId: string) {
+    this.rfqs.update(list =>
+      list.map(r => {
+        if (r.id !== rfqId) return r;
+
+        // Log vendor timeline events for RFQ Emails Sent
+        r.vendors.forEach(v => {
+          const newEvent = {
+            id: `ev-rfq-${Math.random().toString(36).substr(2, 9)}`,
+            vendorId: v.vendorId,
+            date: new Date().toISOString().split('T')[0],
+            eventType: 'RFQ Email Sent' as const,
+            title: 'RFQ Invitation Sent',
+            description: `RFQ Email Sent for ${r.rfqNumber}: "${r.title}"`,
+            referenceNumber: r.rfqNumber,
+            performedBy: 'Jane Smith (Procurement Specialist)'
+          };
+          this.vendorTimeline.update(evs => [...evs, newEvent]);
+        });
+
+        // Set invitation date for vendors
+        const updatedVendors = r.vendors.map(v => ({
+          ...v,
+          status: 'Pending' as const,
+          invitationSentDate: new Date().toISOString().split('T')[0]
+        }));
+
+        return {
+          ...r,
+          status: 'Sent' as const,
+          vendors: updatedVendors
+        };
+      })
+    );
+  }
+
+  resendRFQ(rfqId: string) {
+    const rfq = this.rfqs().find(r => r.id === rfqId);
+    if (!rfq) return;
+
+    rfq.vendors.forEach(v => {
+      const newEvent = {
+        id: `ev-rfq-res-${Math.random().toString(36).substr(2, 9)}`,
+        vendorId: v.vendorId,
+        date: new Date().toISOString().split('T')[0],
+        eventType: 'RFQ Email Sent' as const,
+        title: 'RFQ Invitation Re-sent',
+        description: `RFQ Email Re-sent for ${rfq.rfqNumber}: "${rfq.title}"`,
+        referenceNumber: rfq.rfqNumber,
+        performedBy: 'Jane Smith (Procurement Specialist)'
+      };
+      this.vendorTimeline.update(evs => [...evs, newEvent]);
+    });
+
+    this.rfqs.update(list =>
+      list.map(r => {
+        if (r.id !== rfqId) return r;
+        const updatedVendors = r.vendors.map(v => ({
+          ...v,
+          invitationSentDate: new Date().toISOString().split('T')[0]
+        }));
+        return {
+          ...r,
+          vendors: updatedVendors
+        };
+      })
+    );
+  }
+
+  closeRFQ(rfqId: string) {
+    this.rfqs.update(list =>
+      list.map(r => r.id === rfqId ? { ...r, status: 'Closed' as const } : r)
+    );
+  }
+
+  cancelRFQ(rfqId: string) {
+    this.rfqs.update(list =>
+      list.map(r => r.id === rfqId ? { ...r, status: 'Cancelled' as const } : r)
+    );
+  }
+
 
   // ── Inventory Availability ────────────────────────────────────────────────
   getInventoryAvailability(itemCode: string): { currentStock: number; reservedQty: number; availableQty: number } {
@@ -1323,7 +1499,37 @@ export class MockDataService {
         const qtnSeq = r.quotations.length + 1;
         const qtnSeqStr = String(qtnSeq).padStart(4, '0');
         const year = new Date().getFullYear();
-        const qtnNum = `QTN-${year}-${r.procurementChain}-${qtnSeqStr}`;
+        const qtnNum = `QT-${year}-${r.procurementChain}-${qtnSeqStr}`;
+
+        // Detailed line item calculations
+        const quoteItems = (quotation.items || []).map(item => {
+          const discountAmt = Math.round(item.quantity * item.unitPrice * ((item.discountPercent || 0) / 100));
+          const netPrice = (item.quantity * item.unitPrice) - discountAmt;
+          const taxAmt = Math.round(netPrice * ((item.taxPercent || 0) / 100));
+          const lineTotal = quotation.taxIncluded ? netPrice : (netPrice + taxAmt);
+          return {
+            ...item,
+            discountAmount: discountAmt,
+            taxAmount: taxAmt,
+            totalPrice: lineTotal
+          };
+        });
+
+        const subtotal = quoteItems.length > 0
+          ? quoteItems.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0)
+          : (quotation.subtotal || quotation.price || 0);
+
+        const discountAmount = quoteItems.length > 0
+          ? quoteItems.reduce((sum, item) => sum + (item.discountAmount || 0), 0)
+          : (quotation.discountAmount || 0);
+
+        const taxAmount = quoteItems.length > 0
+          ? quoteItems.reduce((sum, item) => sum + (item.taxAmount || 0), 0)
+          : (quotation.taxAmount || 0);
+
+        const totalAmount = quoteItems.length > 0
+          ? (quotation.taxIncluded ? (subtotal - discountAmount) : (subtotal - discountAmount + taxAmount))
+          : (quotation.totalAmount || (subtotal + taxAmount));
 
         const newQ: RFQQuotation = {
           ...quotation,
@@ -1331,20 +1537,35 @@ export class MockDataService {
           quotationNumber: qtnNum,
           quotationSequence: qtnSeq,
           procurementChain: `${r.procurementChain}-${qtnSeqStr}`,
-          status: 'Submitted'
+          status: 'Submitted',
+          items: quoteItems,
+          subtotal,
+          discountAmount,
+          taxAmount,
+          totalAmount,
+          price: subtotal, // backward compat
+          
+          // propagate cost allocation dimensions
+          chargeType: r.chargeType,
+          projectId: r.projectId,
+          projectName: r.projectName,
+          assetId: r.assetId,
+          assetName: r.assetName,
+          costCenter: r.costCenter
         };
+
         const updatedQuotes = [...r.quotations.filter(q => q.vendorId !== quotation.vendorId), newQ];
 
         // Recalculate best price
         let minPrice = Infinity;
         updatedQuotes.forEach(q => {
-          if (q.price < minPrice) minPrice = q.price;
+          if (q.totalAmount < minPrice) minPrice = q.totalAmount;
         });
 
         const checkedQuotes = updatedQuotes.map(q => ({
           ...q,
-          isBestPrice: q.price === minPrice,
-          isRecommended: q.price === minPrice || q.deliveryWeeks <= 1
+          isBestPrice: q.totalAmount === minPrice,
+          isRecommended: q.totalAmount === minPrice || q.deliveryWeeks <= 1
         }));
 
         const updatedVendors = r.vendors.map(v => 
@@ -1357,6 +1578,20 @@ export class MockDataService {
         const totalCount = updatedVendors.length;
         const newStatus = submittedCount === totalCount ? 'Fully Responded' as const : 'Partially Responded' as const;
 
+        // Log vendor timeline event for Quotation Submitted
+        const newEvent = {
+          id: `ev-qt-${Math.random().toString(36).substr(2, 9)}`,
+          vendorId: quotation.vendorId,
+          date: new Date().toISOString().split('T')[0],
+          eventType: 'Quotation Submitted' as const,
+          title: 'Quotation Submitted',
+          description: `Quotation ${qtnNum} submitted for RFQ ${r.rfqNumber} ($${totalAmount.toLocaleString()})`,
+          referenceNumber: qtnNum,
+          amount: totalAmount,
+          performedBy: quotation.vendorContactPerson || 'Supplier Representative'
+        };
+        this.vendorTimeline.update(evs => [...evs, newEvent]);
+
         return {
           ...r,
           status: newStatus,
@@ -1368,9 +1603,15 @@ export class MockDataService {
   }
 
   awardQuotation(rfqId: string, vendorId: string) {
+    const rfq = this.rfqs().find(r => r.id === rfqId);
+    if (!rfq || rfq.status === 'Awarded') return;
+
     this.rfqs.update(rfqs =>
       rfqs.map(r => {
         if (r.id !== rfqId) return r;
+        const winningQuote = r.quotations.find(q => q.vendorId === vendorId);
+        if (!winningQuote) return r;
+
         const updatedVendors = r.vendors.map(v => 
           v.vendorId === vendorId
             ? { ...v, status: 'Accepted' as const }
@@ -1381,9 +1622,27 @@ export class MockDataService {
             ? { ...q, status: 'Accepted' as const }
             : { ...q, status: q.status === 'Submitted' ? 'Rejected' as const : q.status }
         );
+
+        // Log vendor timeline for award
+        const newEvent = {
+          id: `ev-aw-${Math.random().toString(36).substr(2, 9)}`,
+          vendorId: vendorId,
+          date: new Date().toISOString().split('T')[0],
+          eventType: 'Evaluation Completed' as const,
+          title: 'Quotation Awarded',
+          description: `Quotation ${winningQuote.quotationNumber} awarded for RFQ ${r.rfqNumber}`,
+          referenceNumber: winningQuote.quotationNumber,
+          performedBy: 'Jane Smith (Procurement Specialist)'
+        };
+        this.vendorTimeline.update(evs => [...evs, newEvent]);
+
         return {
           ...r,
           status: 'Awarded' as const,
+          awardedVendorId: vendorId,
+          awardedVendorName: winningQuote.vendorName,
+          awardedQuotationId: winningQuote.id,
+          awardedQuotationNumber: winningQuote.quotationNumber,
           vendors: updatedVendors,
           quotations: updatedQuotes
         };
@@ -1420,6 +1679,20 @@ export class MockDataService {
         const updatedQuotes = r.quotations.map(q => 
           q.vendorId === vendorId ? { ...q, status: 'Revision Requested' as const } : q
         );
+
+        // Log timeline event for clarification
+        const newEvent = {
+          id: `ev-rev-${Math.random().toString(36).substr(2, 9)}`,
+          vendorId: vendorId,
+          date: new Date().toISOString().split('T')[0],
+          eventType: 'Clarification' as const,
+          title: 'Revision Requested',
+          description: `Requested commercial clarification / revision on quotation for RFQ ${r.rfqNumber}`,
+          referenceNumber: r.rfqNumber,
+          performedBy: 'Jane Smith (Procurement Specialist)'
+        };
+        this.vendorTimeline.update(evs => [...evs, newEvent]);
+
         return {
           ...r,
           vendors: updatedVendors,
@@ -1441,29 +1714,40 @@ export class MockDataService {
     const quotePOList = pos.filter(p => p.quotationNumber === quote.quotationNumber);
     const poSeq = String(quotePOList.length + 1).padStart(4, '0');
     const year = new Date().getFullYear();
-    const poNum = `PO-${year}-${quote.procurementChain}-${poSeq}`;
+    const poNum = `PO-${year}-${quote.procurementChain.replace('QTN-', '').replace('QT-', '')}-${poSeq}`;
 
-    const subtotal = quote.price;
-    const taxAmount = Math.round(subtotal * (quote.taxPercent / 100));
+    const subtotal = quote.subtotal || quote.price;
+    const taxAmount = quote.taxAmount;
     const whtPercent = 2; // Withholding tax 2%
     const whtAmount = Math.round(subtotal * (whtPercent / 100));
-    const totalAmount = subtotal + taxAmount - whtAmount;
+    const totalAmount = quote.totalAmount - whtAmount;
 
-    const poItems: POItem[] = pr.items.map(item => ({
-      id: `poi-${item.id}`,
-      itemCode: item.itemCode,
-      itemName: item.itemName,
-      quantity: item.quantity,
-      uom: item.uom,
-      unitPrice: Math.round(quote.price / item.quantity), // distribute price
-      totalPrice: quote.price // or keep total
-    }));
+    // Distribute line items correctly
+    const poItems: POItem[] = quote.items && quote.items.length > 0
+      ? quote.items.map((qi, index) => ({
+          id: `poi-${quote.id}-${index}-${Date.now()}`,
+          itemCode: qi.itemCode,
+          itemName: qi.itemName,
+          quantity: qi.quantity,
+          uom: qi.uom,
+          unitPrice: qi.unitPrice,
+          totalPrice: qi.totalPrice
+        }))
+      : pr.items.map(item => ({
+          id: `poi-${item.id}`,
+          itemCode: item.itemCode,
+          itemName: item.itemName,
+          quantity: item.quantity,
+          uom: item.uom,
+          unitPrice: Math.round(quote.price / item.quantity),
+          totalPrice: quote.price
+        }));
 
     const newPO: PurchaseOrder = {
       id: `po${pos.length + 1}`,
       poNumber: poNum,
       documentNumber: poNum,
-      procurementChain: `${quote.procurementChain}-${poSeq}`,
+      procurementChain: `${quote.procurementChain.replace('QTN-', '').replace('QT-', '')}-${poSeq}`,
       rootProcurementNumber: pr.documentNumber,
       quotationNumber: quote.quotationNumber,
       chainId: rfq.chainId || pr.chainId || `PC-${year}-${quote.procurementChain}`,
@@ -1475,10 +1759,12 @@ export class MockDataService {
       vendorName: vendor.vendorName,
       vendorTaxNumber: vendor.taxNumber,
       vendorAddress: vendor.address,
+      vendorContact: `${quote.vendorContactPerson || vendor.contactPerson} (${quote.vendorEmail || vendor.contactEmail})`,
       date: new Date().toISOString().split('T')[0],
-      deliveryDate: new Date(Date.now() + quote.deliveryWeeks * 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      deliveryDate: quote.validityDate || new Date(Date.now() + quote.deliveryWeeks * 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      deliveryAddress: 'Rig Delta Warehouse, Sector 3, Ghawar Field, Saudi Arabia',
       costCenter: pr.costCenter,
-      paymentTerms: vendor.paymentTerms,
+      paymentTerms: quote.paymentTerms || vendor.paymentTerms,
       status: 'Pending Approval',
       items: poItems,
       subtotal,
@@ -1487,11 +1773,24 @@ export class MockDataService {
       withholdingTaxPercent: whtPercent,
       withholdingTaxAmount: whtAmount,
       totalAmount,
+
+      // Commercial Terms details
+      advancePayment: 10, // 10% standard advance
+      deliveryPayment: 80, // 80% on delivery
+      retentionAmount: 10, // 10% retention
+      otherPaymentConditions: 'Retention released after 6 months of successful operations.',
+
+      // Signatures
+      companyRepresentative: 'Sophia Sterling (Finance Manager)',
+      supplierRepresentative: quote.vendorContactPerson || 'Authorized Representative',
+
+      // Cost allocation propagation
       chargeType: pr.chargeType,
       projectId: pr.projectId,
       projectName: pr.projectName,
       assetId: pr.assetId,
       assetName: pr.assetName,
+
       approvalWorkflow: [
         { role: 'Procurement Specialist', approverName: 'Jane Smith', status: 'Approved', actionDate: new Date().toISOString().split('T')[0], comments: 'Generated from quotation comparison recommendation.' },
         { role: 'Procurement Manager', approverName: 'Frank Jones', status: 'Pending' },
@@ -1501,17 +1800,38 @@ export class MockDataService {
 
     this.purchaseOrders.update(val => [...val, newPO]);
 
-     // Update RFQ status
-     this.rfqs.update(list =>
-       list.map(r => r.id === rfqId ? { ...r, status: 'Awarded' as const } : r)
-     );
+    // Enforce Generation Rules: Lock RFQ and award winning quote, reject others
+    this.rfqs.update(list =>
+      list.map(r => r.id === rfqId ? { ...r, status: 'Awarded' as const } : r)
+    );
+
+    // ── Log Vendor Chronological Communication Events ──
+    const vendorEvents = [
+      {
+        id: `ev-po-${Math.random().toString(36).substr(2, 9)}`,
+        vendorId: vendor.id,
+        date: newPO.date,
+        eventType: 'PO Sent' as const,
+        title: 'Purchase Order Issued',
+        description: `Purchase Order ${newPO.poNumber} issued and dispatched to vendor.`,
+        referenceNumber: newPO.poNumber,
+        amount: newPO.totalAmount,
+        performedBy: 'Sophia Sterling (Finance Manager)'
+      }
+    ];
+
+    vendorEvents.forEach(ev => {
+      this.vendorTimeline.update(list => [...list, ev]);
+    });
 
     return newPO;
   }
 
+
   approvePO(poId: string, role: string, approverName: string, comments?: string) {
-    this.purchaseOrders.update(pos =>
-      pos.map(po => {
+    this.purchaseOrders.update(pos => {
+      let transitioned = false;
+      const updated = pos.map(po => {
         if (po.id !== poId) return po;
 
         const updatedWorkflow = po.approvalWorkflow.map(step => {
@@ -1529,14 +1849,58 @@ export class MockDataService {
 
         // If all approved, transition PO status
         const allApproved = updatedWorkflow.every(step => step.status === 'Approved');
+        if (allApproved && po.status !== 'Approved') {
+          transitioned = true;
+        }
 
         return {
           ...po,
           approvalWorkflow: updatedWorkflow,
           status: allApproved ? ('Approved' as const) : po.status
         };
-      })
-    );
+      });
+
+      if (transitioned) {
+        const po = updated.find(p => p.id === poId);
+        if (po) {
+          // Auto-create inspection request on PO approval
+          setTimeout(() => {
+            this.createInspectionRequestFromPO(po);
+          });
+        }
+      }
+
+      return updated;
+    });
+  }
+
+  createInspectionRequestFromPO(po: PurchaseOrder) {
+    const list = this.inspectionRequests();
+    if (list.some(r => r.poId === po.id)) return;
+
+    const reqNum = `IR-2026-0${list.length + 1}`;
+    const newReq: InspectionRequest = {
+      id: `ins-${Date.now()}`,
+      requestNumber: reqNum,
+      poId: po.id,
+      poNumber: po.poNumber,
+      vendorId: po.vendorId,
+      vendorName: po.vendorName,
+      requestDate: new Date().toISOString().split('T')[0],
+      status: 'Pending',
+      items: po.items.map(item => ({
+        itemCode: item.itemCode,
+        itemName: item.itemName,
+        uom: item.uom,
+        quantityOrdered: item.quantity,
+        quantityReceived: item.quantity,
+        quantityAccepted: item.quantity,
+        quantityRejected: 0,
+        status: 'Pending'
+      }))
+    };
+
+    this.inspectionRequests.update(val => [...val, newReq]);
   }
 
   updateTimesheetDay(timesheetId: string, day: number, updatedRow: Partial<TimesheetDayRow>) {
@@ -1644,7 +2008,8 @@ export class MockDataService {
 
   addMRV(mrv: Omit<MRV, 'id' | 'voucherNumber' | 'status'>) {
     const list = this.mrvs();
-    const num = `MRV-2026-0${list.length + 1}`;
+    const seq = String(list.length + 1).padStart(4, '0');
+    const num = `MRV-2026-${seq}`;
     const newMRV: MRV = { ...mrv, id: `mrv${list.length + 1}`, voucherNumber: num, status: 'Draft' };
     this.mrvs.update(val => [...val, newMRV]);
     return newMRV;
@@ -1652,28 +2017,57 @@ export class MockDataService {
 
   updateMRVStatus(id: string, status: MRV['status']) {
     this.mrvs.update(list => list.map(item => item.id === id ? { ...item, status } : item));
-    if (status === 'Posted') {
-      const voucher = this.mrvs().find(item => item.id === id);
-      if (voucher) {
-        voucher.items.forEach(vitem => {
-          const matched = this.inventoryItems().find(inv => inv.itemCode === vitem.itemCode);
-          if (matched) {
-            this.updateInventoryItem(matched.id, { quantity: matched.quantity + vitem.quantityReceived });
-          } else {
-            this.addInventoryItem({
-              itemCode: vitem.itemCode,
-              itemName: vitem.itemName,
-              quantity: vitem.quantityReceived,
-              minQuantity: 5,
-              category: 'General Spares',
-              uom: vitem.uom,
-              location: 'Warehouse A',
-              unitPrice: vitem.unitPrice,
-              status: 'In Stock'
-            });
-          }
-        });
+    const voucher = this.mrvs().find(item => item.id === id);
+    if (voucher && (status === 'Posted' || status === 'Approved')) {
+      voucher.items.forEach(vitem => {
+        const matched = this.inventoryItems().find(inv => inv.itemCode === vitem.itemCode);
+        if (matched) {
+          this.updateInventoryItem(matched.id, { quantity: matched.quantity + vitem.quantityReceived });
+        } else {
+          this.addInventoryItem({
+            itemCode: vitem.itemCode,
+            itemName: vitem.itemName,
+            quantity: vitem.quantityReceived,
+            minQuantity: 5,
+            category: 'General Spares',
+            uom: vitem.uom,
+            location: 'Warehouse A',
+            unitPrice: vitem.unitPrice,
+            status: 'In Stock'
+          });
+        }
+      });
+
+      if (voucher.poId) {
+        this.checkAndUpdatePOCompletionStatus(voucher.poId);
       }
+    }
+  }
+
+  checkAndUpdatePOCompletionStatus(poId: string) {
+    const po = this.purchaseOrders().find(p => p.id === poId);
+    if (!po) return;
+
+    // Get all approved/posted MRVs for this PO
+    const linkedMRVs = this.mrvs().filter(m => m.poId === poId && (m.status === 'Posted' || m.status === 'Approved'));
+    
+    // Check if all items are fully received
+    let allReceived = true;
+    po.items.forEach(poItem => {
+      const receivedSum = linkedMRVs.reduce((sum, mrv) => {
+        const mrvItem = mrv.items.find(mi => mi.itemCode === poItem.itemCode);
+        return sum + (mrvItem ? mrvItem.quantityReceived : 0);
+      }, 0);
+
+      if (receivedSum < poItem.quantity) {
+        allReceived = false;
+      }
+    });
+
+    if (allReceived) {
+      this.purchaseOrders.update(pos => 
+        pos.map(p => p.id === poId ? { ...p, status: 'Completed' as const } : p)
+      );
     }
   }
 

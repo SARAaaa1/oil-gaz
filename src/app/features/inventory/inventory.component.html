@@ -96,15 +96,12 @@
       >
         {{ 'inventory.tab_warehouses' | translate }}
       </button>
-      <button 
-        (click)="activeTab.set('mrv')" 
-        [class.border-slate-800]="activeTab() === 'mrv'" 
-        [class.text-slate-900]="activeTab() === 'mrv'"
-        [class.font-bold]="activeTab() === 'mrv'"
+      <a 
+        routerLink="/inventory/goods-receipts" 
         class="pb-3 px-3 border-b-2 border-transparent text-xs text-slate-500 font-medium hover:text-slate-800 transition-all cursor-pointer"
       >
         {{ 'inventory.tab_mrv' | translate }}
-      </button>
+      </a>
       <button 
         (click)="activeTab.set('miv')" 
         [class.border-slate-800]="activeTab() === 'miv'" 

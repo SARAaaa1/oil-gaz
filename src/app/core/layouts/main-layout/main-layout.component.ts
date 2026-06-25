@@ -53,7 +53,28 @@ export class MainLayoutComponent implements OnInit {
 
 
   ngOnInit() {
-    // Initial load effects if needed
+    this.checkActiveRoute(this.router.url);
+    this.router.events.subscribe(() => {
+      this.checkActiveRoute(this.router.url);
+    });
+  }
+
+  private checkActiveRoute(url: string) {
+    if (url.includes('/inventory') || url.includes('/masters/')) {
+      this.isInventoryOpen.set(true);
+    }
+    if (url.includes('/procurement') || url.includes('/vendors')) {
+      this.isProcurementOpen.set(true);
+    }
+    if (url.includes('/operations') || url.includes('/workflow')) {
+      this.isOperationsOpen.set(true);
+    }
+    if (url.includes('/assets')) {
+      this.isAssetsOpen.set(true);
+    }
+    if (url.includes('/finance')) {
+      this.isFinanceOpen.set(true);
+    }
   }
 
   // --- ACTIONS ---

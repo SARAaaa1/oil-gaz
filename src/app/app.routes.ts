@@ -76,8 +76,13 @@ export const routes: Routes = [
       },
       {
         path: 'inventory',
-        loadComponent: () => import('./features/inventory/inventory.component').then(m => m.InventoryComponent),
-        data: { permission: 'view:inventory' }
+        data: { permission: 'view:inventory' },
+        children: [
+          { path: '', loadComponent: () => import('./features/inventory/inventory.component').then(m => m.InventoryComponent) },
+          { path: 'goods-receipts', loadComponent: () => import('./features/inventory/goods-receipts/goods-receipts.component').then(m => m.GoodsReceiptsComponent) },
+          { path: 'item-ledger', loadComponent: () => import('./features/inventory/item-ledger/item-ledger.component').then(m => m.ItemLedgerComponent) },
+          { path: 'stock-summary', loadComponent: () => import('./features/inventory/stock-summary/stock-summary.component').then(m => m.StockSummaryComponent) }
+        ]
       },
       {
         path: 'vendors',

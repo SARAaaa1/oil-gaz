@@ -162,6 +162,7 @@ export class SubmitQuotationComponent implements OnInit {
       vendorId: vId,
       vendorName: vName,
       price: this.subtotal(),
+      subtotal: this.subtotal(),
       deliveryWeeks: this.deliveryWeeks,
       taxPercent: this.taxPercent,
       taxAmount: this.taxAmount(),

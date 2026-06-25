@@ -395,35 +395,65 @@
             <div class="sidebar-submenu-container transition-all duration-300">
               <a 
                 routerLink="/inventory" 
+                [queryParams]="{ tab: 'items' }"
                 routerLinkActive="active"
-                [routerLinkActiveOptions]="{ exact: true }"
                 class="sidebar-submenu-item group/item"
               >
                 {{ 'navigation.items' | translate }}
               </a>
               <a 
-                routerLink="/masters/items" 
-                routerLinkActive="active"
-                class="sidebar-submenu-item group/item"
-              >
-                {{ 'navigation.item_master' | translate }}
-              </a>
-              <a 
-                routerLink="/masters/warehouses" 
-                routerLinkActive="active"
-                class="sidebar-submenu-item group/item"
-              >
-                {{ 'navigation.warehouse_structure' | translate }}
-              </a>
-              <a 
                 routerLink="/inventory" 
-                [queryParams]="{ filter: 'warehouses' }"
+                [queryParams]="{ tab: 'warehouses' }"
                 routerLinkActive="active"
                 class="sidebar-submenu-item group/item"
               >
                 {{ 'navigation.warehouses' | translate }}
               </a>
-            
+              <a 
+                routerLink="/inventory/goods-receipts" 
+                routerLinkActive="active"
+                class="sidebar-submenu-item group/item"
+              >
+                {{ 'navigation.goods_receipts' | translate }}
+              </a>
+              <a 
+                routerLink="/inventory" 
+                [queryParams]="{ tab: 'miv' }"
+                routerLinkActive="active"
+                class="sidebar-submenu-item group/item"
+              >
+                {{ 'navigation.material_issues' | translate }}
+              </a>
+              <a 
+                routerLink="/inventory" 
+                [queryParams]="{ tab: 'transfers' }"
+                routerLinkActive="active"
+                class="sidebar-submenu-item group/item"
+              >
+                {{ 'navigation.transfers' | translate }}
+              </a>
+              <a 
+                routerLink="/inventory" 
+                [queryParams]="{ tab: 'adjustments' }"
+                routerLinkActive="active"
+                class="sidebar-submenu-item group/item"
+              >
+                {{ 'navigation.adjustments' | translate }}
+              </a>
+              <a 
+                routerLink="/inventory/item-ledger" 
+                routerLinkActive="active"
+                class="sidebar-submenu-item group/item"
+              >
+                {{ 'navigation.item_ledger' | translate }}
+              </a>
+              <a 
+                routerLink="/inventory/stock-summary" 
+                routerLinkActive="active"
+                class="sidebar-submenu-item group/item"
+              >
+                {{ 'navigation.stock_summary' | translate }}
+              </a>
             </div>
           }
         </div>

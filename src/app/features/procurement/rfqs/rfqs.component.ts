@@ -52,13 +52,30 @@ export class RfqsComponent implements OnInit {
     vendorId: '',
     price: 0,
     deliveryWeeks: 2,
-    notes: ''
+    notes: '',
+    paymentTerms: 'Net 30',
+    validityDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    attachments: [] as { name: string; size: string; type: string; url: string }[]
   };
 
   // Computed lists
   readonly activeVendors = computed(() => 
     this.vendors().filter(v => v.status === 'Active')
   );
+
+  readonly vendorSearchQuery = signal<string>('');
+
+  readonly displayedVendors = computed(() => {
+    const list = this.vendors();
+    const query = this.vendorSearchQuery().trim().toLowerCase();
+    if (!query) return list;
+    return list.filter(v => 
+      v.vendorName.toLowerCase().includes(query) ||
+      (v.arabicName && v.arabicName.toLowerCase().includes(query)) ||
+      (v.category && v.category.toLowerCase().includes(query)) ||
+      v.vendorCode.toLowerCase().includes(query)
+    );
+  });
 
   readonly filteredRFQs = computed(() => {
     let list = this.rfqs();
@@ -91,7 +108,7 @@ export class RfqsComponent implements OnInit {
       const prId = params['createForPR'];
       if (prId) {
         const pr = this.purchaseRequests().find(p => p.id === prId);
-        if (pr && pr.status === 'Approved') {
+        if (pr && (pr.status === 'Approved' || pr.status === 'Pending Approval' || pr.status === 'RFQ Created')) {
           this.selectedPRSource.set(pr);
           this.formRFQ.title = this.translate.instant('procurement.rfqs.rfq_for_title', { pr: pr.requestNumber, dept: pr.department });
           this.formRFQ.invitedVendorIds.clear();
@@ -106,6 +123,7 @@ export class RfqsComponent implements OnInit {
         const rfq = this.rfqs().find(r => r.id === rfqId);
         if (rfq) {
           this.selectedRFQ.set(rfq);
+          this.activeDetailsTab.set('vendors');
         }
       }
     });
@@ -176,10 +194,15 @@ export class RfqsComponent implements OnInit {
   // --- DETAILS ---
   viewRFQDetails(rfq: RFQ) {
     this.selectedRFQ.set(rfq);
+    this.activeDetailsTab.set('vendors');
   }
 
   closeRFQDetails() {
     this.selectedRFQ.set(null);
+  }
+
+  goToComparison(rfqId: string) {
+    this.router.navigate(['/procurement/quotation-comparison'], { queryParams: { rfqId } });
   }
 
   getInvitedBiddedRatio(rfq: RFQ): string {
@@ -188,24 +211,92 @@ export class RfqsComponent implements OnInit {
     return `${submitted} / ${total}`;
   }
 
-  // --- BID SIMULATION ---
+  getVendorCategoryClass(category: string | undefined): string {
+    if (!category) return 'bg-purple-50 text-purple-700';
+    if (category === 'Drilling') return 'bg-blue-50 text-blue-700';
+    if (category === 'Logistics') return 'bg-amber-50 text-amber-700';
+    if (category === 'HSE') return 'bg-green-50 text-green-700';
+    return 'bg-purple-50 text-purple-700';
+  }
+
+  // --- BID / QUOTATION ENTRY ---
   openBiddingModal(rfq: RFQ) {
     this.biddingRFQ.set(rfq);
     this.bidForm = {
       vendorId: '',
       price: 0,
       deliveryWeeks: 2,
-      notes: ''
+      notes: '',
+      paymentTerms: 'Net 30',
+      validityDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      attachments: []
     };
+  }
+
+  // Trigger the hidden file input
+  triggerFileInput() {
+    const input = document.getElementById('quotation-file-input') as HTMLInputElement;
+    if (input) input.click();
+  }
+
+  // Handle real file selection from the browser file picker
+  onFilesSelected(event: Event) {
+    const input = event.target as HTMLInputElement;
+    if (!input.files) return;
+    Array.from(input.files).forEach(file => {
+      const alreadyAdded = this.bidForm.attachments.some(a => a.name === file.name);
+      if (!alreadyAdded) {
+        const sizeStr = file.size > 1024 * 1024
+          ? (file.size / (1024 * 1024)).toFixed(1) + ' MB'
+          : (file.size / 1024).toFixed(0) + ' KB';
+        // Use FileReader to create a local preview URL for images
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          this.bidForm.attachments.push({
+            name: file.name,
+            size: sizeStr,
+            type: file.type,
+            url: e.target?.result as string || '#'
+          });
+        };
+        if (file.type.startsWith('image/')) {
+          reader.readAsDataURL(file);
+        } else {
+          reader.readAsArrayBuffer(file);
+          this.bidForm.attachments.push({
+            name: file.name,
+            size: sizeStr,
+            type: file.type,
+            url: '#'
+          });
+        }
+      }
+    });
+    // Reset input so same file can be re-selected
+    input.value = '';
+  }
+
+  removeAttachment(index: number) {
+    this.bidForm.attachments.splice(index, 1);
+  }
+
+  isImageFile(file: { type: string }): boolean {
+    return file.type.startsWith('image/');
+  }
+
+  // Allow adding quotations for Sent, Partially Responded, or Fully Responded RFQs
+  canAddQuotation(rfq: RFQ): boolean {
+    return rfq.status === 'Sent' || rfq.status === 'Partially Responded' || rfq.status === 'Fully Responded';
   }
 
   closeBiddingModal() {
     this.biddingRFQ.set(null);
   }
 
+  // Return all invited vendors that have NOT yet submitted a quotation
   getUnsubmittedVendors(rfq: RFQ) {
-    // Return vendors invited that haven't submitted yet
-    return rfq.vendors.filter(v => v.status === 'Pending');
+    const submittedVendorIds = new Set(rfq.quotations.map(q => q.vendorId));
+    return rfq.vendors.filter(v => !submittedVendorIds.has(v.vendorId));
   }
 
   submitVendorBid(event: Event) {
@@ -232,10 +323,15 @@ export class RfqsComponent implements OnInit {
       vendorName: vendor.vendorName,
       price: this.bidForm.price,
       deliveryWeeks: this.bidForm.deliveryWeeks,
+      subtotal: this.bidForm.price,
       taxPercent,
       taxAmount,
       totalAmount: total,
+      submissionDate: new Date().toISOString().split('T')[0],
+      validityDate: this.bidForm.validityDate || undefined,
+      paymentTerms: this.bidForm.paymentTerms || 'Net 30',
       notes: this.bidForm.notes || undefined,
+      attachments: this.bidForm.attachments.length > 0 ? [...this.bidForm.attachments] : undefined,
       status: 'Submitted' as const
     });
 

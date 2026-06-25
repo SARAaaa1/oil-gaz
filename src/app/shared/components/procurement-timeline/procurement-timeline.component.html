@@ -1,0 +1,40 @@
+<!-- Procurement Timeline Component -->
+<div class="space-y-6">
+  <div class="flex items-center space-x-3">
+    <h3 class="text-lg font-bold text-slate-800">Procurement Timeline</h3>
+    <span class="text-sm text-slate-500">{{ documentNumber }}</span>
+  </div>
+
+  <div class="border-l-2 border-slate-200 ml-3 space-y-6">
+    <ng-container *ngFor="let step of timelineSteps(); let i = index">
+      <div class="flex items-start">
+        <!-- Marker -->
+        <div class="flex flex-col items-center mr-4">
+          <div class="w-5 h-5 rounded-full {{ getBulletClass(step) }}"></div>
+          <div *ngIf="i < timelineSteps().length - 1" class="flex-1 w-px bg-slate-200"></div>
+        </div>
+        <!-- Card -->
+        <div class="flex-1 {{ getCardClass(step) }} p-4 rounded-lg shadow-sm">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-2">
+              <span class="inline-block px-2 py-0.5 text-xs font-medium rounded {{ getTypeBadgeClass(step.type) }}">
+                {{ step.type }}
+              </span>
+              <span class="font-medium text-slate-800">{{ step.title | translate }}</span>
+            </div>
+            <span class="text-xs text-slate-500" *ngIf="step.date">{{ step.date }}</span>
+          </div>
+          <p class="mt-2 text-sm text-slate-600" *ngIf="step.description">{{ step.description }}</p>
+          <div class="mt-2 flex items-center space-x-2" *ngIf="step.documentNumber && step.id">
+            <button class="text-xs text-indigo-600 hover:underline" (click)="viewDocument(step.type, step.id)">
+              View {{ step.type }} {{ step.documentNumber }}
+            </button>
+            <span *ngIf="step.amount" class="text-xs font-semibold text-emerald-600">
+              ${{ step.amount | number:'1.0-0' }}
+            </span>
+          </div>
+        </div>
+      </div>
+    </ng-container>
+  </div>
+</div>

@@ -46,7 +46,7 @@ export class PurchaseOrdersComponent implements OnInit {
     const query = this.searchQuery().trim().toLowerCase();
 
     if (query) {
-      list = list.filter(po => 
+      list = list.filter(po =>
         po.poNumber.toLowerCase().includes(query) ||
         po.vendorName.toLowerCase().includes(query) ||
         po.costCenter.toLowerCase().includes(query)
@@ -55,6 +55,10 @@ export class PurchaseOrdersComponent implements OnInit {
 
     return [...list].sort((a, b) => b.poNumber.localeCompare(a.poNumber));
   });
+
+  readonly approvedPOCount = computed(() =>
+    this.filteredPOs().filter(po => po.status === 'Approved' || po.status === 'Issued').length
+  );
 
   readonly activePO = computed(() => {
     const id = this.selectedPOId();
@@ -178,5 +182,132 @@ export class PurchaseOrdersComponent implements OnInit {
       default:
         return 'bg-slate-100 border-slate-300';
     }
+  }
+
+  /** Download the contract attached to the active PO */
+  downloadContract() {
+    const po = this.activePO();
+    if (!po) return;
+
+    const fileName = po.contractFileName || `Contract_${po.poNumber}.pdf`;
+
+    if (po.contractFileUrl) {
+      const a = document.createElement('a');
+      a.href = po.contractFileUrl;
+      a.download = fileName;
+      a.target = '_blank';
+      a.click();
+    } else {
+      // Build items table
+      const divider = '─'.repeat(90);
+      const itemHeader = this.padRow(['#', 'Item Code', 'Description', 'Qty', 'UOM', 'Unit Price', 'Total']);
+      const itemRows = po.items.map((item, i) =>
+        this.padRow([
+          String(i + 1),
+          item.itemCode,
+          item.itemName,
+          String(item.quantity),
+          item.uom,
+          `$${item.unitPrice.toLocaleString()}`,
+          `$${item.totalPrice.toLocaleString()}`
+        ])
+      );
+
+      const content = [
+        `╔══════════════════════════════════════════════════════════════════════════════════════════╗`,
+        `║                              CONTRACT AGREEMENT                                        ║`,
+        `║                           PETROFLOW SERVICES LTD                                       ║`,
+        `╚══════════════════════════════════════════════════════════════════════════════════════════╝`,
+        ``,
+        `CONTRACT DETAILS`,
+        divider,
+        `Contract Number  : ${po.contractNumber || 'CNT-' + po.poNumber}`,
+        `Contract Title   : ${po.contractTitle || 'Supply Contract for ' + po.vendorName}`,
+        `PO Reference     : ${po.poNumber}`,
+        `RFQ Reference    : ${po.rfqNumber || 'N/A'}`,
+        `Contract Date    : ${po.contractDate || po.date}`,
+        `Expiry Date      : ${po.contractExpiryDate || po.deliveryDate}`,
+        ``,
+        `VENDOR INFORMATION`,
+        divider,
+        `Vendor Name      : ${po.vendorName}`,
+        `Vendor Address   : ${po.vendorAddress}`,
+        `Tax ID           : ${po.vendorTaxNumber}`,
+        `Contact          : ${po.vendorContact || 'N/A'}`,
+        ``,
+        `DELIVERY & PAYMENT`,
+        divider,
+        `Delivery Date    : ${po.deliveryDate}`,
+        `Delivery Address : ${po.deliveryAddress || 'Main Warehouse — Houston, TX'}`,
+        `Cost Center      : ${po.costCenter}`,
+        `Payment Terms    : ${po.paymentTerms}`,
+        ``,
+        ``,
+        `ITEMS & MATERIALS`,
+        `${'═'.repeat(90)}`,
+        itemHeader,
+        `${'─'.repeat(90)}`,
+        ...itemRows,
+        `${'═'.repeat(90)}`,
+        ``,
+        `FINANCIAL SUMMARY`,
+        divider,
+        `  Subtotal                          : $${po.subtotal.toLocaleString()}`,
+        `  VAT (${po.taxPercent}%)                       : $${po.taxAmount.toLocaleString()}`,
+        `  Withholding Tax (${po.withholdingTaxPercent}%)             : -$${po.withholdingTaxAmount.toLocaleString()}`,
+        divider,
+        `  GRAND TOTAL                       : $${po.totalAmount.toLocaleString()}`,
+        divider,
+        ``,
+        `TERMS & CONDITIONS`,
+        divider,
+        `1. Supplier shall deliver all items per the specifications listed above.`,
+        `2. Payment will be processed per the agreed payment terms after goods receipt.`,
+        `3. Any deviation from the quantities or specifications requires written approval.`,
+        `4. This contract is governed by the laws applicable to the jurisdiction of PetroFlow Services Ltd.`,
+        `5. Both parties agree to resolve any disputes through arbitration.`,
+        ``,
+        ``,
+        `SIGNATURES`,
+        divider,
+        ``,
+        `Company Representative : ${po.companyRepresentative || '___________________'}`,
+        `                         Signature: ____________________    Date: ____________`,
+        ``,
+        `Supplier Representative: ${po.supplierRepresentative || '___________________'}`,
+        `                         Signature: ____________________    Date: ____________`,
+        ``,
+        ``,
+        divider,
+        `Generated from PetroFlow ERP — Purchase Order Registry`,
+        `Document ID: ${po.documentNumber || po.poNumber}`,
+        `Generated on: ${new Date().toISOString().split('T')[0]}`,
+      ].join('\n');
+
+      const blob = new Blob([content], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName.replace('.pdf', '.txt');
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    this.notificationService.success(
+      'Contract Download',
+      `Downloading: ${fileName}`
+    );
+  }
+
+  /** Pad a row of values into a fixed-width table row */
+  private padRow(cols: string[]): string {
+    const widths = [4, 12, 28, 6, 6, 14, 14];
+    return cols.map((col, i) => col.padEnd(widths[i] || 14)).join(' | ');
+  }
+
+  formatFileSizeKb(kb: number | undefined): string {
+    if (!kb) return '';
+    if (kb >= 1024) return `${(kb / 1024).toFixed(1)} MB`;
+    return `${kb} KB`;
   }
 }

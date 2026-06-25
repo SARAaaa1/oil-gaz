@@ -85,6 +85,48 @@ export class InspectionComponent implements OnInit {
     this.inspectionStatus = hasFailures ? 'Rejected' : 'Accepted';
   }
 
+  onQtyReceivedChange(index: number) {
+    const item = this.itemsToInspect[index];
+    if (item.quantityReceived > item.quantityOrdered) {
+      item.quantityReceived = item.quantityOrdered;
+    }
+    if (item.quantityReceived < 0) {
+      item.quantityReceived = 0;
+    }
+
+    if (item.status === 'Failed') {
+      item.quantityRejected = item.quantityReceived;
+      item.quantityAccepted = 0;
+    } else {
+      item.quantityAccepted = item.quantityReceived;
+      item.quantityRejected = 0;
+    }
+  }
+
+  onQtyAcceptedChange(index: number) {
+    const item = this.itemsToInspect[index];
+    if (item.quantityAccepted > item.quantityReceived) {
+      item.quantityAccepted = item.quantityReceived;
+    }
+    if (item.quantityAccepted < 0) {
+      item.quantityAccepted = 0;
+    }
+    item.quantityRejected = item.quantityReceived - item.quantityAccepted;
+    item.status = item.quantityAccepted === item.quantityReceived ? 'Passed' : item.quantityAccepted === 0 ? 'Failed' : 'Passed';
+  }
+
+  onQtyRejectedChange(index: number) {
+    const item = this.itemsToInspect[index];
+    if (item.quantityRejected > item.quantityReceived) {
+      item.quantityRejected = item.quantityReceived;
+    }
+    if (item.quantityRejected < 0) {
+      item.quantityRejected = 0;
+    }
+    item.quantityAccepted = item.quantityReceived - item.quantityRejected;
+    item.status = item.quantityAccepted === item.quantityReceived ? 'Passed' : item.quantityAccepted === 0 ? 'Failed' : 'Passed';
+  }
+
   submitInspection() {
     const req = this.selectedRequest();
     if (!req) return;
@@ -169,36 +211,170 @@ export class InspectionComponent implements OnInit {
   }
 
   private createMRVFromInspection(req: InspectionRequest) {
+    const po = this.purchaseOrders().find(p => p.id === req.poId || p.poNumber === req.poNumber);
+
     // Auto-create MRV inside inventory
     const mrvList = this.mockDataService.mrvs();
     const mrvNum = `MRV-2026-0${mrvList.length + 1}`;
     
-    const mrvItems = req.items.map(item => ({
-      itemCode: item.itemCode,
-      itemName: item.itemName,
-      quantityOrdered: item.quantityOrdered,
-      quantityReceived: item.quantityAccepted,
-      unitPrice: 100, // mock price
-      totalPrice: item.quantityAccepted * 100,
-      uom: item.uom || 'PCS'
-    }));
+    const mrvItems = req.items.map(item => {
+      const poItem = po?.items.find(pi => pi.itemCode === item.itemCode);
+      const price = poItem?.unitPrice ?? 100;
+      return {
+        itemCode: item.itemCode,
+        itemName: item.itemName,
+        quantityOrdered: item.quantityOrdered,
+        quantityReceived: item.quantityAccepted,
+        unitPrice: price,
+        totalPrice: item.quantityAccepted * price,
+        uom: item.uom || 'PCS'
+      };
+    });
 
-    const total = mrvItems.reduce((acc, item) => acc + item.totalPrice, 0);
+    const subtotal = mrvItems.reduce((acc, item) => acc + item.totalPrice, 0);
+    const taxPercent = po ? po.taxPercent : 15;
+    const taxAmount = Math.round(subtotal * (taxPercent / 100));
+    const whtPercent = po ? po.withholdingTaxPercent : 2;
+    const whtAmount = Math.round(subtotal * (whtPercent / 100));
+    const totalAmount = subtotal + taxAmount - whtAmount;
 
     const newMRV = {
       id: `mrv-${Date.now()}`,
       voucherNumber: mrvNum,
       poId: req.poId,
       poNumber: req.poNumber,
-      warehouseId: 'w1',
+      warehouseId: 'wh1',
       receivedDate: new Date().toISOString().split('T')[0],
       receivedBy: req.inspectorName || 'John Doe',
       supplierName: req.vendorName,
-      status: 'Approved' as const, // auto approved
+      status: 'Posted' as const,
       items: mrvItems,
-      totalAmount: total
+      totalAmount: subtotal + taxAmount,
+      chargeType: po?.chargeType,
+      projectId: po?.projectId,
+      projectName: po?.projectName,
+      assetId: po?.assetId,
+      assetName: po?.assetName,
+      costCenter: po?.costCenter
     };
 
     this.mockDataService.mrvs.update(val => [...val, newMRV]);
+
+    // Create Supplier Invoice (SINV)
+    const invList = this.mockDataService.supplierInvoices();
+    const invNum = `INV-${po ? po.poNumber.replace('PO-', '') : 'GEN'}-${invList.length + 1}`;
+    const newInvoice = {
+      id: `ap-${req.poId}-${Date.now()}`,
+      invoiceNumber: invNum,
+      poId: req.poId,
+      poNumber: req.poNumber,
+      vendorId: req.vendorId,
+      vendorName: req.vendorName,
+      invoiceDate: new Date().toISOString().split('T')[0],
+      dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      subTotal: subtotal,
+      taxAmount: taxAmount,
+      totalAmount: totalAmount,
+      status: 'Paid' as const,
+      paymentTerms: po ? po.paymentTerms : 'Net 30',
+      chargeType: po ? po.chargeType : 'General Overhead',
+      projectId: po ? po.projectId : undefined,
+      projectName: po ? po.projectName : undefined,
+      assetId: po ? po.assetId : undefined,
+      assetName: po ? po.assetName : undefined,
+      costCenter: po ? po.costCenter : 'CC-GEN'
+    };
+
+    this.mockDataService.supplierInvoices.update(val => [...val, newInvoice]);
+
+    // Create Payment Voucher (PV)
+    const pvList = this.mockDataService.paymentVouchers();
+    const pvNum = `PV-2026-${po ? po.poNumber.replace('PO-', '') : 'GEN'}-${pvList.length + 1}`;
+    const newPV = {
+      id: `pv-${req.poId}-${Date.now()}`,
+      voucherNumber: pvNum,
+      paymentDate: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      vendorId: req.vendorId,
+      vendorName: req.vendorName,
+      bankAccountId: 'ba1',
+      bankAccountName: 'HSBC Corporate A/C',
+      paymentMethod: 'Bank Transfer' as const,
+      referenceNumber: `TXN-${Math.floor(Math.random() * 9000000) + 1000000}`,
+      amount: totalAmount,
+      status: 'Posted' as const,
+      invoicesPaid: [{ invoiceId: newInvoice.id, invoiceNumber: newInvoice.invoiceNumber, amountPaid: totalAmount }]
+    };
+
+    this.mockDataService.paymentVouchers.update(val => [...val, newPV]);
+
+    // Update PO itself with the actual received quantities and Completed status
+    if (po) {
+      this.mockDataService.purchaseOrders.update(pos => 
+        pos.map(p => {
+          if (p.id === po.id) {
+            return {
+              ...p,
+              status: 'Completed' as const,
+              items: p.items.map(pitem => {
+                const inspectedItem = req.items.find(ii => ii.itemCode === pitem.itemCode);
+                if (inspectedItem) {
+                  return {
+                    ...pitem,
+                    quantity: inspectedItem.quantityAccepted,
+                    totalPrice: inspectedItem.quantityAccepted * pitem.unitPrice
+                  };
+                }
+                return pitem;
+              }),
+              subtotal,
+              taxAmount,
+              withholdingTaxAmount: whtAmount,
+              totalAmount
+            };
+          }
+          return p;
+        })
+      );
+
+      // Log Vendor Communication Events for Receiving, Invoicing, and Payment
+      const timelineEvents = [
+        {
+          id: `ev-mrv-${Date.now()}`,
+          vendorId: po.vendorId,
+          date: newMRV.receivedDate,
+          eventType: 'Goods Received' as const,
+          title: 'Goods Received (MRV)',
+          description: `Items received at Rig Delta Warehouse under voucher ${newMRV.voucherNumber}. (Accepted ${subtotal} value)`,
+          referenceNumber: newMRV.voucherNumber,
+          performedBy: req.inspectorName || 'John Doe'
+        },
+        {
+          id: `ev-inv-${Date.now()}`,
+          vendorId: po.vendorId,
+          date: newInvoice.invoiceDate,
+          eventType: 'Invoice Submitted' as const,
+          title: 'Supplier Invoice Submitted',
+          description: `Supplier invoice ${newInvoice.invoiceNumber} submitted for PO ${po.poNumber}.`,
+          referenceNumber: newInvoice.invoiceNumber,
+          amount: newInvoice.totalAmount,
+          performedBy: 'Supplier Accounts'
+        },
+        {
+          id: `ev-pv-${Date.now()}`,
+          vendorId: po.vendorId,
+          date: newPV.paymentDate,
+          eventType: 'Payment Released' as const,
+          title: 'Supplier Payment Released',
+          description: `Payment voucher ${newPV.voucherNumber} released via Bank Transfer (Ref: ${newPV.referenceNumber}).`,
+          referenceNumber: newPV.referenceNumber,
+          amount: newPV.amount,
+          performedBy: 'Sophia Sterling (Finance Manager)'
+        }
+      ];
+
+      timelineEvents.forEach(ev => {
+        this.mockDataService.vendorTimeline.update(list => [...list, ev]);
+      });
+    }
   }
 }

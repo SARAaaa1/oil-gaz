@@ -724,27 +724,6 @@
                 </div>
               </div>
 
-              <!-- Country + Revenue -->
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label class="block font-bold text-slate-600 mb-1">Country <span class="text-red-500">*</span></label>
-                  <select [(ngModel)]="regCountry" class="w-full border border-slate-200 rounded-lg p-2 bg-slate-50 text-slate-800 focus:outline-none focus:border-indigo-400 font-semibold">
-                    @for (c of regCountries; track c) { <option [value]="c">{{ c }}</option> }
-                  </select>
-                </div>
-                <div>
-                  <label class="block font-bold text-slate-600 mb-1">Annual Revenue</label>
-                  <select [(ngModel)]="regAnnualRevenue" class="w-full border border-slate-200 rounded-lg p-2 bg-slate-50 text-slate-800 focus:outline-none focus:border-indigo-400 font-semibold">
-                    <option value="">— Select range —</option>
-                    <option value="under1m">Under $1M</option>
-                    <option value="1m-5m">$1M – $5M</option>
-                    <option value="5m-20m">$5M – $20M</option>
-                    <option value="20m-100m">$20M – $100M</option>
-                    <option value="over100m">Over $100M</option>
-                  </select>
-                </div>
-              </div>
-
               <!-- Address -->
               <div>
                 <label class="block font-bold text-slate-600 mb-1">Business Address <span class="text-red-500">*</span></label>

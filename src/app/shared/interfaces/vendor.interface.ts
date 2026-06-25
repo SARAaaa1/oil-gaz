@@ -61,14 +61,20 @@ export interface Vendor {
 export type VendorEventType =
   | 'Created'
   | 'RFQ Sent'
+  | 'RFQ Email Sent'
   | 'Quotation Received'
+  | 'Quotation Submitted'
   | 'PO Issued'
+  | 'PO Sent'
   | 'Goods Received'
   | 'Invoice Submitted'
   | 'Payment Released'
   | 'Evaluation Completed'
   | 'Status Changed'
-  | 'Document Uploaded';
+  | 'Document Uploaded'
+  | 'Clarification'
+  | 'Negotiation'
+  | 'Delivery Update';
 
 export interface VendorTimelineEvent {
   id: string;

@@ -1,0 +1,12 @@
+@media print {
+  body { background-color: white !important; color: black !important; }
+  .no-print,
+  .sidebar-container,
+  .topbar-container,
+  header, footer, nav, button,
+  .breadcrumbs-container { display: none !important; }
+  .printable-container { margin: 0 !important; padding: 0 !important; }
+  .printable-report { border: none !important; box-shadow: none !important; }
+  table { width: 100% !important; border-collapse: collapse !important; }
+  th, td { border-bottom: 1px solid #e2e8f0 !important; padding: 8px !important; }
+}

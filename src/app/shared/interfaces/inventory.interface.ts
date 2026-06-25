@@ -59,7 +59,16 @@ export interface MRV {
   status: 'Draft' | 'Pending Approval' | 'Approved' | 'Posted' | 'Cancelled';
   items: MRVItem[];
   totalAmount: number;
+
+  // Cost Allocation Dimensions
+  chargeType?: string;
+  projectId?: string;
+  projectName?: string;
+  assetId?: string;
+  assetName?: string;
+  costCenter?: string;
 }
+
 
 export interface MIVItem {
   itemCode: string;

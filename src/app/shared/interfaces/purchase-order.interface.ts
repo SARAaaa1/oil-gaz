@@ -35,8 +35,10 @@ export interface PurchaseOrder {
   vendorName: string;
   vendorTaxNumber: string;
   vendorAddress: string;
-  date: string;
+  vendorContact?: string;        // Supplier Contact Name/Email/Phone
+  date: string;                  // PO Date
   deliveryDate: string;
+  deliveryAddress?: string;      // Delivery Address
   costCenter: string;
   paymentTerms: string;
   status: PurchaseOrderStatus;
@@ -47,6 +49,26 @@ export interface PurchaseOrder {
   withholdingTaxPercent: number;
   withholdingTaxAmount: number;
   totalAmount: number;
+
+  // Commercial Terms
+  advancePayment?: number;       // e.g. 10% or absolute value
+  deliveryPayment?: number;      // e.g. 70% or absolute value
+  retentionAmount?: number;      // e.g. 10%
+  otherPaymentConditions?: string;
+
+  // Representatives Signatures
+  companyRepresentative?: string;
+  supplierRepresentative?: string;
+
+  // Contract Attachment
+  contractNumber?: string;       // e.g. CNT-2026-0001
+  contractTitle?: string;
+  contractDate?: string;
+  contractExpiryDate?: string;
+  contractFileUrl?: string;      // URL / blob path for download
+  contractFileName?: string;     // display filename, e.g. Contract_PO-2026-0001.pdf
+  contractFileSizeKb?: number;
+
   approvalWorkflow: POApprovalStep[];
 
   // Cost Allocation Dimensions (propagated from RFQ/PR)
@@ -56,3 +78,4 @@ export interface PurchaseOrder {
   assetId?: string;
   assetName?: string;
 }
+

@@ -152,7 +152,7 @@ export class PurchaseRequestsComponent implements OnInit {
           serviceDescription: '',
           scopeOfWork: '',
           estimatedCost: undefined,
-          allowPartialIssue: false,
+          allowPartialIssue: true,
           currentStock: 0,
           reservedQty: 0,
           availableQty: 0,
@@ -200,7 +200,7 @@ export class PurchaseRequestsComponent implements OnInit {
     item.serviceDescription = '';
     item.scopeOfWork = '';
     item.estimatedCost = undefined;
-    item.allowPartialIssue = false;
+    item.allowPartialIssue = true;
     this.updateAvailabilityInfo(index);
   }
 
@@ -218,7 +218,7 @@ export class PurchaseRequestsComponent implements OnInit {
       serviceDescription: '',
       scopeOfWork: '',
       estimatedCost: undefined,
-      allowPartialIssue: false,
+      allowPartialIssue: true,
       currentStock: 0,
       reservedQty: 0,
       availableQty: 0,
@@ -414,7 +414,11 @@ export class PurchaseRequestsComponent implements OnInit {
         if (item.itemType === 'Inventory Item') {
           return {
             ...item,
-            quantity: item.fulfillByPurchase!
+            quantity: item.fulfillByPurchase!,
+            fulfillFromStock: 0,
+            fulfillByPurchase: item.fulfillByPurchase!,
+            availableQty: 0,
+            shortageQty: item.fulfillByPurchase!
           };
         }
         return item;

@@ -12,7 +12,16 @@ export interface SupplierInvoice {
   totalAmount: number;
   status: 'Unpaid' | 'Partially Paid' | 'Paid' | 'Cancelled';
   paymentTerms: string;
+
+  // Cost Allocation Dimensions
+  chargeType?: string;
+  projectId?: string;
+  projectName?: string;
+  assetId?: string;
+  assetName?: string;
+  costCenter?: string;
 }
+
 
 export interface APAgingEntry {
   vendorId: string;

@@ -1,7 +1,7 @@
 import { Component, OnInit, signal, computed, inject, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { MockDataService } from '../../core/services/mock-data.service';
 import { BreadcrumbService } from '../../core/services/breadcrumb.service';
@@ -19,7 +19,7 @@ import { ApprovalHistoryComponent } from '../../shared/components/approval-histo
 @Component({
   selector: 'app-inventory',
   standalone: true,
-  imports: [CommonModule, FormsModule, TranslateModule, ApprovalHistoryComponent],
+  imports: [CommonModule, FormsModule, TranslateModule, ApprovalHistoryComponent, RouterLink],
   templateUrl: './inventory.component.html',
   styles: [],
   changeDetection: ChangeDetectionStrategy.OnPush
