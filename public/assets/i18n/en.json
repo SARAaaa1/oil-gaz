@@ -1414,6 +1414,7 @@
       "invited": "Invited",
       "submitted": "Submitted",
       "rfq_for_title": "RFQ for {{pr}} - {{dept}}",
+      "download_pr_pdf": "Download PR PDF",
       "err_missing_vendors_title": "Missing Vendors",
       "err_missing_vendors_desc": "Please select at least one vendor to invite to this RFQ.",
       "notif_dispatched_title": "RFQ Dispatched",
@@ -1425,7 +1426,13 @@
       "status_draft": "Draft",
       "status_awarded": "Awarded",
       "status_partially_responded": "Partially Responded",
-      "back": "Back"
+      "back": "Back",
+      "col_code": "Item Code",
+      "col_item": "Item / Description",
+      "col_qty": "Qty (UOM)",
+      "no_items": "No items found for this RFQ.",
+      "items_count": "items",
+      "selected": "Selected"
     },
     "quotation_comparison": {
       "breadcrumb": "Quotation Comparison",
@@ -1521,8 +1528,9 @@
       }
     },
     "rfq": {
-      "tab_vendors": "Invited Vendors",
-      "tab_responses": "Quotation Responses",
+      "tab_requisition": "Request & Materials",
+      "tab_vendors": "Suppliers & Invitations",
+      "tab_responses": "Quotations & Bids",
       "tab_comparison": "Quotation Comparison Matrix",
       "invitation_sent": "Invitation Sent",
       "quotation_date": "Quoted On",
@@ -1532,7 +1540,11 @@
       "notif_rejected_title": "Bid Rejected",
       "notif_rejected_desc": "Quotation from {{vendor}} has been rejected.",
       "notif_revision_title": "Revision Requested",
-      "notif_revision_desc": "Quotation revision request sent to {{vendor}}."
+      "notif_revision_desc": "Quotation revision request sent to {{vendor}}.",
+      "save_invites": "Save & Send Invites",
+      "save_invitations_desc": "You have selected new vendors. Save changes to send them RFQ invitations.",
+      "invited_already": "Invited",
+      "no_additional_vendors": "No other active vendors available."
     }
   },
   "projects": {

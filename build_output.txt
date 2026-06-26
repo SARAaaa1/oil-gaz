@@ -1,0 +1,52 @@
+﻿
+> oil-gas-erp@0.0.0 build
+> ng build --configuration development
+
+[33m>[39m Building...
+[32mظêأ[39m Building...
+Application bundle generation failed. [13.859 seconds]
+
+node.exe : [1m[33m[33mظû▓ [43;33m[[43;30mWARNING[43;33m][0m [1mTS-998113: ProcurementChainComponent is not 
+used within the template of RfqsComponent[0m [1m[35m[plugin angular-compiler][0m
+At line:1 char:1
++ & "C:\Program Files\nodejs/node.exe" "C:\Program Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ([1m[33m[33mظ...r-compiler][0m:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+
+    src/app/features/procurement/rfqs/rfqs.component.ts:17:56:
+[37m      17 ظ¤é ...nModule, FormsModule, TranslateModule, [32mProcurementChainComponent[37m],
+         ظـ╡                                           [32m~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[39m[22m
+[1m[31m[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Opening tag "span" not terminated.[0m 
+[1m[35m[plugin angular-compiler][0m
+
+    src/app/features/procurement/rfqs/rfqs.component.html:411:16:
+[37m      411 ظ¤é ...          [32m<span class="px-2 py-0.5 rounded-full text-[9px] fon[37m...
+          ظـ╡              [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component RfqsComponent.
+
+    src/app/features/procurement/rfqs/rfqs.component.ts:18:15:
+[37m      18 ظ¤é   templateUrl: [32m'./rfqs.component.html'[37m,
+         ظـ╡                [32m~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNG5002: Unexpected closing tag "span". It may happen when the tag has 
+already been closed by another tag. For more info see 
+https://www.w3.org/TR/html5/syntax.html#closing-elements-that-have-implied-end-tags[0m [1m[35m[plugin 
+angular-compiler][0m
+
+    src/app/features/procurement/rfqs/rfqs.component.html:422:44:
+[37m      422 ظ¤é                 >{{ selectedRFQ()!.status }}[32m</span>[37m
+          ظـ╡                                             [32m~~~~~~~[0m
+
+  Error occurs in the template of component RfqsComponent.
+
+    src/app/features/procurement/rfqs/rfqs.component.ts:18:15:
+[37m      18 ظ¤é   templateUrl: [32m'./rfqs.component.html'[37m,
+         ظـ╡                [32m~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[39m[22m

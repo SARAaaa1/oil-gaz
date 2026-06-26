@@ -137,7 +137,16 @@
               </div>
 
               <div class="sm:text-right space-y-1">
-                <div class="flex items-center sm:justify-end gap-2">
+                <div class="flex items-center sm:justify-end gap-2 no-print">
+                  <button
+                    (click)="printPO()"
+                    class="px-2.5 py-1 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-lg transition-colors shadow-sm text-[10px] flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                    </svg>
+                    <span>{{ 'inventory.print' | translate }}</span>
+                  </button>
                   <span class="text-[10px] text-slate-400 font-semibold uppercase tracking-widest">PURCHASE ORDER</span>
                 </div>
                 <p class="text-lg font-black text-slate-900 tracking-tight">{{ activePO()?.poNumber }}</p>
@@ -262,6 +271,87 @@
 
           </div>
         </div>
+
+        <!-- ── 1.5. RFQ BIDDERS SUMMARY ── -->
+        @if (getRelatedRFQ(activePO())) {
+          <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-4 no-print animate-fade-in">
+            <div class="flex items-center gap-3 border-b border-slate-100 pb-3">
+              <div class="w-9 h-9 rounded-xl bg-indigo-50 flex items-center justify-center">
+                <svg class="w-4.5 h-4.5 text-indigo-650" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2H-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                </svg>
+              </div>
+              <div>
+                <h3 class="text-sm font-black text-slate-800">Quotation Comparison & Bidders</h3>
+                <p class="text-[10px] text-slate-400 font-semibold">الموردين وعروض الأسعار المنافسة لطلب العروض: {{ activePO()?.rfqNumber }}</p>
+              </div>
+            </div>
+
+            <div class="overflow-x-auto rounded-xl border border-slate-100">
+              <table class="w-full text-left text-xs">
+                <thead>
+                  <tr class="bg-slate-50 text-slate-400 font-bold border-b border-slate-100">
+                    <th class="px-4 py-3">Vendor / المورد</th>
+                    <th class="px-4 py-3">RFQ Bid Status</th>
+                    <th class="px-4 py-3 text-right">Quoted Amount</th>
+                    <th class="px-4 py-3 text-center">Lead Time</th>
+                    <th class="px-4 py-3 text-center">Award Status</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-50 font-semibold text-slate-700 bg-white">
+                  @for (v of getRelatedRFQ(activePO())?.vendors; track v.vendorId) {
+                    <tr class="hover:bg-slate-50/50 transition-colors">
+                      <td class="px-4 py-3">
+                        <span class="font-bold text-slate-800 block">{{ v.vendorName }}</span>
+                        <span class="text-[9px] text-slate-400 font-mono block mt-0.5">Invited: {{ v.invitationSentDate }}</span>
+                      </td>
+                      <td class="px-4 py-3">
+                        <span 
+                          class="px-2.5 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider"
+                          [class.bg-amber-100]="v.status === 'Pending'"
+                          [class.text-accent]="v.status === 'Pending'"
+                          [class.bg-blue-100]="v.status === 'Submitted'"
+                          [class.text-primary]="v.status === 'Submitted'"
+                          [class.bg-green-100]="v.status === 'Accepted'"
+                          [class.text-success]="v.status === 'Accepted'"
+                          [class.bg-red-100]="v.status === 'Rejected'"
+                          [class.text-danger]="v.status === 'Rejected'"
+                          [class.bg-purple-100]="v.status === 'Revision Requested'"
+                          [class.text-purple-650]="v.status === 'Revision Requested'"
+                        >
+                          {{ v.status }}
+                        </span>
+                      </td>
+                      <td class="px-4 py-3 text-right font-mono font-bold">
+                        @if (getRFQQuotationForVendor(getRelatedRFQ(activePO()), v.vendorId); as q) {
+                          ${{ q.totalAmount | number:'1.0-0' }}
+                        } @else {
+                          <span class="text-slate-400 text-[10px]">No quotation</span>
+                        }
+                      </td>
+                      <td class="px-4 py-3 text-center font-mono text-slate-500">
+                        @if (getRFQQuotationForVendor(getRelatedRFQ(activePO()), v.vendorId); as q) {
+                          {{ q.deliveryWeeks }} Weeks
+                        } @else {
+                          <span class="text-slate-400">—</span>
+                        }
+                      </td>
+                      <td class="px-4 py-3 text-center">
+                        @if (activePO()?.vendorId === v.vendorId) {
+                          <span class="px-2 py-0.5 rounded-full text-[9px] font-black tracking-wide bg-green-500 text-white shadow-xs">
+                            Awarded / Selected
+                          </span>
+                        } @else {
+                          <span class="text-slate-400 text-[10px]">Not Selected</span>
+                        }
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </div>
+        }
 
         <!-- ── 2. CONTRACT SECTION ── -->
         <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
@@ -555,3 +645,135 @@
   </div>
 
 </div>
+
+  <!-- ============================================================ -->
+  <!-- PRINT-ONLY PO DOCUMENT SHEET                                 -->
+  <!-- ============================================================ -->
+  @if (activePO()) {
+    <div class="printable-container printable-po p-6 space-y-6 hidden print:block">
+      <!-- Document Header -->
+      <div class="border-b-2 border-slate-300 pb-4 flex justify-between items-start">
+        <div>
+          <h2 class="text-xl font-black text-slate-800">PETROFLOW SERVICES LTD</h2>
+          <p class="text-xs text-slate-400 font-semibold">100 Drilling Boulevard, Suite 500 · Houston, TX 77002</p>
+          <h1 class="text-lg font-black text-slate-800 mt-4">أمر شراء رسمي — PURCHASE ORDER VOUCHER</h1>
+        </div>
+        <div class="text-right text-xs text-slate-500 font-semibold space-y-1">
+          <p class="font-mono">PO Number: <span class="font-bold text-slate-900">{{ activePO()?.poNumber }}</span></p>
+          <p>PO Date: {{ activePO()?.date }}</p>
+          <p>Delivery Due Date: {{ activePO()?.deliveryDate }}</p>
+          <p>Linked RFQ: {{ activePO()?.rfqNumber || 'N/A' }}</p>
+          <p>Source PR: {{ activePO()?.rootProcurementNumber }}</p>
+        </div>
+      </div>
+
+      <!-- Parties Grid -->
+      <div class="grid grid-cols-2 gap-6 pt-4">
+        <!-- Vendor info -->
+        <div class="border border-slate-200 rounded-lg p-4 space-y-1">
+          <span class="block text-[9px] uppercase font-bold text-slate-400">Supplier / المورد</span>
+          <p class="font-bold text-slate-800 text-sm">{{ activePO()?.vendorName }}</p>
+          <p class="text-slate-500 text-[10px] leading-relaxed">{{ activePO()?.vendorAddress }}</p>
+          <p class="text-slate-400 text-[9px] font-mono">Tax Registration ID: {{ activePO()?.vendorTaxNumber }}</p>
+        </div>
+
+        <!-- Logistics info -->
+        <div class="border border-slate-200 rounded-lg p-4 space-y-2 text-xs">
+          <span class="block text-[9px] uppercase font-bold text-slate-400">Logistics & Budget / الخدمات اللوجستية</span>
+          <div class="grid grid-cols-2 gap-2 text-[10px]">
+            <div>
+              <span class="text-slate-400 block">Cost Center:</span>
+              <span class="text-slate-800 font-bold font-mono">{{ activePO()?.costCenter }}</span>
+            </div>
+            <div>
+              <span class="text-slate-400 block">Payment Terms:</span>
+              <span class="text-slate-800 font-bold">{{ activePO()?.paymentTerms }}</span>
+            </div>
+            <div>
+              <span class="text-slate-400 block">Charge Allocation:</span>
+              <span class="text-slate-800 font-bold">{{ activePO()?.chargeType || 'N/A' }}</span>
+            </div>
+            <div>
+              <span class="text-slate-400 block">Project:</span>
+              <span class="text-slate-800 font-bold">{{ activePO()?.projectName || 'N/A' }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Line Items Table -->
+      <div class="space-y-2">
+        <h3 class="text-xs font-black text-slate-800 uppercase tracking-widest">Line Items — المواد والأصناف المطلوبة</h3>
+        <div class="border border-slate-200 rounded-lg overflow-hidden">
+          <table class="w-full text-left border-collapse text-xs">
+            <thead>
+              <tr class="bg-slate-50 text-slate-700 border-b-2 border-slate-300 font-bold">
+                <th class="p-3 w-8">#</th>
+                <th class="p-3">Item Code</th>
+                <th class="p-3">Material Name & Description</th>
+                <th class="p-3 text-right">Quantity</th>
+                <th class="p-3 text-center">Unit</th>
+                <th class="p-3 text-right">Unit Price</th>
+                <th class="p-3 text-right">Line Total</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 font-medium text-slate-700">
+              @for (item of activePO()?.items; track item.id; let idx = $index) {
+                <tr>
+                  <td class="p-3 text-slate-450 font-bold">{{ idx + 1 }}</td>
+                  <td class="p-3 font-mono text-slate-500 text-[10px]">{{ item.itemCode }}</td>
+                  <td class="p-3 font-bold">{{ item.itemName }}</td>
+                  <td class="p-3 text-right font-mono font-black text-slate-900">{{ item.quantity }}</td>
+                  <td class="p-3 text-center text-slate-450">{{ item.uom }}</td>
+                  <td class="p-3 text-right font-mono">${{ item.unitPrice | number:'1.2-2' }}</td>
+                  <td class="p-3 text-right font-mono font-black text-slate-900">${{ item.totalPrice | number:'1.0-0' }}</td>
+                </tr>
+              }
+            </tbody>
+            <!-- Financial breakdown inside print table -->
+            <tfoot class="border-t-2 border-slate-200 bg-slate-50">
+              <tr class="text-[10px] text-slate-500 font-semibold">
+                <td colspan="6" class="p-2 text-right">Subtotal / المجموع الفرعي</td>
+                <td class="p-2 text-right font-mono font-bold text-slate-700">${{ activePO()?.subtotal | number:'1.0-0' }}</td>
+              </tr>
+              <tr class="text-[10px] text-slate-500 font-semibold">
+                <td colspan="6" class="p-1.5 text-right">VAT / ضريبة القيمة المضافة ({{ activePO()?.taxPercent }}%)</td>
+                <td class="p-1.5 text-right font-mono text-slate-650">${{ activePO()?.taxAmount | number:'1.0-0' }}</td>
+              </tr>
+              <tr class="text-[10px] text-red-500 font-semibold">
+                <td colspan="6" class="p-1.5 text-right">WHT Retained / ضريبة الاستقطاع ({{ activePO()?.withholdingTaxPercent }}%)</td>
+                <td class="p-1.5 text-right font-mono">-${{ activePO()?.withholdingTaxAmount | number:'1.0-0' }}</td>
+              </tr>
+              <tr class="text-xs font-black text-slate-900 border-t border-slate-300">
+                <td colspan="6" class="p-2.5 text-right">Grand Total / الإجمالي الكلي</td>
+                <td class="p-2.5 text-right font-mono text-primary">${{ activePO()?.totalAmount | number:'1.0-0' }}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+
+      <!-- Approvals Sign-off Status -->
+      <div class="pt-6 border-t border-slate-200 space-y-4">
+        <h3 class="text-xs font-black text-slate-800 uppercase tracking-widest">Authorized Signatures & Audit Trail / الاعتمادات والتوقيعات</h3>
+        <div class="grid grid-cols-3 gap-4">
+          @for (step of activePO()?.approvalWorkflow; track step.role) {
+            <div class="border border-slate-200 rounded-lg p-3 bg-slate-50/50 space-y-1">
+              <span class="block text-[8px] font-black text-slate-400 uppercase tracking-wider">{{ step.role }}</span>
+              <p class="font-bold text-slate-850 text-xs">
+                {{ step.status === 'Approved' ? step.approverName : 'Awaiting Approval' }}
+              </p>
+              <span class="text-[8px] font-mono text-slate-400 block mt-0.5">
+                {{ step.status === 'Approved' ? ('Date: ' + step.actionDate) : 'Status: Pending' }}
+              </span>
+              @if (step.comments) {
+                <p class="text-[9px] text-slate-500 italic mt-1 border-t border-slate-100 pt-1">
+                  "{{ step.comments }}"
+                </p>
+              }
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+  }

@@ -6,8 +6,9 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { MockDataService } from '../../../core/services/mock-data.service';
 import { BreadcrumbService } from '../../../core/services/breadcrumb.service';
 import { NotificationService } from '../../../core/services/notification.service';
+import { AuditService } from '../../../core/services/audit.service';
 import { RFQ, RFQVendor, RFQQuotation } from '../../../shared/interfaces/rfq.interface';
-import { PurchaseRequest } from '../../../shared/interfaces/purchase-request.interface';
+import { PurchaseRequest, PurchaseRequestItem } from '../../../shared/interfaces/purchase-request.interface';
 import { ProcurementChainComponent } from '../../../shared/components/procurement-chain/procurement-chain.component';
 
 @Component({
@@ -15,13 +16,14 @@ import { ProcurementChainComponent } from '../../../shared/components/procuremen
   standalone: true,
   imports: [CommonModule, FormsModule, TranslateModule, ProcurementChainComponent],
   templateUrl: './rfqs.component.html',
-  styles: [],
+  styleUrls: ['./rfqs.component.css'],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class RfqsComponent implements OnInit {
   private readonly mockDataService = inject(MockDataService);
   private readonly breadcrumbService = inject(BreadcrumbService);
   private readonly notificationService = inject(NotificationService);
+  private readonly auditService = inject(AuditService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly translate = inject(TranslateService);
@@ -123,7 +125,9 @@ export class RfqsComponent implements OnInit {
         const rfq = this.rfqs().find(r => r.id === rfqId);
         if (rfq) {
           this.selectedRFQ.set(rfq);
-          this.activeDetailsTab.set('vendors');
+          this.activeDetailsTab.set('requisition');
+          const invitedIds = new Set(rfq.vendors.map(v => v.vendorId));
+          this.detailsInvitedVendorIds.set(invitedIds);
         }
       }
     });
@@ -194,7 +198,9 @@ export class RfqsComponent implements OnInit {
   // --- DETAILS ---
   viewRFQDetails(rfq: RFQ) {
     this.selectedRFQ.set(rfq);
-    this.activeDetailsTab.set('vendors');
+    this.activeDetailsTab.set('requisition');
+    const invitedIds = new Set(rfq.vendors.map(v => v.vendorId));
+    this.detailsInvitedVendorIds.set(invitedIds);
   }
 
   closeRFQDetails() {
@@ -348,7 +354,70 @@ export class RfqsComponent implements OnInit {
     this.closeBiddingModal();
   }
 
-  readonly activeDetailsTab = signal<'vendors' | 'responses' | 'comparison'>('vendors');
+  readonly activeDetailsTab = signal<'requisition' | 'vendors' | 'responses'>('requisition');
+  readonly detailsInvitedVendorIds = signal<Set<string>>(new Set());
+
+  toggleDetailsVendorSelection(id: string) {
+    const current = new Set(this.detailsInvitedVendorIds());
+    if (current.has(id)) {
+      current.delete(id);
+    } else {
+      current.add(id);
+    }
+    this.detailsInvitedVendorIds.set(current);
+  }
+
+  isDetailsVendorSelected(id: string): boolean {
+    return this.detailsInvitedVendorIds().has(id);
+  }
+
+  isAlreadyInvited(vendorId: string): boolean {
+    const rfq = this.selectedRFQ();
+    if (!rfq) return false;
+    return rfq.vendors.some(v => v.vendorId === vendorId);
+  }
+
+  getRFQVendor(vendorId: string): RFQVendor | null {
+    const rfq = this.selectedRFQ();
+    if (!rfq) return null;
+    return rfq.vendors.find(v => v.vendorId === vendorId) || null;
+  }
+
+  hasNewVendorSelections(): boolean {
+    const rfq = this.selectedRFQ();
+    if (!rfq) return false;
+    const currentInvitedIds = new Set(rfq.vendors.map(v => v.vendorId));
+    return Array.from(this.detailsInvitedVendorIds()).some(id => !currentInvitedIds.has(id));
+  }
+
+  getRFQSourcePR(rfq: RFQ | null): PurchaseRequest | null {
+    if (!rfq) return null;
+    return this.purchaseRequests().find(p => p.id === rfq.purchaseRequestId) || null;
+  }
+
+  saveDetailsInvitedVendors() {
+    const rfq = this.selectedRFQ();
+    if (!rfq) return;
+
+    const currentInvitedIds = new Set(rfq.vendors.map(v => v.vendorId));
+    const newVendorIds = Array.from(this.detailsInvitedVendorIds()).filter(id => !currentInvitedIds.has(id));
+
+    if (newVendorIds.length === 0) return;
+
+    this.mockDataService.inviteVendorsToRFQ(rfq.id, newVendorIds);
+
+    this.notificationService.success(
+      this.translate.instant('procurement.rfqs.notif_dispatched_title'),
+      this.translate.instant('procurement.rfqs.notif_dispatched_desc', { rfq: rfq.rfqNumber })
+    );
+
+    const updated = this.rfqs().find(r => r.id === rfq.id);
+    if (updated) {
+      this.selectedRFQ.set(updated);
+      const invitedIds = new Set(updated.vendors.map(v => v.vendorId));
+      this.detailsInvitedVendorIds.set(invitedIds);
+    }
+  }
 
   awardVendor(quote: RFQQuotation) {
     const rfq = this.selectedRFQ();
@@ -418,5 +487,36 @@ export class RfqsComponent implements OnInit {
 
     const updated = this.rfqs().find(r => r.id === rfq.id);
     if (updated) this.selectedRFQ.set(updated);
+  }
+
+  getRFQItems(rfq: RFQ | null): PurchaseRequestItem[] {
+    if (!rfq) return [];
+    const pr = this.purchaseRequests().find(p => p.id === rfq.purchaseRequestId);
+    return pr ? pr.items : [];
+  }
+
+  printRFQ(rfq: RFQ) {
+    this.auditService.log({
+      action: 'Status Change',
+      module: 'Procurement',
+      entityName: 'RFQ',
+      entityId: rfq.rfqNumber,
+      details: 'User printed/downloaded RFQ document ' + rfq.rfqNumber
+    });
+    window.print();
+  }
+
+  printSourcePR() {
+    const pr = this.selectedPRSource();
+    if (!pr) return;
+
+    this.auditService.log({
+      action: 'Status Change',
+      module: 'Procurement',
+      entityName: 'Purchase Request',
+      entityId: pr.requestNumber,
+      details: 'User printed/downloaded PR document from RFQ creation form: ' + pr.requestNumber
+    });
+    window.print();
   }
 }

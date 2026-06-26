@@ -1,6 +1,6 @@
 import { Injectable, signal, computed } from '@angular/core';
 import { PurchaseRequest, PurchaseRequestItem, PurchaseRequestStatus } from '../../shared/interfaces/purchase-request.interface';
-import { RFQ, RFQQuotation, RFQStatus } from '../../shared/interfaces/rfq.interface';
+import { RFQ, RFQQuotation, RFQStatus, RFQVendor } from '../../shared/interfaces/rfq.interface';
 import { PurchaseOrder, POItem, PurchaseOrderStatus } from '../../shared/interfaces/purchase-order.interface';
 import { Vendor, VendorTimelineEvent, VendorLedgerEntry, VendorDocument } from '../../shared/interfaces/vendor.interface';
 import { Rig, RigTimesheet, TimesheetDayRow } from '../../shared/interfaces/operations.interface';
@@ -1447,6 +1447,56 @@ export class MockDataService {
   cancelRFQ(rfqId: string) {
     this.rfqs.update(list =>
       list.map(r => r.id === rfqId ? { ...r, status: 'Cancelled' as const } : r)
+    );
+  }
+
+  inviteVendorsToRFQ(rfqId: string, vendorIds: string[]) {
+    const rfq = this.rfqs().find(r => r.id === rfqId);
+    if (!rfq) return;
+
+    const currentVendorIds = new Set(rfq.vendors.map(v => v.vendorId));
+    const newVendors: RFQVendor[] = [];
+
+    vendorIds.forEach(vid => {
+      if (!currentVendorIds.has(vid)) {
+        const vend = this.vendors().find(v => v.id === vid);
+        if (vend) {
+          newVendors.push({
+            vendorId: vid,
+            vendorName: vend.vendorName,
+            contactEmail: vend.contactEmail,
+            status: 'Pending' as const,
+            invitationSentDate: new Date().toISOString().split('T')[0]
+          });
+
+          // Log timeline event for new vendor
+          const newEvent = {
+            id: `ev-rfq-${Math.random().toString(36).substr(2, 9)}`,
+            vendorId: vid,
+            date: new Date().toISOString().split('T')[0],
+            eventType: 'RFQ Email Sent' as const,
+            title: 'RFQ Invitation Sent',
+            description: `RFQ Email Sent for ${rfq.rfqNumber}: "${rfq.title}"`,
+            referenceNumber: rfq.rfqNumber,
+            performedBy: 'Jane Smith (Procurement Specialist)'
+          };
+          this.vendorTimeline.update(evs => [...evs, newEvent]);
+        }
+      }
+    });
+
+    if (newVendors.length === 0) return;
+
+    this.rfqs.update(list =>
+      list.map(r => {
+        if (r.id !== rfqId) return r;
+        const nextStatus = r.status === 'Draft' ? 'Sent' : r.status;
+        return {
+          ...r,
+          status: nextStatus,
+          vendors: [...r.vendors, ...newVendors]
+        };
+      })
     );
   }
 

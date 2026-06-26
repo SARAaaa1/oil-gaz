@@ -1,0 +1,80 @@
+/* Style rules for RFQ Printing & Display */
+
+@media screen {
+  .printable-rfq {
+    display: none !important;
+  }
+}
+
+@media print {
+  body {
+    background-color: white !important;
+    color: black !important;
+  }
+
+  /* Hide UI elements during print */
+  .no-print,
+  .sidebar-container,
+  .topbar-container,
+  header,
+  footer,
+  nav,
+  button,
+  .breadcrumbs-container,
+  aside,
+  main > :not(.printable-container),
+  .flex-1.flex.flex-col.h-full.overflow-hidden > header,
+  .space-y-6.animate-fade-in {
+    display: none !important;
+  }
+
+  /* Force printable container block layout */
+  .printable-container {
+    display: block !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .printable-rfq {
+    display: block !important;
+    width: 100% !important;
+    font-size: 11px !important;
+    line-height: 1.4 !important;
+    color: #1e293b !important;
+  }
+
+  /* Printable Report Grid and borders styling */
+  .printable-report {
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+  }
+
+  table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    margin-top: 10px !important;
+  }
+
+  th {
+    background-color: #f1f5f9 !important;
+    color: #0f172a !important;
+    font-weight: bold !important;
+    border-bottom: 2px solid #cbd5e1 !important;
+    padding: 8px !important;
+    text-align: left !important;
+  }
+
+  td {
+    border-bottom: 1px solid #e2e8f0 !important;
+    padding: 8px !important;
+    text-align: left !important;
+  }
+
+  /* RTL alignment if applicable */
+  html[dir="rtl"] th,
+  html[dir="rtl"] td {
+    text-align: right !important;
+  }
+}

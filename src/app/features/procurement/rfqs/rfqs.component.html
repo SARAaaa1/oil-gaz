@@ -1,4 +1,4 @@
-<div class="space-y-6">
+﻿<div class="space-y-6">
 
   <!-- Header -->
   <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
@@ -11,9 +11,21 @@
   @if (isFormView()) {
     <!-- NEW RFQ FORM -->
     <div class="bg-white rounded-xl border border-slate-100 shadow-sm p-6 max-w-4xl mx-auto animate-fade-in text-xs font-semibold text-slate-600">
-      <div class="pb-4 mb-6 border-b border-slate-150">
-        <h2 class="text-sm font-bold text-slate-800">{{ 'procurement.rfqs.form_title' | translate }}</h2>
-        <p class="text-[10px] text-slate-400 font-semibold mt-0.5">{{ 'procurement.rfqs.creating_rfq_for' | translate }}: {{ selectedPRSource()?.requestNumber }}</p>
+      <div class="pb-4 mb-6 border-b border-slate-150 flex justify-between items-center flex-wrap gap-3">
+        <div>
+          <h2 class="text-sm font-bold text-slate-800">{{ 'procurement.rfqs.form_title' | translate }}</h2>
+          <p class="text-[10px] text-slate-400 font-semibold mt-0.5">{{ 'procurement.rfqs.creating_rfq_for' | translate }}: {{ selectedPRSource()?.requestNumber }}</p>
+        </div>
+        <button 
+          type="button"
+          (click)="printSourcePR()"
+          class="px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-lg transition-colors shadow-sm text-xs flex items-center gap-2"
+        >
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+          </svg>
+          <span>{{ 'procurement.rfqs.download_pr_pdf' | translate }}</span>
+        </button>
       </div>
 
       <!-- Source Requisition Header & Project Details -->
@@ -400,7 +412,7 @@
       <div (click)="closeRFQDetails()" class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"></div>
 
       <!-- Drawer Content -->
-      <div class="relative w-full max-w-4xl bg-white h-full shadow-2xl flex flex-col p-6 overflow-y-auto animate-slide-left z-10 border-l border-slate-200">
+      <div class="relative w-full max-w-4xl bg-white h-full shadow-2xl flex flex-col p-6 animate-slide-left z-10 border-l border-slate-200">
         
         <!-- Header -->
         <div class="flex items-center justify-between pb-4 border-b border-slate-150 shrink-0">
@@ -432,7 +444,18 @@
         </div>
 
         <!-- Details Tab headers -->
-        <div class="flex border-b border-slate-150 text-xs font-bold space-x-6 shrink-0 py-3 mb-4">
+        <div class="flex border-b border-slate-150 text-xs font-bold space-x-6 shrink-0 py-3 mb-4 rtl:space-x-reverse">
+          <button 
+            type="button"
+            (click)="activeDetailsTab.set('requisition')" 
+            [class.border-primary]="activeDetailsTab() === 'requisition'" 
+            [class.text-primary]="activeDetailsTab() === 'requisition'" 
+            [class.border-transparent]="activeDetailsTab() !== 'requisition'" 
+            [class.text-slate-500]="activeDetailsTab() !== 'requisition'" 
+            class="pb-2.5 border-b-2 transition-all"
+          >
+            {{ 'procurement.rfq.tab_requisition' | translate }}
+          </button>
           <button 
             type="button"
             (click)="activeDetailsTab.set('vendors')" 
@@ -458,48 +481,261 @@
         </div>
 
         <!-- Scrollable Tab Content Area -->
-        <div class="flex-1 overflow-y-auto space-y-4">
-          
-          <!-- TAB 1: VENDORS -->
-          @if (activeDetailsTab() === 'vendors') {
-            <div class="space-y-3 animate-fade-in">
-              <span class="block text-[10px] text-slate-400 uppercase mb-2">{{ 'procurement.rfqs.vendors_status' | translate }}</span>
-              <div class="space-y-2">
-                @for (v of selectedRFQ()?.vendors; track v.vendorId) {
-                  <div class="p-3 bg-slate-50 border border-slate-150 rounded-lg flex items-center justify-between">
-                    <div>
-                      <span class="font-bold text-slate-800 block text-xs">{{ v.vendorName }}</span>
-                      <span class="text-[9px] text-slate-400 block mt-0.5 font-mono">
-                        {{ 'procurement.rfq.invitation_sent' | translate }}: {{ v.invitationSentDate || selectedRFQ()?.createdDate }}
-                        @if (v.quotationSubmittedDate) {
-                          | {{ 'procurement.rfq.quotation_date' | translate }}: {{ v.quotationSubmittedDate }}
-                        }
+        <div class="flex-1 min-h-0 overflow-y-auto space-y-4 pb-2">
+
+          <!-- TAB 1: REQUISITION DETAILS & ITEMS -->
+          @if (activeDetailsTab() === 'requisition') {
+            <div class="space-y-4 animate-fade-in text-xs font-semibold text-slate-650">
+
+              <!-- PR Details Card -->
+              @if (getRFQSourcePR(selectedRFQ()); as sourcePR) {
+                <div class="bg-gradient-to-br from-slate-50 to-blue-50/30 rounded-xl border border-slate-150 p-5 space-y-4 text-slate-600">
+                  <!-- PR Header -->
+                  <div class="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-slate-200/60">
+                    <div class="flex items-center gap-2">
+                      <span class="p-1.5 bg-blue-50 text-blue-600 rounded-lg">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
                       </span>
+                      <div>
+                        <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">{{ 'procurement.rfqs.linked_requisition' | translate }}</span>
+                        <h3 class="text-sm font-black text-slate-800 font-mono">{{ sourcePR.requestNumber }}</h3>
+                      </div>
                     </div>
-                    <span 
-                      class="px-2.5 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider"
-                      [class.bg-amber-100]="v.status === 'Pending'"
-                      [class.text-accent]="v.status === 'Pending'"
-                      [class.bg-blue-100]="v.status === 'Submitted'"
-                      [class.text-primary]="v.status === 'Submitted'"
-                      [class.bg-green-100]="v.status === 'Accepted'"
-                      [class.text-success]="v.status === 'Accepted'"
-                      [class.bg-red-100]="v.status === 'Rejected'"
-                      [class.text-danger]="v.status === 'Rejected'"
-                      [class.bg-purple-100]="v.status === 'Revision Requested'"
-                      [class.text-purple-600]="v.status === 'Revision Requested'"
-                    >
-                      {{ 'vendor.portal.status_' + v.status.toLowerCase().replace(' ', '_') | translate }}
-                    </span>
+                    <div class="flex items-center gap-2">
+                      <span class="px-2.5 py-0.5 rounded-full text-[9px] font-bold bg-blue-100 text-blue-800 uppercase tracking-wider">
+                        {{ sourcePR.status }}
+                      </span>
+                      <!-- Download PR PDF Button -->
+                      <button
+                        type="button"
+                        (click)="printRFQ(selectedRFQ()!)"
+                        class="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-900 text-white rounded-lg text-[10px] font-bold transition-colors shadow-sm"
+                      >
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                        </svg>
+                        {{ 'procurement.rfqs.download_pr_pdf' | translate }}
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- PR Metadata Grid -->
+                  <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                    <div>
+                      <span class="block text-[10px] text-slate-400 font-bold uppercase tracking-wider">{{ 'procurement.purchase_requests.department' | translate }}</span>
+                      <span class="font-bold text-slate-700 block mt-1">{{ sourcePR.department }}</span>
+                    </div>
+                    <div>
+                      <span class="block text-[10px] text-slate-400 font-bold uppercase tracking-wider">{{ 'procurement.purchase_requests.cost_center' | translate }}</span>
+                      <span class="font-bold text-slate-700 font-mono block mt-1">{{ sourcePR.costCenter }}</span>
+                    </div>
+                    <div>
+                      <span class="block text-[10px] text-slate-400 font-bold uppercase tracking-wider">{{ 'procurement.purchase_requests.requested_by' | translate }}</span>
+                      <span class="font-bold text-slate-700 block mt-1">{{ sourcePR.requestedBy }}</span>
+                    </div>
+                    <div>
+                      <span class="block text-[10px] text-slate-400 font-bold uppercase tracking-wider">{{ 'procurement.purchase_requests.required_date' | translate }}</span>
+                      <span class="font-bold text-slate-700 block mt-1">{{ sourcePR.requiredDate }}</span>
+                    </div>
+                  </div>
+
+                  <!-- Project / Asset / Charge -->
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-3 border-t border-slate-200/60">
+                    <div>
+                      <span class="block text-[10px] text-slate-400 font-bold uppercase tracking-wider">{{ 'procurement.purchase_requests.charge_allocation' | translate }}</span>
+                      <span class="font-bold text-slate-700 block mt-1">{{ sourcePR.chargeType || '—' }}</span>
+                    </div>
+                    @if (sourcePR.projectId) {
+                      <div>
+                        <span class="block text-[10px] text-slate-400 font-bold uppercase tracking-wider">{{ 'procurement.purchase_requests.project_details' | translate }}</span>
+                        <span class="font-bold text-primary font-mono block mt-1">{{ sourcePR.projectId }}</span>
+                        <span class="text-slate-500 font-semibold">{{ sourcePR.projectName }}</span>
+                      </div>
+                    }
+                    @if (sourcePR.assetId) {
+                      <div>
+                        <span class="block text-[10px] text-slate-400 font-bold uppercase tracking-wider">{{ 'procurement.purchase_requests.asset_details' | translate }}</span>
+                        <span class="font-bold text-primary font-mono block mt-1">{{ sourcePR.assetId }}</span>
+                        <span class="text-slate-500 font-semibold">{{ sourcePR.assetName }}</span>
+                      </div>
+                    }
+                  </div>
+
+                  @if (sourcePR.description) {
+                    <div class="pt-3 border-t border-slate-200/60">
+                      <span class="block text-[10px] text-slate-400 font-bold uppercase tracking-wider">{{ 'procurement.purchase_requests.description' | translate }}</span>
+                      <p class="text-slate-600 leading-relaxed font-semibold mt-1">{{ sourcePR.description }}</p>
+                    </div>
+                  }
+                </div>
+              } @else {
+                <div class="p-4 bg-amber-50 border border-amber-100 rounded-xl text-amber-700 text-xs font-semibold">
+                  <p>{{ 'procurement.rfqs.linked_requisition' | translate }}: {{ selectedRFQ()?.purchaseRequestNumber }}</p>
+                </div>
+              }
+
+              <!-- Material Items Table -->
+              <div class="bg-white rounded-xl border border-slate-150 overflow-hidden shadow-sm">
+                <div class="p-3 bg-slate-50 border-b border-slate-150 flex items-center justify-between">
+                  <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">{{ 'procurement.rfqs.material_items' | translate }}</span>
+                  <span class="px-2 py-0.5 bg-slate-200 text-slate-700 rounded-full text-[9px] font-bold">{{ getRFQItems(selectedRFQ()).length }} {{ 'procurement.rfqs.items_count' | translate }}</span>
+                </div>
+                @if (getRFQItems(selectedRFQ()).length === 0) {
+                  <p class="p-6 text-center text-slate-400 text-xs">{{ 'procurement.rfqs.no_items' | translate }}</p>
+                } @else {
+                  <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse text-xs rtl:text-right">
+                      <thead>
+                        <tr class="bg-slate-100/50 text-[10px] font-black text-slate-500 uppercase tracking-wider border-b border-slate-150">
+                          <th class="p-3 w-8 text-center">#</th>
+                          <th class="p-3">{{ 'procurement.rfqs.col_code' | translate }}</th>
+                          <th class="p-3">{{ 'procurement.rfqs.col_item' | translate }}</th>
+                          <th class="p-3 text-right rtl:text-left">{{ 'procurement.rfqs.col_qty' | translate }}</th>
+                        </tr>
+                      </thead>
+                      <tbody class="divide-y divide-slate-100">
+                        @for (item of getRFQItems(selectedRFQ()); track item.id; let idx = $index) {
+                          <tr class="hover:bg-slate-50 transition-colors">
+                            <td class="p-3 text-slate-400 font-bold text-center">{{ idx + 1 }}</td>
+                            <td class="p-3 font-mono font-bold text-slate-800 select-all">{{ item.itemCode || 'NEW' }}</td>
+                            <td class="p-3">
+                              <p class="font-bold text-slate-700">{{ item.itemName }}</p>
+                              @if (item.notes) {
+                                <p class="text-[10px] text-slate-400 font-semibold mt-0.5">{{ item.notes }}</p>
+                              }
+                            </td>
+                            <td class="p-3 text-right rtl:text-left font-black text-slate-800 whitespace-nowrap">{{ item.quantity }} {{ item.uom }}</td>
+                          </tr>
+                        }
+                      </tbody>
+                    </table>
                   </div>
                 }
               </div>
+
+              <!-- Procurement Journey inside requisition tab -->
+              @if (selectedRFQ()?.documentNumber) {
+                <div class="mt-2">
+                  <app-procurement-chain [documentNumber]="selectedRFQ()!.documentNumber"></app-procurement-chain>
+                </div>
+              }
             </div>
           }
 
-          <!-- TAB 2: RESPONSES -->
+          <!-- TAB 2: VENDORS SELECTION & STATUS -->
+          @if (activeDetailsTab() === 'vendors') {
+            <div class="space-y-4 animate-fade-in text-xs font-semibold text-slate-650">
+
+              <!-- Search & Header -->
+              <div class="pb-2 border-b border-slate-150 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div>
+                  <h3 class="text-xs font-black text-slate-400 uppercase tracking-widest">{{ 'procurement.rfqs.vendors_heading' | translate }}</h3>
+                  <p class="text-[10px] text-slate-500 mt-0.5">{{ 'procurement.rfqs.vendors_desc' | translate }}</p>
+                </div>
+                <div class="relative w-full sm:w-64">
+                  <input 
+                    type="text" 
+                    name="vendorSearchDetails"
+                    [ngModel]="vendorSearchQuery()"
+                    (ngModelChange)="vendorSearchQuery.set($event)"
+                    placeholder="Search vendors..."
+                    class="w-full bg-slate-50 border border-slate-200 rounded-lg pl-8 pr-3 py-1.5 text-xs text-slate-800 focus:outline-none focus:border-accent"
+                  >
+                  <svg class="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                </div>
+              </div>
+
+              <!-- Vendor Selection Grid -->
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[380px] overflow-y-auto pr-1">
+                @for (vend of displayedVendors(); track vend.id) {
+                  @let invited = isAlreadyInvited(vend.id);
+                  @let rfqVendor = getRFQVendor(vend.id);
+                  <div 
+                    (click)="!invited && toggleDetailsVendorSelection(vend.id)"
+                    [class.border-accent]="isDetailsVendorSelected(vend.id) && !invited"
+                    [class.bg-amber-50]="isDetailsVendorSelected(vend.id) && !invited"
+                    [class.border-green-200]="invited"
+                    [class.bg-green-50]="invited"
+                    class="p-3.5 rounded-xl border border-slate-200 transition-all flex items-start gap-3 select-none bg-white relative shadow-sm"
+                    [class.cursor-pointer]="!invited"
+                    [class.cursor-default]="invited"
+                  >
+                    @if (isDetailsVendorSelected(vend.id) && !invited) {
+                      <div class="absolute left-0 top-0 bottom-0 w-1 bg-accent rounded-l-xl"></div>
+                    }
+                    @if (invited) {
+                      <div class="absolute left-0 top-0 bottom-0 w-1 bg-green-400 rounded-l-xl"></div>
+                    }
+                    <input 
+                      type="checkbox" 
+                      [checked]="isDetailsVendorSelected(vend.id)"
+                      [disabled]="invited"
+                      class="rounded w-4 h-4 mt-0.5 shrink-0 accent-accent disabled:opacity-60"
+                      (click)="$event.stopPropagation(); !invited && toggleDetailsVendorSelection(vend.id)"
+                    >
+                    <div class="space-y-1 w-full min-w-0">
+                      <div class="flex items-start justify-between gap-2">
+                        <div class="min-w-0">
+                          <p class="font-black text-xs text-slate-800 leading-tight truncate">{{ vend.vendorName }}</p>
+                          @if (vend.arabicName) {
+                            <p class="text-[10px] text-slate-400 font-bold mt-0.5">{{ vend.arabicName }}</p>
+                          }
+                        </div>
+                        @if (invited && rfqVendor) {
+                          <span 
+                            class="px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider shrink-0"
+                            [class.bg-amber-100]="rfqVendor.status === 'Pending'"
+                            [class.text-amber-700]="rfqVendor.status === 'Pending'"
+                            [class.bg-blue-100]="rfqVendor.status === 'Submitted'"
+                            [class.text-blue-700]="rfqVendor.status === 'Submitted'"
+                            [class.bg-green-100]="rfqVendor.status === 'Accepted'"
+                            [class.text-green-700]="rfqVendor.status === 'Accepted'"
+                            [class.bg-red-100]="rfqVendor.status === 'Rejected'"
+                            [class.text-red-700]="rfqVendor.status === 'Rejected'"
+                            [class.bg-purple-100]="rfqVendor.status === 'Revision Requested'"
+                            [class.text-purple-700]="rfqVendor.status === 'Revision Requested'"
+                          >
+                            {{ rfqVendor.status }}
+                          </span>
+                        }
+                      </div>
+                      <div class="flex items-center justify-between text-[10px] text-slate-400 font-bold gap-2">
+                        <span class="truncate">{{ vend.category }}</span>
+                        <span class="truncate">{{ vend.contactEmail }}</span>
+                      </div>
+                    </div>
+                  </div>
+                }
+              </div>
+
+              <!-- Save new invitations banner -->
+              @if (hasNewVendorSelections()) {
+                <div class="p-3 bg-blue-50 border border-blue-100 rounded-xl flex items-center justify-between gap-3 animate-fade-in">
+                  <div class="flex items-center gap-2">
+                    <svg class="w-4 h-4 text-blue-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span class="text-xs text-blue-800 font-semibold">{{ 'procurement.rfq.save_invitations_desc' | translate }}</span>
+                  </div>
+                  <button 
+                    type="button"
+                    (click)="saveDetailsInvitedVendors()"
+                    class="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition-colors text-xs shrink-0"
+                  >
+                    {{ 'procurement.rfq.save_invites' | translate }}
+                  </button>
+                </div>
+              }
+            </div>
+          }
+
+          <!-- TAB 3: RESPONSES & QUOTATIONS -->
           @if (activeDetailsTab() === 'responses') {
-            <div class="space-y-3 animate-fade-in">
+            <div class="space-y-3 animate-fade-in text-xs font-semibold text-slate-650">
               <span class="block text-[10px] text-slate-400 uppercase mb-2">{{ 'procurement.rfqs.quotations_logged' | translate }}</span>
               <div class="space-y-3">
                 @for (q of selectedRFQ()?.quotations; track q.id) {
@@ -515,7 +751,6 @@
                       </div>
                     </div>
 
-                    <!-- Items & files breakdown -->
                     <div class="grid grid-cols-2 gap-4 text-[11px]">
                       <div>
                         <span class="text-slate-400 block font-bold">{{ 'procurement.quotation_comparison.delivery_time' | translate }}</span>
@@ -537,7 +772,7 @@
                         <div class="flex flex-wrap gap-2">
                           @for (file of q.attachments; track file.name) {
                             <div class="flex items-center gap-1.5 bg-white border border-slate-100 px-2 py-1 rounded font-mono font-bold text-slate-700">
-                              <svg class="w-3.5 h-3.5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <svg class="w-3.5 h-3.5 text-red-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
                               </svg>
                               <span>{{ file.name }}</span>
@@ -547,26 +782,54 @@
                         </div>
                       </div>
                     }
+
+                    <!-- Evaluation Actions -->
+                    <div class="pt-2 border-t border-slate-100 flex items-center gap-2 flex-wrap">
+                      @if (selectedRFQ()?.status !== 'Awarded' && q.status !== 'Accepted') {
+                        <button 
+                          (click)="awardVendor(q)"
+                          class="px-2.5 py-1 bg-green-600 hover:bg-green-700 text-white rounded-lg text-[10px] font-bold transition-colors"
+                        >
+                          {{ 'procurement.rfq.action_award' | translate }}
+                        </button>
+                        @if (q.status !== 'Revision Requested') {
+                          <button 
+                            (click)="requestRevisionVendor(q)"
+                            class="px-2.5 py-1 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-[10px] font-bold transition-colors"
+                          >
+                            {{ 'procurement.rfq.action_revision' | translate }}
+                          </button>
+                        }
+                        @if (q.status !== 'Rejected') {
+                          <button 
+                            (click)="rejectVendor(q)"
+                            class="px-2.5 py-1 bg-red-500 hover:bg-red-600 text-white rounded-lg text-[10px] font-bold transition-colors"
+                          >
+                            {{ 'procurement.rfq.action_reject' | translate }}
+                          </button>
+                        }
+                      } @else if (q.status === 'Accepted') {
+                        <span class="px-2.5 py-1 bg-green-100 text-green-800 rounded-lg text-[10px] font-bold uppercase tracking-wider">
+                          &#10003; {{ 'procurement.rfqs.selected' | translate }}
+                        </span>
+                      }
+                    </div>
                   </div>
                 } @empty {
-                  <p class="text-slate-400 py-6 text-center bg-slate-50 rounded-md border border-dashed border-slate-200">
-                    {{ 'procurement.rfqs.no_quotations' | translate }}
-                  </p>
+                  <div class="py-10 text-center bg-slate-50 rounded-xl border border-dashed border-slate-200">
+                    <svg class="w-8 h-8 text-slate-300 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <p class="text-slate-400 text-xs font-semibold">{{ 'procurement.rfqs.no_quotations' | translate }}</p>
+                  </div>
                 }
               </div>
             </div>
           }
-          
-
         </div>
 
-        <!-- Procurement Journey Stepper (Timeline Navigation) -->
-        @if (selectedRFQ()?.documentNumber) {
-          <app-procurement-chain [documentNumber]="selectedRFQ()!.documentNumber"></app-procurement-chain>
-        }
-
         <!-- Footer Actions -->
-        <div class="pt-6 mt-auto border-t border-slate-150 shrink-0 flex items-center justify-between gap-3">
+        <div class="pt-4 mt-auto border-t border-slate-150 shrink-0 flex items-center justify-between gap-3">
           <div>
             @if (canAddQuotation(selectedRFQ()!)) {
               <button 
@@ -580,16 +843,28 @@
               </button>
             }
           </div>
-          <button 
-            (click)="closeRFQDetails()"
-            class="px-4 py-2 border border-slate-200 rounded-lg hover:bg-slate-50 text-slate-650 font-bold text-xs transition-colors"
-          >
-            {{ 'procurement.rfqs.close_panel' | translate }}
-          </button>
+          <div class="flex items-center gap-2">
+            <button
+              (click)="printRFQ(selectedRFQ()!)"
+              class="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-lg transition-colors shadow-sm text-xs flex items-center gap-2"
+            >
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+              </svg>
+              <span>{{ 'inventory.print' | translate }}</span>
+            </button>
+            <button 
+              (click)="closeRFQDetails()"
+              class="px-4 py-2 border border-slate-200 rounded-lg hover:bg-slate-50 text-slate-650 font-bold text-xs transition-colors"
+            >
+              {{ 'procurement.rfqs.close_panel' | translate }}
+            </button>
+          </div>
         </div>
       </div>
     </div>
   }
+
 
   <!-- SUBMIT QUOTATION MODAL -->
   @if (biddingRFQ()) {
@@ -821,6 +1096,225 @@
           </div>
         </div>
       </div>
+    </div>
+  }
+
+  <!-- ============================================================ -->
+  <!-- PRINT-ONLY RFQ DOCUMENT SHEET                                 -->
+  <!-- ============================================================ -->
+  @if (selectedRFQ()) {
+    <div class="printable-container printable-rfq p-6 space-y-6 hidden print:block">
+      @if (selectedRFQ()) {
+        <!-- Document Header -->
+        <div class="border-b-2 border-slate-300 pb-4 flex justify-between items-start">
+          <div>
+            <h2 class="text-xl font-black text-slate-800">PETROFLOW SERVICES LTD</h2>
+            <p class="text-xs text-slate-400 font-semibold">100 Drilling Boulevard, Suite 500 · Houston, TX 77002</p>
+            <h1 class="text-lg font-black text-slate-800 mt-4">طلب عروض أسعار — REQUEST FOR QUOTATION</h1>
+          </div>
+          <div class="text-right text-xs text-slate-500 font-semibold space-y-1">
+            <p class="font-mono">RFQ Number: <span class="font-bold text-slate-900">{{ selectedRFQ()?.rfqNumber }}</span></p>
+            <p>Created Date: {{ selectedRFQ()?.createdDate }}</p>
+            <p class="text-red-650 font-bold">Bidding Deadline: {{ selectedRFQ()?.deadlineDate }}</p>
+            <p>Source PR: {{ selectedRFQ()?.purchaseRequestNumber }}</p>
+          </div>
+        </div>
+
+        <!-- Allocation & Details Grid -->
+        <div class="grid grid-cols-2 gap-4 text-xs font-semibold text-slate-600 bg-slate-50 p-4 rounded-lg">
+          <div>
+            <span class="block text-[9px] uppercase font-bold text-slate-400">RFQ Title / العنوان</span>
+            <span class="text-slate-900 font-bold">{{ selectedRFQ()?.title }}</span>
+          </div>
+          <div>
+            <span class="block text-[9px] uppercase font-bold text-slate-400">Charge Allocation / التكلفة</span>
+            <span class="text-slate-900 font-bold">{{ selectedRFQ()?.chargeType || 'Direct Cost' }}</span>
+          </div>
+          <div>
+            <span class="block text-[9px] uppercase font-bold text-slate-400">Cost Center / مركز التكلفة</span>
+            <span class="text-slate-900 font-bold font-mono">{{ selectedRFQ()?.costCenter || 'N/A' }}</span>
+          </div>
+          <div>
+            <span class="block text-[9px] uppercase font-bold text-slate-400">Project Name / المشروع</span>
+            <span class="text-slate-900 font-bold">{{ selectedRFQ()?.projectName || 'N/A' }}</span>
+          </div>
+        </div>
+
+        <!-- Materials Table -->
+        <div class="space-y-2">
+          <h3 class="text-xs font-black text-slate-800 uppercase tracking-widest">Requested Items — الأصناف والمواد المطلوبة</h3>
+          <div class="border border-slate-200 rounded-lg overflow-hidden">
+            <table class="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr class="bg-slate-50 text-slate-700 border-b-2 border-slate-300 font-bold">
+                  <th class="p-3 w-8">#</th>
+                  <th class="p-3">Item Code</th>
+                  <th class="p-3">Material Name & Description</th>
+                  <th class="p-3 text-right">Quantity</th>
+                  <th class="p-3 text-center">Unit</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100 font-medium text-slate-700">
+                @for (item of getRFQItems(selectedRFQ()); track item.id; let idx = $index) {
+                  <tr>
+                    <td class="p-3 text-slate-400 font-bold">{{ idx + 1 }}</td>
+                    <td class="p-3 font-mono font-bold text-slate-800">{{ item.itemCode }}</td>
+                    <td class="p-3">
+                      <p class="font-bold">{{ item.itemName }}</p>
+                      @if (item.notes) {
+                        <p class="text-[10px] text-slate-400 font-semibold mt-0.5">{{ item.notes }}</p>
+                      }
+                    </td>
+                    <td class="p-3 text-right font-mono font-black text-slate-900">{{ item.quantity }}</td>
+                    <td class="p-3 text-center text-slate-400">{{ item.uom }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Invited Bidders List -->
+        <div class="space-y-2 pt-4">
+          <h3 class="text-xs font-black text-slate-800 uppercase tracking-widest">Invited Vendors / الموردين المدعوين</h3>
+          <ul class="list-disc pl-5 space-y-1 text-xs text-slate-650">
+            @for (v of selectedRFQ()?.vendors; track v.vendorId) {
+              <li>
+                <span class="font-bold text-slate-800">{{ v.vendorName }}</span>
+                <span class="text-slate-400"> (Email: {{ v.contactEmail }})</span>
+              </li>
+            }
+          </ul>
+        </div>
+
+        <!-- Instructions & Signatures -->
+        <div class="pt-6 border-t border-slate-200 space-y-6 text-xs text-slate-700">
+          <div>
+            <h4 class="font-black text-slate-800 uppercase text-[10px] tracking-wide mb-1">Instructions to the Supplier / تعليمات للمورد:</h4>
+            <ul class="list-decimal pl-5 space-y-1 text-slate-500 leading-relaxed font-medium">
+              <li>Please refer to the RFQ number in all communication. / يرجى الإشارة إلى رقم طلب عرض السعر في جميع المراسلات.</li>
+              <li>Submit your quotation (technical and commercial) before the deadline date. / تقديم عرض السعر الفني والمالي قبل تاريخ انتهاء المهلة.</li>
+              <li>Prices should be quoted excluding/including taxes per standard agreements. / يجب تقديم الأسعار شاملة أو غير شاملة الضرائب حسب الاتفاقيات المعيارية.</li>
+              <li>Indicate payment terms and delivery lead time in weeks. / تحديد شروط الدفع وفترة التوريد بالأسابيع.</li>
+            </ul>
+          </div>
+
+          <div class="grid grid-cols-2 gap-6 pt-6 border-t border-slate-100 text-xs font-semibold text-slate-700">
+            <div>
+              <p class="text-slate-400 text-[10px] uppercase font-bold tracking-wider">Prepared By / أعده</p>
+              <div class="mt-4 border-b border-slate-250 w-48 h-6 flex items-end">
+                <span class="text-slate-400 italic text-[10px] pr-2">Procurement Specialist</span>
+              </div>
+            </div>
+            <div>
+              <p class="text-slate-400 text-[10px] uppercase font-bold tracking-wider">Authorized Manager Approval / اعتماد مدير المشتريات</p>
+              <div class="mt-4 border-b border-slate-250 w-48 h-6 flex items-end">
+                <span class="text-slate-400 italic text-[10px] pr-2">Frank Jones</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      } @else if (selectedPRSource()) {
+        <!-- PR Print Layout -->
+        @let pr = selectedPRSource();
+        <!-- Document Header -->
+        <div class="border-b-2 border-slate-300 pb-4 flex justify-between items-start">
+          <div>
+            <h2 class="text-xl font-black text-slate-800">PETROFLOW SERVICES LTD</h2>
+            <p class="text-xs text-slate-400 font-semibold">100 Drilling Boulevard, Suite 500 · Houston, TX 77002</p>
+            <h1 class="text-lg font-black text-slate-800 mt-4">طلب شراء — PURCHASE REQUISITION</h1>
+          </div>
+          <div class="text-right text-xs text-slate-500 font-semibold space-y-1">
+            <p class="font-mono">PR Number: <span class="font-bold text-slate-900">{{ pr?.requestNumber }}</span></p>
+            <p>Required Date: {{ pr?.requiredDate }}</p>
+            <p>Department: {{ pr?.department }}</p>
+            <p>Cost Center: {{ pr?.costCenter }}</p>
+          </div>
+        </div>
+
+        <!-- Allocation & Details Grid -->
+        <div class="grid grid-cols-2 gap-4 text-xs font-semibold text-slate-650 bg-slate-50 p-4 rounded-lg">
+          <div>
+            <span class="block text-[9px] uppercase font-bold text-slate-400">Requested By / مقدم الطلب</span>
+            <span class="text-slate-900 font-bold block mt-1">{{ pr?.requestedBy }}</span>
+          </div>
+          <div>
+            <span class="block text-[9px] uppercase font-bold text-slate-400">Charge Allocation / التكلفة</span>
+            <span class="text-slate-900 font-bold block mt-1">{{ pr?.chargeType || 'Direct Cost' }}</span>
+          </div>
+          @if (pr?.projectId) {
+            <div>
+              <span class="block text-[9px] uppercase font-bold text-slate-400">Project / المشروع</span>
+              <span class="text-slate-900 font-bold block mt-1">{{ pr?.projectId }} - {{ pr?.projectName }}</span>
+            </div>
+          }
+          @if (pr?.assetId) {
+            <div>
+              <span class="block text-[9px] uppercase font-bold text-slate-400">Asset / الأصل</span>
+              <span class="text-slate-900 font-bold block mt-1">{{ pr?.assetId }} - {{ pr?.assetName }}</span>
+            </div>
+          }
+        </div>
+
+        @if (pr?.description) {
+          <div class="text-xs text-slate-700 bg-slate-50 p-4 rounded-lg">
+            <span class="block text-[9px] uppercase font-bold text-slate-400">Scope of Work / Description</span>
+            <p class="font-semibold mt-1 leading-relaxed text-slate-600">{{ pr?.description }}</p>
+          </div>
+        }
+
+        <!-- Materials Table -->
+        <div class="space-y-2">
+          <h3 class="text-xs font-black text-slate-800 uppercase tracking-widest">Requested Items — الأصناف والمواد المطلوبة</h3>
+          <div class="border border-slate-200 rounded-lg overflow-hidden">
+            <table class="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr class="bg-slate-50 text-slate-700 border-b-2 border-slate-300 font-bold">
+                  <th class="p-3 w-8">#</th>
+                  <th class="p-3">Item Code</th>
+                  <th class="p-3">Material Name & Description</th>
+                  <th class="p-3 text-right">Quantity</th>
+                  <th class="p-3 text-center">Unit</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100 font-medium text-slate-700">
+                @for (item of pr?.items; track item.id; let idx = $index) {
+                  <tr>
+                    <td class="p-3 text-slate-400 font-bold">{{ idx + 1 }}</td>
+                    <td class="p-3 font-mono font-bold text-slate-800">{{ item.itemCode || 'NEW-ITEM' }}</td>
+                    <td class="p-3">
+                      <p class="font-bold">{{ item.itemName }}</p>
+                      @if (item.notes) {
+                        <p class="text-[10px] text-slate-400 font-semibold mt-0.5">{{ item.notes }}</p>
+                      }
+                    </td>
+                    <td class="p-3 text-right font-mono font-black text-slate-900">{{ item.quantity }}</td>
+                    <td class="p-3 text-center text-slate-400">{{ item.uom }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Signature lines -->
+        <div class="pt-6 border-t border-slate-200 space-y-6 text-xs text-slate-750">
+          <div class="grid grid-cols-2 gap-6 pt-6 border-t border-slate-100 text-xs font-semibold text-slate-700">
+            <div>
+              <p class="text-slate-400 text-[10px] uppercase font-bold tracking-wider">Requested By / مقدم الطلب</p>
+              <div class="mt-4 border-b border-slate-250 w-48 h-6 flex items-end">
+                <span class="text-slate-900 font-bold text-[10px] pr-2">{{ pr?.requestedBy }}</span>
+              </div>
+            </div>
+            <div>
+              <p class="text-slate-400 text-[10px] uppercase font-bold tracking-wider">Authorized Approval / الاعتماد المعتمد</p>
+              <div class="mt-4 border-b border-slate-250 w-48 h-6 flex items-end">
+                <span class="text-slate-500 italic text-[10px] pr-2">Approved / معتمد</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      }
     </div>
   }
 

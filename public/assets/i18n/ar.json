@@ -1412,6 +1412,7 @@
       "invited": "تمت دعوته",
       "submitted": "تم التقديم",
       "rfq_for_title": "طلب تسعير لـ {{pr}} - {{dept}}",
+      "download_pr_pdf": "تحميل طلب الشراء PDF",
       "err_missing_vendors_title": "موردون مفقودون",
       "err_missing_vendors_desc": "يرجى اختيار مورد واحد على الأقل لدعوته لطلب التسعير هذا.",
       "notif_dispatched_title": "تم إرسال طلب التسعير",
@@ -1423,7 +1424,13 @@
       "status_draft": "مسودة",
       "status_awarded": "تم الترسية",
       "status_partially_responded": "استجابة جزئية",
-      "back": "رجوع"
+      "back": "رجوع",
+      "col_code": "كود الصنف",
+      "col_item": "الصنف / الوصف",
+      "col_qty": "الكمية (وحدة القياس)",
+      "no_items": "لا توجد أصناف لهذا الطلب.",
+      "items_count": "أصناف",
+      "selected": "مُختار"
     },
     "quotation_comparison": {
       "breadcrumb": "مقارنة عروض الأسعار",
@@ -1519,8 +1526,9 @@
       }
     },
     "rfq": {
-      "tab_vendors": "الموردين المدعوين",
-      "tab_responses": "عروض الأسعار المقدمة",
+      "tab_requisition": "الطلب والمواد",
+      "tab_vendors": "الموردين والدعوات",
+      "tab_responses": "العروض والردود",
       "tab_comparison": "جدول مقارنة عروض الأسعار",
       "invitation_sent": "تم إرسال الدعوة",
       "quotation_date": "تاريخ تقديم العرض",
@@ -1530,7 +1538,11 @@
       "notif_rejected_title": "تم رفض العرض",
       "notif_rejected_desc": "تم رفض عرض السعر المقدم من {{vendor}}.",
       "notif_revision_title": "طلب مراجعة العرض",
-      "notif_revision_desc": "تم إرسال طلب مراجعة عرض السعر إلى {{vendor}}."
+      "notif_revision_desc": "تم إرسال طلب مراجعة عرض السعر إلى {{vendor}}.",
+      "save_invites": "حفظ وإرسال الدعوات",
+      "save_invitations_desc": "لقد قمت باختيار موردين جدد. قم بحفظ التعديلات لإرسال دعوات التسعير لهم.",
+      "invited_already": "تمت دعوته",
+      "no_additional_vendors": "لا يوجد موردين نشطين آخرين."
     }
   },
   "projects": {

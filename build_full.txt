@@ -1,0 +1,44 @@
+﻿
+> oil-gas-erp@0.0.0 build
+> ng build --configuration development
+
+[33m>[39m Building...
+[32mظêأ[39m Building...
+[1mInitial chunk files[22m[2m | [22m[1mNames[22m                        [2m | [22m [1mRaw size[22m
+[32mchunk-A4CIGHDE.js[39m  [2m | [22m[2m-[22m                            [2m | [22m  [36m1.09 MB[39m[2m | [22m
+[32mchunk-CGTNYA2R.js[39m  [2m | [22m[2m-[22m                            [2m | [22m[36m346.29 kB[39m[2m | [22m
+[32mchunk-XF6EAURV.js[39m  [2m | [22m[2m-[22m                            [2m | [22m[36m214.43 kB[39m[2m | [22m
+[32mmain.js[39m            [2m | [22m[2mmain[22m                         [2m | [22m[36m176.98 kB[39m[2m | [22m
+[32mstyles.css[39m         [2m | [22m[2mstyles[22m                       [2m | [22m[36m157.81 kB[39m[2m | [22m
+[32mpolyfills.js[39m       [2m | [22m[2mpolyfills[22m                    [2m | [22m [36m89.77 kB[39m[2m | [22m
+[32mchunk-Y3HTV2VH.js[39m  [2m | [22m[2m-[22m                            [2m | [22m [36m20.33 kB[39m[2m | [22m
+[32mchunk-RG3LQOJI.js[39m  [2m | [22m[2m-[22m                            [2m | [22m  [36m9.73 kB[39m[2m | [22m
+[32mchunk-HZNED5YQ.js[39m  [2m | [22m[2m-[22m                            [2m | [22m  [36m3.20 kB[39m[2m | [22m
+[32mchunk-AOMRLH45.js[39m  [2m | [22m[2m-[22m                            [2m | [22m  [36m1.75 kB[39m[2m | [22m
+[32mchunk-WTBISNF5.js[39m  [2m | [22m[2m-[22m                            [2m | [22m  [36m1.60 kB[39m[2m | [22m
+[32mchunk-F37GK5JE.js[39m  [2m | [22m[2m-[22m                            [2m | [22m[36m868 bytes[39m[2m | [22m
+
+[1m [22m                  [2m | [22m[1mInitial total[22m                [2m | [22m  [1m2.12 MB[22m
+
+[1mLazy chunk files[22m   [2m | [22m[1mNames[22m                        [2m | [22m [1mRaw size[22m
+[32mchunk-ZV2CORBS.js[39m  [2m | [22m[2minventory-component[22m          [2m | [22m[36m353.35 kB[39m[2m | [22m
+[32mchunk-3E5O5XHI.js[39m  [2m | [22m[2mprojects-component[22m           [2m | [22m[36m271.18 kB[39m[2m | [22m
+[32mchunk-HHNZH4ZJ.js[39m  [2m | [22m[2mvendors-component[22m            [2m | [22m[36m219.74 kB[39m[2m | [22m
+[32mchunk-J7F2EC6C.js[39m  [2m | [22m[2mcontracts-component[22m          [2m | [22m[36m163.75 kB[39m[2m | [22m
+[32mchunk-VVAIOZ34.js[39m  [2m | [22m[2mrfqs-component[22m               [2m | [22m[36m163.18 kB[39m[2m | [22m
+[32mchunk-LY5ZAURN.js[39m  [2m | [22m[2mpurchase-requests-component[22m  [2m | [22m[36m154.43 kB[39m[2m | [22m
+[32mchunk-TXGAFLN5.js[39m  [2m | [22m[2mpurchase-orders-component[22m    [2m | [22m[36m152.98 kB[39m[2m | [22m
+[32mchunk-6OHZPSAK.js[39m  [2m | [22m[2mhse-component[22m                [2m | [22m[36m152.20 kB[39m[2m | [22m
+[32mchunk-K46TD3JO.js[39m  [2m | [22m[2maccounts-payable-component[22m   [2m | [22m[36m127.77 kB[39m[2m | [22m
+[32mchunk-L5RNMDLI.js[39m  [2m | [22m[2maccounts-receivable-component[22m[2m | [22m[36m106.17 kB[39m[2m | [22m
+[32mchunk-CSJWJ2HQ.js[39m  [2m | [22m[2m-[22m                            [2m | [22m [36m98.16 kB[39m[2m | [22m
+[32mchunk-EX43OHV2.js[39m  [2m | [22m[2mgeneral-ledger-component[22m     [2m | [22m [36m97.91 kB[39m[2m | [22m
+[32mchunk-WUR44UTX.js[39m  [2m | [22m[2mdars-component[22m               [2m | [22m [36m96.54 kB[39m[2m | [22m
+[32mchunk-JOGUTLE6.js[39m  [2m | [22m[2mfuel-component[22m               [2m | [22m [36m86.69 kB[39m[2m | [22m
+[32mchunk-DT2YSFZY.js[39m  [2m | [22m[2mdashboard-component[22m          [2m | [22m [36m84.77 kB[39m[2m | [22m
+[2m...and 36 more lazy chunks files. Use "--verbose" to show all the files.[22m
+
+Application bundle generation complete. [19.175 seconds]
+
+Output location: D:\c\mycompany\gas service\dist\oil-gas-erp
+

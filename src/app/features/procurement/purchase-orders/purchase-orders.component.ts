@@ -7,6 +7,7 @@ import { MockDataService } from '../../../core/services/mock-data.service';
 import { BreadcrumbService } from '../../../core/services/breadcrumb.service';
 import { NotificationService } from '../../../core/services/notification.service';
 import { PurchaseOrder } from '../../../shared/interfaces/purchase-order.interface';
+import { RFQ } from '../../../shared/interfaces/rfq.interface';
 import { AuditService } from '../../../core/services/audit.service';
 import { ProcurementChainComponent } from '../../../shared/components/procurement-chain/procurement-chain.component';
 
@@ -15,7 +16,7 @@ import { ProcurementChainComponent } from '../../../shared/components/procuremen
   standalone: true,
   imports: [CommonModule, FormsModule, TranslateModule, ProcurementChainComponent],
   templateUrl: './purchase-orders.component.html',
-  styles: [],
+  styleUrls: ['./purchase-orders.component.css'],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class PurchaseOrdersComponent implements OnInit {
@@ -29,6 +30,7 @@ export class PurchaseOrdersComponent implements OnInit {
 
   // States
   readonly purchaseOrders = this.mockDataService.purchaseOrders;
+  readonly rfqs = this.mockDataService.rfqs;
 
   readonly selectedPOId = signal<string | null>(null);
   readonly searchQuery = signal<string>('');
@@ -309,5 +311,32 @@ export class PurchaseOrdersComponent implements OnInit {
     if (!kb) return '';
     if (kb >= 1024) return `${(kb / 1024).toFixed(1)} MB`;
     return `${kb} KB`;
+  }
+
+  getRelatedRFQ(po: PurchaseOrder | null): RFQ | null {
+    if (!po || !po.rfqId) return null;
+    return this.rfqs().find(r => r.id === po.rfqId) || null;
+  }
+
+  getRFQQuotationForVendor(rfq: RFQ | null, vendorId: string): any {
+    if (!rfq) return null;
+    return rfq.quotations.find(q => q.vendorId === vendorId) || null;
+  }
+
+  printPO() {
+    const po = this.activePO();
+    if (!po) return;
+
+    this.auditService.log(
+      'Status Change',
+      'Procurement',
+      'PurchaseOrder',
+      po.id,
+      po.status,
+      po.status,
+      'User printed/downloaded PO document ' + po.poNumber
+    );
+
+    window.print();
   }
 }
