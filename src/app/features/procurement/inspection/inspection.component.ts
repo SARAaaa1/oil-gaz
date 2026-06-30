@@ -247,7 +247,7 @@ export class InspectionComponent implements OnInit {
       receivedDate: new Date().toISOString().split('T')[0],
       receivedBy: req.inspectorName || 'John Doe',
       supplierName: req.vendorName,
-      status: 'Posted' as const,
+      status: 'Pending Approval' as const,
       items: mrvItems,
       totalAmount: subtotal + taxAmount,
       chargeType: po?.chargeType,
@@ -260,83 +260,8 @@ export class InspectionComponent implements OnInit {
 
     this.mockDataService.mrvs.update(val => [...val, newMRV]);
 
-    // Create Supplier Invoice (SINV)
-    const invList = this.mockDataService.supplierInvoices();
-    const invNum = `INV-${po ? po.poNumber.replace('PO-', '') : 'GEN'}-${invList.length + 1}`;
-    const newInvoice = {
-      id: `ap-${req.poId}-${Date.now()}`,
-      invoiceNumber: invNum,
-      poId: req.poId,
-      poNumber: req.poNumber,
-      vendorId: req.vendorId,
-      vendorName: req.vendorName,
-      invoiceDate: new Date().toISOString().split('T')[0],
-      dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      subTotal: subtotal,
-      taxAmount: taxAmount,
-      totalAmount: totalAmount,
-      status: 'Paid' as const,
-      paymentTerms: po ? po.paymentTerms : 'Net 30',
-      chargeType: po ? po.chargeType : 'General Overhead',
-      projectId: po ? po.projectId : undefined,
-      projectName: po ? po.projectName : undefined,
-      assetId: po ? po.assetId : undefined,
-      assetName: po ? po.assetName : undefined,
-      costCenter: po ? po.costCenter : 'CC-GEN'
-    };
-
-    this.mockDataService.supplierInvoices.update(val => [...val, newInvoice]);
-
-    // Create Payment Voucher (PV)
-    const pvList = this.mockDataService.paymentVouchers();
-    const pvNum = `PV-2026-${po ? po.poNumber.replace('PO-', '') : 'GEN'}-${pvList.length + 1}`;
-    const newPV = {
-      id: `pv-${req.poId}-${Date.now()}`,
-      voucherNumber: pvNum,
-      paymentDate: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      vendorId: req.vendorId,
-      vendorName: req.vendorName,
-      bankAccountId: 'ba1',
-      bankAccountName: 'HSBC Corporate A/C',
-      paymentMethod: 'Bank Transfer' as const,
-      referenceNumber: `TXN-${Math.floor(Math.random() * 9000000) + 1000000}`,
-      amount: totalAmount,
-      status: 'Posted' as const,
-      invoicesPaid: [{ invoiceId: newInvoice.id, invoiceNumber: newInvoice.invoiceNumber, amountPaid: totalAmount }]
-    };
-
-    this.mockDataService.paymentVouchers.update(val => [...val, newPV]);
-
-    // Update PO itself with the actual received quantities and Completed status
     if (po) {
-      this.mockDataService.purchaseOrders.update(pos => 
-        pos.map(p => {
-          if (p.id === po.id) {
-            return {
-              ...p,
-              status: 'Completed' as const,
-              items: p.items.map(pitem => {
-                const inspectedItem = req.items.find(ii => ii.itemCode === pitem.itemCode);
-                if (inspectedItem) {
-                  return {
-                    ...pitem,
-                    quantity: inspectedItem.quantityAccepted,
-                    totalPrice: inspectedItem.quantityAccepted * pitem.unitPrice
-                  };
-                }
-                return pitem;
-              }),
-              subtotal,
-              taxAmount,
-              withholdingTaxAmount: whtAmount,
-              totalAmount
-            };
-          }
-          return p;
-        })
-      );
-
-      // Log Vendor Communication Events for Receiving, Invoicing, and Payment
+      // Log only the Goods Received event in the vendor timeline at this stage
       const timelineEvents = [
         {
           id: `ev-mrv-${Date.now()}`,
@@ -344,31 +269,9 @@ export class InspectionComponent implements OnInit {
           date: newMRV.receivedDate,
           eventType: 'Goods Received' as const,
           title: 'Goods Received (MRV)',
-          description: `Items received at Rig Delta Warehouse under voucher ${newMRV.voucherNumber}. (Accepted ${subtotal} value)`,
+          description: `Items received and pending warehouse manager approval under voucher ${newMRV.voucherNumber}. (Accepted ${subtotal} value)`,
           referenceNumber: newMRV.voucherNumber,
           performedBy: req.inspectorName || 'John Doe'
-        },
-        {
-          id: `ev-inv-${Date.now()}`,
-          vendorId: po.vendorId,
-          date: newInvoice.invoiceDate,
-          eventType: 'Invoice Submitted' as const,
-          title: 'Supplier Invoice Submitted',
-          description: `Supplier invoice ${newInvoice.invoiceNumber} submitted for PO ${po.poNumber}.`,
-          referenceNumber: newInvoice.invoiceNumber,
-          amount: newInvoice.totalAmount,
-          performedBy: 'Supplier Accounts'
-        },
-        {
-          id: `ev-pv-${Date.now()}`,
-          vendorId: po.vendorId,
-          date: newPV.paymentDate,
-          eventType: 'Payment Released' as const,
-          title: 'Supplier Payment Released',
-          description: `Payment voucher ${newPV.voucherNumber} released via Bank Transfer (Ref: ${newPV.referenceNumber}).`,
-          referenceNumber: newPV.referenceNumber,
-          amount: newPV.amount,
-          performedBy: 'Sophia Sterling (Finance Manager)'
         }
       ];
 

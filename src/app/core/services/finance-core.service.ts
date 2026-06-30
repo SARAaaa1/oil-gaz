@@ -253,6 +253,158 @@ export class FinanceCoreService {
     });
   }
 
+  // ─── AUTO-POSTING: AP Invoice → GL ──────────────────────────────────
+  // Called when a Supplier Invoice is created in Accounts Payable.
+  // Dr. Expense/Asset account  |  Cr. Accounts Payable (211000)
+  autoPostAPInvoice(params: {
+    invoiceNumber: string;
+    vendorName: string;
+    date: string;
+    subTotal: number;
+    taxAmount: number;
+    totalAmount: number;
+    poNumber?: string;
+    chargeAccountCode?: string;   // e.g. '511000' material, '521000' G&A
+    costCenterCode?: string;
+    projectCode?: string;
+  }) {
+    const debitAccount = params.chargeAccountCode || '521000';
+    const debitAccountName = this.accounts().find(a => a.code === debitAccount)?.name
+      || 'General & Administrative Costs';
+
+    const lines: JournalLine[] = [
+      {
+        id: `apl_${Date.now()}_1`,
+        accountCode: debitAccount,
+        accountName: debitAccountName,
+        debit: params.subTotal,
+        credit: 0,
+        description: `Invoice ${params.invoiceNumber} — Net amount`,
+        costCenterCode: params.costCenterCode,
+        projectCode: params.projectCode
+      },
+      {
+        id: `apl_${Date.now()}_2`,
+        accountCode: '211000',
+        accountName: 'Accounts Payable (A/P)',
+        debit: 0,
+        credit: params.subTotal,
+        description: `Invoice ${params.invoiceNumber} — ${params.vendorName}`
+      }
+    ];
+
+    // VAT line if applicable
+    if (params.taxAmount > 0) {
+      lines[0].debit = params.subTotal;
+      lines.push({
+        id: `apl_${Date.now()}_3`,
+        accountCode: '214000',
+        accountName: 'VAT Payable',
+        debit: 0,
+        credit: params.taxAmount,
+        description: `VAT 15% on Invoice ${params.invoiceNumber}`
+      });
+      // Adjust AP credit to total
+      lines[1].credit = params.totalAmount - params.taxAmount;
+      lines[1].credit = params.subTotal;
+    }
+
+    try {
+      return this.postJournalEntry({
+        date: params.date,
+        reference: params.invoiceNumber,
+        description: `AP Invoice — ${params.vendorName}${params.poNumber ? ' | PO: ' + params.poNumber : ''}`,
+        lines
+      });
+    } catch { return null; }
+  }
+
+  // ─── AUTO-POSTING: AP Payment → GL ──────────────────────────────────
+  // Called when a Payment Voucher is posted.
+  // Dr. Accounts Payable (211000)  |  Cr. Bank/Cash account
+  autoPostAPPayment(params: {
+    voucherNumber: string;
+    vendorName: string;
+    date: string;
+    amount: number;
+    bankAccountCode?: string;   // '111000' USD bank, '112000' EGP bank
+    paymentMethod: string;
+  }) {
+    const creditAccount = params.bankAccountCode ||
+      (params.paymentMethod === 'Cash' ? '113000' : '111000');
+    const creditAccountName = this.accounts().find(a => a.code === creditAccount)?.name
+      || 'Cash at Bank (USD)';
+
+    try {
+      return this.postJournalEntry({
+        date: params.date,
+        reference: params.voucherNumber,
+        description: `AP Payment — ${params.vendorName} | ${params.paymentMethod}`,
+        lines: [
+          {
+            id: `pmt_${Date.now()}_1`,
+            accountCode: '211000',
+            accountName: 'Accounts Payable (A/P)',
+            debit: params.amount,
+            credit: 0,
+            description: `Payment to ${params.vendorName} — ${params.voucherNumber}`
+          },
+          {
+            id: `pmt_${Date.now()}_2`,
+            accountCode: creditAccount,
+            accountName: creditAccountName,
+            debit: 0,
+            credit: params.amount,
+            description: `${params.paymentMethod} outflow — ${params.voucherNumber}`
+          }
+        ]
+      });
+    } catch { return null; }
+  }
+
+  // ─── AUTO-POSTING: AR Collection → GL ───────────────────────────────
+  // Called when a Collection Voucher is posted.
+  // Dr. Bank/Cash account  |  Cr. Accounts Receivable (121000)
+  autoPostARCollection(params: {
+    voucherNumber: string;
+    customerName: string;
+    date: string;
+    amount: number;
+    bankAccountCode?: string;
+    paymentMethod: string;
+  }) {
+    const debitAccount = params.bankAccountCode ||
+      (params.paymentMethod === 'Cash' ? '113000' : '111000');
+    const debitAccountName = this.accounts().find(a => a.code === debitAccount)?.name
+      || 'Cash at Bank (USD)';
+
+    try {
+      return this.postJournalEntry({
+        date: params.date,
+        reference: params.voucherNumber,
+        description: `AR Collection — ${params.customerName} | ${params.paymentMethod}`,
+        lines: [
+          {
+            id: `col_${Date.now()}_1`,
+            accountCode: debitAccount,
+            accountName: debitAccountName,
+            debit: params.amount,
+            credit: 0,
+            description: `${params.paymentMethod} receipt — ${params.voucherNumber}`
+          },
+          {
+            id: `col_${Date.now()}_2`,
+            accountCode: '121000',
+            accountName: 'Accounts Receivable (A/R)',
+            debit: 0,
+            credit: params.amount,
+            description: `Collection from ${params.customerName} — ${params.voucherNumber}`
+          }
+        ]
+      });
+    } catch { return null; }
+  }
+
   // --- Initial Mock Data Seeding ---
   private initializeMockData() {
     const standardAccounts: ChartOfAccount[] = [

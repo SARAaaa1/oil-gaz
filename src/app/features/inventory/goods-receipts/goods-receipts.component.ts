@@ -70,10 +70,14 @@ export class GoodsReceiptsComponent implements OnInit {
     const query = this.searchQuery.trim().toLowerCase();
     const status = this.statusFilter;
 
-    if (status === 'Draft') {
-      list = list.filter(m => m.status === 'Draft');
+    if (status === 'Pending Approval') {
+      list = list.filter(m => m.status === 'Pending Approval');
     } else if (status === 'Approved') {
-      list = list.filter(m => m.status === 'Approved' || m.status === 'Posted');
+      list = list.filter(m => m.status === 'Approved');
+    } else if (status === 'Posted') {
+      list = list.filter(m => m.status === 'Posted');
+    } else if (status === 'Draft') {
+      list = list.filter(m => m.status === 'Draft');
     }
 
     if (query) {
@@ -251,9 +255,29 @@ export class GoodsReceiptsComponent implements OnInit {
   }
 
   approveMRV(mrv: MRV) {
+    // Warehouse Manager Approval: transitions Pending Approval -> Approved
+    this.mockDataService.updateMRVStatus(mrv.id, 'Approved');
+
+    this.auditService.log({
+      action: 'Approve',
+      module: 'Inventory',
+      entityName: 'MRV',
+      entityId: mrv.voucherNumber,
+      details: 'Warehouse Manager approved Goods Receipt ' + mrv.voucherNumber + '. Awaiting Financial Manager approval.'
+    });
+
+    this.notificationService.success(
+      'Receipt Approved',
+      'MRV ' + mrv.voucherNumber + ' approved by Warehouse. Pending final financial approval.'
+    );
+  }
+
+  approveFinanceMRV(mrv: MRV) {
+    // Financial Manager Approval: transitions Approved -> Posted
     this.mockDataService.updateMRVStatus(mrv.id, 'Posted');
 
     try {
+      // 1. Post Ledger entries
       this.financeService.postJournalEntry({
         date: mrv.receivedDate,
         reference: mrv.voucherNumber,
@@ -269,37 +293,93 @@ export class GoodsReceiptsComponent implements OnInit {
         module: 'Inventory',
         entityName: 'MRV',
         entityId: mrv.voucherNumber,
-        details: 'Approved & Posted MRV ' + mrv.voucherNumber + '. GL journal posted. PO: ' + (mrv.poNumber || 'Direct')
+        details: 'Financial Manager approved and posted MRV ' + mrv.voucherNumber + '. GL journal posted. PO: ' + (mrv.poNumber || 'Direct')
       });
 
-      if (mrv.poId) {
-        const po = this.purchaseOrders().find(p => p.id === mrv.poId);
-        if (po) {
-          const linkedMRVs = this.mrvs().filter(m => m.poId === po.id && (m.status === 'Posted' || m.status === 'Approved'));
-          const totalOrdered = po.items.reduce((sum, i) => sum + i.quantity, 0);
-          const totalReceived = po.items.reduce((sum, poItem) => {
-            return sum + linkedMRVs.reduce((s, m) => {
-              const mi = m.items.find(mi => mi.itemCode === poItem.itemCode);
-              return s + (mi ? mi.quantityReceived : 0);
-            }, 0);
-          }, 0);
+      // 2. Generate Unpaid Supplier Invoice
+      const po = this.purchaseOrders().find(p => p.id === mrv.poId || p.poNumber === mrv.poNumber);
+      const invList = this.mockDataService.supplierInvoices();
+      const invNum = `INV-${po ? po.poNumber.replace('PO-', '') : 'GEN'}-${invList.length + 1}`;
 
-          if (totalReceived >= totalOrdered) {
-            this.notificationService.info('PO Completed', 'PO ' + po.poNumber + ' is now fully received and marked Completed.');
-            this.auditService.log({
-              action: 'Status Change',
-              module: 'Procurement',
-              entityName: 'PurchaseOrder',
-              entityId: po.poNumber,
-              details: 'PO ' + po.poNumber + ' fully received and set to Completed.'
-            });
+      const taxPercent = po ? po.taxPercent : 15;
+      const subtotal = +(mrv.totalAmount / (1 + taxPercent / 100)).toFixed(2);
+      const taxAmount = +(mrv.totalAmount - subtotal).toFixed(2);
+
+      const newInvoice = {
+        id: `ap-${mrv.poId || 'gen'}-${Date.now()}`,
+        invoiceNumber: invNum,
+        poId: mrv.poId,
+        poNumber: mrv.poNumber,
+        vendorId: po ? po.vendorId : 'v-gen',
+        vendorName: mrv.supplierName,
+        invoiceDate: new Date().toISOString().split('T')[0],
+        dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        subTotal: subtotal,
+        taxAmount: taxAmount,
+        totalAmount: mrv.totalAmount,
+        status: 'Unpaid' as const, // Flows to A/P to be paid later
+        paymentTerms: po ? po.paymentTerms : 'Net 30',
+        chargeType: po ? po.chargeType : 'General Overhead',
+        projectId: po ? po.projectId : undefined,
+        projectName: po ? po.projectName : undefined,
+        assetId: po ? po.assetId : undefined,
+        assetName: po ? po.assetName : undefined,
+        costCenter: po ? po.costCenter : 'CC-GEN'
+      };
+
+      this.mockDataService.supplierInvoices.update(val => [...val, newInvoice]);
+
+      // 3. Update PO and complete it
+      if (po) {
+        this.mockDataService.purchaseOrders.update(pos =>
+          pos.map(p => {
+            if (p.id === po.id) {
+              return {
+                ...p,
+                status: 'Completed' as const,
+                items: p.items.map(pitem => {
+                  const receivedItem = mrv.items.find(ii => ii.itemCode === pitem.itemCode);
+                  if (receivedItem) {
+                    return {
+                      ...pitem,
+                      quantity: receivedItem.quantityReceived,
+                      totalPrice: receivedItem.quantityReceived * pitem.unitPrice
+                    };
+                  }
+                  return pitem;
+                }),
+                subtotal,
+                taxAmount,
+                totalAmount: mrv.totalAmount
+              };
+            }
+            return p;
+          })
+        );
+
+        // 4. Log Vendor Timeline Events
+        const timelineEvents = [
+          {
+            id: `ev-inv-${Date.now()}`,
+            vendorId: po.vendorId,
+            date: newInvoice.invoiceDate,
+            eventType: 'Invoice Submitted' as const,
+            title: 'Supplier Invoice Generated',
+            description: `Supplier invoice ${newInvoice.invoiceNumber} generated automatically from approved Goods Receipt ${mrv.voucherNumber}. (Awaiting payment)`,
+            referenceNumber: newInvoice.invoiceNumber,
+            amount: newInvoice.totalAmount,
+            performedBy: 'System Auto-Billing'
           }
-        }
+        ];
+
+        timelineEvents.forEach(ev => {
+          this.mockDataService.vendorTimeline.update(list => [...list, ev]);
+        });
       }
 
       this.notificationService.success(
-        'Approved & Posted',
-        'MRV ' + mrv.voucherNumber + ' approved, inventory updated, and GL journal posted.'
+        'Financial Approval Completed',
+        'MRV ' + mrv.voucherNumber + ' posted. Supplier invoice ' + invNum + ' created.'
       );
     } catch (e: any) {
       this.notificationService.danger('GL Posting Error', e.message);

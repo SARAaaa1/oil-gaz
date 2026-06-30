@@ -1,428 +1,667 @@
 <div class="space-y-6">
 
-  <!-- Welcome Banner -->
-  <div class="relative overflow-hidden rounded-3xl bg-linear-to-r from-navy to-primary p-6 md:p-8 text-white shadow-lg border border-white/10">
-    <div class="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,rgba(255,255,255,0.08),transparent)] pointer-events-none"></div>
-    <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
-      <div>
-        <h1 class="text-2xl md:text-3xl font-black tracking-tight">
-          {{ 'dashboard.welcome_back' | translate: { name: currentUser()?.fullName || 'User' } }}
-        </h1>
-        <p class="text-sm text-blue-100/90 mt-1.5 font-medium">
-          {{ 'dashboard.welcome_message' | translate }}
-        </p>
+
+  <!-- ══════════════════════════════════════════════════════════════════════════
+       ROW 1 – SIX EXECUTIVE KPI CARDS
+  ════════════════════════════════════════════════════════════════════════════ -->
+  <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+
+    <!-- Total Liquidity -->
+    <div (click)="navigate('/finance/cash-bank')" class="premium-card cursor-pointer group relative overflow-hidden">
+      <div class="absolute inset-0 bg-linear-to-br from-emerald-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-3xl"></div>
+      <div class="relative z-10">
+        <div class="flex justify-between items-start mb-3">
+          <span class="text-emerald-600 bg-emerald-100 p-2.5 rounded-2xl group-hover:scale-110 transition-transform shadow-sm">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          </span>
+          <span class="text-[9px] font-extrabold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-full uppercase tracking-wider">{{ 'dashboard.finance' | translate }}</span>
+        </div>
+        <h3 class="text-xl font-black text-slate-800 leading-none">${{ totalLiquidity() | number:'1.0-0' }}</h3>
+        <p class="text-[10px] font-bold text-slate-400 mt-1.5 uppercase tracking-wide">{{ 'dashboard.cash_liquidity' | translate }}</p>
       </div>
-      <div class="flex items-center space-x-2.5 rtl:space-x-reverse text-xs font-bold text-white bg-white/10 backdrop-blur-md px-4 py-2.5 rounded-2xl border border-white/20 shrink-0 self-start md:self-auto shadow-sm">
-        <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
-        <span>{{ 'dashboard.live_updates' | translate }}</span>
+    </div>
+
+    <!-- Inventory Value -->
+    <div (click)="navigate('/inventory')" class="premium-card cursor-pointer group relative overflow-hidden">
+      <div class="absolute inset-0 bg-linear-to-br from-indigo-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-3xl"></div>
+      <div class="relative z-10">
+        <div class="flex justify-between items-start mb-3">
+          <span class="text-indigo-600 bg-indigo-100 p-2.5 rounded-2xl group-hover:scale-110 transition-transform shadow-sm">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+          </span>
+          <span class="text-[9px] font-extrabold text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded-full uppercase tracking-wider">{{ 'dashboard.inventory' | translate }}</span>
+        </div>
+        <h3 class="text-xl font-black text-slate-800 leading-none">${{ inventoryValue() | number:'1.0-0' }}</h3>
+        <p class="text-[10px] font-bold text-slate-400 mt-1.5 uppercase tracking-wide">{{ 'dashboard.inventory_value' | translate }}</p>
+      </div>
+    </div>
+
+    <!-- Open Purchase Orders -->
+    <div (click)="navigate('/procurement/purchase-orders')" class="premium-card cursor-pointer group relative overflow-hidden">
+      <div class="absolute inset-0 bg-linear-to-br from-sky-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-3xl"></div>
+      <div class="relative z-10">
+        <div class="flex justify-between items-start mb-3">
+          <span class="text-sky-600 bg-sky-100 p-2.5 rounded-2xl group-hover:scale-110 transition-transform shadow-sm">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
+          </span>
+          <span class="text-[9px] font-extrabold text-sky-600 bg-sky-50 px-1.5 py-0.5 rounded-full uppercase tracking-wider">{{ 'dashboard.procurement' | translate }}</span>
+        </div>
+        <h3 class="text-3xl font-black text-slate-800 leading-none">{{ openPOs() }}</h3>
+        <p class="text-[10px] font-bold text-slate-400 mt-1.5 uppercase tracking-wide">{{ 'dashboard.open_pos' | translate }}</p>
+      </div>
+    </div>
+
+    <!-- Open Work Orders -->
+    <div (click)="navigate('/assets/maintenance')" class="premium-card cursor-pointer group relative overflow-hidden">
+      <div class="absolute inset-0 bg-linear-to-br from-amber-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-3xl"></div>
+      <div class="relative z-10">
+        <div class="flex justify-between items-start mb-3">
+          <span class="text-amber-600 bg-amber-100 p-2.5 rounded-2xl group-hover:scale-110 transition-transform shadow-sm">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+          </span>
+          <span class="text-[9px] font-extrabold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-full uppercase tracking-wider">{{ 'dashboard.maintenance' | translate }}</span>
+        </div>
+        <h3 class="text-3xl font-black text-slate-800 leading-none">{{ openWorkOrders() }}</h3>
+        <p class="text-[10px] font-bold text-slate-400 mt-1.5 uppercase tracking-wide">{{ 'dashboard.open_work_orders' | translate }}</p>
+      </div>
+    </div>
+
+    <!-- Critical Stock -->
+    <div (click)="navigate('/inventory')" class="premium-card cursor-pointer group relative overflow-hidden">
+      <div class="absolute inset-0 bg-linear-to-br from-red-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-3xl"></div>
+      <div class="relative z-10">
+        <div class="flex justify-between items-start mb-3">
+          <span class="text-red-600 bg-red-100 p-2.5 rounded-2xl group-hover:scale-110 transition-transform shadow-sm">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+          </span>
+          <span class="text-[9px] font-extrabold text-red-600 bg-red-50 px-1.5 py-0.5 rounded-full uppercase tracking-wider">Alert</span>
+        </div>
+        <h3 class="text-3xl font-black leading-none" [class.text-red-600]="criticalStock() > 0" [class.text-emerald-600]="criticalStock() === 0">{{ criticalStock() }}</h3>
+        <p class="text-[10px] font-bold text-slate-400 mt-1.5 uppercase tracking-wide">{{ 'dashboard.critical_stock' | translate }}</p>
+      </div>
+    </div>
+
+    <!-- LTI Free Days -->
+    <div (click)="navigate('/hse')" class="premium-card cursor-pointer group relative overflow-hidden">
+      <div class="absolute inset-0 bg-linear-to-br from-emerald-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-3xl"></div>
+      <div class="relative z-10">
+        <div class="flex justify-between items-start mb-3">
+          <span class="text-emerald-600 bg-emerald-100 p-2.5 rounded-2xl group-hover:scale-110 transition-transform shadow-sm">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+          </span>
+          <span class="text-[9px] font-extrabold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-full uppercase tracking-wider">HSE</span>
+        </div>
+        <h3 class="text-3xl font-black text-emerald-600 leading-none">{{ ltiFreeDays() }}</h3>
+        <p class="text-[10px] font-bold text-slate-400 mt-1.5 uppercase tracking-wide">{{ 'dashboard.lti_free_days' | translate }}</p>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════════════════════
+       ROW 2 – PROCUREMENT PIPELINE + INVENTORY HEALTH
+  ════════════════════════════════════════════════════════════════════════════ -->
+  <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
+
+    <!-- Procurement Pipeline (spans 3 cols) -->
+    <div class="lg:col-span-3 premium-card">
+      <div class="flex items-center justify-between mb-5">
+        <div>
+          <h2 class="text-sm font-black text-slate-800 uppercase tracking-wider">{{ 'dashboard.procurement_pipeline' | translate }}</h2>
+          <p class="text-[10px] text-slate-400 font-semibold mt-0.5">{{ 'dashboard.procurement_pipeline_desc' | translate }}</p>
+        </div>
+        <span class="text-xs font-bold text-sky-600 bg-sky-50 px-3 py-1 rounded-full">{{ purchaseRequests().length + rfqs().length + purchaseOrders().length }} {{ 'dashboard.total_records' | translate }}</span>
+      </div>
+
+      <div class="space-y-3.5">
+        @for (stage of procurementPipeline(); track stage.label) {
+          <div (click)="navigate('/procurement/purchase-requests')" class="group cursor-pointer">
+            <div class="flex items-center justify-between mb-1.5">
+              <div class="flex items-center gap-2">
+                <span class="text-base leading-none">{{ stage.icon }}</span>
+                <span class="text-xs font-bold text-slate-700">{{ stage.label }}</span>
+              </div>
+              <span class="text-xs font-black text-slate-800 bg-slate-100 px-2.5 py-0.5 rounded-full">{{ stage.count }}</span>
+            </div>
+            <div class="relative h-3 bg-slate-100 rounded-full overflow-hidden">
+              <div
+                class="absolute inset-y-0 left-0 rounded-full transition-all duration-700 ease-out"
+                [style.width.%]="stage.pct"
+                [style.background]="stage.color">
+              </div>
+              <!-- Shimmer -->
+              <div class="absolute inset-0 bg-linear-to-r from-transparent via-white/30 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out"></div>
+            </div>
+          </div>
+        }
+      </div>
+
+      <!-- Stage totals footer -->
+      <div class="mt-5 pt-4 border-t border-slate-100 grid grid-cols-5 gap-2">
+        <div class="text-center">
+          <div class="text-[10px] font-bold text-slate-400 uppercase">PRs</div>
+          <div class="text-sm font-black text-amber-600">{{ openPRs() }}</div>
+          <div class="text-[9px] text-slate-400">Open</div>
+        </div>
+        <div class="text-center">
+          <div class="text-[10px] font-bold text-slate-400 uppercase">RFQs</div>
+          <div class="text-sm font-black text-indigo-600">{{ openRFQs() }}</div>
+          <div class="text-[9px] text-slate-400">Active</div>
+        </div>
+        <div class="text-center">
+          <div class="text-[10px] font-bold text-slate-400 uppercase">POs</div>
+          <div class="text-sm font-black text-sky-600">{{ openPOs() }}</div>
+          <div class="text-[9px] text-slate-400">Pending</div>
+        </div>
+        <div class="text-center">
+          <div class="text-[10px] font-bold text-slate-400 uppercase">Inspect</div>
+          <div class="text-sm font-black text-emerald-600">{{ pendingInspections() }}</div>
+          <div class="text-[9px] text-slate-400">Queue</div>
+        </div>
+        <div class="text-center">
+          <div class="text-[10px] font-bold text-slate-400 uppercase">MRVs</div>
+          <div class="text-sm font-black text-violet-600">{{ pendingMRVs() }}</div>
+          <div class="text-[9px] text-slate-400">Pending</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Inventory Health Donut (spans 2 cols) -->
+    <div class="lg:col-span-2 premium-card flex flex-col">
+      <div class="mb-4">
+        <h2 class="text-sm font-black text-slate-800 uppercase tracking-wider">{{ 'dashboard.inventory_health' | translate }}</h2>
+        <p class="text-[10px] text-slate-400 font-semibold mt-0.5">{{ 'dashboard.inventory_health_desc' | translate }}</p>
+      </div>
+
+      <div class="flex-1 flex flex-col items-center justify-center">
+        <!-- Donut SVG -->
+        <div class="relative w-44 h-44">
+          <svg viewBox="0 0 90 90" class="w-full h-full -rotate-90">
+            <!-- Background ring -->
+            <circle cx="45" cy="45" r="40" fill="none" stroke="#f1f5f9" stroke-width="10"/>
+            <!-- In Stock -->
+            <circle cx="45" cy="45" r="40" fill="none" stroke="#10b981" stroke-width="10"
+              [attr.stroke-dasharray]="inventoryDonut().inStroke + ' ' + inventoryDonut().circ"
+              [attr.stroke-dashoffset]="0"
+              stroke-linecap="butt"/>
+            <!-- Low Stock -->
+            <circle cx="45" cy="45" r="40" fill="none" stroke="#f59e0b" stroke-width="10"
+              [attr.stroke-dasharray]="inventoryDonut().lowStroke + ' ' + inventoryDonut().circ"
+              [attr.stroke-dashoffset]="-inventoryDonut().inStroke"
+              stroke-linecap="butt"/>
+            <!-- Out of Stock -->
+            <circle cx="45" cy="45" r="40" fill="none" stroke="#ef4444" stroke-width="10"
+              [attr.stroke-dasharray]="inventoryDonut().outStroke + ' ' + inventoryDonut().circ"
+              [attr.stroke-dashoffset]="-(inventoryDonut().inStroke + inventoryDonut().lowStroke)"
+              stroke-linecap="butt"/>
+          </svg>
+          <!-- Center label -->
+          <div class="absolute inset-0 flex flex-col items-center justify-center">
+            <span class="text-2xl font-black text-slate-800">{{ inventoryDonut().total }}</span>
+            <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider">{{ 'dashboard.items' | translate }}</span>
+          </div>
+        </div>
+
+        <!-- Legend -->
+        <div class="mt-4 grid grid-cols-3 gap-3 w-full">
+          <div class="text-center">
+            <div class="flex items-center justify-center gap-1.5 mb-1">
+              <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0"></span>
+              <span class="text-[9px] font-bold text-slate-500 uppercase tracking-wider">In Stock</span>
+            </div>
+            <p class="text-lg font-black text-emerald-600">{{ inventoryDonut().inStock }}</p>
+            <p class="text-[9px] text-slate-400">{{ inventoryDonut().inStrokePct }}%</p>
+          </div>
+          <div class="text-center">
+            <div class="flex items-center justify-center gap-1.5 mb-1">
+              <span class="w-2.5 h-2.5 rounded-full bg-amber-500 shrink-0"></span>
+              <span class="text-[9px] font-bold text-slate-500 uppercase tracking-wider">Low</span>
+            </div>
+            <p class="text-lg font-black text-amber-600">{{ inventoryDonut().lowStock }}</p>
+            <p class="text-[9px] text-slate-400">{{ inventoryDonut().lowStrokePct }}%</p>
+          </div>
+          <div class="text-center">
+            <div class="flex items-center justify-center gap-1.5 mb-1">
+              <span class="w-2.5 h-2.5 rounded-full bg-red-500 shrink-0"></span>
+              <span class="text-[9px] font-bold text-slate-500 uppercase tracking-wider">Out</span>
+            </div>
+            <p class="text-lg font-black text-red-600">{{ inventoryDonut().outOfStock }}</p>
+            <p class="text-[9px] text-slate-400">{{ inventoryDonut().outStrokePct }}%</p>
+          </div>
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- Rebuilt Executive KPI Cards -->
-  <div>
-    <p class="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-3">{{ 'dashboard.section_procurement' | translate }}</p>
-    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-      
-      <!-- Open PRs -->
-      <div (click)="navigate('/procurement/purchase-requests')" class="premium-card cursor-pointer group flex flex-col justify-between">
-        <div class="flex justify-between items-start">
-          <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">{{ 'dashboard.open_prs' | translate }}</p>
-          <span class="text-amber-500 bg-amber-50 p-2 rounded-xl group-hover:scale-110 transition-transform">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-          </span>
+  <!-- ══════════════════════════════════════════════════════════════════════════
+       ROW 3 – FINANCIAL OVERVIEW + EQUIPMENT FLEET + WORK ORDERS
+  ════════════════════════════════════════════════════════════════════════════ -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+    <!-- Financial Overview Bars -->
+    <div class="premium-card flex flex-col">
+      <div class="mb-5">
+        <h2 class="text-sm font-black text-slate-800 uppercase tracking-wider">{{ 'dashboard.financial_overview' | translate }}</h2>
+        <p class="text-[10px] text-slate-400 font-semibold mt-0.5">{{ 'dashboard.financial_overview_desc' | translate }}</p>
+      </div>
+
+      <div class="flex-1 space-y-5">
+        @for (bar of financialBars(); track bar.label) {
+          <div>
+            <div class="flex items-center justify-between mb-1.5">
+              <span class="text-xs font-bold text-slate-700">{{ bar.label }}</span>
+              <span class="text-xs font-black text-slate-800">{{ bar.unit }}{{ bar.value | number:'1.0-0' }}</span>
+            </div>
+            <div class="relative h-4 bg-slate-100 rounded-full overflow-hidden">
+              <div
+                class="absolute inset-y-0 left-0 rounded-full transition-all duration-1000 ease-out flex items-center"
+                [style.width.%]="bar.pct"
+                [style.background]="bar.color + '22'">
+                <div class="h-full rounded-full transition-all duration-1000" [style.width.%]="100" [style.background]="bar.color"></div>
+              </div>
+            </div>
+            <div class="mt-1 text-right text-[9px] font-bold text-slate-400">{{ bar.pct }}% of max</div>
+          </div>
+        }
+      </div>
+
+      <div class="mt-4 pt-4 border-t border-slate-100 flex justify-between text-[10px] font-semibold text-slate-400">
+        <span>AP Invoices Unpaid: {{ openSupplierInvoices() }}</span>
+        <button (click)="navigate('/finance/cash-bank')" class="text-primary font-bold hover:underline">View Finance →</button>
+      </div>
+    </div>
+
+    <!-- Equipment Fleet Donut -->
+    <div class="premium-card flex flex-col">
+      <div class="mb-4">
+        <h2 class="text-sm font-black text-slate-800 uppercase tracking-wider">{{ 'dashboard.equipment_fleet' | translate }}</h2>
+        <p class="text-[10px] text-slate-400 font-semibold mt-0.5">{{ 'dashboard.equipment_fleet_desc' | translate }}</p>
+      </div>
+
+      <div class="flex-1 flex flex-col items-center justify-center">
+        <div class="relative w-40 h-40">
+          <svg viewBox="0 0 90 90" class="w-full h-full -rotate-90">
+            <circle cx="45" cy="45" r="40" fill="none" stroke="#f1f5f9" stroke-width="10"/>
+            <!-- Active -->
+            <circle cx="45" cy="45" r="40" fill="none" stroke="#10b981" stroke-width="10"
+              [attr.stroke-dasharray]="equipmentDonut().activeStroke + ' ' + equipmentDonut().circ"
+              [attr.stroke-dashoffset]="0"/>
+            <!-- Maintenance -->
+            <circle cx="45" cy="45" r="40" fill="none" stroke="#f59e0b" stroke-width="10"
+              [attr.stroke-dasharray]="equipmentDonut().maintStroke + ' ' + equipmentDonut().circ"
+              [attr.stroke-dashoffset]="-equipmentDonut().activeStroke"/>
+            <!-- Standby -->
+            <circle cx="45" cy="45" r="40" fill="none" stroke="#6366f1" stroke-width="10"
+              [attr.stroke-dasharray]="equipmentDonut().standbyStroke + ' ' + equipmentDonut().circ"
+              [attr.stroke-dashoffset]="-(equipmentDonut().activeStroke + equipmentDonut().maintStroke)"/>
+            <!-- Out of Service -->
+            <circle cx="45" cy="45" r="40" fill="none" stroke="#ef4444" stroke-width="10"
+              [attr.stroke-dasharray]="equipmentDonut().outStroke + ' ' + equipmentDonut().circ"
+              [attr.stroke-dashoffset]="-(equipmentDonut().activeStroke + equipmentDonut().maintStroke + equipmentDonut().standbyStroke)"/>
+          </svg>
+          <div class="absolute inset-0 flex flex-col items-center justify-center">
+            <span class="text-2xl font-black text-slate-800">{{ equipmentDonut().total }}</span>
+            <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider">{{ 'dashboard.units' | translate }}</span>
+          </div>
         </div>
-        <div class="mt-4">
-          <h3 class="text-3xl font-black text-amber-600 tracking-tight">{{ openPRs() }}</h3>
-          <div class="flex items-center justify-between mt-2 text-[10px] text-slate-400">
-            <span>{{ 'dashboard.trend_prs' | translate }}</span>
-            <span class="text-primary group-hover:translate-x-1 rtl:group-hover:-translate-x-1 transition-transform font-bold">{{ 'dashboard.click_to_view' | translate }}</span>
+
+        <div class="mt-4 grid grid-cols-2 gap-x-4 gap-y-2.5 w-full">
+          <div class="flex items-center gap-2">
+            <span class="w-3 h-3 rounded-full bg-emerald-500 shrink-0"></span>
+            <div>
+              <p class="text-[9px] font-bold text-slate-500 uppercase">Active</p>
+              <p class="text-sm font-black text-emerald-600">{{ equipmentDonut().active }} <span class="text-[9px] font-bold text-slate-400">({{ equipmentDonut().activePct }}%)</span></p>
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="w-3 h-3 rounded-full bg-amber-500 shrink-0"></span>
+            <div>
+              <p class="text-[9px] font-bold text-slate-500 uppercase">Maintenance</p>
+              <p class="text-sm font-black text-amber-600">{{ equipmentDonut().maintenance }} <span class="text-[9px] font-bold text-slate-400">({{ equipmentDonut().maintPct }}%)</span></p>
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="w-3 h-3 rounded-full bg-indigo-500 shrink-0"></span>
+            <div>
+              <p class="text-[9px] font-bold text-slate-500 uppercase">Standby</p>
+              <p class="text-sm font-black text-indigo-600">{{ equipmentDonut().standby }} <span class="text-[9px] font-bold text-slate-400">({{ equipmentDonut().standbyPct }}%)</span></p>
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="w-3 h-3 rounded-full bg-red-500 shrink-0"></span>
+            <div>
+              <p class="text-[9px] font-bold text-slate-500 uppercase">Out of Service</p>
+              <p class="text-sm font-black text-red-600">{{ equipmentDonut().outOfService }} <span class="text-[9px] font-bold text-slate-400">({{ equipmentDonut().outPct }}%)</span></p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Work Orders Status Donut -->
+    <div class="premium-card flex flex-col">
+      <div class="mb-4">
+        <h2 class="text-sm font-black text-slate-800 uppercase tracking-wider">{{ 'dashboard.work_orders_status' | translate }}</h2>
+        <p class="text-[10px] text-slate-400 font-semibold mt-0.5">{{ 'dashboard.work_orders_status_desc' | translate }}</p>
+      </div>
+
+      <div class="flex-1 flex flex-col items-center justify-center">
+        <div class="relative w-40 h-40">
+          <svg viewBox="0 0 90 90" class="w-full h-full -rotate-90">
+            <circle cx="45" cy="45" r="40" fill="none" stroke="#f1f5f9" stroke-width="10"/>
+            <!-- Completed -->
+            <circle cx="45" cy="45" r="40" fill="none" stroke="#10b981" stroke-width="10"
+              [attr.stroke-dasharray]="woDonut().completedStroke + ' ' + woDonut().circ"
+              [attr.stroke-dashoffset]="0"/>
+            <!-- In Progress -->
+            <circle cx="45" cy="45" r="40" fill="none" stroke="#6366f1" stroke-width="10"
+              [attr.stroke-dasharray]="woDonut().inProgressStroke + ' ' + woDonut().circ"
+              [attr.stroke-dashoffset]="-woDonut().completedStroke"/>
+            <!-- Open -->
+            <circle cx="45" cy="45" r="40" fill="none" stroke="#f59e0b" stroke-width="10"
+              [attr.stroke-dasharray]="woDonut().openStroke + ' ' + woDonut().circ"
+              [attr.stroke-dashoffset]="-(woDonut().completedStroke + woDonut().inProgressStroke)"/>
+          </svg>
+          <div class="absolute inset-0 flex flex-col items-center justify-center">
+            <span class="text-2xl font-black text-slate-800">{{ woDonut().total }}</span>
+            <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider">{{ 'dashboard.orders' | translate }}</span>
+          </div>
+        </div>
+
+        <div class="mt-4 grid grid-cols-3 gap-3 w-full">
+          <div class="text-center">
+            <div class="flex items-center justify-center gap-1 mb-1">
+              <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0"></span>
+              <span class="text-[8px] font-bold text-slate-500 uppercase">Done</span>
+            </div>
+            <p class="text-base font-black text-emerald-600">{{ woDonut().completed }}</p>
+            <p class="text-[9px] text-slate-400">{{ woDonut().completedPct }}%</p>
+          </div>
+          <div class="text-center">
+            <div class="flex items-center justify-center gap-1 mb-1">
+              <span class="w-2.5 h-2.5 rounded-full bg-indigo-500 shrink-0"></span>
+              <span class="text-[8px] font-bold text-slate-500 uppercase">Active</span>
+            </div>
+            <p class="text-base font-black text-indigo-600">{{ woDonut().inProgress }}</p>
+            <p class="text-[9px] text-slate-400">{{ woDonut().inProgressPct }}%</p>
+          </div>
+          <div class="text-center">
+            <div class="flex items-center justify-center gap-1 mb-1">
+              <span class="w-2.5 h-2.5 rounded-full bg-amber-500 shrink-0"></span>
+              <span class="text-[8px] font-bold text-slate-500 uppercase">Open</span>
+            </div>
+            <p class="text-base font-black text-amber-600">{{ woDonut().open }}</p>
+            <p class="text-[9px] text-slate-400">{{ woDonut().openPct }}%</p>
           </div>
         </div>
       </div>
 
-      <!-- Open RFQs -->
-      <div (click)="navigate('/procurement/rfqs')" class="premium-card cursor-pointer group flex flex-col justify-between">
-        <div class="flex justify-between items-start">
-          <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">{{ 'dashboard.open_rfqs' | translate }}</p>
-          <span class="text-primary bg-primary/10 p-2 rounded-xl group-hover:scale-110 transition-transform">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
-          </span>
-        </div>
-        <div class="mt-4">
-          <h3 class="text-3xl font-black text-primary tracking-tight">{{ openRFQs() }}</h3>
-          <div class="flex items-center justify-between mt-2 text-[10px] text-slate-400">
-            <span>{{ 'dashboard.trend_rfqs' | translate }}</span>
-            <span class="text-primary group-hover:translate-x-1 rtl:group-hover:-translate-x-1 transition-transform font-bold">{{ 'dashboard.click_to_view' | translate }}</span>
-          </div>
-        </div>
+      <div class="mt-4 pt-4 border-t border-slate-100 flex justify-end">
+        <button (click)="navigate('/assets/maintenance')" class="text-[10px] font-bold text-primary hover:underline">View All Work Orders →</button>
       </div>
-
-      <!-- Open POs -->
-      <div (click)="navigate('/procurement/purchase-orders')" class="premium-card cursor-pointer group flex flex-col justify-between">
-        <div class="flex justify-between items-start">
-          <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">{{ 'dashboard.open_pos' | translate }}</p>
-          <span class="text-navy bg-navy/10 p-2 rounded-xl group-hover:scale-110 transition-transform">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" /></svg>
-          </span>
-        </div>
-        <div class="mt-4">
-          <h3 class="text-3xl font-black text-slate-800 tracking-tight">{{ openPOs() }}</h3>
-          <div class="flex items-center justify-between mt-2 text-[10px] text-slate-400">
-            <span>{{ 'dashboard.trend_pos' | translate }}</span>
-            <span class="text-primary group-hover:translate-x-1 rtl:group-hover:-translate-x-1 transition-transform font-bold">{{ 'dashboard.click_to_view' | translate }}</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Pending Inspections -->
-      <div (click)="navigate('/procurement/inspection')" class="premium-card cursor-pointer group flex flex-col justify-between">
-        <div class="flex justify-between items-start">
-          <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">{{ 'dashboard.pending_inspections' | translate }}</p>
-          <span class="text-accent bg-accent/10 p-2 rounded-xl group-hover:scale-110 transition-transform">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
-          </span>
-        </div>
-        <div class="mt-4">
-          <h3 class="text-3xl font-black text-accent tracking-tight">{{ pendingInspections() }}</h3>
-          <div class="flex items-center justify-between mt-2 text-[10px] text-slate-400">
-            <span>Active Quality Audits</span>
-            <span class="text-primary group-hover:translate-x-1 rtl:group-hover:-translate-x-1 transition-transform font-bold">{{ 'dashboard.click_to_view' | translate }}</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Pending MRVs -->
-      <div (click)="navigate('/inventory')" class="premium-card cursor-pointer group flex flex-col justify-between">
-        <div class="flex justify-between items-start">
-          <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">{{ 'dashboard.pending_mrvs' | translate }}</p>
-          <span class="text-emerald-600 bg-emerald-50 p-2 rounded-xl group-hover:scale-110 transition-transform">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
-          </span>
-        </div>
-        <div class="mt-4">
-          <h3 class="text-3xl font-black text-emerald-600 tracking-tight">{{ pendingMRVs() }}</h3>
-          <div class="flex items-center justify-between mt-2 text-[10px] text-slate-400">
-            <span>Awaiting Warehouse Intake</span>
-            <span class="text-primary group-hover:translate-x-1 rtl:group-hover:-translate-x-1 transition-transform font-bold">{{ 'dashboard.click_to_view' | translate }}</span>
-          </div>
-        </div>
-      </div>
-
     </div>
   </div>
 
-  <!-- Rebuilt Inventory, Fuel & Financial Overview -->
-  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-    <!-- Inventory Value Card -->
-    <div (click)="navigate('/inventory')" class="premium-card cursor-pointer flex items-center justify-between">
-      <div class="space-y-1">
-        <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">{{ 'dashboard.inventory_value' | translate }}</p>
-        <h3 class="text-xl font-black text-slate-800 tracking-tight">${{ inventoryValue() | number:'1.0-0' }}</h3>
-        <p class="text-[9px] text-slate-400">Weighted Average Spares Value</p>
-      </div>
-      <span class="bg-slate-50 text-slate-500 p-3 rounded-2xl">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
-      </span>
-    </div>
-
-    <!-- Stock Health Alert Card -->
-    <div (click)="navigate('/inventory')" class="premium-card cursor-pointer flex items-center justify-between">
-      <div class="space-y-1">
-        <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">{{ 'dashboard.critical_stock' | translate }}</p>
-        <h3 class="text-xl font-black tracking-tight" [class.text-red-500]="criticalStock() > 0" [class.text-emerald-500]="criticalStock() === 0">
-          {{ criticalStock() }}
-        </h3>
-        <p class="text-[9px] text-slate-400">Out of Stock & Low Stock Spares</p>
-      </div>
-      <span [class.bg-red-50]="criticalStock() > 0" [class.text-red-500]="criticalStock() > 0" [class.bg-emerald-50]="criticalStock() === 0" [class.text-emerald-500]="criticalStock() === 0" class="p-3 rounded-2xl">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
-      </span>
-    </div>
-
-    <!-- Fuel Stock Level Card -->
-    <div (click)="navigate('/operations/fuel')" class="premium-card cursor-pointer flex items-center justify-between">
-      <div class="space-y-1">
-        <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">{{ 'dashboard.fuel_stock' | translate }}</p>
-        <h3 class="text-xl font-black text-blue-500 tracking-tight">{{ totalFuelStock() | number:'1.0-0' }} L</h3>
-        <p class="text-[9px] text-slate-400">Across Active Base Tanks</p>
-      </div>
-      <span class="bg-blue-50 text-blue-500 p-3 rounded-2xl">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" /></svg>
-      </span>
-    </div>
-
-    <!-- Liquidity & Cash Balance Card -->
-    <div (click)="navigate('/finance/cash-bank')" class="premium-card cursor-pointer flex items-center justify-between">
-      <div class="space-y-1">
-        <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">{{ 'dashboard.cash_liquidity' | translate }}</p>
-        <h3 class="text-xl font-black text-emerald-600 tracking-tight">${{ totalLiquidity() | number:'1.0-0' }}</h3>
-        <p class="text-[9px] text-slate-400">Total Liquid Bank & Cash Balances</p>
-      </div>
-      <span class="bg-emerald-50 text-emerald-600 p-3 rounded-2xl">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M12 16v1M10 6h4" /></svg>
-      </span>
-    </div>
-  </div>
-
-  <!-- Quick Actions Panel -->
-  <div class="premium-card">
-    <div class="mb-4">
-      <h3 class="text-sm font-black text-slate-800 uppercase tracking-wider">{{ 'dashboard.quick_actions' | translate }}</h3>
-      <p class="text-[10px] text-slate-400 font-semibold">{{ 'dashboard.quick_actions_desc' | translate }}</p>
-    </div>
-    <div class="grid grid-cols-2 sm:grid-cols-5 gap-3">
-      <!-- Create PR -->
-      <button (click)="navigate('/procurement/purchase-requests')" class="flex flex-col items-center justify-center p-4 rounded-2xl border border-slate-100 bg-slate-50/50 hover:bg-white hover:border-primary hover:shadow-md transition-all text-center group">
-        <span class="text-primary bg-primary/10 p-2.5 rounded-xl group-hover:scale-110 transition-transform mb-2">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-        </span>
-        <span class="text-xs font-bold text-slate-800">{{ 'dashboard.create_pr' | translate }}</span>
-      </button>
-
-      <!-- Receive Goods (MRV) -->
-      <button (click)="navigate('/inventory')" class="flex flex-col items-center justify-center p-4 rounded-2xl border border-slate-100 bg-slate-50/50 hover:bg-white hover:border-emerald-500 hover:shadow-md transition-all text-center group">
-        <span class="text-emerald-500 bg-emerald-50 p-2.5 rounded-xl group-hover:scale-110 transition-transform mb-2">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 14v6m-3-3h6M6 10h2a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v2a2 2 0 002 2zm10 0h2a2 2 0 002-2V6a2 2 0 00-2-2h-2a2 2 0 00-2 2v2a2 2 0 002 2zM6 20h2a2 2 0 002-2v-2a2 2 0 00-2-2H6a2 2 0 00-2 2v2a2 2 0 002 2z" /></svg>
-        </span>
-        <span class="text-xs font-bold text-slate-800">{{ 'dashboard.receive_mrv' | translate }}</span>
-      </button>
-
-      <!-- Create Work Order -->
-      <button (click)="navigate('/assets/maintenance')" class="flex flex-col items-center justify-center p-4 rounded-2xl border border-slate-100 bg-slate-50/50 hover:bg-white hover:border-amber-500 hover:shadow-md transition-all text-center group">
-        <span class="text-amber-500 bg-amber-50 p-2.5 rounded-xl group-hover:scale-110 transition-transform mb-2">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-        </span>
-        <span class="text-xs font-bold text-slate-800">{{ 'dashboard.create_wo' | translate }}</span>
-      </button>
-
-      <!-- Apply PTW -->
-      <button (click)="navigate('/hse')" class="flex flex-col items-center justify-center p-4 rounded-2xl border border-slate-100 bg-slate-50/50 hover:bg-white hover:border-red-500 hover:shadow-md transition-all text-center group">
-        <span class="text-red-500 bg-red-50 p-2.5 rounded-xl group-hover:scale-110 transition-transform mb-2">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
-        </span>
-        <span class="text-xs font-bold text-slate-800">{{ 'dashboard.apply_ptw' | translate }}</span>
-      </button>
-
-      <!-- Material Issue (MIV) -->
-      <button (click)="navigate('/inventory')" class="flex flex-col items-center justify-center p-4 rounded-2xl border border-slate-100 bg-slate-50/50 hover:bg-white hover:border-navy hover:shadow-md transition-all text-center group">
-        <span class="text-navy bg-navy/10 p-2.5 rounded-xl group-hover:scale-110 transition-transform mb-2">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5a2 2 0 10-2 2h2zm0 8V5" /></svg>
-        </span>
-        <span class="text-xs font-bold text-slate-800">{{ 'dashboard.create_miv' | translate }}</span>
-      </button>
-    </div>
-  </div>
-
-  <!-- Operational Status, Alerts & Workflows Grid -->
+  <!-- ══════════════════════════════════════════════════════════════════════════
+       ROW 4 – MY TASKS + CRITICAL ALERTS
+  ════════════════════════════════════════════════════════════════════════════ -->
   <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-    
-    <!-- My Action Items & Tasks Widget -->
-    <div class="premium-card flex flex-col justify-between">
-      <div>
-        <div class="mb-4">
-          <h3 class="text-sm font-black text-slate-800 uppercase tracking-wider">{{ 'dashboard.my_tasks' | translate }}</h3>
-          <p class="text-[10px] text-slate-400 font-semibold">{{ 'dashboard.my_tasks_desc' | translate }}</p>
-        </div>
 
-        <div class="space-y-3">
-          <!-- Pending PRs -->
-          @if (pendingPRs().length > 0) {
-            <div class="p-3 bg-amber-50/50 hover:bg-amber-50 rounded-2xl border border-amber-100/50 transition-colors flex items-center justify-between">
-              <div class="flex items-center space-x-3 rtl:space-x-reverse">
-                <span class="text-amber-600 bg-amber-100/50 p-2 rounded-xl">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
-                </span>
-                <div class="text-xs font-semibold text-slate-700">
-                  <p class="font-bold text-slate-800">{{ 'dashboard.pending_prs' | translate }} ({{ pendingPRs().length }})</p>
-                  <p class="text-[10px] text-slate-400 font-semibold mt-0.5">Awaiting manager verification signature</p>
-                </div>
-              </div>
-              <button (click)="navigate('/procurement/purchase-requests')" class="text-amber-700 hover:text-amber-800 font-bold text-xs uppercase tracking-wider bg-white border border-amber-200 px-3 py-1.5 rounded-xl shadow-xs">
-                Review
-              </button>
-            </div>
-          }
-
-          <!-- Pending WCCs -->
-          @if (pendingWCCs().length > 0) {
-            <div class="p-3 bg-primary/5 hover:bg-primary/10 rounded-2xl border border-primary/20 transition-colors flex items-center justify-between">
-              <div class="flex items-center space-x-3 rtl:space-x-reverse">
-                <span class="text-primary bg-primary/10 p-2 rounded-xl">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                </span>
-                <div class="text-xs font-semibold text-slate-700">
-                  <p class="font-bold text-slate-800">{{ 'dashboard.pending_wccs' | translate }} ({{ pendingWCCs().length }})</p>
-                  <p class="text-[10px] text-slate-400 font-semibold mt-0.5">Work Completion Certificates waiting approval</p>
-                </div>
-              </div>
-              <button (click)="navigate('/workflow/wccs')" class="text-primary hover:text-primary-dark font-bold text-xs uppercase tracking-wider bg-white border border-primary/20 px-3 py-1.5 rounded-xl shadow-xs">
-                Approve
-              </button>
-            </div>
-          }
-
-          <!-- Pending Inspections -->
-          @if (pendingInspectionsList().length > 0) {
-            <div class="p-3 bg-accent/5 hover:bg-accent/10 rounded-2xl border border-accent/20 transition-colors flex items-center justify-between">
-              <div class="flex items-center space-x-3 rtl:space-x-reverse">
-                <span class="text-accent bg-accent/10 p-2 rounded-xl">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg>
-                </span>
-                <div class="text-xs font-semibold text-slate-700">
-                  <p class="font-bold text-slate-800">{{ 'dashboard.pending_inspections_list' | translate }} ({{ pendingInspectionsList().length }})</p>
-                  <p class="text-[10px] text-slate-400 font-semibold mt-0.5">HSE and Spares intake quality inspections</p>
-                </div>
-              </div>
-              <button (click)="navigate('/procurement/inspection')" class="text-accent hover:text-accent font-bold text-xs uppercase tracking-wider bg-white border border-accent/20 px-3 py-1.5 rounded-xl shadow-xs">
-                Inspect
-              </button>
-            </div>
-          }
-
-          <!-- Empty Tasks State -->
-          @if (pendingPRs().length === 0 && pendingWCCs().length === 0 && pendingInspectionsList().length === 0) {
-            <div class="p-8 text-center border border-dashed border-slate-200 rounded-2xl">
-              <span class="inline-block text-emerald-500 bg-emerald-50 p-2.5 rounded-full mb-2">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" /></svg>
-              </span>
-              <p class="text-xs font-bold text-slate-800">All task checklists cleared!</p>
-              <p class="text-[10px] text-slate-450 mt-0.5">There are no pending actions requiring your attention.</p>
-            </div>
-          }
-        </div>
+    <!-- My Action Items -->
+    <div class="premium-card flex flex-col">
+      <div class="mb-4">
+        <h2 class="text-sm font-black text-slate-800 uppercase tracking-wider">{{ 'dashboard.my_tasks' | translate }}</h2>
+        <p class="text-[10px] text-slate-400 font-semibold mt-0.5">{{ 'dashboard.my_tasks_desc' | translate }}</p>
       </div>
-      
-      <!-- Quick task link -->
+
+      <div class="space-y-3 flex-1">
+        @if (pendingPRs().length > 0) {
+          <div class="p-3.5 bg-amber-50/60 hover:bg-amber-50 rounded-2xl border border-amber-100 transition-colors flex items-center justify-between group">
+            <div class="flex items-center space-x-3 rtl:space-x-reverse">
+              <span class="text-amber-600 bg-amber-100 p-2 rounded-xl">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+              </span>
+              <div>
+                <p class="text-xs font-bold text-slate-800">{{ 'dashboard.pending_prs' | translate }} <span class="text-amber-600">({{ pendingPRs().length }})</span></p>
+                <p class="text-[10px] text-slate-400 font-semibold mt-0.5">Awaiting manager signature</p>
+              </div>
+            </div>
+            <button (click)="navigate('/procurement/purchase-requests')" class="text-amber-700 hover:text-amber-800 font-bold text-[10px] uppercase tracking-wider bg-white border border-amber-200 px-3 py-1.5 rounded-xl shadow-xs group-hover:shadow-sm">
+              Review
+            </button>
+          </div>
+        }
+
+        @if (pendingWCCs().length > 0) {
+          <div class="p-3.5 bg-primary/5 hover:bg-primary/10 rounded-2xl border border-primary/20 transition-colors flex items-center justify-between group">
+            <div class="flex items-center space-x-3 rtl:space-x-reverse">
+              <span class="text-primary bg-primary/10 p-2 rounded-xl">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              </span>
+              <div>
+                <p class="text-xs font-bold text-slate-800">{{ 'dashboard.pending_wccs' | translate }} <span class="text-primary">({{ pendingWCCs().length }})</span></p>
+                <p class="text-[10px] text-slate-400 font-semibold mt-0.5">Work Completion Certificates waiting approval</p>
+              </div>
+            </div>
+            <button (click)="navigate('/workflow/wccs')" class="text-primary font-bold text-[10px] uppercase tracking-wider bg-white border border-primary/20 px-3 py-1.5 rounded-xl shadow-xs group-hover:shadow-sm">
+              Approve
+            </button>
+          </div>
+        }
+
+        @if (pendingInspectionsList().length > 0) {
+          <div class="p-3.5 bg-accent/5 hover:bg-accent/10 rounded-2xl border border-accent/20 transition-colors flex items-center justify-between group">
+            <div class="flex items-center space-x-3 rtl:space-x-reverse">
+              <span class="text-accent bg-accent/10 p-2 rounded-xl">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+              </span>
+              <div>
+                <p class="text-xs font-bold text-slate-800">{{ 'dashboard.pending_inspections_list' | translate }} <span class="text-accent">({{ pendingInspectionsList().length }})</span></p>
+                <p class="text-[10px] text-slate-400 font-semibold mt-0.5">HSE and intake quality inspections</p>
+              </div>
+            </div>
+            <button (click)="navigate('/procurement/inspection')" class="text-accent font-bold text-[10px] uppercase tracking-wider bg-white border border-accent/20 px-3 py-1.5 rounded-xl shadow-xs group-hover:shadow-sm">
+              Inspect
+            </button>
+          </div>
+        }
+
+        @if (pendingPRs().length === 0 && pendingWCCs().length === 0 && pendingInspectionsList().length === 0) {
+          <div class="p-8 text-center border border-dashed border-slate-200 rounded-2xl flex-1">
+            <span class="inline-block text-emerald-500 bg-emerald-50 p-2.5 rounded-full mb-2">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+            </span>
+            <p class="text-xs font-bold text-slate-800">All tasks cleared!</p>
+            <p class="text-[10px] text-slate-400 mt-0.5">No pending actions requiring your attention.</p>
+          </div>
+        }
+      </div>
+
       <div class="mt-4 pt-4 border-t border-slate-100 flex justify-between items-center text-[10px] text-slate-400 font-semibold">
-        <span>Assigned to you: {{ currentUser()?.fullName }} ({{ currentUser()?.role }})</span>
+        <span>{{ currentUser()?.fullName }} · {{ currentUser()?.role }}</span>
+        <span class="text-primary font-bold">{{ recentLogCount() }} audit events today</span>
       </div>
     </div>
 
     <!-- Critical Alerts Panel -->
-    <div class="premium-card flex flex-col justify-between">
-      <div>
-        <div class="mb-4 flex items-center justify-between">
-          <div>
-            <h3 class="text-sm font-black text-slate-800 uppercase tracking-wider">{{ 'dashboard.critical_alerts' | translate }}</h3>
-            <p class="text-[10px] text-slate-400 font-semibold">{{ 'dashboard.critical_alerts_desc' | translate }}</p>
-          </div>
-          @if (criticalAlertsCount() > 0) {
-            <span class="text-[10px] bg-red-100 text-red-700 px-2.5 py-0.5 rounded-full font-black animate-pulse">
-              {{ criticalAlertsCount() }} Action Required
-            </span>
-          }
+    <div class="premium-card flex flex-col">
+      <div class="mb-4 flex items-center justify-between">
+        <div>
+          <h2 class="text-sm font-black text-slate-800 uppercase tracking-wider">{{ 'dashboard.critical_alerts' | translate }}</h2>
+          <p class="text-[10px] text-slate-400 font-semibold mt-0.5">{{ 'dashboard.critical_alerts_desc' | translate }}</p>
         </div>
-
-        <div class="space-y-2.5 max-h-64 overflow-y-auto">
-          <!-- Low Stock Warning -->
-          @for (item of criticalStockItems(); track item.id) {
-            <div class="flex items-center justify-between p-3 bg-amber-50/30 border border-amber-100/50 rounded-2xl text-xs font-semibold">
-              <div class="flex items-center space-x-2.5 rtl:space-x-reverse">
-                <span class="w-2 h-2 rounded-full bg-amber-500"></span>
-                <div>
-                  <div class="font-bold text-slate-800">{{ 'dashboard.alert_critical_stock' | translate }}</div>
-                  <div class="text-[10px] text-slate-400 mt-0.5">Spares Item: {{ item.itemName }} ({{ item.itemCode }})</div>
-                </div>
-              </div>
-              <span class="text-amber-700 bg-amber-50 px-2 py-0.5 rounded text-[10px] font-bold">Qty: {{ item.quantity }}</span>
-            </div>
-          }
-
-          <!-- Equipment Breakdown warning -->
-          @for (wo of breakdownWorkOrders(); track wo.id) {
-            <div class="flex items-center justify-between p-3 bg-red-50/30 border border-red-100/50 rounded-2xl text-xs font-semibold">
-              <div class="flex items-center space-x-2.5 rtl:space-x-reverse">
-                <span class="w-2 h-2 rounded-full bg-red-500 animate-ping"></span>
-                <div>
-                  <div class="font-bold text-slate-800">{{ 'dashboard.alert_breakdown' | translate }} - {{ wo.woNumber }}</div>
-                  <div class="text-[10px] text-slate-400 mt-0.5">Rig Spares: {{ wo.equipmentName }} (Priority: {{ wo.priority }})</div>
-                </div>
-              </div>
-              <span class="text-red-700 bg-red-50 px-2 py-0.5 rounded text-[10px] font-bold uppercase">{{ wo.status }}</span>
-            </div>
-          }
-
-          <!-- Expired Work Permit warning -->
-          @for (ptw of expiredPermits(); track ptw.id) {
-            <div class="flex items-center justify-between p-3 bg-slate-100/50 border border-slate-200/50 rounded-2xl text-xs font-semibold">
-              <div class="flex items-center space-x-2.5 rtl:space-x-reverse">
-                <span class="w-2 h-2 rounded-full bg-slate-500"></span>
-                <div>
-                  <div class="font-bold text-slate-800">{{ 'dashboard.alert_expired_permit' | translate }} - {{ ptw.permitNumber }}</div>
-                  <div class="text-[10px] text-slate-400 mt-0.5">Site: {{ ptw.location }} (Type: {{ ptw.type }})</div>
-                </div>
-              </div>
-              <span class="text-slate-600 bg-slate-200/50 px-2 py-0.5 rounded text-[10px] font-bold uppercase">Expired</span>
-            </div>
-          }
-
-          <!-- No warnings state -->
-          @if (criticalAlertsCount() === 0) {
-            <div class="p-8 text-center border border-dashed border-slate-200 rounded-2xl">
-              <span class="inline-block text-emerald-500 bg-emerald-50 p-2.5 rounded-full mb-2">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
-              </span>
-              <p class="text-xs font-bold text-slate-850">{{ 'dashboard.alert_no_warnings' | translate }}</p>
-              <p class="text-[10px] text-slate-400 mt-0.5">HSE permit logs and spares levels are in ideal parameters.</p>
-            </div>
-          }
-        </div>
+        @if (criticalAlertsCount() > 0) {
+          <span class="text-[10px] bg-red-100 text-red-700 px-2.5 py-1 rounded-full font-black animate-pulse">
+            🔴 {{ criticalAlertsCount() }} Active
+          </span>
+        }
       </div>
 
-      <div class="mt-4 pt-4 border-t border-slate-100 flex justify-between items-center text-[10px] text-slate-400 font-semibold">
-        <span>Data verified against active rigs & HSE systems</span>
+      <div class="space-y-2.5 max-h-64 overflow-y-auto flex-1">
+        @for (item of criticalStockItems(); track item.id) {
+          <div class="flex items-center justify-between p-3 bg-amber-50/40 border border-amber-100/60 rounded-2xl text-xs font-semibold">
+            <div class="flex items-center space-x-2.5 rtl:space-x-reverse">
+              <span class="w-2 h-2 rounded-full bg-amber-500 shrink-0"></span>
+              <div>
+                <div class="font-bold text-slate-800">{{ 'dashboard.alert_critical_stock' | translate }}</div>
+                <div class="text-[10px] text-slate-400 mt-0.5">{{ item.itemName }} ({{ item.itemCode }})</div>
+              </div>
+            </div>
+            <span class="text-amber-700 bg-amber-100 px-2 py-0.5 rounded-lg text-[10px] font-bold shrink-0">Qty: {{ item.quantity }}</span>
+          </div>
+        }
+
+        @for (wo of breakdownWorkOrders(); track wo.id) {
+          <div class="flex items-center justify-between p-3 bg-red-50/40 border border-red-100/60 rounded-2xl text-xs font-semibold">
+            <div class="flex items-center space-x-2.5 rtl:space-x-reverse">
+              <span class="w-2 h-2 rounded-full bg-red-500 animate-ping shrink-0"></span>
+              <div>
+                <div class="font-bold text-slate-800">{{ 'dashboard.alert_breakdown' | translate }} · {{ wo.woNumber }}</div>
+                <div class="text-[10px] text-slate-400 mt-0.5">{{ wo.equipmentName }} · Priority: {{ wo.priority }}</div>
+              </div>
+            </div>
+            <span class="text-red-700 bg-red-100 px-2 py-0.5 rounded-lg text-[10px] font-bold uppercase shrink-0">{{ wo.status }}</span>
+          </div>
+        }
+
+        @for (ptw of expiredPermits(); track ptw.id) {
+          <div class="flex items-center justify-between p-3 bg-slate-100/50 border border-slate-200/60 rounded-2xl text-xs font-semibold">
+            <div class="flex items-center space-x-2.5 rtl:space-x-reverse">
+              <span class="w-2 h-2 rounded-full bg-slate-500 shrink-0"></span>
+              <div>
+                <div class="font-bold text-slate-800">{{ 'dashboard.alert_expired_permit' | translate }} · {{ ptw.permitNumber }}</div>
+                <div class="text-[10px] text-slate-400 mt-0.5">{{ ptw.location }} · Type: {{ ptw.type }}</div>
+              </div>
+            </div>
+            <span class="text-slate-600 bg-slate-200 px-2 py-0.5 rounded-lg text-[10px] font-bold uppercase shrink-0">Expired</span>
+          </div>
+        }
+
+        @if (criticalAlertsCount() === 0) {
+          <div class="p-8 text-center border border-dashed border-slate-200 rounded-2xl">
+            <span class="inline-block text-emerald-500 bg-emerald-50 p-2.5 rounded-full mb-2">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+            </span>
+            <p class="text-xs font-bold text-slate-800">{{ 'dashboard.alert_no_warnings' | translate }}</p>
+            <p class="text-[10px] text-slate-400 mt-0.5">All HSE and stock levels are within safe parameters.</p>
+          </div>
+        }
+      </div>
+
+      <div class="mt-4 pt-4 border-t border-slate-100 text-[10px] text-slate-400 font-semibold">
+        Verified against active rigs, HSE & spares systems
       </div>
     </div>
   </div>
 
-  <!-- HSE Safety & Operations Status -->
-  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-    <!-- HSE Status -->
+  <!-- ══════════════════════════════════════════════════════════════════════════
+       ROW 5 – HSE STATUS + ACTIVE RIGS + QUICK ACTIONS
+  ════════════════════════════════════════════════════════════════════════════ -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+    <!-- HSE Safety Status -->
     <div class="premium-card">
-      <h2 class="text-xs font-bold text-slate-800 uppercase tracking-wider mb-4">{{ 'dashboard.hse_status' | translate }}</h2>
+      <h2 class="text-sm font-black text-slate-800 uppercase tracking-wider mb-4">{{ 'dashboard.hse_status' | translate }}</h2>
       <div class="grid grid-cols-2 gap-4">
-        <div class="p-4 bg-emerald-50/50 border border-emerald-100 rounded-2xl text-center">
-          <p class="text-[10px] font-bold uppercase tracking-wider text-emerald-600">{{ 'dashboard.lti_free_days' | translate }}</p>
-          <h3 class="text-4xl font-black text-emerald-700 mt-1.5">{{ ltiFreeDays() }}</h3>
+        <div class="p-4 bg-emerald-50/60 border border-emerald-100 rounded-2xl text-center">
+          <p class="text-[9px] font-bold uppercase tracking-wider text-emerald-600 mb-1">{{ 'dashboard.lti_free_days' | translate }}</p>
+          <h3 class="text-4xl font-black text-emerald-700">{{ ltiFreeDays() }}</h3>
+          <p class="text-[9px] text-emerald-500 mt-1">Days without incident</p>
         </div>
-        <div class="p-4 bg-slate-50/50 border border-slate-100 rounded-2xl text-center">
-          <p class="text-[10px] font-bold uppercase tracking-wider text-slate-500">{{ 'dashboard.total_incidents' | translate }}</p>
-          <h3 class="text-4xl font-black text-slate-700 mt-1.5">{{ hseIncidents().length }}</h3>
+        <div class="p-4 bg-slate-50 border border-slate-100 rounded-2xl text-center">
+          <p class="text-[9px] font-bold uppercase tracking-wider text-slate-500 mb-1">{{ 'dashboard.total_incidents' | translate }}</p>
+          <h3 class="text-4xl font-black text-slate-700">{{ hseIncidents().length }}</h3>
+          <p class="text-[9px] text-slate-400 mt-1">Total Recorded</p>
+        </div>
+      </div>
+      <div class="mt-4 grid grid-cols-2 gap-3">
+        <div class="p-3 bg-blue-50/50 border border-blue-100 rounded-xl text-center">
+          <p class="text-[9px] font-bold text-blue-500 uppercase">Fuel Stock</p>
+          <p class="text-sm font-black text-blue-700 mt-0.5">{{ totalFuelStock() | number:'1.0-0' }}L</p>
+        </div>
+        <div class="p-3 bg-violet-50/50 border border-violet-100 rounded-xl text-center">
+          <p class="text-[9px] font-bold text-violet-500 uppercase">Active Rigs</p>
+          <p class="text-sm font-black text-violet-700 mt-0.5">{{ rigs().length }}</p>
         </div>
       </div>
     </div>
 
     <!-- Active Rigs -->
     <div class="premium-card">
-      <h2 class="text-xs font-bold text-slate-800 uppercase tracking-wider mb-4">{{ 'dashboard.active_rigs' | translate }}</h2>
-      <div class="space-y-2">
+      <h2 class="text-sm font-black text-slate-800 uppercase tracking-wider mb-4">{{ 'dashboard.active_rigs' | translate }}</h2>
+      <div class="space-y-2.5">
         @for (rig of activeRigs(); track rig.id) {
-          <div class="flex items-center justify-between p-3 bg-slate-50/50 hover:bg-slate-50 border border-slate-100 rounded-2xl text-xs transition-colors">
-            <div>
-              <div class="font-bold text-slate-800">{{ rig.rigName }}</div>
-              <div class="text-[10px] text-slate-400 font-semibold mt-0.5">{{ rig.location }}</div>
+          <div (click)="navigate('/operations/rigs')" class="flex items-center justify-between p-3 bg-slate-50/60 hover:bg-slate-50 border border-slate-100 rounded-2xl text-xs transition-colors cursor-pointer group">
+            <div class="flex items-center gap-2.5">
+              <div class="w-2 h-8 rounded-full" [class.bg-emerald-500]="rig.status === 'Active'" [class.bg-amber-500]="rig.status !== 'Active'"></div>
+              <div>
+                <div class="font-bold text-slate-800">{{ rig.rigName }}</div>
+                <div class="text-[10px] text-slate-400 font-semibold mt-0.5">{{ rig.location }}</div>
+              </div>
             </div>
-            <span [class.bg-emerald-50]="rig.status === 'Active'" [class.text-emerald-700]="rig.status === 'Active'"
-              [class.bg-amber-50]="rig.status !== 'Active'" [class.text-amber-700]="rig.status !== 'Active'"
-              class="px-2.5 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider">{{ rig.status }}</span>
+            <div class="text-right">
+              <span [class.bg-emerald-100]="rig.status === 'Active'" [class.text-emerald-700]="rig.status === 'Active'"
+                [class.bg-amber-100]="rig.status !== 'Active'" [class.text-amber-700]="rig.status !== 'Active'"
+                class="px-2.5 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider">{{ rig.status }}</span>
+            </div>
           </div>
         }
+      </div>
+      <div class="mt-4 pt-3 border-t border-slate-100">
+        <button (click)="navigate('/operations/rigs')" class="w-full text-[10px] font-bold text-primary text-center hover:underline">View All Rigs & Equipment →</button>
+      </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="premium-card">
+      <h2 class="text-sm font-black text-slate-800 uppercase tracking-wider mb-4">{{ 'dashboard.quick_actions' | translate }}</h2>
+      <div class="grid grid-cols-2 gap-2.5">
+        <button (click)="navigate('/procurement/purchase-requests')" class="flex flex-col items-center justify-center p-3.5 rounded-2xl border border-slate-100 bg-slate-50/50 hover:bg-white hover:border-amber-400 hover:shadow-md transition-all group">
+          <span class="text-amber-500 bg-amber-50 p-2 rounded-xl group-hover:scale-110 transition-transform mb-1.5">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          </span>
+          <span class="text-[10px] font-bold text-slate-700">{{ 'dashboard.create_pr' | translate }}</span>
+        </button>
+        <button (click)="navigate('/inventory')" class="flex flex-col items-center justify-center p-3.5 rounded-2xl border border-slate-100 bg-slate-50/50 hover:bg-white hover:border-emerald-400 hover:shadow-md transition-all group">
+          <span class="text-emerald-500 bg-emerald-50 p-2 rounded-xl group-hover:scale-110 transition-transform mb-1.5">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 14v6m-3-3h6M6 10h2a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v2a2 2 0 002 2zm10 0h2a2 2 0 002-2V6a2 2 0 00-2-2h-2a2 2 0 00-2 2v2a2 2 0 002 2zM6 20h2a2 2 0 002-2v-2a2 2 0 00-2-2H6a2 2 0 00-2 2v2a2 2 0 002 2z"/></svg>
+          </span>
+          <span class="text-[10px] font-bold text-slate-700">{{ 'dashboard.receive_mrv' | translate }}</span>
+        </button>
+        <button (click)="navigate('/assets/maintenance')" class="flex flex-col items-center justify-center p-3.5 rounded-2xl border border-slate-100 bg-slate-50/50 hover:bg-white hover:border-sky-400 hover:shadow-md transition-all group">
+          <span class="text-sky-500 bg-sky-50 p-2 rounded-xl group-hover:scale-110 transition-transform mb-1.5">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+          </span>
+          <span class="text-[10px] font-bold text-slate-700">{{ 'dashboard.create_wo' | translate }}</span>
+        </button>
+        <button (click)="navigate('/hse')" class="flex flex-col items-center justify-center p-3.5 rounded-2xl border border-slate-100 bg-slate-50/50 hover:bg-white hover:border-red-400 hover:shadow-md transition-all group">
+          <span class="text-red-500 bg-red-50 p-2 rounded-xl group-hover:scale-110 transition-transform mb-1.5">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+          </span>
+          <span class="text-[10px] font-bold text-slate-700">{{ 'dashboard.apply_ptw' | translate }}</span>
+        </button>
+        <button (click)="navigate('/inventory')" class="col-span-2 flex items-center justify-center gap-2 p-3.5 rounded-2xl border border-slate-100 bg-slate-50/50 hover:bg-white hover:border-navy hover:shadow-md transition-all group">
+          <span class="text-navy bg-navy/10 p-2 rounded-xl group-hover:scale-110 transition-transform">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5a2 2 0 10-2 2h2zm0 8V5"/></svg>
+          </span>
+          <span class="text-[10px] font-bold text-slate-700">{{ 'dashboard.create_miv' | translate }}</span>
+        </button>
       </div>
     </div>
   </div>
 
-  <!-- Recent Audit Activity -->
+  <!-- ══════════════════════════════════════════════════════════════════════════
+       ROW 6 – RECENT AUDIT ACTIVITY
+  ════════════════════════════════════════════════════════════════════════════ -->
   <div class="premium-card">
     <div class="flex items-center justify-between mb-4">
       <div>
-        <h2 class="text-xs font-bold text-slate-800 uppercase tracking-wider">{{ 'dashboard.recent_activity' | translate }}</h2>
-        <p class="text-[10px] text-slate-400 font-semibold">{{ 'dashboard.sys_activity_subtitle' | translate }}</p>
+        <h2 class="text-sm font-black text-slate-800 uppercase tracking-wider">{{ 'dashboard.recent_activity' | translate }}</h2>
+        <p class="text-[10px] text-slate-400 font-semibold mt-0.5">{{ 'dashboard.sys_activity_subtitle' | translate }}</p>
       </div>
-      <span class="text-[10px] bg-slate-150 text-slate-650 px-2 py-0.5 rounded-full font-bold">{{ recentLogCount() }} {{ 'dashboard.total_events' | translate }}</span>
+      <span class="text-[10px] bg-slate-100 text-slate-600 px-3 py-1 rounded-full font-bold">{{ recentLogCount() }} {{ 'dashboard.total_events' | translate }}</span>
     </div>
     <app-activity-timeline [limit]="8" />
   </div>
 
 </div>
-

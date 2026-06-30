@@ -48,6 +48,11 @@ export class RigsComponent implements OnInit {
     this.rigs().filter(r => r.status === 'Active').length
   );
 
+  readonly fleetUtilization = computed(() => {
+    const total = this.rigs().length || 1;
+    return Math.round((this.activeCount() / total) * 100);
+  });
+
   readonly maintenanceCount = computed(() =>
     this.rigs().filter(r => r.status === 'Maintenance').length
   );
@@ -55,6 +60,163 @@ export class RigsComponent implements OnInit {
   readonly standbyCount = computed(() =>
     this.rigs().filter(r => r.status === 'Standby').length
   );
+
+  // Dynamic Equipment Statistics & Donut Chart calculations
+  readonly equipmentStats = computed(() => {
+    const list = this.equipment();
+    const total = list.length || 1;
+    
+    const active = list.filter(e => e.status === 'Active').length;
+    const maintenance = list.filter(e => e.status === 'Maintenance').length;
+    const standby = list.filter(e => e.status === 'Standby').length;
+    const outOfService = list.filter(e => e.status === 'Out Of Service').length;
+    
+    const activePct = Math.round((active / total) * 100);
+    const maintenancePct = Math.round((maintenance / total) * 100);
+    const standbyPct = Math.round((standby / total) * 100);
+    const outOfServicePct = Math.round((outOfService / total) * 100);
+    
+    const totalHours = list.reduce((sum, e) => sum + (e.operatingHours || 0), 0);
+    
+    // Circumference of SVG circle with r=40 is 2 * pi * 40 = 251.32
+    const circ = 251.32;
+    
+    // Stroke lengths
+    const activeStroke = (active / total) * circ;
+    const maintStroke = (maintenance / total) * circ;
+    const standbyStroke = (standby / total) * circ;
+    const outStroke = (outOfService / total) * circ;
+    
+    // Cumulative offsets (SVG strokes start from 3 o'clock and go clockwise, we adjust via stroke-dashoffset)
+    // To stack them:
+    const activeOffset = 0;
+    const maintOffset = circ - activeStroke;
+    const standbyOffset = circ - activeStroke - maintStroke;
+    const outOffset = circ - activeStroke - maintStroke - standbyStroke;
+    
+    return {
+      total,
+      active,
+      maintenance,
+      standby,
+      outOfService,
+      activePct,
+      maintenancePct,
+      standbyPct,
+      outOfServicePct,
+      totalHours,
+      circ,
+      activeStroke,
+      maintStroke,
+      standbyStroke,
+      outStroke,
+      activeOffset,
+      maintOffset,
+      standbyOffset,
+      outOffset
+    };
+  });
+
+  // Detailed lifecycle & activity metrics for each heavy equipment
+  readonly detailedEquipmentMetrics = computed(() => {
+    const list = this.equipment();
+    
+    // Define max lifespan hours per category
+    const lifespanLimits: Record<string, number> = {
+      'Rig': 100000,
+      'Generator': 50000,
+      'Crane': 40000,
+      'Truck': 20000,
+      'Pump': 30000,
+      'Compressor': 35000,
+      'Heavy Equipment': 45000,
+      'Safety Equipment': 10000
+    };
+
+    return list.map(eq => {
+      const limit = lifespanLimits[eq.category] || 30000;
+      const hours = eq.operatingHours || 0;
+      
+      // Calculate consumed lifespan percentage
+      const consumedPct = Math.min(100, Math.round((hours / limit) * 100));
+      const remainingPct = 100 - consumedPct;
+
+      // Calculate health score based on status & lifespan consumption
+      let health = 100;
+      // Subtract based on age
+      health -= Math.round(consumedPct * 0.15);
+      
+      // Subtract or set based on current status
+      if (eq.status === 'Maintenance') {
+        health = Math.min(65, health - 25);
+      } else if (eq.status === 'Out Of Service') {
+        health = Math.min(25, health - 60);
+      }
+
+      health = Math.max(5, health); // minimum 5%
+
+      // Generate simulated 7-day activity history (Active, Standby, Maintenance, Out of Service)
+      // We seed a pseudo-random sequence based on equipment ID hash
+      const activityHistory = [];
+      const idCode = eq.id.charCodeAt(eq.id.length - 1) || 0;
+      
+      for (let i = 6; i >= 0; i--) {
+        const seed = (idCode + i) % 10;
+        let dayStatus: 'Active' | 'Standby' | 'Maintenance' | 'Out Of Service' = 'Active';
+        
+        if (eq.status === 'Maintenance') {
+          // If in maintenance, last few days might be maintenance
+          dayStatus = i <= 2 ? 'Maintenance' : seed > 3 ? 'Active' : 'Standby';
+        } else if (eq.status === 'Out Of Service') {
+          dayStatus = i <= 1 ? 'Out Of Service' : 'Active';
+        } else {
+          // Normal operations
+          dayStatus = seed > 7 ? 'Standby' : seed === 0 ? 'Maintenance' : 'Active';
+        }
+
+        activityHistory.push({
+          dayOffset: i,
+          status: dayStatus
+        });
+      }
+
+      return {
+        ...eq,
+        maxLifespan: limit,
+        consumedPct,
+        remainingPct,
+        healthScore: health,
+        activityHistory
+      };
+    });
+  });
+
+  // Power & Capacity specifications for each equipment to display in the power bar chart
+  readonly equipmentPowerData = computed(() => {
+    const list = this.equipment();
+    
+    const powerMap: Record<string, { value: number, unit: string, color: string }> = {
+      'Rig': { value: 3000, unit: 'HP', color: '#6366f1' },       // Indigo
+      'Generator': { value: 1500, unit: 'kW', color: '#10b981' }, // Emerald
+      'Crane': { value: 150, unit: 'Tons', color: '#f59e0b' },    // Amber
+      'Truck': { value: 500, unit: 'HP', color: '#64748b' },      // Slate
+      'Pump': { value: 1600, unit: 'HP', color: '#06b6d4' }       // Cyan
+    };
+
+    return list.map(eq => {
+      const power = powerMap[eq.category] || { value: 1000, unit: 'HP', color: '#6366f1' };
+      return {
+        name: eq.equipmentName,
+        code: eq.equipmentCode,
+        category: eq.category,
+        powerValue: power.value,
+        powerUnit: power.unit,
+        color: power.color,
+        // Calculate relative width percentage (Max power in fleet is 3000)
+        percent: Math.round((power.value / 3000) * 100)
+      };
+    });
+  });
 
   readonly filteredRigs = computed(() => {
     let list = this.rigs();
@@ -169,6 +331,15 @@ export class RigsComponent implements OnInit {
       ...checks,
       [key]: !checks[key]
     }));
+  }
+
+  getCheck(key: string): boolean {
+    const checks = this.readinessChecklist();
+    return checks[key as keyof typeof checks] ?? false;
+  }
+
+  toggleCheckByKey(key: string) {
+    this.toggleCheck(key as keyof ReturnType<typeof this.readinessChecklist>);
   }
 
   submitSafetyAudit() {

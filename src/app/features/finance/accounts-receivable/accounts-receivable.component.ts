@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MockDataService } from '../../../core/services/mock-data.service';
 import { WorkflowService } from '../../../core/services/workflow.service';
+import { FinanceCoreService } from '../../../core/services/finance-core.service';
 import { BreadcrumbService } from '../../../core/services/breadcrumb.service';
 import { NotificationService } from '../../../core/services/notification.service';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
@@ -20,6 +21,7 @@ import { Invoice } from '../../../shared/interfaces/workflow.interface';
 export class AccountsReceivableComponent implements OnInit {
   private readonly mockDataService = inject(MockDataService);
   private readonly workflowService = inject(WorkflowService);
+  private readonly financeService = inject(FinanceCoreService);
   private readonly breadcrumbService = inject(BreadcrumbService);
   private readonly notificationService = inject(NotificationService);
   private readonly translate = inject(TranslateService);
@@ -261,6 +263,15 @@ export class AccountsReceivableComponent implements OnInit {
 
     // Update collection vouchers list
     this.vouchers.update(prev => [newVoucher, ...prev]);
+
+    // ── AUTO-POST to General Ledger ──────────────────────────────────
+    this.financeService.autoPostARCollection({
+      voucherNumber: newVoucher.voucherNumber,
+      customerName: newVoucher.customerName,
+      date: newVoucher.collectionDate,
+      amount: newVoucher.amount,
+      paymentMethod: newVoucher.paymentMethod
+    });
 
     // Update status and paid amounts of the client invoices
     this.clientInvoices.update(invoicesList => 

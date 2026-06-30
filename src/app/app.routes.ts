@@ -184,6 +184,26 @@ export const routes: Routes = [
           {
             path: 'cost-control',
             loadComponent: () => import('./features/finance/cost-control/cost-control.component').then(m => m.CostControlComponent)
+          },
+          {
+            path: 'financial-statements',
+            loadComponent: () => import('./features/finance/financial-statements/financial-statements.component').then(m => m.FinancialStatementsComponent)
+          },
+          {
+            path: 'vat-report',
+            loadComponent: () => import('./features/finance/vat-report/vat-report.component').then(m => m.VatReportComponent)
+          },
+          {
+            path: 'asset-depreciation',
+            loadComponent: () => import('./features/finance/asset-depreciation/asset-depreciation.component').then(m => m.AssetDepreciationComponent)
+          },
+          {
+            path: 'budget',
+            loadComponent: () => import('./features/finance/budget/budget.component').then(m => m.BudgetComponent)
+          },
+          {
+            path: 'period-close',
+            loadComponent: () => import('./features/finance/period-close/period-close.component').then(m => m.PeriodCloseComponent)
           }
         ]
       },

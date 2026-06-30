@@ -1,145 +1,381 @@
 <div class="space-y-6 p-6">
-  <!-- Header -->
-  <div>
-    <h1 class="text-2xl font-black text-slate-800 tracking-tight">{{ 'operations.rigs.title' | translate }}</h1>
-    <p class="text-xs text-slate-500 font-semibold mt-1">{{ 'operations.rigs.subtitle' | translate }}</p>
+
+  <!-- ══════ HEADER ══════ -->
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="text-2xl font-black text-slate-800 tracking-tight">{{ 'operations.rigs.title' | translate }}</h1>
+      <p class="text-xs text-slate-500 font-semibold mt-1">{{ 'operations.rigs.subtitle' | translate }}</p>
+    </div>
+    <span class="flex items-center gap-1.5 text-xs font-bold text-emerald-700 bg-emerald-50 px-4 py-2 rounded-full border border-emerald-200">
+      <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+      Live Monitoring
+    </span>
   </div>
 
-  <!-- Rig Status Summary Cards -->
-  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-    <!-- Total Fleet -->
-    <div class="bg-white p-5 rounded-xl border border-slate-100 shadow-sm flex items-center justify-between">
-      <div>
-        <span class="text-xs font-bold text-slate-400 uppercase tracking-wider block">{{ 'operations.rigs.fleet_strength' | translate }}</span>
-        <span class="text-2xl font-black text-slate-800">{{ rigs().length }} {{ 'operations.rigs.units' | translate }}</span>
+  <!-- ══════ KPI CARDS ══════ -->
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 flex items-center gap-4">
+      <div class="w-12 h-12 rounded-2xl bg-emerald-100 flex items-center justify-center shrink-0">
+        <svg class="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
       </div>
-      <div class="p-3 bg-slate-100 rounded-xl text-slate-700">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-        </svg>
+      <div>
+        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Active Rigs</p>
+        <p class="text-3xl font-black text-emerald-600 leading-none mt-0.5">{{ activeCount() }}</p>
+        <p class="text-[10px] text-slate-400 mt-0.5">{{ fleetUtilization() }}% fleet utilization</p>
       </div>
     </div>
 
-    <!-- Active Rigs -->
-    <div class="bg-white p-5 rounded-xl border border-slate-100 shadow-sm flex items-center justify-between">
-      <div>
-        <span class="text-xs font-bold text-slate-400 uppercase tracking-wider block">{{ 'operations.rigs.operational_rigs' | translate }}</span>
-        <span class="text-2xl font-black text-success">{{ activeCount() }} {{ 'operations.rigs.status_active' | translate }}</span>
+    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 flex items-center gap-4">
+      <div class="w-12 h-12 rounded-2xl bg-amber-100 flex items-center justify-center shrink-0">
+        <svg class="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
       </div>
-      <div class="p-3 bg-green-50 rounded-xl text-success">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-        </svg>
+      <div>
+        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">In Maintenance</p>
+        <p class="text-3xl font-black text-amber-600 leading-none mt-0.5">{{ maintenanceCount() }}</p>
+        <p class="text-[10px] text-slate-400 mt-0.5">Rigs under service</p>
       </div>
     </div>
 
-    <!-- Maintenance Rigs -->
-    <div class="bg-white p-5 rounded-xl border border-slate-100 shadow-sm flex items-center justify-between">
-      <div>
-        <span class="text-xs font-bold text-slate-400 uppercase tracking-wider block">{{ 'operations.rigs.under_overhaul' | translate }}</span>
-        <span class="text-2xl font-black text-accent">{{ maintenanceCount() }} {{ 'operations.rigs.status_maintenance' | translate }}</span>
+    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 flex items-center gap-4">
+      <div class="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center shrink-0">
+        <svg class="w-6 h-6 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
       </div>
-      <div class="p-3 bg-amber-50 rounded-xl text-accent">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-        </svg>
+      <div>
+        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">On Standby</p>
+        <p class="text-3xl font-black text-slate-600 leading-none mt-0.5">{{ standbyCount() }}</p>
+        <p class="text-[10px] text-slate-400 mt-0.5">Ready to deploy</p>
       </div>
     </div>
 
-    <!-- Standby Rigs -->
-    <div class="bg-white p-5 rounded-xl border border-slate-100 shadow-sm flex items-center justify-between">
-      <div>
-        <span class="text-xs font-bold text-slate-400 uppercase tracking-wider block">{{ 'operations.rigs.standby_idle' | translate }}</span>
-        <span class="text-2xl font-black text-slate-500">{{ standbyCount() }} {{ 'operations.rigs.status_standby' | translate }}</span>
+    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 flex items-center gap-4">
+      <div class="w-12 h-12 rounded-2xl bg-indigo-100 flex items-center justify-center shrink-0">
+        <svg class="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
       </div>
-      <div class="p-3 bg-slate-100 rounded-xl text-slate-500">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
+      <div>
+        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total Equipment</p>
+        <p class="text-3xl font-black text-indigo-600 leading-none mt-0.5">{{ equipmentStats().total }}</p>
+        <p class="text-[10px] text-slate-400 mt-0.5">{{ equipmentStats().activePct }}% active now</p>
       </div>
     </div>
   </div>
 
-  <!-- Main Grid Layout -->
-  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-    <!-- Rigs Table List (Left 2 Columns) -->
-    <div class="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden lg:col-span-2">
-      <div class="p-4 bg-slate-50/50 border-b border-slate-100 flex items-center justify-between text-xs">
-        <div class="relative w-full max-w-sm">
-          <input
-            type="text"
-            [placeholder]="'operations.rigs.search_placeholder' | translate"
-            (input)="searchQuery.set($any($event.target).value)"
-            class="w-full bg-white border border-slate-200 rounded-lg pl-8 pr-3 py-2 text-slate-850 focus:outline-none"
-          >
-          <svg class="w-4 h-4 text-slate-400 absolute left-2.5 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+  <!-- ══════ CHARTS SECTION: Donut + Equipment Utilization ══════ -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+    <!-- LEFT: Fleet Status Donut Chart -->
+    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
+      <h3 class="text-sm font-black text-slate-700 uppercase tracking-wider mb-1">Fleet Status Overview</h3>
+      <p class="text-[10px] text-slate-400 font-semibold mb-6">توزيع حالة المعدات في الوقت الفعلي</p>
+
+      <div class="flex items-center justify-center gap-10">
+        <!-- Donut SVG -->
+        <div class="relative w-52 h-52 shrink-0">
+          <svg class="w-full h-full" viewBox="0 0 200 200">
+            <!-- Background rings for visual depth -->
+            <circle cx="100" cy="100" r="70" fill="none" stroke="#f8fafc" stroke-width="28"/>
+
+            <!-- Active arc -->
+            <circle cx="100" cy="100" r="70" fill="none" stroke="#10b981" stroke-width="26"
+              stroke-linecap="butt"
+              [attr.stroke-dasharray]="(equipmentStats().activePct * 4.398) + ' 439.8'"
+              stroke-dashoffset="109.95"
+              style="transition: stroke-dasharray 1s ease"/>
+
+            <!-- Maintenance arc -->
+            <circle cx="100" cy="100" r="70" fill="none" stroke="#f59e0b" stroke-width="26"
+              stroke-linecap="butt"
+              [attr.stroke-dasharray]="(equipmentStats().maintenancePct * 4.398) + ' 439.8'"
+              [attr.stroke-dashoffset]="109.95 - (equipmentStats().activePct * 4.398)"
+              style="transition: stroke-dasharray 1s ease"/>
+
+            <!-- Standby arc -->
+            <circle cx="100" cy="100" r="70" fill="none" stroke="#6366f1" stroke-width="26"
+              stroke-linecap="butt"
+              [attr.stroke-dasharray]="(equipmentStats().standbyPct * 4.398) + ' 439.8'"
+              [attr.stroke-dashoffset]="109.95 - ((equipmentStats().activePct + equipmentStats().maintenancePct) * 4.398)"
+              style="transition: stroke-dasharray 1s ease"/>
+
+            <!-- Out of Service arc -->
+            <circle cx="100" cy="100" r="70" fill="none" stroke="#ef4444" stroke-width="26"
+              stroke-linecap="butt"
+              [attr.stroke-dasharray]="(equipmentStats().outOfServicePct * 4.398) + ' 439.8'"
+              [attr.stroke-dashoffset]="109.95 - ((equipmentStats().activePct + equipmentStats().maintenancePct + equipmentStats().standbyPct) * 4.398)"
+              style="transition: stroke-dasharray 1s ease"/>
+
+            <!-- Inner white circle -->
+            <circle cx="100" cy="100" r="56" fill="white"/>
+            <!-- Center text -->
+            <text x="100" y="94" text-anchor="middle" class="font-black" style="font-size:28px; font-weight:900; fill:#1e293b;">{{ equipmentStats().total }}</text>
+            <text x="100" y="114" text-anchor="middle" style="font-size:10px; font-weight:700; fill:#94a3b8; letter-spacing:1px;">UNITS</text>
           </svg>
         </div>
 
-        <div class="flex items-center space-x-2 font-semibold">
-          <span class="text-slate-400">{{ 'operations.rigs.status_label' | translate }}</span>
-          <select
-            (change)="statusFilter.set($any($event.target).value)"
-            class="bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-700 focus:outline-none"
-          >
-            <option value="ALL">{{ 'operations.rigs.all_statuses' | translate }}</option>
-            <option value="Active">{{ 'operations.rigs.status_active' | translate }}</option>
-            <option value="Maintenance">{{ 'operations.rigs.status_maintenance' | translate }}</option>
-            <option value="Standby">{{ 'operations.rigs.status_standby' | translate }}</option>
-          </select>
+        <!-- Legend with big numbers -->
+        <div class="space-y-4 flex-1">
+          <div class="flex items-center gap-3 p-3 rounded-xl bg-emerald-50 border border-emerald-100">
+            <div class="w-4 h-10 rounded-full bg-emerald-500 shrink-0"></div>
+            <div class="flex-1">
+              <p class="text-xs font-black text-slate-700">Active</p>
+              <p class="text-[9px] text-slate-400">Operational units</p>
+            </div>
+            <div class="text-right">
+              <p class="text-2xl font-black text-emerald-600 leading-none">{{ equipmentStats().active }}</p>
+              <p class="text-[9px] font-bold text-emerald-500">{{ equipmentStats().activePct }}%</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-3 p-3 rounded-xl bg-amber-50 border border-amber-100">
+            <div class="w-4 h-10 rounded-full bg-amber-500 shrink-0"></div>
+            <div class="flex-1">
+              <p class="text-xs font-black text-slate-700">Maintenance</p>
+              <p class="text-[9px] text-slate-400">Under service</p>
+            </div>
+            <div class="text-right">
+              <p class="text-2xl font-black text-amber-600 leading-none">{{ equipmentStats().maintenance }}</p>
+              <p class="text-[9px] font-bold text-amber-500">{{ equipmentStats().maintenancePct }}%</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-3 p-3 rounded-xl bg-indigo-50 border border-indigo-100">
+            <div class="w-4 h-10 rounded-full bg-indigo-500 shrink-0"></div>
+            <div class="flex-1">
+              <p class="text-xs font-black text-slate-700">Standby</p>
+              <p class="text-[9px] text-slate-400">On hold</p>
+            </div>
+            <div class="text-right">
+              <p class="text-2xl font-black text-indigo-600 leading-none">{{ equipmentStats().standby }}</p>
+              <p class="text-[9px] font-bold text-indigo-500">{{ equipmentStats().standbyPct }}%</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-3 p-3 rounded-xl bg-red-50 border border-red-100">
+            <div class="w-4 h-10 rounded-full bg-red-500 shrink-0"></div>
+            <div class="flex-1">
+              <p class="text-xs font-black text-slate-700">Out of Service</p>
+              <p class="text-[9px] text-slate-400">Requires repair</p>
+            </div>
+            <div class="text-right">
+              <p class="text-2xl font-black text-red-600 leading-none">{{ equipmentStats().outOfService }}</p>
+              <p class="text-[9px] font-bold text-red-500">{{ equipmentStats().outOfServicePct }}%</p>
+            </div>
+          </div>
         </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: Equipment Utilization Chart (Hours used vs Max) -->
+    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
+      <h3 class="text-sm font-black text-slate-700 uppercase tracking-wider mb-1">Equipment Utilization</h3>
+      <p class="text-[10px] text-slate-400 font-semibold mb-5">نسبة العمر المستهلك لكل معدة من العمر الأقصى</p>
+
+      <div class="space-y-4 max-h-80 overflow-y-auto pr-1">
+        @for (eq of detailedEquipmentMetrics(); track eq.id) {
+          <div>
+            <!-- Header -->
+            <div class="flex items-center justify-between mb-1.5">
+              <div class="flex items-center gap-2 min-w-0">
+                <span class="w-2.5 h-2.5 rounded-full shrink-0"
+                  [class.bg-emerald-500]="eq.status === 'Active'"
+                  [class.bg-amber-500]="eq.status === 'Maintenance'"
+                  [class.bg-indigo-500]="eq.status === 'Standby'"
+                  [class.bg-red-500]="eq.status === 'Out Of Service'">
+                </span>
+                <span class="text-xs font-bold text-slate-700 truncate">{{ eq.equipmentName }}</span>
+              </div>
+              <div class="flex items-center gap-2 shrink-0">
+                <span class="text-[9px] font-bold text-slate-400">{{ eq.operatingHours | number }} / {{ eq.maxLifespan | number }} hrs</span>
+                <span class="text-[9px] font-black"
+                  [class.text-emerald-600]="eq.consumedPct < 60"
+                  [class.text-amber-600]="eq.consumedPct >= 60 && eq.consumedPct < 85"
+                  [class.text-red-600]="eq.consumedPct >= 85">
+                  {{ eq.consumedPct }}%
+                </span>
+              </div>
+            </div>
+            <!-- Progress Bar -->
+            <div class="h-3.5 bg-slate-100 rounded-full overflow-hidden relative">
+              <div class="h-full rounded-full transition-all duration-700"
+                [style.width.%]="eq.consumedPct"
+                [class.bg-emerald-500]="eq.consumedPct < 60"
+                [class.bg-amber-500]="eq.consumedPct >= 60 && eq.consumedPct < 85"
+                [class.bg-red-500]="eq.consumedPct >= 85">
+              </div>
+              <!-- Health overlay text -->
+              @if (eq.consumedPct > 15) {
+                <span class="absolute left-2 inset-y-0 flex items-center text-[8px] font-black text-white">
+                  {{ eq.healthScore }}% Health
+                </span>
+              }
+            </div>
+          </div>
+        }
+      </div>
+
+      <!-- Total fleet hours footer -->
+      <div class="mt-5 pt-4 border-t border-slate-100 flex justify-between items-center">
+        <span class="text-[10px] font-bold text-slate-400">Total Fleet Operating Hours</span>
+        <span class="text-sm font-black text-indigo-600">{{ equipmentStats().totalHours | number }} hrs</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════ EQUIPMENT STATUS BOARD (Visual tiles) ══════ -->
+  <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
+    <div class="flex items-center justify-between mb-5">
+      <div>
+        <h3 class="text-sm font-black text-slate-700 uppercase tracking-wider">Equipment Status Board</h3>
+        <p class="text-[10px] text-slate-400 font-semibold mt-0.5">لوحة حالة جميع المعدات — اضغط على أي معدة للتفاصيل</p>
+      </div>
+      <div class="flex items-center gap-3 text-[9px] font-bold">
+        <span class="flex items-center gap-1"><span class="w-3 h-3 rounded bg-emerald-500"></span>Active</span>
+        <span class="flex items-center gap-1"><span class="w-3 h-3 rounded bg-amber-500"></span>Maintenance</span>
+        <span class="flex items-center gap-1"><span class="w-3 h-3 rounded bg-indigo-400"></span>Standby</span>
+        <span class="flex items-center gap-1"><span class="w-3 h-3 rounded bg-red-500"></span>Out of Service</span>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+      @for (eq of detailedEquipmentMetrics(); track eq.id) {
+        <div class="group cursor-pointer rounded-2xl p-4 border-2 transition-all duration-200 hover:scale-105 hover:shadow-lg flex flex-col gap-2"
+          [class.border-emerald-300]="eq.status === 'Active'"
+          [class.bg-emerald-50]="eq.status === 'Active'"
+          [class.border-amber-300]="eq.status === 'Maintenance'"
+          [class.bg-amber-50]="eq.status === 'Maintenance'"
+          [class.border-indigo-300]="eq.status === 'Standby'"
+          [class.bg-indigo-50]="eq.status === 'Standby'"
+          [class.border-red-300]="eq.status === 'Out Of Service'"
+          [class.bg-red-50]="eq.status === 'Out Of Service'">
+
+          <!-- Status dot + category -->
+          <div class="flex items-center justify-between">
+            <span class="text-[8px] font-bold text-slate-400 uppercase tracking-wider">{{ eq.category }}</span>
+            <span class="w-2.5 h-2.5 rounded-full"
+              [class.bg-emerald-500]="eq.status === 'Active'"
+              [class.bg-amber-500]="eq.status === 'Maintenance'"
+              [class.bg-indigo-400]="eq.status === 'Standby'"
+              [class.bg-red-500]="eq.status === 'Out Of Service'">
+            </span>
+          </div>
+
+          <!-- Equipment name -->
+          <p class="text-xs font-black text-slate-800 leading-tight">{{ eq.equipmentName }}</p>
+          <p class="text-[8px] font-mono text-slate-400">{{ eq.equipmentCode }}</p>
+
+          <!-- Health ring (mini donut) -->
+          <div class="flex items-center justify-center my-1">
+            <div class="relative w-14 h-14">
+              <svg class="w-full h-full -rotate-90" viewBox="0 0 56 56">
+                <circle cx="28" cy="28" r="22" fill="none" stroke="#e2e8f0" stroke-width="5"/>
+                <circle cx="28" cy="28" r="22" fill="none" stroke-width="5"
+                  [attr.stroke]="eq.healthScore >= 80 ? '#10b981' : eq.healthScore >= 50 ? '#f59e0b' : '#ef4444'"
+                  [attr.stroke-dasharray]="(eq.healthScore * 1.382) + ' 138.2'"
+                  stroke-dashoffset="0"
+                  stroke-linecap="round"/>
+              </svg>
+              <div class="absolute inset-0 flex items-center justify-center">
+                <span class="text-[10px] font-black"
+                  [class.text-emerald-600]="eq.healthScore >= 80"
+                  [class.text-amber-600]="eq.healthScore >= 50 && eq.healthScore < 80"
+                  [class.text-red-600]="eq.healthScore < 50">
+                  {{ eq.healthScore }}%
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 7-day mini timeline -->
+          <div class="flex gap-0.5 items-end h-4">
+            @for (day of eq.activityHistory; track day.dayOffset) {
+              <div class="flex-1 rounded-sm"
+                [style.height.px]="day.status === 'Active' ? 14 : day.status === 'Standby' ? 8 : day.status === 'Maintenance' ? 10 : 5"
+                [class.bg-emerald-500]="day.status === 'Active'"
+                [class.bg-indigo-400]="day.status === 'Standby'"
+                [class.bg-amber-500]="day.status === 'Maintenance'"
+                [class.bg-red-500]="day.status === 'Out Of Service'">
+              </div>
+            }
+          </div>
+          <p class="text-[7px] text-slate-300 font-bold text-center">7-day activity</p>
+
+          <!-- Operating hours -->
+          <div class="pt-1 border-t border-white/50">
+            <p class="text-[8px] text-slate-500 font-bold text-center">{{ eq.operatingHours | number }} hrs</p>
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+
+  <!-- ══════ RIGS TABLE + DETAILS PANEL ══════ -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+    <!-- Rigs Table (2 cols) -->
+    <div class="lg:col-span-2 bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+      <!-- Controls -->
+      <div class="p-4 border-b border-slate-100 flex flex-col sm:flex-row gap-3 bg-slate-50/50">
+        <div class="relative flex-1">
+          <svg class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+          </svg>
+          <input type="text"
+            [placeholder]="'operations.rigs.search_placeholder' | translate"
+            (input)="searchQuery.set($any($event.target).value)"
+            class="w-full bg-white border border-slate-200 rounded-xl pl-9 pr-3 py-2.5 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-300 transition-all">
+        </div>
+        <select (change)="statusFilter.set($any($event.target).value)"
+          class="bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-300 transition-all">
+          <option value="ALL">All Statuses</option>
+          <option value="Active">Active</option>
+          <option value="Maintenance">Maintenance</option>
+          <option value="Standby">Standby</option>
+        </select>
       </div>
 
       <!-- Table -->
       <div class="overflow-x-auto">
-        <table class="w-full text-left border-collapse text-xs">
+        <table class="w-full text-xs text-left">
           <thead>
-            <tr class="text-slate-400 font-bold border-b border-slate-100 bg-slate-50/20">
-              <th class="p-4 py-3">{{ 'operations.rigs.col_identifier' | translate }}</th>
-              <th class="p-4 py-3">Assigned Region</th>
-              <th class="p-4 py-3 text-right">Drilled Depth</th>
-              <th class="p-4 py-3 text-center">Crew Count</th>
-              <th class="p-4 py-3">Manager</th>
-              <th class="p-4 py-3 text-center">Status</th>
+            <tr class="bg-slate-50 border-b border-slate-100">
+              <th class="px-5 py-3.5 text-[10px] font-black text-slate-500 uppercase tracking-wider">{{ 'operations.rigs.col_identifier' | translate }}</th>
+              <th class="px-5 py-3.5 text-[10px] font-black text-slate-500 uppercase tracking-wider">Region</th>
+              <th class="px-5 py-3.5 text-[10px] font-black text-slate-500 uppercase tracking-wider text-right">Depth</th>
+              <th class="px-5 py-3.5 text-[10px] font-black text-slate-500 uppercase tracking-wider text-center">Crew</th>
+              <th class="px-5 py-3.5 text-[10px] font-black text-slate-500 uppercase tracking-wider">Manager</th>
+              <th class="px-5 py-3.5 text-[10px] font-black text-slate-500 uppercase tracking-wider text-center">Status</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-slate-55 font-medium text-slate-700">
+          <tbody class="divide-y divide-slate-50">
             @for (rig of filteredRigs(); track rig.id) {
-              <tr 
-                (click)="selectRig(rig)" 
-                class="hover:bg-slate-50/50 transition-colors cursor-pointer"
-                [class.bg-indigo-50]="selectedRig()?.id === rig.id"
-              >
-                <td class="p-4 font-bold text-slate-900">{{ rig.rigName }}</td>
-                <td class="p-4 text-slate-500">{{ rig.location }}</td>
-                <td class="p-4 text-right font-mono font-bold text-slate-800">
-                  @if (rig.drillDepthFt > 0) {
-                    {{ rig.drillDepthFt | number }} ft
-                  } @else {
-                    <span class="text-slate-350">-</span>
-                  }
+              <tr (click)="selectRig(rig)"
+                class="cursor-pointer transition-all duration-150 hover:bg-slate-50"
+                [class.bg-indigo-50]="selectedRig()?.id === rig.id">
+                <td class="px-5 py-4">
+                  <div class="flex items-center gap-2.5">
+                    <div class="w-2.5 h-2.5 rounded-full shrink-0"
+                      [class.bg-emerald-500]="rig.status === 'Active'"
+                      [class.bg-amber-500]="rig.status === 'Maintenance'"
+                      [class.bg-slate-400]="rig.status === 'Standby'">
+                    </div>
+                    <span class="font-black text-slate-800">{{ rig.rigName }}</span>
+                  </div>
                 </td>
-                <td class="p-4 text-center font-mono font-bold text-slate-750">{{ rig.crewCount }}</td>
-                <td class="p-4 text-slate-700 font-bold">{{ rig.managerName }}</td>
-                <td class="p-4 text-center">
-                  <span
-                    class="px-2.5 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider"
-                    [class.bg-green-50]="rig.status === 'Active'"
-                    [class.text-success]="rig.status === 'Active'"
-                    [class.bg-amber-50]="rig.status === 'Maintenance'"
-                    [class.text-accent]="rig.status === 'Maintenance'"
-                    [class.bg-slate-100]="rig.status === 'Standby'"
-                    [class.text-slate-500]="rig.status === 'Standby'"
-                  >
+                <td class="px-5 py-4 text-slate-500 font-semibold">{{ rig.location }}</td>
+                <td class="px-5 py-4 text-right font-mono font-bold text-slate-700">
+                  @if (rig.drillDepthFt > 0) { {{ rig.drillDepthFt | number }} ft }
+                  @else { <span class="text-slate-300">—</span> }
+                </td>
+                <td class="px-5 py-4 text-center font-mono font-bold text-slate-700">{{ rig.crewCount }}</td>
+                <td class="px-5 py-4 text-slate-600 font-semibold">{{ rig.managerName }}</td>
+                <td class="px-5 py-4 text-center">
+                  <span class="px-2.5 py-1 rounded-full text-[9px] font-extrabold uppercase tracking-wider"
+                    [class.bg-emerald-100]="rig.status === 'Active'" [class.text-emerald-700]="rig.status === 'Active'"
+                    [class.bg-amber-100]="rig.status === 'Maintenance'" [class.text-amber-700]="rig.status === 'Maintenance'"
+                    [class.bg-slate-100]="rig.status === 'Standby'" [class.text-slate-600]="rig.status === 'Standby'">
                     {{ rig.status }}
                   </span>
                 </td>
               </tr>
             } @empty {
               <tr>
-                <td colspan="6" class="p-8 text-center text-slate-400">
-                  <span class="font-bold">{{ 'operations.rigs.no_records' | translate }}</span>
+                <td colspan="6" class="px-5 py-12 text-center">
+                  <p class="text-xs font-bold text-slate-400">{{ 'operations.rigs.no_records' | translate }}</p>
                 </td>
               </tr>
             }
@@ -148,234 +384,156 @@
       </div>
     </div>
 
-    <!-- Rig Sub-Modules Detailed Panel (Right 1 Column) -->
-    <div class="space-y-6">
+    <!-- Detail Panel -->
+    <div>
       @if (selectedRig()) {
-        <div class="bg-white p-5 rounded-xl border border-slate-100 shadow-sm space-y-4 animate-fade-in text-xs font-semibold text-slate-700">
-          <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 space-y-4">
+          <!-- Header -->
+          <div class="flex items-start justify-between pb-3 border-b border-slate-100">
             <div>
-              <h3 class="text-sm font-bold text-slate-850">{{ selectedRig()?.rigName }}</h3>
-              <p class="text-[10px] text-slate-400">Manager: {{ selectedRig()?.managerName }} • Region: {{ selectedRig()?.location }}</p>
+              <h3 class="text-sm font-black text-slate-800">{{ selectedRig()?.rigName }}</h3>
+              <p class="text-[10px] text-slate-400 font-semibold mt-0.5">{{ selectedRig()?.managerName }} · {{ selectedRig()?.location }}</p>
             </div>
-            <button (click)="closeRigDetails()" class="text-slate-400 hover:text-slate-650">
+            <button (click)="closeRigDetails()" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition-all">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
             </button>
           </div>
 
-          <!-- Quick Action Buttons -->
-          <div class="flex items-center gap-2">
+          <!-- Action Buttons -->
+          <div class="flex gap-2">
             @if (selectedRig()?.status !== 'Active') {
-              <button (click)="deployRig()" class="flex-1 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all shadow-sm">
-                Deploy Rig
+              <button (click)="deployRig()" class="flex-1 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black transition-all shadow-sm">
+                🚀 Deploy
               </button>
             }
             @if (selectedRig()?.status !== 'Maintenance') {
-              <button (click)="decommissionRig()" class="flex-1 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all shadow-sm">
-                Decommission
+              <button (click)="decommissionRig()" class="flex-1 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-900 text-white text-xs font-black transition-all shadow-sm">
+                🔧 Decommission
               </button>
             }
           </div>
 
-          <!-- Detailed Panel Sub-Tabs -->
-          <div class="border-b border-slate-200">
-            <nav class="flex space-x-4 text-[10px] font-bold uppercase tracking-wider">
-              <button 
-                (click)="detailsTab.set('assets')" 
-                class="pb-2 border-b-2 transition-all px-1"
-                [class.border-indigo-600]="detailsTab() === 'assets'"
-                [class.text-indigo-600]="detailsTab() === 'assets'"
-                [class.border-transparent]="detailsTab() !== 'assets'"
-                [class.text-slate-400]="detailsTab() !== 'assets'"
-              >
-                Assets
+          <!-- Tabs -->
+          <div class="flex gap-1 p-1 bg-slate-100 rounded-xl">
+            @for (tab of [['assets','Assets'],['components','Systems'],['inventory','Stock'],['readiness','Safety']] ; track tab[0]) {
+              <button (click)="detailsTab.set($any(tab[0]))"
+                class="flex-1 py-1.5 text-[10px] font-black uppercase tracking-wider rounded-lg transition-all"
+                [class.bg-white]="detailsTab() === tab[0]"
+                [class.text-indigo-700]="detailsTab() === tab[0]"
+                [class.shadow-sm]="detailsTab() === tab[0]"
+                [class.text-slate-400]="detailsTab() !== tab[0]">
+                {{ tab[1] }}
               </button>
-              <button 
-                (click)="detailsTab.set('components')" 
-                class="pb-2 border-b-2 transition-all px-1"
-                [class.border-indigo-600]="detailsTab() === 'components'"
-                [class.text-indigo-600]="detailsTab() === 'components'"
-                [class.border-transparent]="detailsTab() !== 'components'"
-                [class.text-slate-400]="detailsTab() !== 'components'"
-              >
-                Systems
-              </button>
-              <button 
-                (click)="detailsTab.set('inventory')" 
-                class="pb-2 border-b-2 transition-all px-1"
-                [class.border-indigo-600]="detailsTab() === 'inventory'"
-                [class.text-indigo-600]="detailsTab() === 'inventory'"
-                [class.border-transparent]="detailsTab() !== 'inventory'"
-                [class.text-slate-400]="detailsTab() !== 'inventory'"
-              >
-                Stock
-              </button>
-              <button 
-                (click)="detailsTab.set('readiness')" 
-                class="pb-2 border-b-2 transition-all px-1"
-                [class.border-indigo-600]="detailsTab() === 'readiness'"
-                [class.text-indigo-600]="detailsTab() === 'readiness'"
-                [class.border-transparent]="detailsTab() !== 'readiness'"
-                [class.text-slate-400]="detailsTab() !== 'readiness'"
-              >
-                Readiness
-              </button>
-            </nav>
+            }
           </div>
 
-          <!-- SUB-TAB CONTENT -->
-          
-          <!-- 1. RIG ASSETS TAB -->
-          @if (detailsTab() === 'assets') {
-            <div class="space-y-2 max-h-80 overflow-y-auto pr-1">
+          <!-- Tab Content -->
+          <div class="space-y-2 max-h-72 overflow-y-auto">
+
+            @if (detailsTab() === 'assets') {
               @for (eq of rigAssets(); track eq.id) {
-                <div class="p-3 bg-slate-50 rounded-lg border border-slate-100 text-xs flex flex-col gap-1">
-                  <div class="flex items-center justify-between font-bold text-slate-800">
-                    <span>{{ eq.equipmentName }}</span>
-                    <span 
-                      class="px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase tracking-wide"
-                      [class.bg-green-100]="eq.status === 'Active'"
-                      [class.text-green-700]="eq.status === 'Active'"
-                      [class.bg-slate-100]="eq.status === 'Standby'"
-                      [class.text-slate-700]="eq.status === 'Standby'"
-                      [class.bg-amber-100]="eq.status === 'Maintenance'"
-                      [class.text-amber-700]="eq.status === 'Maintenance'"
-                      [class.bg-red-100]="eq.status === 'Out Of Service'"
-                      [class.text-red-700]="eq.status === 'Out Of Service'"
-                    >
+                <div class="p-3 bg-slate-50 rounded-xl border border-slate-100 space-y-1.5 text-xs">
+                  <div class="flex items-center justify-between">
+                    <span class="font-black text-slate-800">{{ eq.equipmentName }}</span>
+                    <span class="text-[9px] font-extrabold px-2 py-0.5 rounded-full uppercase"
+                      [class.bg-emerald-100]="eq.status === 'Active'" [class.text-emerald-700]="eq.status === 'Active'"
+                      [class.bg-amber-100]="eq.status === 'Maintenance'" [class.text-amber-700]="eq.status === 'Maintenance'"
+                      [class.bg-red-100]="eq.status === 'Out Of Service'" [class.text-red-700]="eq.status === 'Out Of Service'"
+                      [class.bg-slate-100]="eq.status === 'Standby'" [class.text-slate-600]="eq.status === 'Standby'">
                       {{ eq.status }}
                     </span>
                   </div>
-                  <p class="text-slate-400 font-mono text-[9px]">{{ eq.equipmentCode }} • Serial: {{ eq.serialNumber }}</p>
-                  <div class="flex items-center justify-between text-[10px] text-slate-500 mt-1">
-                    <span>Hours Logged: {{ eq.operatingHours | number }} hrs</span>
-                    <span>Cost Center: {{ eq.costCenter }}</span>
-                  </div>
+                  <p class="text-[9px] text-slate-400 font-mono">{{ eq.equipmentCode }} · {{ eq.operatingHours | number }} hrs</p>
                 </div>
               } @empty {
-                <p class="text-xs text-slate-400 italic">No heavy drilling equipment assigned to this rig.</p>
+                <p class="text-center text-xs text-slate-400 py-6 italic">No equipment assigned.</p>
               }
-            </div>
-          }
+            }
 
-          <!-- 2. RIG COMPONENTS / SYSTEMS TAB -->
-          @if (detailsTab() === 'components') {
-            <div class="space-y-2 max-h-80 overflow-y-auto pr-1">
+            @if (detailsTab() === 'components') {
               @for (comp of rigComponents(); track comp.serial) {
-                <div class="p-3 bg-slate-50 rounded-lg border border-slate-100 text-xs flex flex-col gap-1">
-                  <div class="flex items-center justify-between font-bold text-slate-800">
-                    <span>{{ comp.name }}</span>
-                    <span 
-                      class="px-1.5 py-0.2 rounded text-[9px] font-extrabold uppercase"
-                      [class.bg-emerald-100]="comp.status === 'Operational'"
-                      [class.text-emerald-700]="comp.status === 'Operational'"
-                      [class.bg-amber-100]="comp.status !== 'Operational'"
-                      [class.text-amber-700]="comp.status !== 'Operational'"
-                    >
+                <div class="p-3 bg-slate-50 rounded-xl border border-slate-100 space-y-1 text-xs">
+                  <div class="flex items-center justify-between">
+                    <span class="font-black text-slate-800 text-[11px]">{{ comp.name }}</span>
+                    <span class="text-[9px] font-extrabold px-2 py-0.5 rounded-full uppercase"
+                      [class.bg-emerald-100]="comp.status === 'Operational'" [class.text-emerald-700]="comp.status === 'Operational'"
+                      [class.bg-amber-100]="comp.status !== 'Operational'" [class.text-amber-700]="comp.status !== 'Operational'">
                       {{ comp.status }}
                     </span>
                   </div>
-                  <div class="flex items-center justify-between text-[9px] text-slate-400">
-                    <span>Serial: {{ comp.serial }}</span>
-                    <span>Last Certified: {{ comp.certificationDate }}</span>
-                  </div>
+                  <p class="text-[9px] text-slate-400">{{ comp.serial }} · Cert: {{ comp.certificationDate }}</p>
                 </div>
               }
-            </div>
-          }
+            }
 
-          <!-- 3. RIG INVENTORY STOCK TAB -->
-          @if (detailsTab() === 'inventory') {
-            <div class="space-y-2 max-h-80 overflow-y-auto pr-1">
+            @if (detailsTab() === 'inventory') {
               @for (item of rigInventory(); track item.id) {
-                <div class="p-3 bg-slate-50 rounded-lg border border-slate-100 text-xs flex items-center justify-between">
+                <div class="p-3 bg-slate-50 rounded-xl border border-slate-100 text-xs flex items-center justify-between">
                   <div>
-                    <p class="font-bold text-slate-800">{{ item.itemName }}</p>
-                    <span class="font-mono text-[9px] text-slate-400">{{ item.itemCode }}</span>
+                    <p class="font-black text-slate-800">{{ item.itemName }}</p>
+                    <span class="text-[9px] font-mono text-slate-400">{{ item.itemCode }}</span>
                   </div>
                   <div class="text-right">
-                    <p class="font-bold font-mono text-slate-800">{{ item.quantity }} {{ item.uom }}</p>
-                    <span 
-                      class="text-[9px] font-bold uppercase"
-                      [class.text-green-600]="item.status === 'In Stock'"
+                    <p class="font-black font-mono text-slate-800">{{ item.quantity }} {{ item.uom }}</p>
+                    <span class="text-[9px] font-bold uppercase"
+                      [class.text-emerald-600]="item.status === 'In Stock'"
                       [class.text-amber-600]="item.status === 'Low Stock'"
-                      [class.text-red-600]="item.status === 'Out of Stock'"
-                    >
-                      {{ item.status }}
-                    </span>
+                      [class.text-red-600]="item.status === 'Out of Stock'">{{ item.status }}</span>
                   </div>
                 </div>
               } @empty {
-                <p class="text-xs text-slate-400 italic">No active inventory stocks mapped to this rig's supply warehouse.</p>
+                <p class="text-center text-xs text-slate-400 py-6 italic">No inventory mapped.</p>
               }
-            </div>
-          }
+            }
 
-          <!-- 4. RIG SAFETY & MAINTENANCE READINESS AUDIT -->
-          @if (detailsTab() === 'readiness') {
-            <div class="space-y-4">
-              <div class="flex items-center justify-between p-3 bg-indigo-50/50 rounded-lg border border-indigo-100 text-xs">
-                <span class="font-bold text-indigo-900">Current Safety Readiness:</span>
-                <span class="font-mono font-black text-indigo-750 text-sm">{{ readinessPercentage() }}%</span>
+            @if (detailsTab() === 'readiness') {
+              <div class="p-3 bg-indigo-50 rounded-xl border border-indigo-100 flex justify-between items-center text-xs mb-2">
+                <span class="font-black text-indigo-800">Readiness Score</span>
+                <span class="text-2xl font-black text-indigo-700">{{ readinessPercentage() }}%</span>
               </div>
-
-              <!-- Checklist Switches -->
-              <div class="space-y-2">
-                <div class="flex items-center justify-between p-2 hover:bg-slate-50 rounded transition-colors text-xs">
-                  <div>
-                    <p class="font-bold text-slate-850">BOP Certified & Sealed</p>
-                    <p class="text-[10px] text-slate-400 font-medium">Verify current shear-ram validation</p>
-                  </div>
-                  <input type="checkbox" [checked]="readinessChecklist().bopCertified" (change)="toggleCheck('bopCertified')" class="w-4 h-4 text-indigo-650 border-slate-300 rounded focus:ring-indigo-500">
-                </div>
-                
-                <div class="flex items-center justify-between p-2 hover:bg-slate-50 rounded transition-colors text-xs">
-                  <div>
-                    <p class="font-bold text-slate-850">Top Drive Seal & Oil Levels</p>
-                    <p class="text-[10px] text-slate-400 font-medium">Overhaul checks completed YTD</p>
-                  </div>
-                  <input type="checkbox" [checked]="readinessChecklist().topDriveChecked" (change)="toggleCheck('topDriveChecked')" class="w-4 h-4 text-indigo-650 border-slate-300 rounded focus:ring-indigo-500">
-                </div>
-
-                <div class="flex items-center justify-between p-2 hover:bg-slate-50 rounded transition-colors text-xs">
-                  <div>
-                    <p class="font-bold text-slate-850">Mud Pumps Calibration</p>
-                    <p class="text-[10px] text-slate-400 font-medium">Verify liner wear tolerances</p>
-                  </div>
-                  <input type="checkbox" [checked]="readinessChecklist().mudPumpsTested" (change)="toggleCheck('mudPumpsTested')" class="w-4 h-4 text-indigo-650 border-slate-300 rounded focus:ring-indigo-500">
-                </div>
-
-                <div class="flex items-center justify-between p-2 hover:bg-slate-50 rounded transition-colors text-xs">
-                  <div>
-                    <p class="font-bold text-slate-850">Drawworks Lubrication & Brake</p>
-                    <p class="text-[10px] text-slate-400 font-medium">Automatic block control test ok</p>
-                  </div>
-                  <input type="checkbox" [checked]="readinessChecklist().drawworksLubricated" (change)="toggleCheck('drawworksLubricated')" class="w-4 h-4 text-indigo-650 border-slate-300 rounded focus:ring-indigo-500">
-                </div>
-
-                <div class="flex items-center justify-between p-2 hover:bg-slate-50 rounded transition-colors text-xs">
-                  <div>
-                    <p class="font-bold text-slate-850">HSE Safety Gear Stocked</p>
-                    <p class="text-[10px] text-slate-400 font-medium">Gas detectors, masks, and harnesses</p>
-                  </div>
-                  <input type="checkbox" [checked]="readinessChecklist().safetyGearVerified" (change)="toggleCheck('safetyGearVerified')" class="w-4 h-4 text-indigo-650 border-slate-300 rounded focus:ring-indigo-500">
+              <div class="h-2.5 bg-slate-100 rounded-full overflow-hidden mb-3">
+                <div class="h-full rounded-full transition-all duration-700"
+                  [style.width.%]="readinessPercentage()"
+                  [class.bg-emerald-500]="readinessPercentage() === 100"
+                  [class.bg-amber-500]="readinessPercentage() < 100 && readinessPercentage() >= 60"
+                  [class.bg-red-500]="readinessPercentage() < 60">
                 </div>
               </div>
 
-              <!-- Submit audit button -->
-              <button (click)="submitSafetyAudit()" class="w-full py-2 bg-slate-900 text-white rounded-lg font-bold text-xs hover:bg-slate-800 transition-colors shadow-sm">
-                Log Safety Review Audit
+              @for (check of [
+                ['bopCertified','BOP Certified & Sealed','Shear-ram validation'],
+                ['topDriveChecked','Top Drive & Oil Levels','Overhaul checks YTD'],
+                ['mudPumpsTested','Mud Pumps Calibration','Liner wear tolerances'],
+                ['drawworksLubricated','Drawworks Lubrication','Block control test'],
+                ['safetyGearVerified','HSE Safety Gear','Gas detectors & harnesses']
+              ]; track check[0]) {
+                <div class="flex items-center justify-between p-2.5 rounded-xl hover:bg-slate-50 transition-colors border border-transparent hover:border-slate-100">
+                  <div>
+                    <p class="text-xs font-black text-slate-800">{{ check[1] }}</p>
+                    <p class="text-[9px] text-slate-400 mt-0.5">{{ check[2] }}</p>
+                  </div>
+                  <input type="checkbox"
+                    [checked]="getCheck(check[0])"
+                    (change)="toggleCheckByKey(check[0])"
+                    class="w-4 h-4 text-indigo-600 rounded cursor-pointer">
+                </div>
+              }
+
+              <button (click)="submitSafetyAudit()" class="w-full mt-2 py-2.5 bg-slate-800 hover:bg-slate-900 text-white rounded-xl font-black text-xs transition-all">
+                📋 Log Safety Audit
               </button>
-            </div>
-          }
+            }
+
+          </div>
         </div>
       } @else {
-        <div class="bg-slate-50 p-6 rounded-xl border border-dashed border-slate-250 text-center text-slate-400">
-          <svg class="w-8 h-8 mx-auto mb-2 text-slate-350" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-          </svg>
-          <p class="text-xs font-bold">Select a Rig to view assigned assets, components, stock, and checklist readiness.</p>
+        <div class="bg-white rounded-2xl border-2 border-dashed border-slate-200 p-10 text-center">
+          <svg class="w-12 h-12 mx-auto mb-3 text-slate-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+          <p class="text-sm font-black text-slate-400">Select a Rig</p>
+          <p class="text-[10px] text-slate-300 mt-1 font-semibold">Click any row to view details,<br>assets & safety checklist</p>
         </div>
       }
     </div>
+
   </div>
 </div>

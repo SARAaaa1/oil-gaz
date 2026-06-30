@@ -2,6 +2,7 @@ import { Component, OnInit, inject, signal, computed, ChangeDetectionStrategy } 
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MockDataService } from '../../../core/services/mock-data.service';
+import { FinanceCoreService } from '../../../core/services/finance-core.service';
 import { BreadcrumbService } from '../../../core/services/breadcrumb.service';
 import { NotificationService } from '../../../core/services/notification.service';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
@@ -19,6 +20,7 @@ import { PurchaseOrder } from '../../../shared/interfaces/purchase-order.interfa
 })
 export class AccountsPayableComponent implements OnInit {
   private readonly mockDataService = inject(MockDataService);
+  private readonly financeService = inject(FinanceCoreService);
   private readonly breadcrumbService = inject(BreadcrumbService);
   private readonly notificationService = inject(NotificationService);
   private readonly translate = inject(TranslateService);
@@ -192,6 +194,18 @@ export class AccountsPayableComponent implements OnInit {
 
     // Recalculate or append aging entry
     this.updateAgingOnNewInvoice(newInvoice);
+
+    // ── AUTO-POST to General Ledger ──────────────────────────────────
+    this.financeService.autoPostAPInvoice({
+      invoiceNumber: newInvoice.invoiceNumber,
+      vendorName: newInvoice.vendorName,
+      date: newInvoice.invoiceDate,
+      subTotal: newInvoice.subTotal,
+      taxAmount: newInvoice.taxAmount,
+      totalAmount: newInvoice.totalAmount,
+      poNumber: newInvoice.poNumber,
+      chargeAccountCode: '521000'
+    });
 
     this.showInvoiceModal.set(false);
     this.notificationService.success('finance.ap.invoice_created_title', 'finance.ap.invoice_created_desc');
@@ -371,6 +385,15 @@ export class AccountsPayableComponent implements OnInit {
 
     // Update vouchers list
     this.vouchers.update(prev => [newVoucher, ...prev]);
+
+    // ── AUTO-POST to General Ledger ──────────────────────────────────
+    this.financeService.autoPostAPPayment({
+      voucherNumber: newVoucher.voucherNumber,
+      vendorName: newVoucher.vendorName,
+      date: newVoucher.paymentDate,
+      amount: newVoucher.amount,
+      paymentMethod: newVoucher.paymentMethod
+    });
 
     // Update status and paid amounts of paid invoices
     this.invoices.update(invoicesList => 

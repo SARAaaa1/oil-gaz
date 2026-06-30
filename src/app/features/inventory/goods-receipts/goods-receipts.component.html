@@ -28,16 +28,21 @@
           </svg>
           {{ 'inventory.print' | translate }}
         </button>
-      } @else {
-        <button
-          (click)="openAddMRV()"
-          class="px-4 py-2 bg-slate-900 text-white font-bold rounded-lg hover:bg-slate-800 transition-colors flex items-center gap-2 cursor-pointer text-xs"
-        >
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-          </svg>
-          Receive Goods (MRV)
-        </button>
+        @if (selectedMRV()!.status === 'Pending Approval') {
+          <button
+            (click)="approveMRV(selectedMRV()!); selectedMRV.set(null)"
+            class="px-4 py-2 bg-amber-600 text-white font-bold rounded-lg hover:bg-amber-700 transition-colors flex items-center gap-2 cursor-pointer text-xs"
+          >
+            {{ 'inventory.mrv_action.approve_receipt' | translate }}
+          </button>
+        } @else if (selectedMRV()!.status === 'Approved') {
+          <button
+            (click)="approveFinanceMRV(selectedMRV()!); selectedMRV.set(null)"
+            class="px-4 py-2 bg-emerald-600 text-white font-bold rounded-lg hover:bg-emerald-700 transition-colors flex items-center gap-2 cursor-pointer text-xs"
+          >
+            {{ 'inventory.mrv_action.approve_post_invoice' | translate }}
+          </button>
+        }
       }
     </div>
   </div>
@@ -163,9 +168,11 @@
             [(ngModel)]="statusFilter"
             class="bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 focus:outline-none"
           >
-            <option value="ALL">All Statuses</option>
-            <option value="Draft">Draft</option>
-            <option value="Approved">Approved / Posted</option>
+            <option value="ALL">{{ 'inventory.mrv_filter.all' | translate }}</option>
+            <option value="Draft">{{ 'inventory.mrv_filter.draft' | translate }}</option>
+            <option value="Pending Approval">{{ 'inventory.mrv_filter.pending_warehouse' | translate }}</option>
+            <option value="Approved">{{ 'inventory.mrv_filter.pending_finance' | translate }}</option>
+            <option value="Posted">{{ 'inventory.mrv_filter.posted' | translate }}</option>
           </select>
         </div>
       </div>
@@ -196,19 +203,33 @@
                   <span class="px-2.5 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider"
                     [class.bg-slate-100]="mrv.status === 'Draft'"
                     [class.text-slate-600]="mrv.status === 'Draft'"
-                    [class.bg-green-50]="mrv.status === 'Posted' || mrv.status === 'Approved'"
-                    [class.text-green-700]="mrv.status === 'Posted' || mrv.status === 'Approved'"
+                    [class.bg-amber-100]="mrv.status === 'Pending Approval'"
+                    [class.text-amber-700]="mrv.status === 'Pending Approval'"
+                    [class.bg-blue-100]="mrv.status === 'Approved'"
+                    [class.text-blue-700]="mrv.status === 'Approved'"
+                    [class.bg-emerald-100]="mrv.status === 'Posted'"
+                    [class.text-emerald-700]="mrv.status === 'Posted'"
                   >
-                    {{ mrv.status === 'Posted' ? 'Approved & Posted' : mrv.status }}
+                    @if (mrv.status === 'Posted') { {{ 'inventory.mrv_status.posted' | translate }} }
+                    @else if (mrv.status === 'Approved') { {{ 'inventory.mrv_status.pending_finance' | translate }} }
+                    @else if (mrv.status === 'Pending Approval') { {{ 'inventory.mrv_status.pending_warehouse' | translate }} }
+                    @else { {{ mrv.status }} }
                   </span>
                 </td>
                 <td class="p-4 text-center">
-                  @if (mrv.status === 'Draft') {
+                  @if (mrv.status === 'Pending Approval') {
                     <button
                       (click)="approveMRV(mrv); $event.stopPropagation()"
-                      class="px-2.5 py-1 bg-slate-900 text-white rounded text-[10px] font-bold hover:bg-slate-800 transition-colors cursor-pointer"
+                      class="px-2.5 py-1 bg-amber-600 text-white rounded text-[10px] font-bold hover:bg-amber-700 transition-colors cursor-pointer"
                     >
-                      Approve &amp; Post
+                      {{ 'inventory.mrv_action.approve_receipt' | translate }}
+                    </button>
+                  } @else if (mrv.status === 'Approved') {
+                    <button
+                      (click)="approveFinanceMRV(mrv); $event.stopPropagation()"
+                      class="px-2.5 py-1 bg-emerald-600 text-white rounded text-[10px] font-bold hover:bg-emerald-700 transition-colors cursor-pointer"
+                    >
+                      {{ 'inventory.mrv_action.approve_post_invoice' | translate }}
                     </button>
                   } @else {
                     <span class="text-slate-400 text-[10px]">N/A</span>

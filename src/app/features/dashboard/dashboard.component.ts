@@ -31,7 +31,7 @@ export class DashboardComponent implements OnInit {
   readonly hseIncidents = this.mockDataService.hseIncidents;
   readonly currentUser = this.authService.currentUser;
 
-  // Procurement
+  // Raw data
   readonly purchaseRequests = this.mockDataService.purchaseRequests;
   readonly rfqs = this.mockDataService.rfqs;
   readonly purchaseOrders = this.mockDataService.purchaseOrders;
@@ -39,14 +39,13 @@ export class DashboardComponent implements OnInit {
   readonly mrvs = this.mockDataService.mrvs;
   readonly supplierInvoices = this.mockDataService.supplierInvoices;
   readonly apAging = this.mockDataService.apAging;
-
-  // Inventory & Assets
   readonly inventoryItems = this.mockDataService.inventoryItems;
   readonly assetTransfers = this.mockDataService.assetTransfers;
-  readonly tripLogs = this.mockDataService.tripLogs;
   readonly workOrders = this.mockDataService.workOrders;
+  readonly equipment = this.mockDataService.equipment;
+  readonly rigs = this.mockDataService.rigs;
 
-  // Derived KPIs
+  // ─── Derived KPIs ───────────────────────────────────────────────────────────
   readonly openPRs = computed(() =>
     this.purchaseRequests().filter(pr => pr.status === 'Pending Approval' || pr.status === 'Draft').length
   );
@@ -71,9 +70,6 @@ export class DashboardComponent implements OnInit {
   readonly totalFuelStock = computed(() =>
     this.mockDataService.fuelTanks().reduce((s, t) => s + t.currentLevelLiters, 0)
   );
-  readonly assetsInTransit = computed(() =>
-    this.assetTransfers().filter(t => t.status === 'Pending' || t.status === 'Completed').length
-  );
   readonly openSupplierInvoices = computed(() =>
     this.supplierInvoices().filter(i => i.status === 'Unpaid' || i.status === 'Partially Paid').length
   );
@@ -91,9 +87,10 @@ export class DashboardComponent implements OnInit {
   readonly ltiFreeDays = computed(() =>
     this.hseIncidents().filter(i => i.type === 'LTI').length === 0 ? 365 : 12
   );
-  readonly activeRigs = computed(() => this.mockDataService.rigs().slice(0, 3));
-  
-  // My Tasks
+  readonly activeRigs = computed(() => this.rigs().slice(0, 4));
+  readonly recentLogCount = computed(() => this.auditService.logs().length);
+
+  // ─── My Tasks ────────────────────────────────────────────────────────────────
   readonly pendingPRs = computed(() =>
     this.purchaseRequests().filter(pr => pr.status === 'Pending Approval')
   );
@@ -110,21 +107,129 @@ export class DashboardComponent implements OnInit {
     this.inspectionRequests().filter(i => i.status === 'Pending')
   );
 
-  // Critical Alerts
+  // ─── Critical Alerts ─────────────────────────────────────────────────────────
   readonly criticalStockItems = computed(() =>
-    this.inventoryItems().filter(i => i.status === 'Out of Stock' || i.status === 'Low Stock').slice(0, 5)
+    this.inventoryItems().filter(i => i.status === 'Out of Stock' || i.status === 'Low Stock').slice(0, 4)
   );
   readonly breakdownWorkOrders = computed(() =>
-    this.workOrders().filter(wo => wo.type === 'Breakdown' && wo.status !== 'Completed').slice(0, 5)
+    this.workOrders().filter(wo => wo.type === 'Breakdown' && wo.status !== 'Completed').slice(0, 4)
   );
   readonly expiredPermits = computed(() =>
-    this.mockDataService.ptws().filter(p => p.status === 'Expired').slice(0, 5)
+    this.mockDataService.ptws().filter(p => p.status === 'Expired').slice(0, 3)
   );
   readonly criticalAlertsCount = computed(() =>
     this.criticalStock() + this.breakdownWorkOrders().length + this.expiredPermits().length
   );
 
-  readonly recentLogCount = computed(() => this.auditService.logs().length);
+  // ─── CHART 1: Procurement Pipeline (horizontal bars) ────────────────────────
+  // Shows the volume in each procurement stage as %‑of‑total
+  readonly procurementPipeline = computed(() => {
+    const stages = [
+      { label: 'Purchase Requests', labelAr: 'طلبات الشراء', count: this.purchaseRequests().length, color: '#f59e0b', icon: '📋' },
+      { label: 'RFQs Sent', labelAr: 'طلبات عروض أسعار', count: this.rfqs().length, color: '#6366f1', icon: '📩' },
+      { label: 'Purchase Orders', labelAr: 'أوامر الشراء', count: this.purchaseOrders().length, color: '#0ea5e9', icon: '🛒' },
+      { label: 'Inspections', labelAr: 'الفحص والاستلام', count: this.inspectionRequests().length, color: '#10b981', icon: '🔍' },
+      { label: 'Goods Receipts', labelAr: 'إذن إضافة مخزن', count: this.mrvs().length, color: '#8b5cf6', icon: '📦' },
+    ];
+    const max = Math.max(...stages.map(s => s.count), 1);
+    return stages.map(s => ({ ...s, pct: Math.round((s.count / max) * 100) }));
+  });
+
+  // ─── CHART 2: Inventory Health Donut ────────────────────────────────────────
+  readonly inventoryDonut = computed(() => {
+    const items = this.inventoryItems();
+    const total = items.length || 1;
+    const inStock = items.filter(i => i.status === 'In Stock').length;
+    const lowStock = items.filter(i => i.status === 'Low Stock').length;
+    const outOfStock = items.filter(i => i.status === 'Out of Stock').length;
+
+    const circ = 251.32;
+    const inPct = inStock / total;
+    const lowPct = lowStock / total;
+    const outPct = outOfStock / total;
+
+    return {
+      total,
+      inStock, lowStock, outOfStock,
+      inStrokePct: Math.round(inPct * 100),
+      lowStrokePct: Math.round(lowPct * 100),
+      outStrokePct: Math.round(outPct * 100),
+      circ,
+      inStroke: inPct * circ,
+      lowStroke: lowPct * circ,
+      outStroke: outPct * circ,
+      inOffset: 0,
+      lowOffset: circ - inPct * circ,
+      outOffset: circ - inPct * circ - lowPct * circ,
+    };
+  });
+
+  // ─── CHART 3: Equipment Fleet Donut ─────────────────────────────────────────
+  readonly equipmentDonut = computed(() => {
+    const list = this.equipment();
+    const total = list.length || 1;
+    const active = list.filter(e => e.status === 'Active').length;
+    const maintenance = list.filter(e => e.status === 'Maintenance').length;
+    const standby = list.filter(e => e.status === 'Standby').length;
+    const outOfService = list.filter(e => e.status === 'Out Of Service').length;
+
+    const circ = 251.32;
+    const ap = active / total, mp = maintenance / total, sp = standby / total;
+
+    return {
+      total, active, maintenance, standby, outOfService,
+      activePct: Math.round(ap * 100),
+      maintPct: Math.round(mp * 100),
+      standbyPct: Math.round(sp * 100),
+      outPct: Math.round((outOfService / total) * 100),
+      circ,
+      activeStroke: ap * circ,
+      maintStroke: mp * circ,
+      standbyStroke: sp * circ,
+      outStroke: (outOfService / total) * circ,
+      activeOffset: 0,
+      maintOffset: circ - ap * circ,
+      standbyOffset: circ - ap * circ - mp * circ,
+      outOffset: circ - ap * circ - mp * circ - sp * circ,
+    };
+  });
+
+  // ─── CHART 4: Financial Overview bars (normalised to max) ───────────────────
+  readonly financialBars = computed(() => {
+    const vals = [
+      { label: 'Cash & Bank Liquidity', labelAr: 'السيولة النقدية والبنكية', value: this.totalLiquidity(), color: '#10b981', unit: '$' },
+      { label: 'Inventory Value', labelAr: 'قيمة المخزون', value: this.inventoryValue(), color: '#6366f1', unit: '$' },
+      { label: 'AP Outstanding', labelAr: 'الذمم الدائنة', value: this.totalAPBalance(), color: '#ef4444', unit: '$' },
+    ];
+    const max = Math.max(...vals.map(v => v.value), 1);
+    return vals.map(v => ({ ...v, pct: Math.round((v.value / max) * 100) }));
+  });
+
+  // ─── CHART 5: Work Orders Status Donut ──────────────────────────────────────
+  readonly woDonut = computed(() => {
+    const list = this.workOrders();
+    const total = list.length || 1;
+    const open = list.filter(w => w.status === 'Open').length;
+    const inProgress = list.filter(w => w.status === 'In Progress').length;
+    const completed = list.filter(w => w.status === 'Completed').length;
+
+    const circ = 251.32;
+    const op = open / total, ip = inProgress / total;
+
+    return {
+      total, open, inProgress, completed,
+      openPct: Math.round(op * 100),
+      inProgressPct: Math.round(ip * 100),
+      completedPct: Math.round((completed / total) * 100),
+      circ,
+      openStroke: op * circ,
+      inProgressStroke: ip * circ,
+      completedStroke: (completed / total) * circ,
+      openOffset: 0,
+      inProgressOffset: circ - op * circ,
+      completedOffset: circ - op * circ - ip * circ,
+    };
+  });
 
   navigate(path: string) { this.router.navigate([path]); }
 
