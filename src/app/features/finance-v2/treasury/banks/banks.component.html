@@ -1,0 +1,229 @@
+<div class="space-y-5">
+
+  <!-- ══ PAGE HEADER ══════════════════════════════════════════════ -->
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+    <div>
+      <h1 class="text-2xl font-black text-slate-800 tracking-tight">{{ 'finance_v2.treasury.banks.title' | translate }}</h1>
+      <p class="text-xs text-slate-500 font-semibold mt-1">{{ 'finance_v2.treasury.banks.subtitle' | translate }}</p>
+    </div>
+    <div class="flex items-center gap-2 flex-wrap">
+      <div class="flex items-center gap-1.5 bg-white border border-slate-100 rounded-lg px-3 py-1.5 shadow-sm">
+        <span class="w-2 h-2 rounded-full bg-green-500"></span>
+        <span class="text-[11px] font-bold text-slate-600">{{ activeCount() }} {{ 'finance_v2.treasury.banks.active_accounts' | translate }}</span>
+      </div>
+      <div class="flex items-center gap-1.5 bg-white border border-slate-100 rounded-lg px-3 py-1.5 shadow-sm">
+        <span class="text-[11px] font-bold text-slate-600">{{ 'finance_v2.treasury.banks.total_bank' | translate }}: <span class="text-indigo-600">{{ formatAmt(totalBankBalance()) }} SAR</span></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ MAIN GRID ═════════════════════════════════════════════════ -->
+  <div class="grid grid-cols-1 xl:grid-cols-12 gap-5" style="min-height: calc(100vh - 14rem)">
+
+    <!-- ── LEFT LIST ─────────────────────────────────────────────── -->
+    <div class="xl:col-span-4 bg-white rounded-2xl border border-slate-100 shadow-sm flex flex-col overflow-hidden">
+      <div class="p-4 border-b border-slate-100 space-y-2">
+        <div class="relative">
+          <svg class="w-4 h-4 text-slate-400 absolute left-3 rtl:right-3 rtl:left-auto top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+          </svg>
+          <input type="text" [placeholder]="'finance_v2.ar.cus.search_placeholder' | translate"
+            (input)="searchQuery.set($any($event.target).value)"
+            class="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 rtl:pr-9 rtl:pl-3 pr-3 py-2.5 text-xs placeholder-slate-400 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all">
+        </div>
+        <select (change)="statusFilter.set($any($event.target).value)"
+          class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 focus:outline-none">
+          <option value="All">{{ 'finance_v2.common.all_statuses' | translate }}</option>
+          <option value="Active">{{ 'finance_v2.treasury.banks.status_active' | translate }}</option>
+          <option value="Inactive">{{ 'finance_v2.treasury.banks.status_inactive' | translate }}</option>
+        </select>
+      </div>
+
+      <!-- Bank rows -->
+      <div class="flex-1 overflow-y-auto divide-y divide-slate-50">
+        @for (b of filtered(); track b.id) {
+          <div (click)="selectAccount(b)"
+            [class.bg-blue-50]="selectedId() === b.id"
+            [class.border-l-4]="selectedId() === b.id"
+            [class.border-l-primary]="selectedId() === b.id"
+            class="p-4 cursor-pointer hover:bg-slate-50 transition-all">
+            <div class="flex items-start justify-between gap-2">
+              <div class="min-w-0">
+                <p class="font-black text-slate-900 text-sm truncate">{{ b.bankName }}</p>
+                <p class="text-[10px] text-slate-400 mt-0.5 font-mono truncate">{{ b.accountNumber }}</p>
+                <p class="text-[11px] text-slate-500 mt-0.5">{{ b.branch }}</p>
+              </div>
+              <div class="shrink-0 text-right space-y-1">
+                <span class="inline-block px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider"
+                  [class]="getStatusClass(b.status)">{{ b.status }}</span>
+                <p class="text-xs font-black text-slate-800">{{ formatAmt(b.currentBalance) }} {{ b.currency }}</p>
+              </div>
+            </div>
+          </div>
+        } @empty {
+          <div class="p-12 text-center">
+            <p class="text-xs font-semibold text-slate-400">{{ 'finance_v2.common.no_records' | translate }}</p>
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- ── RIGHT DETAIL ───────────────────────────────────────────── -->
+    <div class="xl:col-span-8 flex flex-col gap-4 overflow-y-auto" style="max-height: calc(100vh - 14rem)">
+
+      @if (activeAccount()) {
+        @let b = activeAccount()!;
+
+        <!-- Header Card -->
+        <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+          <div class="h-1.5 w-full bg-gradient-to-r from-blue-600 via-indigo-500 to-purple-500"></div>
+          <div class="p-5">
+            <div class="flex items-start justify-between gap-4 flex-wrap">
+              <div class="flex items-center gap-3">
+                <div class="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center shrink-0">
+                  <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z"/>
+                  </svg>
+                </div>
+                <div>
+                  <h2 class="text-lg font-black text-slate-800">{{ b.bankName }}</h2>
+                  <p class="text-xs text-slate-400 font-semibold mt-0.5">{{ b.branch }}</p>
+                  <p class="font-mono text-[10px] text-slate-400 bg-slate-100 px-2 py-0.5 rounded inline-block mt-1">{{ 'finance_v2.treasury.banks.acct_no' | translate }}: {{ b.accountNumber }}</p>
+                </div>
+              </div>
+              <div class="text-right">
+                <span class="inline-block px-3 py-1 rounded-full text-[9px] font-extrabold uppercase tracking-widest mb-2"
+                  [class]="getStatusClass(b.status)">{{ b.status }}</span>
+                <p class="text-[10px] text-slate-400 mt-1">{{ 'finance_v2.treasury.banks.available_balance' | translate }}</p>
+                <p class="text-3xl font-black text-indigo-700">{{ formatAmt(b.availableBalance) }} <span class="text-xs">{{ b.currency }}</span></p>
+              </div>
+            </div>
+
+            <!-- Actions Bar -->
+            <div class="mt-4 pt-4 border-t border-slate-50 flex items-center justify-between flex-wrap gap-2">
+              <div class="flex items-center gap-2">
+                <button (click)="openTxDialog('Deposit')" [disabled]="b.status === 'Inactive'"
+                  class="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-bold transition-all disabled:opacity-50 flex items-center gap-1">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                  {{ 'finance_v2.treasury.cash.btn_deposit' | translate }}
+                </button>
+                <button (click)="openTxDialog('Withdrawal')" [disabled]="b.status === 'Inactive'"
+                  class="px-3 py-1.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-[10px] font-bold transition-all disabled:opacity-50 flex items-center gap-1">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"/></svg>
+                  {{ 'finance_v2.treasury.cash.btn_withdraw' | translate }}
+                </button>
+              </div>
+              <div class="flex items-center gap-2">
+                <button (click)="goToReconciliation()"
+                  class="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-bold transition-all flex items-center gap-1">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                  {{ 'finance_v2.treasury.banks.btn_reconcile' | translate }}
+                </button>
+                <button (click)="toggleAccountStatus(b)"
+                  class="px-3 py-1.5 rounded-xl border border-slate-200 text-slate-600 text-[10px] font-bold hover:bg-slate-50 transition-all">
+                  {{ b.status === 'Active' ? ('finance_v2.treasury.banks.btn_deactivate' | translate) : ('finance_v2.treasury.banks.btn_activate' | translate) }}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Details Grid -->
+        <div class="grid grid-cols-2 gap-4">
+          <div class="bg-slate-50 border border-slate-100 rounded-xl p-4">
+            <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest block">{{ 'finance_v2.treasury.banks.iban' | translate }}</span>
+            <p class="font-mono text-xs font-black text-slate-700 mt-1 break-all">{{ b.iban }}</p>
+          </div>
+          <div class="bg-slate-50 border border-slate-100 rounded-xl p-4">
+            <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest block">{{ 'finance_v2.treasury.banks.swift' | translate }}</span>
+            <p class="font-mono text-xs font-black text-slate-700 mt-1">{{ b.swiftCode }}</p>
+          </div>
+        </div>
+
+        <!-- Statement / Transactions -->
+        <div class="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden">
+          <p class="p-4 font-black text-slate-800 text-xs border-b border-slate-50 uppercase tracking-wider bg-slate-50/50">{{ 'finance_v2.treasury.cash.tab_statement' | translate }}</p>
+          <div class="overflow-x-auto">
+            <table class="w-full text-xs">
+              <thead>
+                <tr class="bg-slate-50 border-b border-slate-100 text-slate-400 font-bold">
+                  <th class="px-4 py-3 text-left text-[10px] uppercase">{{ 'finance_v2.common.date' | translate }}</th>
+                  <th class="px-4 py-3 text-left text-[10px] uppercase">{{ 'finance_v2.common.reference' | translate }}</th>
+                  <th class="px-4 py-3 text-left text-[10px] uppercase">{{ 'finance_v2.common.description' | translate }}</th>
+                  <th class="px-4 py-3 text-right text-[10px] uppercase">{{ 'finance_v2.common.amount' | translate }}</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-50">
+                @for (m of activeAccountMovements(); track m.id) {
+                  <tr class="hover:bg-slate-50 transition-colors">
+                    <td class="px-4 py-3 text-slate-600">{{ m.date }}</td>
+                    <td class="px-4 py-3 font-mono font-black text-indigo-600 text-[10px]">{{ m.reference }}</td>
+                    <td class="px-4 py-3 text-slate-700">{{ m.description }}</td>
+                    <td class="px-4 py-3 text-right font-black" [class]="getMovementClass(m.type)">
+                      {{ ['Deposit', 'Receipt', 'Transfer In'].includes(m.type) ? '+' : '-' }}{{ formatAmt(m.amount) }} {{ m.currency }}
+                    </td>
+                  </tr>
+                } @empty {
+                  <tr><td colspan="4" class="py-8 text-center text-slate-400 text-xs">{{ 'finance_v2.common.no_records' | translate }}</td></tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      } @else {
+        <div class="bg-white rounded-2xl border border-slate-100 shadow-sm flex-1 flex items-center justify-center py-24">
+          <div class="text-center">
+            <svg class="w-12 h-12 mx-auto text-slate-200 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z"/>
+            </svg>
+            <p class="text-sm font-black text-slate-400">{{ 'finance_v2.treasury.banks.select_account' | translate }}</p>
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+
+  <!-- Deposit / Withdrawal Dialog -->
+  @if (showTxDialog()) {
+    <div class="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+        <h3 class="text-base font-black text-slate-800 mb-1">
+          {{ (txType() === 'Deposit' ? 'finance_v2.treasury.cash.dialog_deposit' : 'finance_v2.treasury.cash.dialog_withdraw') | translate }}
+        </h3>
+        <p class="text-xs text-slate-500 mb-4">{{ 'finance_v2.treasury.cash.dialog_desc' | translate }}</p>
+
+        <div class="space-y-3">
+          <div>
+            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">{{ 'finance_v2.common.amount' | translate }}</label>
+            <input type="number" [value]="txAmount()" (input)="txAmount.set(+$any($event.target).value)"
+              class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-bold text-slate-800 focus:outline-none focus:border-primary">
+          </div>
+          <div>
+            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">{{ 'finance_v2.common.reference' | translate }}</label>
+            <input type="text" [value]="txReference()" (input)="txReference.set($any($event.target).value)"
+              class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xs placeholder-slate-300 focus:outline-none focus:border-primary">
+          </div>
+          <div>
+            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">{{ 'finance_v2.common.description' | translate }}</label>
+            <textarea rows="3" [value]="txReason()" (input)="txReason.set($any($event.target).value)"
+              class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xs placeholder-slate-300 focus:outline-none focus:border-primary resize-none"></textarea>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-end gap-2 mt-5">
+          <button (click)="closeTxDialog()"
+            class="px-4 py-2 rounded-xl border border-slate-200 text-slate-600 text-xs font-bold hover:bg-slate-50 transition-all">
+            {{ 'finance_v2.common.cancel' | translate }}
+          </button>
+          <button (click)="submitTransaction()"
+            class="px-4 py-2 rounded-xl text-white text-xs font-bold transition-all"
+            [class.bg-emerald-600]="txType() === 'Deposit'" [class.hover:bg-emerald-700]="txType() === 'Deposit'"
+            [class.bg-red-600]="txType() === 'Withdrawal'" [class.hover:bg-red-700]="txType() === 'Withdrawal'">
+            {{ 'finance_v2.common.save' | translate }}
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+</div>

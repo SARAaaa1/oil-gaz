@@ -207,6 +207,63 @@ export const routes: Routes = [
           }
         ]
       },
+
+      // ══════════════════════════════════════════════════════════
+      // FINANCE V2 — New Finance Module (Migration Phase)
+      // Old /finance routes are kept below and remain accessible.
+      // These new routes are independent and will replace the old
+      // ones after full migration is approved page by page.
+      // ══════════════════════════════════════════════════════════
+      {
+        path: 'finance-v2',
+        data: { permission: 'view:finance' },
+        children: [
+          { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
+
+          // ── Core Finance ──
+          { path: 'dashboard',         loadComponent: () => import('./features/finance-v2/dashboard/dashboard.component').then(m => m.FinV2DashboardComponent) },
+          { path: 'chart-of-accounts', loadComponent: () => import('./features/finance-v2/chart-of-accounts/chart-of-accounts.component').then(m => m.FinV2ChartOfAccountsComponent) },
+          { path: 'cost-centers',      loadComponent: () => import('./features/finance-v2/cost-centers/cost-centers.component').then(m => m.FinV2CostCentersComponent) },
+          { path: 'journal-entries',   loadComponent: () => import('./features/finance-v2/journal-entries/journal-entries.component').then(m => m.FinV2JournalEntriesComponent) },
+          { path: 'general-ledger',    loadComponent: () => import('./features/finance-v2/general-ledger/general-ledger.component').then(m => m.FinV2GeneralLedgerComponent) },
+          { path: 'trial-balance',     loadComponent: () => import('./features/finance-v2/trial-balance/trial-balance.component').then(m => m.FinV2TrialBalanceComponent) },
+
+          // ── Accounts Payable ──
+          { path: 'ap/suppliers',                loadComponent: () => import('./features/finance-v2/ap/suppliers/suppliers.component').then(m => m.FinV2ApSuppliersComponent) },
+          { path: 'ap/vendor-invoices-draft',    loadComponent: () => import('./features/finance-v2/ap/vendor-invoices-draft/vendor-invoices-draft.component').then(m => m.FinV2ApVendorInvoicesDraftComponent) },
+          { path: 'ap/vendor-invoices-approved', loadComponent: () => import('./features/finance-v2/ap/vendor-invoices-approved/vendor-invoices-approved.component').then(m => m.FinV2ApVendorInvoicesApprovedComponent) },
+          { path: 'ap/ready-for-payment',        loadComponent: () => import('./features/finance-v2/ap/ready-for-payment/ready-for-payment.component').then(m => m.FinV2ApReadyForPaymentComponent) },
+          { path: 'ap/payments',                 loadComponent: () => import('./features/finance-v2/ap/payments/payments.component').then(m => m.FinV2ApPaymentsComponent) },
+
+          // ── Accounts Receivable ──
+          { path: 'ar/customers',         loadComponent: () => import('./features/finance-v2/ar/customers/customers.component').then(m => m.FinV2CustomersComponent) },
+          { path: 'ar/customer-invoices', loadComponent: () => import('./features/finance-v2/ar/customer-invoices/customer-invoices.component').then(m => m.FinV2CustomerInvoicesComponent) },
+          { path: 'ar/collections',       loadComponent: () => import('./features/finance-v2/ar/collections/collections.component').then(m => m.FinV2CollectionsComponent) },
+
+          // ── Treasury ──
+          { path: 'treasury/cash',      loadComponent: () => import('./features/finance-v2/treasury/cash/cash.component').then(m => m.FinV2CashComponent) },
+          { path: 'treasury/banks',     loadComponent: () => import('./features/finance-v2/treasury/banks/banks.component').then(m => m.FinV2BanksComponent) },
+          { path: 'treasury/transfers', loadComponent: () => import('./features/finance-v2/treasury/transfers/transfers.component').then(m => m.FinV2TransfersComponent) },
+          { path: 'treasury/reconciliation', loadComponent: () => import('./features/finance-v2/treasury/reconciliation/reconciliation.component').then(m => m.FinV2ReconciliationComponent) },
+
+          // ── Assets ──
+          { path: 'assets/fixed-assets',  loadComponent: () => import('./features/finance-v2/fixed-assets/fixed-assets.component').then(m => m.FinV2FixedAssetsComponent) },
+          { path: 'assets/depreciation',  loadComponent: () => import('./features/finance-v2/depreciation/depreciation.component').then(m => m.FinV2DepreciationComponent) },
+
+          // ── Budget ──
+          { path: 'budget', loadComponent: () => import('./features/finance-v2/budget/budget.component').then(m => m.FinV2BudgetComponent) },
+
+          // ── Taxes ──
+          { path: 'taxes/vat', loadComponent: () => import('./features/finance-v2/vat/vat.component').then(m => m.FinV2VatComponent) },
+
+          // ── Reports ──
+          { path: 'reports', loadComponent: () => import('./features/finance-v2/reports/reports.component').then(m => m.FinV2ReportsComponent) },
+
+          // ── Administration ──
+          { path: 'admin/period-close', loadComponent: () => import('./features/finance-v2/period-close/period-close.component').then(m => m.FinV2PeriodCloseComponent) },
+        ]
+      },
+
       {
         path: 'hse',
         loadComponent: () => import('./features/hse/hse.component').then(m => m.HseComponent)

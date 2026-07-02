@@ -1,0 +1,352 @@
+<div class="space-y-5">
+
+  <!-- ══ PAGE HEADER ══════════════════════════════════════════════ -->
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+    <div>
+      <h1 class="text-2xl font-black text-slate-800 tracking-tight">{{ 'finance_v2.assets.fixed_assets' | translate }}</h1>
+      <p class="text-xs text-slate-500 font-semibold mt-1">{{ 'finance_v2.assets.subtitle' | translate }}</p>
+    </div>
+    <button (click)="openCreateModal()"
+      class="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-sm transition-all active:scale-95">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+      {{ 'finance_v2.assets.btn_new' | translate }}
+    </button>
+  </div>
+
+  <!-- ══ KPI CARDS ════════════════════════════════════════════════ -->
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+    <div class="bg-white rounded-xl border border-slate-100 shadow-sm p-4">
+      <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{{ 'finance_v2.assets.kpi.total_assets' | translate }}</p>
+      <p class="text-2xl font-black text-slate-850 mt-1">{{ kpis().totalAssets }}</p>
+    </div>
+    <div class="bg-white rounded-xl border border-slate-100 shadow-sm p-4">
+      <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{{ 'finance_v2.assets.kpi.asset_value' | translate }}</p>
+      <p class="text-lg font-black text-slate-800 mt-1">{{ formatAmt(kpis().totalAssetValue) }} SAR</p>
+    </div>
+    <div class="bg-red-50 rounded-xl border border-red-100 shadow-sm p-4">
+      <p class="text-[10px] font-bold text-red-500 uppercase tracking-wider">{{ 'finance_v2.assets.kpi.accumulated' | translate }}</p>
+      <p class="text-lg font-black text-red-750 mt-1">{{ formatAmt(kpis().accumulatedDepreciation) }} SAR</p>
+    </div>
+    <div class="bg-green-50 rounded-xl border border-green-100 shadow-sm p-4">
+      <p class="text-[10px] font-bold text-green-500 uppercase tracking-wider">{{ 'finance_v2.assets.kpi.nbv' | translate }}</p>
+      <p class="text-lg font-black text-green-755 mt-1">{{ formatAmt(kpis().netBookValue) }} SAR</p>
+    </div>
+  </div>
+
+  <!-- ══ MAIN GRID ═════════════════════════════════════════════════ -->
+  <div class="grid grid-cols-1 xl:grid-cols-12 gap-5" style="min-height: calc(100vh - 18rem)">
+
+    <!-- ── LEFT LIST ─────────────────────────────────────────────── -->
+    <div class="xl:col-span-4 bg-white rounded-2xl border border-slate-100 shadow-sm flex flex-col overflow-hidden">
+      <div class="p-4 border-b border-slate-100 space-y-2">
+        <div class="relative">
+          <svg class="w-4 h-4 text-slate-400 absolute left-3 rtl:right-3 rtl:left-auto top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+          </svg>
+          <input type="text" [placeholder]="'finance_v2.common.search' | translate"
+            (input)="searchQuery.set($any($event.target).value)"
+            class="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 rtl:pr-9 rtl:pl-3 pr-3 py-2.5 text-xs placeholder-slate-400 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all">
+        </div>
+        <div class="flex gap-2">
+          <select (change)="categoryFilter.set($any($event.target).value)"
+            class="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-2 py-2 text-xs font-semibold text-slate-700 focus:outline-none">
+            <option value="All">{{ 'finance_v2.budget.all_categories' | translate }}</option>
+            @for (cat of allCategories; track cat) {
+              <option [value]="cat">{{ cat }}</option>
+            }
+          </select>
+          <select (change)="statusFilter.set($any($event.target).value)"
+            class="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-2 py-2 text-xs font-semibold text-slate-700 focus:outline-none">
+            <option value="All">{{ 'finance_v2.common.all_statuses' | translate }}</option>
+            @for (st of allStatuses; track st) {
+              <option [value]="st">{{ st }}</option>
+            }
+          </select>
+        </div>
+      </div>
+
+      <!-- Assets list -->
+      <div class="flex-1 overflow-y-auto divide-y divide-slate-50">
+        @for (a of filtered(); track a.id) {
+          <div (click)="selectAsset(a)"
+            [class.bg-blue-50]="selectedId() === a.id"
+            [class.border-l-4]="selectedId() === a.id"
+            [class.border-l-primary]="selectedId() === a.id"
+            class="p-4 cursor-pointer hover:bg-slate-50 transition-all">
+            <div class="flex items-start justify-between gap-2">
+              <div class="min-w-0 flex-1">
+                <p class="font-black text-indigo-600 font-mono text-[11px]">{{ a.assetCode }}</p>
+                <p class="font-semibold text-slate-800 text-xs mt-0.5 truncate">{{ a.assetName }}</p>
+                <p class="text-[10px] text-slate-400 mt-0.5">{{ a.category }} · {{ a.location }}</p>
+              </div>
+              <div class="shrink-0 text-right space-y-1">
+                <span class="inline-block px-2 py-0.5 rounded-full text-[9px] font-extrabold" [class]="getStatusClass(a.status)">{{ a.status }}</span>
+                <p class="text-xs font-black text-slate-800">{{ formatAmt(a.currentBookValue) }} SAR</p>
+              </div>
+            </div>
+          </div>
+        } @empty {
+          <div class="p-12 text-center">
+            <p class="text-xs font-semibold text-slate-400">{{ 'finance_v2.common.no_records' | translate }}</p>
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- ── RIGHT DETAIL ───────────────────────────────────────────── -->
+    <div class="xl:col-span-8 flex flex-col gap-4 overflow-y-auto" style="max-height: calc(100vh - 18rem)">
+
+      @if (activeAsset(); as a) {
+
+        <!-- Header Card -->
+        <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+          <div class="h-1.5 w-full bg-gradient-to-r from-blue-600 via-indigo-500 to-purple-500"></div>
+          <div class="p-5 space-y-4">
+            <div class="flex items-start justify-between gap-4 flex-wrap">
+              <div class="flex items-center gap-3">
+                <div class="w-12 h-12 bg-indigo-50 rounded-xl flex items-center justify-center shrink-0">
+                  <svg class="w-6 h-6 text-indigo-650" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+                  </svg>
+                </div>
+                <div>
+                  <h2 class="text-base font-black text-slate-800">{{ a.assetName }}</h2>
+                  <div class="flex items-center gap-2 mt-1">
+                    <span class="font-mono font-black text-indigo-600 text-[10px] bg-slate-100 px-2 py-0.5 rounded">{{ a.assetCode }}</span>
+                    <span class="text-xs text-slate-500 font-semibold">{{ a.category }}</span>
+                  </div>
+                </div>
+              </div>
+              <div class="text-right">
+                <span class="inline-block px-3 py-1 rounded-full text-[9px] font-extrabold uppercase tracking-widest mb-2"
+                  [class]="getStatusClass(a.status)">{{ a.status }}</span>
+                <p class="text-[10px] text-slate-400 mt-1 uppercase font-bold">{{ 'finance_v2.assets.nbv' | translate }}</p>
+                <p class="text-3xl font-black text-indigo-700">{{ formatAmt(a.currentBookValue) }} <span class="text-xs">SAR</span></p>
+              </div>
+            </div>
+
+            <!-- Workflow buttons -->
+            <div class="pt-4 border-t border-slate-50 flex items-center gap-2 flex-wrap">
+              @if (a.status === 'Purchased') {
+                <button (click)="capitalizeAsset(a)"
+                  class="px-3 py-1.5 rounded-xl bg-green-600 hover:bg-green-700 text-white text-[10px] font-bold transition-all flex items-center gap-1">
+                  ✓ {{ 'finance_v2.assets.btn_capitalize' | translate }}
+                </button>
+              }
+              @if (a.status === 'Active' || a.status === 'Under Maintenance' || a.status === 'Capitalized') {
+                <button (click)="openTransferDlg()"
+                  class="px-3 py-1.5 rounded-xl border border-indigo-200 text-indigo-600 text-[10px] font-bold hover:bg-indigo-50 transition-all flex items-center gap-1">
+                  🚚 {{ 'finance_v2.assets.btn_transfer' | translate }}
+                </button>
+                <button (click)="openDisposeDlg()"
+                  class="px-3 py-1.5 rounded-xl border border-red-200 text-red-600 text-[10px] font-bold hover:bg-red-50 transition-all flex items-center gap-1">
+                  🗑 {{ 'finance_v2.assets.btn_dispose' | translate }}
+                </button>
+              }
+            </div>
+          </div>
+        </div>
+
+        <!-- Asset Values Grid -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 text-xs font-semibold text-slate-700">
+          <div class="bg-slate-50 border border-slate-100 rounded-xl p-4">
+            <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest block">{{ 'finance_v2.assets.original_cost' | translate }}</span>
+            <p class="text-sm font-black text-slate-800 mt-1">{{ formatAmt(a.originalCost) }} SAR</p>
+          </div>
+          <div class="bg-slate-50 border border-slate-100 rounded-xl p-4">
+            <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest block">{{ 'finance_v2.assets.residual_value' | translate }}</span>
+            <p class="text-sm font-black text-slate-800 mt-1">{{ formatAmt(a.residualValue) }} SAR</p>
+          </div>
+          <div class="bg-red-50 border border-red-100 rounded-xl p-4">
+            <span class="text-[9px] font-black text-red-400 uppercase tracking-widest block">{{ 'finance_v2.assets.accumulated' | translate }}</span>
+            <p class="text-sm font-black text-red-700 mt-1">{{ formatAmt(a.accumulatedDepreciation) }} SAR</p>
+          </div>
+          <div class="bg-green-50 border border-green-100 rounded-xl p-4">
+            <span class="text-[9px] font-black text-green-500 uppercase tracking-widest block">{{ 'finance_v2.assets.useful_life' | translate }}</span>
+            <p class="text-sm font-black text-green-700 mt-1">{{ a.usefulLifeYears }} {{ 'finance_v2.assets.years' | translate }}</p>
+          </div>
+        </div>
+
+        <!-- Details panels splits -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <!-- Procurement & Registry info -->
+          <div class="bg-slate-50 rounded-xl border border-slate-100 p-4 space-y-2 text-xs">
+            <p class="text-[10px] font-black text-slate-450 uppercase tracking-widest mb-3">{{ 'finance_v2.assets.registry_info' | translate }}</p>
+            <div class="flex justify-between"><span class="text-slate-550">{{ 'finance_v2.assets.serial' | translate }}</span><span class="font-black text-slate-800">{{ a.serialNumber }}</span></div>
+            <div class="flex justify-between"><span class="text-slate-550">{{ 'finance_v2.assets.supplier' | translate }}</span><span class="font-black text-slate-800">{{ a.supplierName }}</span></div>
+            <div class="flex justify-between"><span class="text-slate-550">{{ 'finance_v2.assets.po' | translate }}</span><span class="font-mono font-black text-slate-800">{{ a.purchaseOrderNumber }}</span></div>
+            <div class="flex justify-between"><span class="text-slate-550">{{ 'finance_v2.assets.purchase_date' | translate }}</span><span class="font-black text-slate-800">{{ a.purchaseDate }}</span></div>
+            <div class="flex justify-between"><span class="text-slate-550">{{ 'finance_v2.assets.cap_date' | translate }}</span><span class="font-black text-slate-800">{{ a.capitalizationDate || '—' }}</span></div>
+          </div>
+          <!-- Assigned location info -->
+          <div class="bg-slate-50 rounded-xl border border-slate-100 p-4 space-y-2 text-xs">
+            <p class="text-[10px] font-black text-slate-450 uppercase tracking-widest mb-3">{{ 'finance_v2.assets.assignment_info' | translate }}</p>
+            <div class="flex justify-between"><span class="text-slate-550">{{ 'finance_v2.assets.assigned_to' | translate }}</span><span class="font-black text-slate-800">{{ a.assignedEmployee }}</span></div>
+            <div class="flex justify-between"><span class="text-slate-550">{{ 'finance_v2.assets.department' | translate }}</span><span class="font-black text-slate-800">{{ a.department }}</span></div>
+            <div class="flex justify-between"><span class="text-slate-550">{{ 'finance_v2.assets.location' | translate }}</span><span class="font-black text-slate-800">{{ a.location }}</span></div>
+            <div class="flex justify-between"><span class="text-slate-550">{{ 'finance_v2.assets.warranty' | translate }}</span><span class="font-black text-slate-800">{{ a.warrantyExpiry }}</span></div>
+            <div class="flex justify-between"><span class="text-slate-550">{{ 'finance_v2.assets.insurance' | translate }}</span><span class="font-black text-slate-800">{{ a.insuranceExpiry || '—' }}</span></div>
+          </div>
+        </div>
+
+        <!-- History Timeline -->
+        <div class="bg-white rounded-xl border border-slate-100 shadow-sm p-4 space-y-3">
+          <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">{{ 'finance_v2.assets.lifecycle_history' | translate }}</p>
+          <div class="relative border-l border-slate-200 pl-4 rtl:border-r rtl:border-l-0 rtl:pr-4 rtl:pl-0 space-y-4">
+            @for (ev of a.history; track ev.id) {
+              <div class="relative">
+                <span class="absolute -left-5.5 rtl:-right-5.5 top-1.5 w-3 h-3 rounded-full border-2 border-white bg-indigo-500 shadow-sm"></span>
+                <div class="text-xs">
+                  <p class="font-black text-slate-800">{{ ev.type }}: {{ ev.description }}</p>
+                  <p class="text-[10px] text-slate-400 mt-0.5">{{ ev.eventDate }} · {{ ev.user }}</p>
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+
+      } @else {
+        <div class="bg-white rounded-2xl border border-slate-100 shadow-sm flex-1 flex items-center justify-center py-24">
+          <div class="text-center">
+            <svg class="w-12 h-12 mx-auto text-slate-200 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+            </svg>
+            <p class="text-sm font-black text-slate-400">{{ 'finance_v2.assets.select_asset' | translate }}</p>
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+
+  <!-- Create Asset Modal -->
+  @if (showCreateModal()) {
+    <div class="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div class="bg-white rounded-2xl shadow-2xl w-full max-w-xl">
+        <div class="h-1.5 w-full bg-gradient-to-r from-indigo-600 to-purple-500 rounded-t-2xl"></div>
+        <div class="p-6 space-y-4">
+          <div class="flex items-center justify-between">
+            <div>
+              <h3 class="text-base font-black text-slate-800">{{ 'finance_v2.assets.btn_new' | translate }}</h3>
+              <p class="text-xs text-slate-500">{{ 'finance_v2.assets.modal_desc' | translate }}</p>
+            </div>
+            <button (click)="closeCreateModal()" class="p-2 rounded-xl hover:bg-slate-100 transition-all">
+              <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+          </div>
+
+          <div class="space-y-3">
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">{{ 'finance_v2.assets.name' | translate }}</label>
+                <input type="text" [value]="formName()" (input)="formName.set($any($event.target).value)"
+                  class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-semibold focus:outline-none">
+              </div>
+              <div>
+                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">{{ 'finance_v2.assets.serial' | translate }}</label>
+                <input type="text" [value]="formSerial()" (input)="formSerial.set($any($event.target).value)"
+                  class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-semibold focus:outline-none">
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">{{ 'finance_v2.budget.col_category' | translate }}</label>
+                <select [value]="formCategory()" (change)="formCategory.set($any($event.target).value)"
+                  class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-semibold focus:outline-none">
+                  @for (cat of allCategories; track cat) { <option [value]="cat">{{ cat }}</option> }
+                </select>
+              </div>
+              <div>
+                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">{{ 'finance_v2.assets.original_cost' | translate }}</label>
+                <input type="number" [value]="formCost()" (input)="formCost.set(+$any($event.target).value)"
+                  class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-bold focus:outline-none">
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">{{ 'finance_v2.assets.residual_value' | translate }}</label>
+                <input type="number" [value]="formResidual()" (input)="formResidual.set(+$any($event.target).value)"
+                  class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-bold focus:outline-none">
+              </div>
+              <div>
+                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">{{ 'finance_v2.assets.useful_life_years' | translate }}</label>
+                <input type="number" [value]="formLifeYears()" (input)="formLifeYears.set(+$any($event.target).value)"
+                  class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-bold focus:outline-none">
+              </div>
+            </div>
+          </div>
+
+          <div class="flex items-center justify-between pt-4 border-t border-slate-100">
+            <button (click)="closeCreateModal()"
+              class="px-4 py-2 rounded-xl border border-slate-200 text-slate-600 text-xs font-bold hover:bg-slate-50 transition-all">
+              {{ 'finance_v2.common.cancel' | translate }}
+            </button>
+            <button (click)="saveNewAsset()"
+              class="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-all flex items-center gap-2">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+              {{ 'finance_v2.common.save' | translate }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Transfer Dialog -->
+  @if (showTransferDlg()) {
+    <div class="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 space-y-4">
+        <h3 class="text-base font-black text-slate-800">{{ 'finance_v2.assets.dialog_transfer_title' | translate }}</h3>
+        
+        <div class="space-y-3">
+          <div>
+            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">{{ 'finance_v2.assets.new_location' | translate }}</label>
+            <input type="text" [value]="transferLocation()" (input)="transferLocation.set($any($event.target).value)"
+              class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-semibold focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">{{ 'finance_v2.assets.assigned_employee' | translate }}</label>
+            <input type="text" [value]="transferEmployee()" (input)="transferEmployee.set($any($event.target).value)"
+              class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-semibold focus:outline-none">
+          </div>
+        </div>
+
+        <div class="flex items-center justify-end gap-2 pt-2">
+          <button (click)="closeTransferDlg()"
+            class="px-4 py-2 rounded-xl border border-slate-200 text-slate-600 text-xs font-bold hover:bg-slate-50 transition-all">
+            {{ 'finance_v2.common.cancel' | translate }}
+          </button>
+          <button (click)="submitTransfer()"
+            class="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-all">
+            {{ 'finance_v2.common.save' | translate }}
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Dispose Dialog -->
+  @if (showDisposeDlg()) {
+    <div class="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 space-y-4">
+        <h3 class="text-base font-black text-slate-800">{{ 'finance_v2.assets.dialog_dispose_title' | translate }}</h3>
+        
+        <div>
+          <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">{{ 'finance_v2.assets.reason' | translate }}</label>
+          <textarea rows="3" [value]="disposeReason()" (input)="disposeReason.set($any($event.target).value)"
+            class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-semibold focus:outline-none resize-none"></textarea>
+        </div>
+
+        <div class="flex items-center justify-end gap-2 pt-2">
+          <button (click)="closeDisposeDlg()"
+            class="px-4 py-2 rounded-xl border border-slate-200 text-slate-600 text-xs font-bold hover:bg-slate-50 transition-all">
+            {{ 'finance_v2.common.cancel' | translate }}
+          </button>
+          <button (click)="submitDispose()"
+            class="px-5 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold transition-all">
+            {{ 'finance_v2.assets.btn_dispose' | translate }}
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+</div>

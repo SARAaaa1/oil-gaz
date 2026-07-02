@@ -1,0 +1,367 @@
+<div class="space-y-5">
+
+  <!-- ══ PAGE HEADER ══════════════════════════════════════════════ -->
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+    <div>
+      <h1 class="text-2xl font-black text-slate-800 tracking-tight">{{ 'finance_v2.ar.inv.title' | translate }}</h1>
+      <p class="text-xs text-slate-500 font-semibold mt-1">{{ 'finance_v2.ar.inv.subtitle' | translate }}</p>
+    </div>
+  </div>
+
+  <!-- ══ KPI CARDS ════════════════════════════════════════════════ -->
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+    <div class="bg-white rounded-xl border border-slate-100 shadow-sm p-4">
+      <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{{ 'finance_v2.ar.inv.draft' | translate }}</p>
+      <p class="text-2xl font-black text-slate-800 mt-1">{{ draftCount() }}</p>
+    </div>
+    <div class="bg-amber-50 rounded-xl border border-amber-100 shadow-sm p-4">
+      <p class="text-[10px] font-bold text-amber-500 uppercase tracking-wider">{{ 'finance_v2.ar.inv.under_review' | translate }}</p>
+      <p class="text-2xl font-black text-amber-700 mt-1">{{ reviewCount() }}</p>
+    </div>
+    <div class="bg-green-50 rounded-xl border border-green-100 shadow-sm p-4">
+      <p class="text-[10px] font-bold text-green-500 uppercase tracking-wider">{{ 'finance_v2.ar.inv.approved_status' | translate }}</p>
+      <p class="text-2xl font-black text-green-700 mt-1">{{ approvedCount() }}</p>
+    </div>
+    <div class="bg-red-50 rounded-xl border border-red-100 shadow-sm p-4">
+      <p class="text-[10px] font-bold text-red-400 uppercase tracking-wider">{{ 'finance_v2.ar.kpi.overdue' | translate }}</p>
+      <p class="text-2xl font-black text-red-700 mt-1">{{ overdueCount() }}</p>
+    </div>
+  </div>
+
+  <!-- ══ MAIN GRID ═════════════════════════════════════════════════ -->
+  <div class="grid grid-cols-1 xl:grid-cols-12 gap-5" style="min-height:calc(100vh - 18rem)">
+
+    <!-- ── LEFT LIST ─────────────────────────────────────────────── -->
+    <div class="xl:col-span-4 bg-white rounded-2xl border border-slate-100 shadow-sm flex flex-col overflow-hidden">
+      <div class="p-4 border-b border-slate-100 space-y-2">
+        <!-- Search -->
+        <div class="relative">
+          <svg class="w-4 h-4 text-slate-400 absolute left-3 rtl:right-3 rtl:left-auto top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+          </svg>
+          <input type="text" [placeholder]="'finance_v2.ar.inv.search_placeholder' | translate"
+            (input)="searchQuery.set($any($event.target).value)"
+            class="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 rtl:pr-9 rtl:pl-3 pr-3 py-2.5 text-xs placeholder-slate-400 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all">
+        </div>
+        <!-- Filters row 1 -->
+        <div class="flex gap-2">
+          <select (change)="statusFilter.set($any($event.target).value)"
+            class="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 focus:outline-none">
+            @for (s of allStatuses; track s) { <option [value]="s">{{ s === 'All' ? ('finance_v2.common.all_statuses' | translate) : s }}</option> }
+          </select>
+          <select (change)="agingFilter.set($any($event.target).value)"
+            class="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 focus:outline-none">
+            @for (a of agingBuckets; track a) { <option [value]="a">{{ a === 'All' ? ('finance_v2.ar.inv.all_aging' | translate) : a }}</option> }
+          </select>
+        </div>
+        <!-- Filters row 2 -->
+        <select (change)="sourceFilter.set($any($event.target).value)"
+          class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 focus:outline-none">
+          @for (s of sources; track s) { <option [value]="s">{{ s === 'All' ? ('finance_v2.ar.inv.all_sources' | translate) : s }}</option> }
+        </select>
+      </div>
+
+      <div class="flex-1 overflow-y-auto divide-y divide-slate-50">
+        @for (inv of filtered(); track inv.id) {
+          <div (click)="selectInvoice(inv)"
+            [class.bg-blue-50]="selectedId() === inv.id"
+            [class.border-l-4]="selectedId() === inv.id"
+            [class.border-l-primary]="selectedId() === inv.id"
+            class="p-4 cursor-pointer hover:bg-slate-50 transition-all">
+            <div class="flex items-start justify-between gap-2">
+              <div class="min-w-0">
+                <p class="font-black text-indigo-600 font-mono text-[11px]">{{ inv.invoiceNumber }}</p>
+                <p class="font-semibold text-slate-800 text-xs mt-0.5 truncate max-w-40">{{ inv.customerName }}</p>
+                <p class="text-[10px] text-slate-400 mt-0.5 truncate">{{ inv.projectName }}</p>
+                <p class="text-[9px] text-slate-400 font-mono">{{ inv.source }}</p>
+              </div>
+              <div class="shrink-0 text-right space-y-1">
+                <span class="inline-block px-2 py-0.5 rounded-full text-[9px] font-extrabold" [class]="getStatusClass(inv.status)">{{ inv.status }}</span>
+                <p class="text-xs font-black text-slate-800">{{ formatAmt(inv.grandTotal) }}</p>
+                @if (inv.outstandingAmount > 0) {
+                  <p class="text-[10px] font-black text-red-500">{{ formatAmt(inv.outstandingAmount) }}</p>
+                }
+              </div>
+            </div>
+            <div class="mt-1.5 flex items-center gap-2">
+              <span class="inline-block px-1.5 py-0.5 rounded-full text-[8px] font-bold" [class]="getAgingClass(inv.aging)">{{ inv.aging }}</span>
+              @if (validationCount() > 0 && selectedId() === inv.id) {
+                <span class="inline-flex items-center gap-0.5 text-[9px] font-bold text-amber-600">
+                  <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+                  {{ validationCount() }}
+                </span>
+              }
+              <span class="text-[9px] text-slate-400">{{ inv.dueDate }}</span>
+            </div>
+          </div>
+        } @empty {
+          <div class="p-12 text-center">
+            <p class="text-xs font-semibold text-slate-400">{{ 'finance_v2.common.no_records' | translate }}</p>
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- ── RIGHT DETAIL ───────────────────────────────────────────── -->
+    <div class="xl:col-span-8 flex flex-col gap-4 overflow-y-auto" style="max-height:calc(100vh - 18rem)">
+
+      @if (activeInvoice(); as inv) {
+
+        <!-- Header Card -->
+        <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+          <div class="h-1.5 w-full bg-gradient-to-r from-slate-800 via-primary to-accent"></div>
+          <div class="p-5">
+            <div class="flex items-start justify-between gap-4 flex-wrap">
+              <div>
+                <div class="flex items-center gap-2 flex-wrap mb-1">
+                  <span class="font-mono font-black text-indigo-600 text-sm">{{ inv.invoiceNumber }}</span>
+                  <span class="inline-block px-2 py-0.5 rounded-full text-[9px] font-extrabold" [class]="getStatusClass(inv.status)">{{ inv.status }}</span>
+                  <span class="inline-block px-1.5 py-0.5 rounded-full text-[8px] font-bold" [class]="getAgingClass(inv.aging)">{{ inv.aging }}</span>
+                  @if (inv.validation.missingProject || inv.validation.missingContract || inv.validation.missingCompletion || inv.validation.duplicateNumber || inv.validation.vatMismatch || inv.validation.negativeAmount || inv.validation.dueDateBeforeInv) {
+                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-50 text-amber-600 text-[9px] font-bold border border-amber-200">
+                      <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+                      {{ 'finance_v2.ar.inv.has_issues' | translate }}
+                    </span>
+                  }
+                </div>
+                <p class="font-black text-slate-800 text-base">{{ inv.customerName }}</p>
+                <p class="text-sm text-slate-400">{{ inv.customerNameAr }}</p>
+                <p class="text-xs text-slate-500 mt-1">{{ inv.source }} · {{ inv.currency }}</p>
+              </div>
+              <div class="text-right">
+                <p class="text-[10px] text-slate-400">{{ 'finance_v2.ar.inv.grand_total' | translate }}</p>
+                <p class="text-3xl font-black text-slate-800">{{ formatAmt(inv.grandTotal) }}</p>
+                @if (inv.outstandingAmount > 0) {
+                  <p class="text-sm font-black text-red-600 mt-0.5">{{ 'finance_v2.ar.inv.outstanding' | translate }}: {{ formatAmt(inv.outstandingAmount) }}</p>
+                } @else {
+                  <p class="text-sm font-black text-emerald-600 mt-0.5">{{ 'finance_v2.ar.inv.fully_collected' | translate }}</p>
+                }
+              </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="mt-4 pt-4 border-t border-slate-50 flex items-center gap-2 flex-wrap">
+              @if (canSubmit(inv)) {
+                <button (click)="submitForReview(inv)"
+                  class="px-3 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-[10px] font-bold transition-all flex items-center gap-1.5">
+                  <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
+                  {{ 'finance_v2.ar.inv.submit_review' | translate }}
+                </button>
+              }
+              @if (canApprove(inv)) {
+                <button (click)="approveInvoice(inv)"
+                  class="px-3 py-1.5 rounded-xl bg-green-600 hover:bg-green-700 text-white text-[10px] font-bold transition-all flex items-center gap-1.5">
+                  <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                  {{ 'finance_v2.ar.inv.approve' | translate }}
+                </button>
+              }
+              @if (canSend(inv)) {
+                <button (click)="sendToCustomer(inv)"
+                  class="px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold transition-all flex items-center gap-1.5">
+                  <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                  {{ 'finance_v2.ar.inv.send_customer' | translate }}
+                </button>
+              }
+              @if (canReject(inv)) {
+                <button (click)="openRejectDialog()"
+                  class="px-3 py-1.5 rounded-xl border border-red-200 text-red-600 text-[10px] font-bold hover:bg-red-50 transition-all">
+                  {{ 'finance_v2.ar.inv.reject' | translate }}
+                </button>
+              }
+            </div>
+          </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="flex gap-1 bg-slate-100 rounded-xl p-1">
+          @for (tab of [['details','finance_v2.ar.inv.tab_details'],['traceability','finance_v2.ar.inv.tab_trace'],['validation','finance_v2.ar.inv.tab_validation']] ; track tab[0]) {
+            <button (click)="activeTab.set($any(tab[0]))"
+              [class.bg-white]="activeTab() === tab[0]"
+              [class.shadow-sm]="activeTab() === tab[0]"
+              [class.font-black]="activeTab() === tab[0]"
+              [class.text-slate-800]="activeTab() === tab[0]"
+              [class.text-slate-500]="activeTab() !== tab[0]"
+              class="flex-1 py-2 rounded-lg text-xs font-semibold transition-all">
+              {{ tab[1] | translate }}
+            </button>
+          }
+        </div>
+
+        <!-- Tab: Details -->
+        @if (activeTab() === 'details') {
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Dates & Terms -->
+            <div class="bg-slate-50 rounded-xl border border-slate-100 p-4">
+              <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">{{ 'finance_v2.ar.inv.dates_terms' | translate }}</p>
+              <div class="space-y-1.5 text-xs">
+                <div class="flex justify-between"><span class="text-slate-500">{{ 'finance_v2.ar.inv.invoice_date' | translate }}</span><span class="font-black text-slate-800">{{ inv.invoiceDate }}</span></div>
+                <div class="flex justify-between"><span class="text-slate-500">{{ 'finance_v2.ar.inv.due_date' | translate }}</span><span class="font-black text-slate-800">{{ inv.dueDate }}</span></div>
+                <div class="flex justify-between"><span class="text-slate-500">{{ 'finance_v2.ar.cus.payment_terms' | translate }}</span><span class="font-black text-slate-800">{{ inv.paymentTerms }}</span></div>
+                <div class="flex justify-between"><span class="text-slate-500">{{ 'finance_v2.common.currency' | translate }}</span><span class="inline-flex items-center bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded text-[9px] font-bold">{{ inv.currency }}</span></div>
+                <div class="flex justify-between"><span class="text-slate-500">{{ 'finance_v2.ar.inv.created_by' | translate }}</span><span class="font-black text-slate-800">{{ inv.createdBy }}</span></div>
+                @if (inv.approvedBy) {
+                  <div class="flex justify-between"><span class="text-slate-500">{{ 'finance_v2.ar.inv.approved_by' | translate }}</span><span class="font-black text-slate-800">{{ inv.approvedBy }}</span></div>
+                }
+              </div>
+            </div>
+            <!-- Financial Summary -->
+            <div class="bg-slate-50 rounded-xl border border-slate-100 p-4">
+              <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">{{ 'finance_v2.ar.inv.financial_summary' | translate }}</p>
+              <div class="space-y-1.5 text-xs">
+                <div class="flex justify-between"><span class="text-slate-500">{{ 'finance_v2.ar.inv.subtotal' | translate }}</span><span class="font-black text-slate-800">{{ formatAmt(inv.subtotal) }}</span></div>
+                @if (inv.discountAmount > 0) {
+                  <div class="flex justify-between"><span class="text-slate-500">{{ 'finance_v2.ar.inv.discount' | translate }} ({{ inv.discountPct }}%)</span><span class="font-black text-red-500">-{{ formatAmt(inv.discountAmount) }}</span></div>
+                }
+                <div class="flex justify-between"><span class="text-slate-500">{{ 'finance_v2.ar.inv.vat' | translate }} ({{ inv.vatPct }}%)</span><span class="font-black text-slate-800">{{ formatAmt(inv.vatAmount) }}</span></div>
+                @if (inv.retentionAmount > 0) {
+                  <div class="flex justify-between"><span class="text-slate-500">{{ 'finance_v2.ar.inv.retention' | translate }} ({{ inv.retentionPct }}%)</span><span class="font-black text-amber-600">-{{ formatAmt(inv.retentionAmount) }}</span></div>
+                }
+                <div class="flex justify-between pt-1.5 border-t border-slate-200"><span class="font-black text-slate-800">{{ 'finance_v2.ar.inv.grand_total' | translate }}</span><span class="font-black text-slate-900 text-sm">{{ formatAmt(inv.grandTotal) }}</span></div>
+                @if (inv.collectedAmount > 0) {
+                  <div class="flex justify-between"><span class="text-slate-500">{{ 'finance_v2.ar.inv.collected' | translate }}</span><span class="font-black text-emerald-600">{{ formatAmt(inv.collectedAmount) }}</span></div>
+                  <div class="flex justify-between"><span class="text-slate-500">{{ 'finance_v2.ar.inv.outstanding' | translate }}</span><span class="font-black text-red-600">{{ formatAmt(inv.outstandingAmount) }}</span></div>
+                }
+              </div>
+            </div>
+            <!-- Attachments -->
+            <div class="bg-slate-50 rounded-xl border border-slate-100 p-4 md:col-span-2">
+              <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">{{ 'finance_v2.ar.inv.attachments' | translate }}</p>
+              <div class="flex flex-wrap gap-2">
+                <div class="flex items-center gap-2 px-3 py-2 rounded-lg text-[10px] font-bold"
+                  [class.bg-green-50]="inv.invoicePdfAttached" [class.text-green-700]="inv.invoicePdfAttached"
+                  [class.bg-slate-100]="!inv.invoicePdfAttached" [class.text-slate-400]="!inv.invoicePdfAttached">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                  {{ 'finance_v2.ar.inv.invoice_pdf' | translate }}
+                  <span>{{ inv.invoicePdfAttached ? ('finance_v2.ap.inv.attached' | translate) : ('finance_v2.ap.inv.missing' | translate) }}</span>
+                </div>
+                <div class="flex items-center gap-2 px-3 py-2 rounded-lg text-[10px] font-bold"
+                  [class.bg-green-50]="inv.completionAttached" [class.text-green-700]="inv.completionAttached"
+                  [class.bg-slate-100]="!inv.completionAttached" [class.text-slate-400]="!inv.completionAttached">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                  {{ 'finance_v2.ar.inv.completion_cert' | translate }}
+                  <span>{{ inv.completionAttached ? ('finance_v2.ap.inv.attached' | translate) : ('finance_v2.ap.inv.missing' | translate) }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        }
+
+        <!-- Tab: Traceability -->
+        @if (activeTab() === 'traceability') {
+          <div class="bg-white rounded-xl border border-slate-100 shadow-sm p-5">
+            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">{{ 'finance_v2.ar.inv.traceability' | translate }}</p>
+            <!-- Chain badges -->
+            <div class="flex flex-wrap items-center gap-2 mb-6">
+              @for (step of [['Project','proj','bg-purple-100 text-purple-700'],['Contract','ctr','bg-indigo-100 text-indigo-700'],['Service Order','svc','bg-blue-100 text-blue-700'],['Completion Cert','cert','bg-green-100 text-green-700'],['Invoice','inv','bg-amber-100 text-amber-700']] ; track step[0]) {
+                <div class="flex items-center gap-1">
+                  <span class="px-2.5 py-1 rounded-lg text-[10px] font-extrabold" [class]="step[2]">{{ step[0] }}</span>
+                  @if (step[0] !== 'Invoice') {
+                    <svg class="w-3.5 h-3.5 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                  }
+                </div>
+              }
+            </div>
+            <!-- Details grid -->
+            <div class="grid grid-cols-2 gap-3 text-xs">
+              <div class="bg-purple-50 rounded-xl p-3">
+                <p class="text-[9px] font-black text-purple-400 uppercase mb-1">{{ 'finance_v2.ar.inv.project' | translate }}</p>
+                <p class="font-black text-purple-800">{{ inv.projectCode }}</p>
+                <p class="text-[10px] text-purple-600 mt-0.5">{{ inv.projectName }}</p>
+              </div>
+              <div class="bg-indigo-50 rounded-xl p-3">
+                <p class="text-[9px] font-black text-indigo-400 uppercase mb-1">{{ 'finance_v2.ar.inv.contract' | translate }}</p>
+                <p class="font-black text-indigo-800">{{ inv.contractNumber }}</p>
+                <p class="text-[10px] text-indigo-600 mt-0.5">{{ 'finance_v2.ar.inv.contract_value' | translate }}: {{ formatAmt(inv.contractValue) }}</p>
+              </div>
+              <div class="bg-blue-50 rounded-xl p-3">
+                <p class="text-[9px] font-black text-blue-400 uppercase mb-1">{{ 'finance_v2.ar.inv.service_order' | translate }}</p>
+                <p class="font-black text-blue-800">{{ inv.serviceOrderNumber || '—' }}</p>
+              </div>
+              <div class="bg-green-50 rounded-xl p-3">
+                <p class="text-[9px] font-black text-green-400 uppercase mb-1">{{ 'finance_v2.ar.inv.completion_cert' | translate }}</p>
+                <p class="font-black text-green-800">{{ inv.completionCertNumber || '—' }}</p>
+              </div>
+              <div class="bg-amber-50 rounded-xl p-3">
+                <p class="text-[9px] font-black text-amber-400 uppercase mb-1">{{ 'finance_v2.ar.inv.milestone' | translate }}</p>
+                <p class="font-black text-amber-800">{{ inv.milestoneRef || '—' }}</p>
+              </div>
+              <div class="bg-slate-50 rounded-xl p-3">
+                <p class="text-[9px] font-black text-slate-400 uppercase mb-1">{{ 'finance_v2.ar.inv.source' | translate }}</p>
+                <p class="font-black text-slate-800">{{ inv.source }}</p>
+              </div>
+            </div>
+          </div>
+        }
+
+        <!-- Tab: Validation -->
+        @if (activeTab() === 'validation') {
+          <div class="bg-white rounded-xl border border-slate-100 shadow-sm p-5">
+            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">{{ 'finance_v2.ar.inv.validation_checks' | translate }}</p>
+            <div class="space-y-2">
+              @let v = inv.validation;
+              @for (check of [
+                [v.missingProject,    'finance_v2.ar.inv.val_missing_project'],
+                [v.missingContract,   'finance_v2.ar.inv.val_missing_contract'],
+                [v.missingCompletion, 'finance_v2.ar.inv.val_missing_completion'],
+                [v.duplicateNumber,   'finance_v2.ar.inv.val_duplicate'],
+                [v.vatMismatch,       'finance_v2.ar.inv.val_vat_mismatch'],
+                [v.negativeAmount,    'finance_v2.ar.inv.val_negative_amount'],
+                [v.dueDateBeforeInv,  'finance_v2.ar.inv.val_due_before_inv']
+              ]; track check[1]) {
+                <div class="flex items-center gap-3 p-3 rounded-xl"
+                  [class.bg-red-50]="$any(check[0])" [class.border]="$any(check[0])" [class.border-red-100]="$any(check[0])"
+                  [class.bg-green-50]="!$any(check[0])">
+                  <div class="w-5 h-5 rounded-full flex items-center justify-center shrink-0"
+                    [class.bg-red-100]="$any(check[0])" [class.bg-green-100]="!$any(check[0])">
+                    @if ($any(check[0])) {
+                      <svg class="w-3 h-3 text-red-600" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
+                    } @else {
+                      <svg class="w-3 h-3 text-green-600" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                    }
+                  </div>
+                  <span class="text-xs font-semibold" [class.text-red-700]="$any(check[0])" [class.text-green-700]="!$any(check[0])">
+                    {{ $any(check[1]) | translate }}
+                  </span>
+                </div>
+              }
+            </div>
+          </div>
+        }
+
+        <!-- Reject Dialog -->
+        @if (showRejectDlg()) {
+          <div class="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+              <h3 class="text-base font-black text-slate-800 mb-1">{{ 'finance_v2.ar.inv.reject_invoice' | translate }}</h3>
+              <p class="text-xs text-slate-500 mb-4">{{ 'finance_v2.ar.inv.rejection_reason_desc' | translate }}</p>
+              <textarea rows="4" [placeholder]="'finance_v2.ar.inv.rejection_reason_placeholder' | translate"
+                [value]="rejectionNote()" (input)="rejectionNote.set($any($event.target).value)"
+                class="w-full border border-slate-200 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 resize-none transition-all">
+              </textarea>
+              <div class="flex items-center justify-end gap-2 mt-4">
+                <button (click)="closeRejectDialog()"
+                  class="px-4 py-2 rounded-xl border border-slate-200 text-slate-600 text-xs font-bold hover:bg-slate-50 transition-all">
+                  {{ 'finance_v2.common.cancel' | translate }}
+                </button>
+                <button (click)="rejectInvoice(activeInvoice()!)"
+                  class="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold transition-all">
+                  {{ 'finance_v2.ar.inv.confirm_reject' | translate }}
+                </button>
+              </div>
+            </div>
+          </div>
+        }
+
+      } @else {
+        <div class="bg-white rounded-2xl border border-slate-100 shadow-sm flex-1 flex items-center justify-center py-24">
+          <div class="text-center">
+            <svg class="w-12 h-12 mx-auto text-slate-200 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+            </svg>
+            <p class="text-sm font-black text-slate-400">{{ 'finance_v2.ar.inv.select_invoice' | translate }}</p>
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+</div>

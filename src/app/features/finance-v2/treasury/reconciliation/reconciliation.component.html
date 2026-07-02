@@ -1,0 +1,185 @@
+<div class="space-y-5">
+
+  <!-- ══ PAGE HEADER ══════════════════════════════════════════════ -->
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+    <div>
+      <h1 class="text-2xl font-black text-slate-800 tracking-tight">{{ 'finance_v2.treasury.banks.btn_reconcile' | translate }}</h1>
+      <p class="text-xs text-slate-500 font-semibold mt-1">{{ 'finance_v2.treasury.reconciliation.subtitle' | translate }}</p>
+    </div>
+    <select (change)="statusFilter.set($any($event.target).value)"
+      class="bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 shadow-sm focus:outline-none">
+      <option value="All">{{ 'finance_v2.common.all_statuses' | translate }}</option>
+      <option value="Draft">Draft</option>
+      <option value="Approved">Approved</option>
+    </select>
+  </div>
+
+  <!-- ══ MAIN GRID ═════════════════════════════════════════════════ -->
+  <div class="grid grid-cols-1 xl:grid-cols-12 gap-5" style="min-height: calc(100vh - 14rem)">
+
+    <!-- ── LEFT SESSIONS LIST ────────────────────────────────────── -->
+    <div class="xl:col-span-4 bg-white rounded-2xl border border-slate-100 shadow-sm flex flex-col overflow-hidden">
+      <p class="p-4 font-black text-slate-800 text-xs border-b border-slate-50 uppercase tracking-wider bg-slate-50/50">{{ 'finance_v2.treasury.reconciliation.sessions_list' | translate }}</p>
+      <div class="flex-1 overflow-y-auto divide-y divide-slate-50">
+        @for (r of filtered(); track r.id) {
+          <div (click)="selectSession(r)"
+            [class.bg-blue-50]="selectedId() === r.id"
+            [class.border-l-4]="selectedId() === r.id"
+            [class.border-l-primary]="selectedId() === r.id"
+            class="p-4 cursor-pointer hover:bg-slate-50 transition-all">
+            <div class="flex items-start justify-between gap-2">
+              <div class="min-w-0">
+                <p class="font-black text-slate-950 text-xs truncate">{{ r.bankAccountName }}</p>
+                <p class="text-[10px] text-slate-400 mt-0.5">{{ r.statementDate }}</p>
+                <p class="text-[9px] text-slate-500 mt-1 font-semibold">
+                  {{ r.matchedCount }} {{ 'finance_v2.treasury.reconciliation.matched' | translate }} · 
+                  {{ r.unmatchedCount }} {{ 'finance_v2.treasury.reconciliation.unmatched' | translate }}
+                </p>
+              </div>
+              <div class="shrink-0 text-right space-y-1">
+                <span class="inline-block px-2 py-0.5 rounded-full text-[9px] font-extrabold" [class]="getStatusClass(r.status)">{{ r.status }}</span>
+                @if (r.difference > 0) {
+                  <p class="text-[10px] font-black text-red-500">Δ {{ formatAmt(r.difference) }}</p>
+                } @else {
+                  <p class="text-[10px] font-black text-green-600">Matched</p>
+                }
+              </div>
+            </div>
+          </div>
+        } @empty {
+          <div class="p-12 text-center">
+            <p class="text-xs font-semibold text-slate-400">{{ 'finance_v2.common.no_records' | translate }}</p>
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- ── RIGHT WORKSPACE ────────────────────────────────────────── -->
+    <div class="xl:col-span-8 flex flex-col gap-4 overflow-y-auto" style="max-height: calc(100vh - 14rem)">
+
+      @if (activeSession(); as r) {
+
+        <!-- Session Header & Metrics -->
+        <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 space-y-4">
+          <div class="flex justify-between items-start gap-4 flex-wrap">
+            <div>
+              <h2 class="text-base font-black text-slate-900">{{ r.bankAccountName }}</h2>
+              <p class="text-xs text-slate-500">{{ 'finance_v2.treasury.reconciliation.statement_date' | translate }}: {{ r.statementDate }}</p>
+            </div>
+            <div class="flex gap-2">
+              @if (r.status === 'Draft') {
+                <button (click)="autoMatch()"
+                  class="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-bold transition-all flex items-center gap-1">
+                  ⚡ {{ 'finance_v2.treasury.reconciliation.btn_auto' | translate }}
+                </button>
+                <button (click)="manualMatch()" [disabled]="!selectedStmtTxId() || !selectedSysTxId()"
+                  class="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-bold transition-all disabled:opacity-50 flex items-center gap-1">
+                  🤝 {{ 'finance_v2.treasury.reconciliation.btn_manual' | translate }}
+                </button>
+                <button (click)="approveReconciliation(r)" [disabled]="r.unmatchedCount > 0"
+                  class="px-3 py-1.5 rounded-xl bg-green-600 hover:bg-green-700 text-white text-[10px] font-bold transition-all disabled:opacity-50 flex items-center gap-1">
+                  ✓ {{ 'finance_v2.treasury.reconciliation.btn_approve' | translate }}
+                </button>
+              } @else {
+                <span class="inline-block px-3 py-1.5 rounded-xl bg-green-50 text-green-700 text-[10px] font-bold border border-green-200">
+                  ✓ {{ 'finance_v2.treasury.reconciliation.status_reconciled' | translate }}
+                </span>
+              }
+            </div>
+          </div>
+
+          <!-- Summary values -->
+          <div class="grid grid-cols-3 gap-3">
+            <div class="bg-slate-50 rounded-xl p-3 border border-slate-100">
+              <span class="text-[9px] font-black text-slate-400 uppercase">{{ 'finance_v2.treasury.reconciliation.bank_balance' | translate }}</span>
+              <p class="text-sm font-black text-slate-800 mt-0.5">{{ formatAmt(r.statementBalance) }} SAR</p>
+            </div>
+            <div class="bg-slate-50 rounded-xl p-3 border border-slate-100">
+              <span class="text-[9px] font-black text-slate-400 uppercase">{{ 'finance_v2.treasury.reconciliation.book_balance' | translate }}</span>
+              <p class="text-sm font-black text-slate-800 mt-0.5">{{ formatAmt(r.bookBalance) }} SAR</p>
+            </div>
+            <div class="rounded-xl p-3 border"
+              [class.bg-red-50]="r.difference > 0" [class.border-red-100]="r.difference > 0"
+              [class.bg-green-50]="r.difference === 0" [class.border-green-100]="r.difference === 0">
+              <span class="text-[9px] font-black uppercase" [class.text-red-400]="r.difference > 0" [class.text-green-500]="r.difference === 0">
+                {{ 'finance_v2.treasury.reconciliation.difference' | translate }}
+              </span>
+              <p class="text-sm font-black mt-0.5" [class.text-red-700]="r.difference > 0" [class.text-green-700]="r.difference === 0">
+                {{ formatAmt(r.difference) }} SAR
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Reconciliation Table / Splits -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+          <!-- Left Side: Bank Statement -->
+          <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden flex flex-col">
+            <div class="p-3 border-b border-slate-50 bg-slate-50/50 flex justify-between items-center">
+              <span class="text-[10px] font-black text-slate-700 uppercase">{{ 'finance_v2.treasury.reconciliation.bank_statement' | translate }}</span>
+            </div>
+            <div class="divide-y divide-slate-50 max-h-[24rem] overflow-y-auto">
+              @for (tx of r.statementTransactions; track tx.id) {
+                <div (click)="selectStmtTx(tx.id)"
+                  [class.bg-indigo-50]="selectedStmtTxId() === tx.id"
+                  [class.bg-emerald-50]="tx.matched"
+                  class="p-3 cursor-pointer hover:bg-slate-50 transition-all flex justify-between items-start">
+                  <div>
+                    <p class="text-[11px] font-bold text-slate-800">{{ tx.description }}</p>
+                    <p class="font-mono text-[9px] text-slate-400 mt-0.5">{{ tx.date }} · {{ tx.reference }}</p>
+                  </div>
+                  <div class="text-right">
+                    <p class="text-xs font-black text-slate-800">{{ formatAmt(tx.amount) }}</p>
+                    <span class="inline-block text-[8px] font-bold mt-0.5"
+                      [class.text-green-600]="tx.matched" [class.text-amber-500]="!tx.matched">
+                      {{ (tx.matched ? 'finance_v2.treasury.reconciliation.matched' : 'finance_v2.treasury.reconciliation.unmatched') | translate }}
+                    </span>
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+
+          <!-- Right Side: System Transactions -->
+          <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden flex flex-col">
+            <div class="p-3 border-b border-slate-50 bg-slate-50/50 flex justify-between items-center">
+              <span class="text-[10px] font-black text-slate-700 uppercase">{{ 'finance_v2.treasury.reconciliation.system_transactions' | translate }}</span>
+            </div>
+            <div class="divide-y divide-slate-50 max-h-[24rem] overflow-y-auto">
+              @for (tx of r.systemTransactions; track tx.id) {
+                <div (click)="selectSysTx(tx.id)"
+                  [class.bg-indigo-50]="selectedSysTxId() === tx.id"
+                  [class.bg-emerald-50]="tx.matched"
+                  class="p-3 cursor-pointer hover:bg-slate-50 transition-all flex justify-between items-start">
+                  <div>
+                    <p class="text-[11px] font-bold text-slate-800">{{ tx.description }}</p>
+                    <p class="font-mono text-[9px] text-slate-400 mt-0.5">{{ tx.date }} · {{ tx.reference }}</p>
+                  </div>
+                  <div class="text-right">
+                    <p class="text-xs font-black text-slate-800">{{ formatAmt(tx.amount) }}</p>
+                    <span class="inline-block text-[8px] font-bold mt-0.5"
+                      [class.text-green-600]="tx.matched" [class.text-amber-500]="!tx.matched">
+                      {{ (tx.matched ? 'finance_v2.treasury.reconciliation.matched' : 'finance_v2.treasury.reconciliation.unmatched') | translate }}
+                    </span>
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+
+        </div>
+
+      } @else {
+        <div class="bg-white rounded-2xl border border-slate-100 shadow-sm flex-1 flex items-center justify-center py-24">
+          <div class="text-center">
+            <svg class="w-12 h-12 mx-auto text-slate-200 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+            </svg>
+            <p class="text-sm font-black text-slate-400">{{ 'finance_v2.treasury.reconciliation.select_session' | translate }}</p>
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+</div>

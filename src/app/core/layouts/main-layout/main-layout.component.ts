@@ -42,6 +42,17 @@ export class MainLayoutComponent implements OnInit {
   readonly isNotificationsOpen = signal<boolean>(false);
   readonly isUserMenuOpen = signal<boolean>(false);
 
+  // Finance V2 — new module sub-menu signals
+  readonly isFinanceV2Open = signal<boolean>(false);
+  readonly isFinanceV2ApOpen = signal<boolean>(false);
+  readonly isFinanceV2ArOpen = signal<boolean>(false);
+  readonly isFinanceV2TreasuryOpen = signal<boolean>(false);
+  readonly isFinanceV2AssetsOpen = signal<boolean>(false);
+  readonly isFinanceV2BudgetOpen = signal<boolean>(false);
+  readonly isFinanceV2TaxesOpen = signal<boolean>(false);
+  readonly isFinanceV2ReportsOpen = signal<boolean>(false);
+  readonly isFinanceV2AdminOpen = signal<boolean>(false);
+
 
   // Link to shared notifications store
   readonly notifications = this.notificationService.notifications;
@@ -72,8 +83,19 @@ export class MainLayoutComponent implements OnInit {
     if (url.includes('/assets')) {
       this.isAssetsOpen.set(true);
     }
-    if (url.includes('/finance')) {
+    if (url.includes('/finance') && !url.includes('/finance-v2')) {
       this.isFinanceOpen.set(true);
+    }
+    if (url.includes('/finance-v2')) {
+      this.isFinanceV2Open.set(true);
+      if (url.includes('/finance-v2/ap')) this.isFinanceV2ApOpen.set(true);
+      if (url.includes('/finance-v2/ar')) this.isFinanceV2ArOpen.set(true);
+      if (url.includes('/finance-v2/treasury')) this.isFinanceV2TreasuryOpen.set(true);
+      if (url.includes('/finance-v2/assets')) this.isFinanceV2AssetsOpen.set(true);
+      if (url.includes('/finance-v2/budget')) this.isFinanceV2BudgetOpen.set(true);
+      if (url.includes('/finance-v2/taxes')) this.isFinanceV2TaxesOpen.set(true);
+      if (url.includes('/finance-v2/reports')) this.isFinanceV2ReportsOpen.set(true);
+      if (url.includes('/finance-v2/admin')) this.isFinanceV2AdminOpen.set(true);
     }
   }
 
@@ -111,11 +133,23 @@ export class MainLayoutComponent implements OnInit {
   }
 
   toggleFinanceMenu() {
-    if (this.isSidebarCollapsed()) {
-      this.isSidebarCollapsed.set(false);
-    }
+    if (this.isSidebarCollapsed()) { this.isSidebarCollapsed.set(false); }
     this.isFinanceOpen.update(val => !val);
   }
+
+  // Finance V2 toggle methods
+  toggleFinanceV2Menu() {
+    if (this.isSidebarCollapsed()) { this.isSidebarCollapsed.set(false); }
+    this.isFinanceV2Open.update(val => !val);
+  }
+  toggleFinanceV2Ap()       { this.isFinanceV2ApOpen.update(v => !v); }
+  toggleFinanceV2Ar()       { this.isFinanceV2ArOpen.update(v => !v); }
+  toggleFinanceV2Treasury() { this.isFinanceV2TreasuryOpen.update(v => !v); }
+  toggleFinanceV2Assets()   { this.isFinanceV2AssetsOpen.update(v => !v); }
+  toggleFinanceV2Budget()   { this.isFinanceV2BudgetOpen.update(v => !v); }
+  toggleFinanceV2Taxes()    { this.isFinanceV2TaxesOpen.update(v => !v); }
+  toggleFinanceV2Reports()  { this.isFinanceV2ReportsOpen.update(v => !v); }
+  toggleFinanceV2Admin()    { this.isFinanceV2AdminOpen.update(v => !v); }
 
   toggleMastersMenu() {
     if (this.isSidebarCollapsed()) {

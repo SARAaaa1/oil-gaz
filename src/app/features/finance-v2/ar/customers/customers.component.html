@@ -1,0 +1,309 @@
+<div class="space-y-5">
+
+  <!-- ══ PAGE HEADER ══════════════════════════════════════════════ -->
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+    <div>
+      <h1 class="text-2xl font-black text-slate-800 tracking-tight">{{ 'finance_v2.ar.cus.title' | translate }}</h1>
+      <p class="text-xs text-slate-500 font-semibold mt-1">{{ 'finance_v2.ar.cus.subtitle' | translate }}</p>
+    </div>
+    <div class="flex items-center gap-2 flex-wrap">
+      <div class="flex items-center gap-1.5 bg-white border border-slate-100 rounded-lg px-3 py-1.5 shadow-sm">
+        <span class="w-2 h-2 rounded-full bg-green-500"></span>
+        <span class="text-[11px] font-bold text-slate-600">{{ countActive() }} {{ 'finance_v2.ar.cus.active' | translate }}</span>
+      </div>
+      <div class="flex items-center gap-1.5 bg-white border border-slate-100 rounded-lg px-3 py-1.5 shadow-sm">
+        <span class="text-[11px] font-bold text-slate-600">{{ 'finance_v2.ar.kpi.outstanding' | translate }}: <span class="text-red-600">{{ formatAmt(totalOutstanding()) }}</span></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ MAIN GRID ═════════════════════════════════════════════════ -->
+  <div class="grid grid-cols-1 xl:grid-cols-12 gap-5" style="min-height: calc(100vh - 14rem)">
+
+    <!-- ── LEFT LIST ─────────────────────────────────────────────── -->
+    <div class="xl:col-span-4 bg-white rounded-2xl border border-slate-100 shadow-sm flex flex-col overflow-hidden">
+      <div class="p-4 border-b border-slate-100 space-y-2">
+        <div class="relative">
+          <svg class="w-4 h-4 text-slate-400 absolute left-3 rtl:right-3 rtl:left-auto top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+          </svg>
+          <input type="text" [placeholder]="'finance_v2.ar.cus.search_placeholder' | translate"
+            (input)="searchQuery.set($any($event.target).value)"
+            class="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 rtl:pr-9 rtl:pl-3 pr-3 py-2.5 text-xs placeholder-slate-400 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all">
+        </div>
+        <div class="flex gap-2">
+          <select (change)="statusFilter.set($any($event.target).value)"
+            class="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 focus:outline-none">
+            <option value="All">{{ 'finance_v2.common.all_statuses' | translate }}</option>
+            @for (s of customerStatuses; track s) { <option [value]="s">{{ s }}</option> }
+          </select>
+          <select (change)="industryFilter.set($any($event.target).value)"
+            class="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 focus:outline-none">
+            @for (ind of industries(); track ind) { <option [value]="ind">{{ ind }}</option> }
+          </select>
+        </div>
+      </div>
+
+      <!-- Customer rows -->
+      <div class="flex-1 overflow-y-auto divide-y divide-slate-50">
+        @for (c of filtered(); track c.id) {
+          <div (click)="selectCustomer(c)"
+            [class.bg-blue-50]="selectedId() === c.id"
+            [class.border-l-4]="selectedId() === c.id"
+            [class.border-l-primary]="selectedId() === c.id"
+            class="p-4 cursor-pointer hover:bg-slate-50 transition-all">
+            <div class="flex items-start justify-between gap-2">
+              <div class="min-w-0">
+                <div class="flex items-center gap-2">
+                  <p class="font-black text-slate-900 text-sm truncate">{{ c.nameEn }}</p>
+                </div>
+                <p class="text-[10px] text-slate-400 mt-0.5 font-mono">{{ c.code }}</p>
+                <p class="text-[11px] text-slate-500 mt-0.5">{{ c.industry }}</p>
+              </div>
+              <div class="shrink-0 text-right space-y-1">
+                <span class="inline-block px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider"
+                  [class]="getStatusClass(c.status)">{{ c.status }}</span>
+                @if (c.openBalance > 0) {
+                  <p class="text-xs font-black text-red-600">{{ formatAmt(c.openBalance) }}</p>
+                }
+              </div>
+            </div>
+            <div class="mt-2 flex items-center gap-2">
+              <span class="text-[11px]" [class]="getRatingClass(c.rating)">{{ getRatingStars(c.rating) }}</span>
+              <span class="text-[9px] text-slate-400">{{ c.outstandingInvoices }} {{ 'finance_v2.ar.cus.open_invoices' | translate }}</span>
+            </div>
+          </div>
+        } @empty {
+          <div class="p-12 text-center">
+            <svg class="w-10 h-10 mx-auto text-slate-200 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+            </svg>
+            <span class="text-xs font-semibold text-slate-400">{{ 'finance_v2.common.no_records' | translate }}</span>
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- ── RIGHT DETAIL ───────────────────────────────────────────── -->
+    <div class="xl:col-span-8 flex flex-col gap-4 overflow-y-auto" style="max-height: calc(100vh - 14rem)">
+
+      @if (activeCustomer()) {
+        @let c = activeCustomer()!;
+
+        <!-- Customer Header Card -->
+        <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+          <div class="h-1.5 w-full bg-gradient-to-r from-slate-800 via-primary to-accent"></div>
+          <div class="p-5">
+            <div class="flex items-start justify-between gap-4 flex-wrap">
+              <div class="flex items-center gap-3">
+                <div class="w-12 h-12 bg-indigo-50 rounded-xl flex items-center justify-center shrink-0">
+                  <svg class="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                  </svg>
+                </div>
+                <div>
+                  <h2 class="text-lg font-black text-slate-800">{{ c.nameEn }}</h2>
+                  <p class="text-sm text-slate-400">{{ c.nameAr }}</p>
+                  <div class="flex items-center gap-2 mt-1">
+                    <span class="font-mono text-[10px] text-slate-400 bg-slate-100 px-2 py-0.5 rounded">{{ c.code }}</span>
+                    <span class="text-[11px] text-slate-500">{{ c.industry }}</span>
+                  </div>
+                </div>
+              </div>
+              <div class="text-right">
+                <span class="inline-block px-3 py-1 rounded-full text-[9px] font-extrabold uppercase tracking-widest mb-2"
+                  [class]="getStatusClass(c.status)">{{ c.status }}</span>
+                <p class="text-[11px] text-slate-400 mt-1">{{ 'finance_v2.ar.kpi.outstanding' | translate }}</p>
+                <p class="text-2xl font-black text-red-600">{{ formatAmt(c.openBalance) }}</p>
+                <p class="text-[10px] text-slate-400">{{ c.currency }}</p>
+              </div>
+            </div>
+            <!-- Rating + Actions -->
+            <div class="mt-4 pt-4 border-t border-slate-50 flex items-center justify-between flex-wrap gap-2">
+              <div class="flex items-center gap-3">
+                <span class="text-lg" [class]="getRatingClass(c.rating)">{{ getRatingStars(c.rating) }}</span>
+                <span class="text-[10px] text-slate-400 font-semibold">{{ c.avgCollectionDays }} {{ 'finance_v2.ar.kpi.avg_collection_days' | translate }}</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <button (click)="toggleStatus(c)"
+                  class="px-3 py-1.5 rounded-xl border border-slate-200 text-slate-600 text-[10px] font-bold hover:bg-slate-50 transition-all">
+                  {{ c.status === 'Active' ? ('finance_v2.ar.cus.deactivate' | translate) : ('finance_v2.ar.cus.activate' | translate) }}
+                </button>
+                <button class="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-bold transition-all flex items-center gap-1">
+                  <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                  {{ 'finance_v2.ar.cus.statement' | translate }}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="flex gap-1 bg-slate-100 rounded-xl p-1">
+          <button (click)="activeTab.set('profile')"
+            [class.bg-white]="activeTab() === 'profile'"
+            [class.shadow-sm]="activeTab() === 'profile'"
+            [class.font-black]="activeTab() === 'profile'"
+            [class.text-slate-800]="activeTab() === 'profile'"
+            [class.text-slate-500]="activeTab() !== 'profile'"
+            class="flex-1 py-2 rounded-lg text-xs font-semibold transition-all">
+            {{ 'finance_v2.ar.cus.tab_profile' | translate }}
+          </button>
+          <button (click)="activeTab.set('invoices')"
+            [class.bg-white]="activeTab() === 'invoices'"
+            [class.shadow-sm]="activeTab() === 'invoices'"
+            [class.font-black]="activeTab() === 'invoices'"
+            [class.text-slate-800]="activeTab() === 'invoices'"
+            [class.text-slate-500]="activeTab() !== 'invoices'"
+            class="flex-1 py-2 rounded-lg text-xs font-semibold transition-all">
+            {{ 'finance_v2.ar.cus.tab_invoices' | translate }} ({{ customerInvoices().length }})
+          </button>
+          <button (click)="activeTab.set('collections')"
+            [class.bg-white]="activeTab() === 'collections'"
+            [class.shadow-sm]="activeTab() === 'collections'"
+            [class.font-black]="activeTab() === 'collections'"
+            [class.text-slate-800]="activeTab() === 'collections'"
+            [class.text-slate-500]="activeTab() !== 'collections'"
+            class="flex-1 py-2 rounded-lg text-xs font-semibold transition-all">
+            {{ 'finance_v2.ar.cus.tab_collections' | translate }} ({{ customerCollections().length }})
+          </button>
+        </div>
+
+        <!-- Tab: Profile -->
+        @if (activeTab() === 'profile') {
+          <div class="grid grid-cols-2 gap-4">
+            <!-- Financial Info -->
+            <div class="bg-slate-50 rounded-xl border border-slate-100 p-4 space-y-2">
+              <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest block">{{ 'finance_v2.ar.cus.financial_info' | translate }}</span>
+              <div class="space-y-1.5 text-xs">
+                <div class="flex justify-between"><span class="text-slate-500">{{ 'finance_v2.ar.cus.credit_limit' | translate }}</span><span class="font-black text-slate-800">{{ formatAmt(c.creditLimit) }}</span></div>
+                <div class="flex justify-between"><span class="text-slate-500">{{ 'finance_v2.ar.cus.payment_terms' | translate }}</span><span class="font-black text-slate-800">{{ c.paymentTerms }}</span></div>
+                <div class="flex justify-between"><span class="text-slate-500">{{ 'finance_v2.ar.kpi.outstanding' | translate }}</span><span class="font-black text-red-600">{{ formatAmt(c.openBalance) }}</span></div>
+                <div class="flex justify-between"><span class="text-slate-500">{{ 'finance_v2.ar.cus.total_invoiced' | translate }}</span><span class="font-black text-slate-800">{{ formatAmt(c.totalInvoiced) }}</span></div>
+                <div class="flex justify-between"><span class="text-slate-500">{{ 'finance_v2.ar.cus.total_collected' | translate }}</span><span class="font-black text-emerald-600">{{ formatAmt(c.totalCollected) }}</span></div>
+                <div class="flex justify-between"><span class="text-slate-500">{{ 'finance_v2.ar.cus.last_collection' | translate }}</span><span class="font-black text-slate-800">{{ c.lastCollectionDate || '—' }}</span></div>
+              </div>
+            </div>
+            <!-- Registration -->
+            <div class="bg-slate-50 rounded-xl border border-slate-100 p-4 space-y-2">
+              <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest block">{{ 'finance_v2.ar.cus.registration_info' | translate }}</span>
+              <div class="space-y-1.5 text-xs">
+                <div class="flex justify-between"><span class="text-slate-500">{{ 'finance_v2.ar.cus.tax_number' | translate }}</span><span class="font-mono font-black text-slate-800 text-[10px]">{{ c.taxNumber }}</span></div>
+                <div class="flex justify-between"><span class="text-slate-500">{{ 'finance_v2.ar.cus.vat_number' | translate }}</span><span class="font-mono font-black text-slate-800 text-[10px]">{{ c.vatNumber }}</span></div>
+                <div class="flex justify-between"><span class="text-slate-500">{{ 'finance_v2.ar.cus.commercial_reg' | translate }}</span><span class="font-mono font-black text-slate-800 text-[10px]">{{ c.commercialReg }}</span></div>
+                <div class="flex justify-between"><span class="text-slate-500">{{ 'finance_v2.common.currency' | translate }}</span><span class="inline-flex items-center bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded text-[9px] font-bold">{{ c.currency }}</span></div>
+              </div>
+            </div>
+            <!-- Contact -->
+            <div class="bg-slate-50 rounded-xl border border-slate-100 p-4 space-y-2">
+              <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest block">{{ 'finance_v2.ar.cus.contact_info' | translate }}</span>
+              <div class="space-y-1.5 text-xs">
+                <div class="flex justify-between"><span class="text-slate-500">{{ 'finance_v2.ar.cus.contact_person' | translate }}</span><span class="font-black text-slate-800">{{ c.contactPerson }}</span></div>
+                <div class="flex justify-between"><span class="text-slate-500">{{ 'finance_v2.ar.cus.email' | translate }}</span><span class="font-black text-indigo-600 truncate max-w-36">{{ c.contactEmail }}</span></div>
+                <div class="flex justify-between"><span class="text-slate-500">{{ 'finance_v2.ar.cus.phone' | translate }}</span><span class="font-black text-slate-800">{{ c.contactPhone }}</span></div>
+                <div class="flex justify-between"><span class="text-slate-500">{{ 'finance_v2.ar.cus.city' | translate }}</span><span class="font-black text-slate-800">{{ c.city }}, {{ c.country }}</span></div>
+              </div>
+            </div>
+            <!-- Bank -->
+            <div class="bg-slate-50 rounded-xl border border-slate-100 p-4 space-y-2">
+              <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest block">{{ 'finance_v2.ar.cus.bank_info' | translate }}</span>
+              <div class="space-y-1.5 text-xs">
+                <div class="flex justify-between"><span class="text-slate-500">{{ 'finance_v2.ar.cus.bank_name' | translate }}</span><span class="font-black text-slate-800">{{ c.bankName }}</span></div>
+                <div class="flex flex-col gap-0.5"><span class="text-slate-500">{{ 'finance_v2.ar.cus.iban' | translate }}</span><span class="font-mono font-black text-slate-800 text-[10px] break-all">{{ c.iban }}</span></div>
+              </div>
+              @if (c.notes) {
+                <div class="pt-2 border-t border-slate-200">
+                  <p class="text-[10px] font-bold text-slate-400 uppercase mb-1">{{ 'finance_v2.ar.cus.notes' | translate }}</p>
+                  <p class="text-[11px] text-slate-600">{{ c.notes }}</p>
+                </div>
+              }
+            </div>
+          </div>
+        }
+
+        <!-- Tab: Invoices -->
+        @if (activeTab() === 'invoices') {
+          <div class="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden">
+            <div class="overflow-x-auto">
+              <table class="w-full text-xs">
+                <thead>
+                  <tr class="bg-slate-50 border-b border-slate-100 text-slate-400 font-bold">
+                    <th class="px-4 py-3 text-left text-[10px] uppercase">{{ 'finance_v2.ar.inv.inv_number' | translate }}</th>
+                    <th class="px-4 py-3 text-left text-[10px] uppercase hidden md:table-cell">{{ 'finance_v2.ar.inv.project' | translate }}</th>
+                    <th class="px-4 py-3 text-left text-[10px] uppercase">{{ 'finance_v2.ap.inv.due_date' | translate }}</th>
+                    <th class="px-4 py-3 text-right text-[10px] uppercase">{{ 'finance_v2.ar.inv.grand_total' | translate }}</th>
+                    <th class="px-4 py-3 text-right text-[10px] uppercase hidden lg:table-cell">{{ 'finance_v2.ar.inv.outstanding' | translate }}</th>
+                    <th class="px-4 py-3 text-center text-[10px] uppercase">{{ 'finance_v2.common.status' | translate }}</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-50">
+                  @for (inv of customerInvoices(); track inv.id) {
+                    <tr class="hover:bg-slate-50 transition-colors">
+                      <td class="px-4 py-3 font-black text-indigo-600 font-mono text-[10px]">{{ inv.invoiceNumber }}</td>
+                      <td class="px-4 py-3 hidden md:table-cell text-slate-600 text-[10px] truncate max-w-32">{{ inv.projectName }}</td>
+                      <td class="px-4 py-3 text-slate-600">{{ inv.dueDate }}</td>
+                      <td class="px-4 py-3 text-right font-black text-slate-800">{{ formatAmt(inv.grandTotal) }}</td>
+                      <td class="px-4 py-3 text-right font-black hidden lg:table-cell" [class.text-red-600]="inv.outstandingAmount > 0" [class.text-emerald-600]="inv.outstandingAmount === 0">{{ formatAmt(inv.outstandingAmount) }}</td>
+                      <td class="px-4 py-3 text-center">
+                        <span class="inline-block px-2 py-0.5 rounded-full text-[9px] font-extrabold" [class]="getInvStatusClass(inv.status)">{{ inv.status }}</span>
+                      </td>
+                    </tr>
+                  } @empty {
+                    <tr><td colspan="6" class="py-8 text-center text-slate-400 text-xs">{{ 'finance_v2.common.no_records' | translate }}</td></tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </div>
+        }
+
+        <!-- Tab: Collections -->
+        @if (activeTab() === 'collections') {
+          <div class="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden">
+            <div class="overflow-x-auto">
+              <table class="w-full text-xs">
+                <thead>
+                  <tr class="bg-slate-50 border-b border-slate-100 text-slate-400 font-bold">
+                    <th class="px-4 py-3 text-left text-[10px] uppercase">{{ 'finance_v2.ar.col.voucher_number' | translate }}</th>
+                    <th class="px-4 py-3 text-left text-[10px] uppercase">{{ 'finance_v2.ar.col.collection_date' | translate }}</th>
+                    <th class="px-4 py-3 text-left text-[10px] uppercase hidden md:table-cell">{{ 'finance_v2.ar.col.method' | translate }}</th>
+                    <th class="px-4 py-3 text-right text-[10px] uppercase">{{ 'finance_v2.ar.col.amount' | translate }}</th>
+                    <th class="px-4 py-3 text-center text-[10px] uppercase">{{ 'finance_v2.common.status' | translate }}</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-50">
+                  @for (col of customerCollections(); track col.id) {
+                    <tr class="hover:bg-slate-50 transition-colors">
+                      <td class="px-4 py-3 font-mono font-black text-emerald-600 text-[10px]">{{ col.voucherNumber }}</td>
+                      <td class="px-4 py-3 text-slate-600">{{ col.collectionDate }}</td>
+                      <td class="px-4 py-3 hidden md:table-cell text-slate-500">{{ col.collectionMethod }}</td>
+                      <td class="px-4 py-3 text-right font-black text-slate-800">{{ formatAmt(col.totalAmount) }}</td>
+                      <td class="px-4 py-3 text-center">
+                        <span class="inline-block px-2 py-0.5 rounded-full text-[9px] font-extrabold"
+                          [class]="col.status === 'Posted' ? 'bg-emerald-100 text-emerald-700' : col.status === 'Draft' ? 'bg-slate-100 text-slate-600' : 'bg-red-100 text-red-700'">
+                          {{ col.status }}
+                        </span>
+                      </td>
+                    </tr>
+                  } @empty {
+                    <tr><td colspan="5" class="py-8 text-center text-slate-400 text-xs">{{ 'finance_v2.common.no_records' | translate }}</td></tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </div>
+        }
+
+      } @else {
+        <div class="bg-white rounded-2xl border border-slate-100 shadow-sm flex-1 flex items-center justify-center py-24">
+          <div class="text-center">
+            <svg class="w-12 h-12 mx-auto text-slate-200 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+            </svg>
+            <p class="text-sm font-black text-slate-400">{{ 'finance_v2.ar.cus.select_customer' | translate }}</p>
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+</div>

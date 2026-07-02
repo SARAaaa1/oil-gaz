@@ -1,0 +1,367 @@
+<div class="space-y-5">
+
+  <!-- ══ HEADER ══════════════════════════════════════════════════ -->
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+    <div>
+      <h1 class="text-2xl font-black text-slate-800 tracking-tight">{{ 'finance_v2.ar.col.title' | translate }}</h1>
+      <p class="text-xs text-slate-500 font-semibold mt-1">{{ 'finance_v2.ar.col.subtitle' | translate }}</p>
+    </div>
+    <button (click)="openModal()"
+      class="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-sm transition-all active:scale-95">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+      {{ 'finance_v2.ar.col.new_voucher' | translate }}
+    </button>
+  </div>
+
+  <!-- ══ KPI CARDS ════════════════════════════════════════════════ -->
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+    <div class="bg-red-50 rounded-xl border border-red-100 shadow-sm p-4">
+      <p class="text-[10px] font-bold text-red-400 uppercase tracking-wider">{{ 'finance_v2.ar.kpi.outstanding' | translate }}</p>
+      <p class="text-xl font-black text-red-700 mt-1">{{ formatAmt(kpis().outstanding) }}</p>
+    </div>
+    <div class="bg-emerald-50 rounded-xl border border-emerald-100 shadow-sm p-4">
+      <p class="text-[10px] font-bold text-emerald-500 uppercase tracking-wider">{{ 'finance_v2.ar.kpi.collected_month' | translate }}</p>
+      <p class="text-xl font-black text-emerald-700 mt-1">{{ formatAmt(kpis().collectedThisMonth) }}</p>
+    </div>
+    <div class="bg-white rounded-xl border border-slate-100 shadow-sm p-4">
+      <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{{ 'finance_v2.ar.col.posted_count' | translate }}</p>
+      <p class="text-2xl font-black text-slate-800 mt-1">{{ countPosted() }}</p>
+    </div>
+    <div class="bg-amber-50 rounded-xl border border-amber-100 shadow-sm p-4">
+      <p class="text-[10px] font-bold text-amber-500 uppercase tracking-wider">{{ 'finance_v2.ar.col.draft_count' | translate }}</p>
+      <p class="text-2xl font-black text-amber-700 mt-1">{{ countDraft() }}</p>
+    </div>
+  </div>
+
+  <!-- ══ MAIN GRID ═════════════════════════════════════════════════ -->
+  <div class="grid grid-cols-1 xl:grid-cols-12 gap-5" style="min-height:calc(100vh - 20rem)">
+
+    <!-- ── LEFT LIST ─────────────────────────────────────────────── -->
+    <div class="xl:col-span-4 bg-white rounded-2xl border border-slate-100 shadow-sm flex flex-col overflow-hidden">
+      <div class="p-4 border-b border-slate-100 space-y-2">
+        <div class="relative">
+          <svg class="w-4 h-4 text-slate-400 absolute left-3 rtl:right-3 rtl:left-auto top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+          </svg>
+          <input type="text" [placeholder]="'finance_v2.ar.col.search_placeholder' | translate"
+            (input)="searchQuery.set($any($event.target).value)"
+            class="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 rtl:pr-9 rtl:pl-3 pr-3 py-2.5 text-xs placeholder-slate-400 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all">
+        </div>
+        <div class="flex gap-2">
+          <select (change)="statusFilter.set($any($event.target).value)"
+            class="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 focus:outline-none">
+            <option value="All">{{ 'finance_v2.common.all_statuses' | translate }}</option>
+            @for (s of collectionStatuses; track s) { <option [value]="s">{{ s }}</option> }
+          </select>
+          <select (change)="methodFilter.set($any($event.target).value)"
+            class="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 focus:outline-none">
+            <option value="All">{{ 'finance_v2.ar.col.all_methods' | translate }}</option>
+            @for (m of collectionMethods; track m) { <option [value]="m">{{ m }}</option> }
+          </select>
+        </div>
+      </div>
+
+      <div class="flex-1 overflow-y-auto divide-y divide-slate-50">
+        @for (col of filtered(); track col.id) {
+          <div (click)="selectVoucher(col)"
+            [class.bg-blue-50]="selectedId() === col.id"
+            [class.border-l-4]="selectedId() === col.id"
+            [class.border-l-primary]="selectedId() === col.id"
+            class="p-4 cursor-pointer hover:bg-slate-50 transition-all">
+            <div class="flex items-start justify-between gap-2">
+              <div class="min-w-0">
+                <p class="font-black text-emerald-600 font-mono text-[11px]">{{ col.voucherNumber }}</p>
+                <p class="font-semibold text-slate-800 text-xs mt-0.5 truncate max-w-40">{{ col.customerName }}</p>
+                <p class="text-[10px] text-slate-400 mt-0.5">{{ col.collectionDate }}</p>
+                <p class="text-[10px] text-slate-400">{{ getMethodIcon(col.collectionMethod) }} {{ col.collectionMethod }}</p>
+              </div>
+              <div class="shrink-0 text-right space-y-1">
+                <span class="inline-block px-2 py-0.5 rounded-full text-[9px] font-extrabold" [class]="getStatusClass(col.status)">{{ col.status }}</span>
+                <p class="text-sm font-black text-emerald-700">{{ formatAmt(col.totalAmount) }}</p>
+              </div>
+            </div>
+          </div>
+        } @empty {
+          <div class="p-12 text-center">
+            <p class="text-xs font-semibold text-slate-400">{{ 'finance_v2.common.no_records' | translate }}</p>
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- ── RIGHT DETAIL ───────────────────────────────────────────── -->
+    <div class="xl:col-span-8 flex flex-col gap-4 overflow-y-auto" style="max-height:calc(100vh - 20rem)">
+
+      @if (activeCollection(); as col) {
+
+        <!-- Voucher Header -->
+        <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+          <div class="h-1.5 w-full bg-gradient-to-r from-emerald-600 via-teal-500 to-cyan-500"></div>
+          <div class="p-5">
+            <div class="flex items-start justify-between gap-4 flex-wrap">
+              <div>
+                <div class="flex items-center gap-2 flex-wrap mb-1">
+                  <span class="font-mono font-black text-emerald-600 text-sm">{{ col.voucherNumber }}</span>
+                  <span class="inline-block px-2 py-0.5 rounded-full text-[9px] font-extrabold" [class]="getStatusClass(col.status)">{{ col.status }}</span>
+                </div>
+                <p class="font-black text-slate-800 text-base">{{ col.customerName }}</p>
+                <p class="text-xs text-slate-500 mt-0.5">{{ getMethodIcon(col.collectionMethod) }} {{ col.collectionMethod }}</p>
+              </div>
+              <div class="text-right">
+                <p class="text-[10px] text-slate-400">{{ 'finance_v2.ar.col.total_collected' | translate }}</p>
+                <p class="text-3xl font-black text-emerald-700">{{ formatAmt(col.totalAmount) }}</p>
+                <p class="text-[10px] text-slate-400">{{ col.currency }}</p>
+              </div>
+            </div>
+            <div class="mt-4 pt-4 border-t border-slate-50 flex items-center gap-2 flex-wrap">
+              @if (col.status === 'Draft') {
+                <button (click)="postCollection(col)"
+                  class="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-bold transition-all flex items-center gap-1.5">
+                  <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                  {{ 'finance_v2.ar.col.post' | translate }}
+                </button>
+                <button (click)="cancelCollection(col)"
+                  class="px-3 py-1.5 rounded-xl border border-red-200 text-red-600 text-[10px] font-bold hover:bg-red-50 transition-all">
+                  {{ 'finance_v2.ar.col.cancel' | translate }}
+                </button>
+              }
+              @if (col.status === 'Posted') {
+                <button class="px-3 py-1.5 rounded-xl border border-slate-200 text-slate-600 text-[10px] font-bold hover:bg-slate-50 transition-all flex items-center gap-1.5">
+                  <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+                  {{ 'finance_v2.ar.col.print_receipt' | translate }}
+                </button>
+              }
+            </div>
+          </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="flex gap-1 bg-slate-100 rounded-xl p-1">
+          <button (click)="activeTab.set('details')"
+            [class.bg-white]="activeTab() === 'details'" [class.shadow-sm]="activeTab() === 'details'"
+            [class.font-black]="activeTab() === 'details'" [class.text-slate-800]="activeTab() === 'details'"
+            [class.text-slate-500]="activeTab() !== 'details'"
+            class="flex-1 py-2 rounded-lg text-xs font-semibold transition-all">
+            {{ 'finance_v2.ar.col.tab_details' | translate }}
+          </button>
+          <button (click)="activeTab.set('allocations')"
+            [class.bg-white]="activeTab() === 'allocations'" [class.shadow-sm]="activeTab() === 'allocations'"
+            [class.font-black]="activeTab() === 'allocations'" [class.text-slate-800]="activeTab() === 'allocations'"
+            [class.text-slate-500]="activeTab() !== 'allocations'"
+            class="flex-1 py-2 rounded-lg text-xs font-semibold transition-all">
+            {{ 'finance_v2.ar.col.tab_allocations' | translate }} ({{ col.allocations.length }})
+          </button>
+        </div>
+
+        @if (activeTab() === 'details') {
+          <div class="grid grid-cols-2 gap-4">
+            <div class="bg-slate-50 rounded-xl border border-slate-100 p-4">
+              <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">{{ 'finance_v2.ar.col.payment_details' | translate }}</p>
+              <div class="space-y-1.5 text-xs">
+                <div class="flex justify-between"><span class="text-slate-500">{{ 'finance_v2.ar.col.collection_date' | translate }}</span><span class="font-black text-slate-800">{{ col.collectionDate }}</span></div>
+                <div class="flex justify-between"><span class="text-slate-500">{{ 'finance_v2.ar.col.method' | translate }}</span><span class="font-black text-slate-800">{{ col.collectionMethod }}</span></div>
+                <div class="flex justify-between"><span class="text-slate-500">{{ 'finance_v2.ar.col.bank' | translate }}</span><span class="font-black text-slate-800">{{ col.bankName || '—' }}</span></div>
+                <div class="flex justify-between"><span class="text-slate-500">{{ 'finance_v2.ar.col.reference' | translate }}</span><span class="font-mono font-black text-slate-800 text-[10px]">{{ col.referenceNumber || '—' }}</span></div>
+                <div class="flex justify-between"><span class="text-slate-500">{{ 'finance_v2.ar.col.created_by' | translate }}</span><span class="font-black text-slate-800">{{ col.createdBy }}</span></div>
+                @if (col.approvedBy) {
+                  <div class="flex justify-between"><span class="text-slate-500">{{ 'finance_v2.ar.col.approved_by' | translate }}</span><span class="font-black text-slate-800">{{ col.approvedBy }}</span></div>
+                }
+              </div>
+            </div>
+            <div class="bg-slate-50 rounded-xl border border-slate-100 p-4">
+              <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">{{ 'finance_v2.ar.col.total_collected' | translate }}</p>
+              <p class="text-3xl font-black text-emerald-700 mt-2">{{ formatAmt(col.totalAmount) }}</p>
+              <p class="text-xs text-slate-500 mt-1">{{ col.currency }}</p>
+              @if (col.remarks) {
+                <div class="mt-3 pt-3 border-t border-slate-200">
+                  <p class="text-[9px] font-black text-slate-400 uppercase mb-1">{{ 'finance_v2.ar.col.notes' | translate }}</p>
+                  <p class="text-[11px] text-slate-600">{{ col.remarks }}</p>
+                </div>
+              }
+            </div>
+          </div>
+        }
+
+        @if (activeTab() === 'allocations') {
+          <div class="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden">
+            <div class="overflow-x-auto">
+              <table class="w-full text-xs">
+                <thead>
+                  <tr class="bg-slate-50 border-b border-slate-100 text-slate-400 font-bold">
+                    <th class="px-4 py-3 text-left text-[10px] uppercase">{{ 'finance_v2.ar.inv.inv_number' | translate }}</th>
+                    <th class="px-4 py-3 text-right text-[10px] uppercase">{{ 'finance_v2.ar.col.outstanding' | translate }}</th>
+                    <th class="px-4 py-3 text-right text-[10px] uppercase">{{ 'finance_v2.ar.col.allocated' | translate }}</th>
+                    <th class="px-4 py-3 text-right text-[10px] uppercase hidden md:table-cell">{{ 'finance_v2.ar.col.discount' | translate }}</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-50">
+                  @for (a of col.allocations; track a.invoiceId) {
+                    <tr class="hover:bg-slate-50 transition-colors">
+                      <td class="px-4 py-3 font-black text-indigo-600 font-mono text-[10px]">{{ a.invoiceNumber }}</td>
+                      <td class="px-4 py-3 text-right text-slate-600">{{ formatAmt(a.outstandingAmt) }}</td>
+                      <td class="px-4 py-3 text-right font-black text-emerald-700">{{ formatAmt(a.allocatedAmount) }}</td>
+                      <td class="px-4 py-3 text-right text-slate-500 hidden md:table-cell">{{ formatAmt(a.discount) }}</td>
+                    </tr>
+                  } @empty {
+                    <tr><td colspan="4" class="py-8 text-center text-slate-400 text-xs">{{ 'finance_v2.common.no_records' | translate }}</td></tr>
+                  }
+                </tbody>
+                <tfoot>
+                  <tr class="bg-slate-100 border-t-2 border-slate-200">
+                    <td class="px-4 py-3 font-black text-slate-600 text-xs">{{ 'finance_v2.common.total' | translate }}</td>
+                    <td class="px-4 py-3"></td>
+                    <td class="px-4 py-3 text-right font-black text-emerald-700 text-sm">{{ formatAmt(col.totalAmount) }}</td>
+                    <td class="px-4 py-3 hidden md:table-cell"></td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+        }
+
+      } @else {
+        <div class="bg-white rounded-2xl border border-slate-100 shadow-sm flex-1 flex items-center justify-center py-24">
+          <div class="text-center">
+            <svg class="w-12 h-12 mx-auto text-slate-200 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/>
+            </svg>
+            <p class="text-sm font-black text-slate-400">{{ 'finance_v2.ar.col.select_voucher' | translate }}</p>
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+
+  <!-- ══ NEW COLLECTION MODAL ═════════════════════════════════════ -->
+  @if (showModal()) {
+    <div class="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-screen overflow-y-auto">
+        <div class="h-1.5 w-full bg-gradient-to-r from-emerald-600 to-teal-500 rounded-t-2xl"></div>
+        <div class="p-6">
+          <div class="flex items-center justify-between mb-5">
+            <div>
+              <h3 class="text-base font-black text-slate-800">{{ 'finance_v2.ar.col.new_voucher' | translate }}</h3>
+              <p class="text-xs text-slate-500">{{ 'finance_v2.ar.col.modal_subtitle' | translate }}</p>
+            </div>
+            <button (click)="closeModal()" class="p-2 rounded-xl hover:bg-slate-100 transition-all">
+              <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+          </div>
+
+          <!-- Form -->
+          <div class="space-y-4">
+            <!-- Customer + Date -->
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">{{ 'finance_v2.ar.cus.title' | translate }}</label>
+                <select [value]="formCustomerId()" (change)="formCustomerId.set($any($event.target).value)"
+                  class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-semibold text-slate-700 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/10">
+                  <option value="">{{ 'finance_v2.ar.cus.select_customer' | translate }}</option>
+                  @for (c of arService.customers(); track c.id) {
+                    <option [value]="c.id">{{ c.nameEn }}</option>
+                  }
+                </select>
+              </div>
+              <div>
+                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">{{ 'finance_v2.ar.col.collection_date' | translate }}</label>
+                <input type="date" [value]="formDate()" (input)="formDate.set($any($event.target).value)"
+                  class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-semibold text-slate-700 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/10">
+              </div>
+            </div>
+            <!-- Method + Bank + Ref -->
+            <div class="grid grid-cols-3 gap-3">
+              <div>
+                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">{{ 'finance_v2.ar.col.method' | translate }}</label>
+                <select [value]="formMethod()" (change)="formMethod.set($any($event.target).value)"
+                  class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-semibold text-slate-700 focus:outline-none focus:border-primary">
+                  @for (m of collectionMethods; track m) { <option [value]="m">{{ m }}</option> }
+                </select>
+              </div>
+              <div>
+                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">{{ 'finance_v2.ar.col.bank' | translate }}</label>
+                <input type="text" [placeholder]="'finance_v2.ar.col.bank_placeholder' | translate" [value]="formBank()" (input)="formBank.set($any($event.target).value)"
+                  class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-semibold placeholder-slate-300 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/10">
+              </div>
+              <div>
+                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">{{ 'finance_v2.ar.col.reference' | translate }}</label>
+                <input type="text" [placeholder]="'finance_v2.ar.col.ref_placeholder' | translate" [value]="formRef()" (input)="formRef.set($any($event.target).value)"
+                  class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-semibold placeholder-slate-300 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/10">
+              </div>
+            </div>
+
+            <!-- Invoice Picker -->
+            @if (formCustomerId()) {
+              <div>
+                <p class="text-[10px] font-black text-slate-400 uppercase mb-2">{{ 'finance_v2.ar.col.available_invoices' | translate }}</p>
+                <div class="bg-slate-50 rounded-xl border border-slate-100 p-3 max-h-40 overflow-y-auto">
+                  @for (inv of allocatableInvoices(); track inv.id) {
+                    @if (!isAllocated(inv.id)) {
+                      <div class="flex items-center justify-between py-1.5 border-b border-slate-100 last:border-0">
+                        <div>
+                          <span class="text-[10px] font-black text-indigo-600 font-mono">{{ inv.invoiceNumber }}</span>
+                          <span class="text-[9px] text-slate-400 ml-2">{{ formatAmt(inv.outstandingAmount) }}</span>
+                        </div>
+                        <button (click)="addAllocation(inv)"
+                          class="px-2 py-0.5 rounded-lg bg-emerald-600 text-white text-[9px] font-bold hover:bg-emerald-700 transition-all">
+                          + {{ 'finance_v2.ar.col.add' | translate }}
+                        </button>
+                      </div>
+                    }
+                  } @empty {
+                    <p class="text-[10px] text-slate-400 text-center py-2">{{ 'finance_v2.ar.col.no_invoices' | translate }}</p>
+                  }
+                </div>
+              </div>
+
+              <!-- Allocations table -->
+              @if (formAllocations().length > 0) {
+                <div>
+                  <p class="text-[10px] font-black text-slate-400 uppercase mb-2">{{ 'finance_v2.ar.col.tab_allocations' | translate }}</p>
+                  <div class="space-y-2">
+                    @for (a of formAllocations(); track a.invoiceId) {
+                      <div class="flex items-center gap-2 bg-slate-50 rounded-xl px-3 py-2">
+                        <span class="font-mono font-black text-indigo-600 text-[10px] flex-1">{{ a.invoiceNumber }}</span>
+                        <input type="number" [value]="a.allocatedAmount"
+                          (input)="updateAllocationAmt(a.invoiceId, +$any($event.target).value)"
+                          class="w-28 bg-white border border-slate-200 rounded-lg px-2 py-1 text-xs font-bold text-right focus:outline-none focus:border-primary">
+                        <button (click)="removeAllocation(a.invoiceId)" class="text-red-400 hover:text-red-600">
+                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                        </button>
+                      </div>
+                    }
+                    <div class="flex items-center justify-between px-3 py-2 bg-emerald-50 rounded-xl border border-emerald-100">
+                      <span class="text-[10px] font-black text-emerald-700 uppercase">{{ 'finance_v2.common.total' | translate }}</span>
+                      <span class="font-black text-emerald-700">{{ formatAmt(formTotal()) }}</span>
+                    </div>
+                  </div>
+                </div>
+              }
+            }
+
+            <!-- Notes -->
+            <div>
+              <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">{{ 'finance_v2.ar.col.notes' | translate }}</label>
+              <textarea rows="2" [placeholder]="'finance_v2.ar.col.notes_placeholder' | translate"
+                [value]="formNotes()" (input)="formNotes.set($any($event.target).value)"
+                class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-semibold placeholder-slate-300 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 resize-none">
+              </textarea>
+            </div>
+          </div>
+
+          <!-- Footer -->
+          <div class="flex items-center justify-between mt-5 pt-4 border-t border-slate-100">
+            <button (click)="closeModal()"
+              class="px-4 py-2 rounded-xl border border-slate-200 text-slate-600 text-xs font-bold hover:bg-slate-50 transition-all">
+              {{ 'finance_v2.common.cancel' | translate }}
+            </button>
+            <button (click)="saveVoucher()"
+              class="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all flex items-center gap-2">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+              {{ 'finance_v2.common.save' | translate }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+</div>

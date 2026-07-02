@@ -1,0 +1,250 @@
+<div class="space-y-5">
+
+  <!-- ══ PAGE HEADER ══════════════════════════════════════════════ -->
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+    <div>
+      <h1 class="text-2xl font-black text-slate-800 tracking-tight">{{ 'finance_v2.period_close.title' | translate }}</h1>
+      <p class="text-xs text-slate-500 font-semibold mt-1">{{ 'finance_v2.period_close.subtitle' | translate }}</p>
+    </div>
+    <div class="flex items-center gap-2 flex-wrap">
+      @if (kpis().status === 'Open') {
+        <button (click)="runValidation()"
+          class="px-3 py-2 rounded-xl border border-indigo-250 text-indigo-650 text-xs font-bold hover:bg-indigo-50 transition-all">
+          🔍 {{ 'finance_v2.period_close.btn_run_val' | translate }}
+        </button>
+        <button (click)="openCloseDialog()"
+          class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-all shadow-sm">
+          🔒 {{ 'finance_v2.period_close.btn_close_period' | translate }}
+        </button>
+      } @else {
+        <button (click)="reopenPeriod()"
+          class="px-4 py-2 rounded-xl bg-red-650 hover:bg-red-750 text-white text-xs font-bold transition-all shadow-sm">
+          🔓 {{ 'finance_v2.period_close.btn_reopen' | translate }}
+        </button>
+      }
+      <button (click)="exportExcel()"
+        class="px-3 py-2 rounded-xl border border-slate-200 text-slate-650 text-xs font-bold hover:bg-slate-50 transition-all">
+        Excel
+      </button>
+    </div>
+  </div>
+
+  <!-- ══ KPI CARDS ════════════════════════════════════════════════ -->
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+    <div class="bg-white rounded-xl border border-slate-100 shadow-sm p-4">
+      <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{{ 'finance_v2.period_close.current_period' | translate }}</p>
+      <p class="text-lg font-black text-slate-800 mt-1">{{ kpis().accountingPeriod }}</p>
+    </div>
+    <div class="rounded-xl border shadow-sm p-4" [class]="kpis().status === 'Open' ? 'bg-green-50 border-green-100' : 'bg-slate-100 border-slate-200'">
+      <p class="text-[10px] font-bold uppercase tracking-wider" [class]="kpis().status === 'Open' ? 'text-green-500' : 'text-slate-400'">{{ 'finance_v2.common.status' | translate }}</p>
+      <p class="text-lg font-black mt-1" [class]="kpis().status === 'Open' ? 'text-green-700' : 'text-slate-600'">{{ kpis().status }}</p>
+    </div>
+    <div class="bg-white rounded-xl border border-slate-100 shadow-sm p-4">
+      <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{{ 'finance_v2.period_close.pending_tasks' | translate }}</p>
+      <p class="text-2xl font-black text-slate-800 mt-1">{{ kpis().pendingTasks }}</p>
+    </div>
+    <div class="rounded-xl p-4 border"
+      [class.bg-red-50]="kpis().auditIssues > 0" [class.border-red-100]="kpis().auditIssues > 0"
+      [class.bg-white]="kpis().auditIssues === 0" [class.border-slate-100]="kpis().auditIssues === 0">
+      <p class="text-[10px] font-bold uppercase tracking-wider" [class.text-red-400]="kpis().auditIssues > 0" [class.text-slate-400]="kpis().auditIssues === 0">
+        {{ 'finance_v2.period_close.kpi_issues' | translate }}
+      </p>
+      <p class="text-lg font-black mt-1" [class.text-red-700]="kpis().auditIssues > 0" [class.text-slate-800]="kpis().auditIssues === 0">
+        {{ kpis().auditIssues }}
+      </p>
+    </div>
+  </div>
+
+  <!-- ══ TABS ═════════════════════════════════════════════════════ -->
+  <div class="flex gap-1 bg-slate-100 rounded-xl p-1 max-w-2xl">
+    <button (click)="activeTab.set('checklist')"
+      [class.bg-white]="activeTab() === 'checklist'" [class.shadow-sm]="activeTab() === 'checklist'"
+      [class.font-black]="activeTab() === 'checklist'" [class.text-slate-800]="activeTab() === 'checklist'"
+      [class.text-slate-500]="activeTab() !== 'checklist'"
+      class="flex-1 py-2 rounded-lg text-xs font-semibold transition-all">
+      📋 {{ 'finance_v2.period_close.tab_checklist' | translate }} ({{ checklist().length }})
+    </button>
+    <button (click)="activeTab.set('validation')"
+      [class.bg-white]="activeTab() === 'validation'" [class.shadow-sm]="activeTab() === 'validation'"
+      [class.font-black]="activeTab() === 'validation'" [class.text-slate-800]="activeTab() === 'validation'"
+      [class.text-slate-500]="activeTab() !== 'validation'"
+      class="flex-1 py-2 rounded-lg text-xs font-semibold transition-all">
+      ⚠️ {{ 'finance_v2.period_close.tab_validation' | translate }} ({{ validationIssues().length }})
+    </button>
+    <button (click)="activeTab.set('automation')"
+      [class.bg-white]="activeTab() === 'automation'" [class.shadow-sm]="activeTab() === 'automation'"
+      [class.font-black]="activeTab() === 'automation'" [class.text-slate-800]="activeTab() === 'automation'"
+      [class.text-slate-500]="activeTab() !== 'automation'"
+      class="flex-1 py-2 rounded-lg text-xs font-semibold transition-all">
+      ⚡ {{ 'finance_v2.period_close.tab_automation' | translate }}
+    </button>
+    <button (click)="activeTab.set('audit')"
+      [class.bg-white]="activeTab() === 'audit'" [class.shadow-sm]="activeTab() === 'audit'"
+      [class.font-black]="activeTab() === 'audit'" [class.text-slate-800]="activeTab() === 'audit'"
+      [class.text-slate-500]="activeTab() !== 'audit'"
+      class="flex-1 py-2 rounded-lg text-xs font-semibold transition-all">
+      📖 {{ 'finance_v2.period_close.tab_audit' | translate }}
+    </button>
+  </div>
+
+  <!-- ── 1. CHECKLIST TAB ──────────────────────────────────────── -->
+  @if (activeTab() === 'checklist') {
+    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="w-full text-xs">
+          <thead>
+            <tr class="bg-slate-50 border-b border-slate-100 text-slate-400 font-bold">
+              <th class="px-4 py-3 text-center w-12">#</th>
+              <th class="px-4 py-3 text-left">{{ 'finance_v2.period_close.col_task' | translate }}</th>
+              <th class="px-4 py-3 text-center w-28">{{ 'finance_v2.common.status' | translate }}</th>
+              <th class="px-4 py-3 text-left w-36">{{ 'finance_v2.reports.generated_by' | translate }}</th>
+              <th class="px-4 py-3 text-left w-28">{{ 'finance_v2.common.date' | translate }}</th>
+              <th class="px-4 py-3 text-left">{{ 'finance_v2.common.notes' | translate }}</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-50 font-semibold text-slate-700 bg-white">
+            @for (item of checklist(); track item.id; let idx = $index) {
+              <tr class="hover:bg-slate-50 transition-colors">
+                <td class="px-4 py-3 text-center">
+                  <input type="checkbox" [checked]="item.status === 'Completed'"
+                    [disabled]="kpis().status === 'Closed'"
+                    (change)="toggleChecklistItem(item)"
+                    class="rounded text-indigo-650 focus:ring-primary w-4 h-4 border-slate-300">
+                </td>
+                <td class="px-4 py-3 text-slate-800 font-bold">{{ item.name }}</td>
+                <td class="px-4 py-3 text-center">
+                  <span class="inline-block px-2 py-0.5 rounded-full text-[9px] font-extrabold"
+                    [class]="getChecklistStatusClass(item.status)">{{ item.status }}</span>
+                </td>
+                <td class="px-4 py-3 text-slate-500">{{ item.completedBy || '—' }}</td>
+                <td class="px-4 py-3 text-slate-500 font-mono text-[10px]">{{ item.completedDate || '—' }}</td>
+                <td class="px-4 py-3 text-slate-400 truncate max-w-xs">{{ item.notes || '—' }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
+
+  <!-- ── 2. VALIDATION TAB ─────────────────────────────────────── -->
+  @if (activeTab() === 'validation') {
+    <div class="space-y-3">
+      @for (issue of validationIssues(); track issue.id) {
+        <div class="bg-white rounded-xl border p-4 flex items-start gap-3"
+          [class.border-red-200]="issue.severity === 'Error'" [class.bg-red-50]="issue.severity === 'Error'"
+          [class.border-slate-100]="issue.severity !== 'Error'">
+          <div class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+            [class.bg-red-100]="issue.severity === 'Error'" [class.text-red-750]="issue.severity === 'Error'"
+            [class.bg-amber-100]="issue.severity === 'Warning'" [class.text-amber-700]="issue.severity === 'Warning'"
+            [class.bg-blue-100]="issue.severity === 'Info'" [class.text-blue-700]="issue.severity === 'Info'">
+            @if (issue.severity === 'Error') { 🛑 }
+            @else if (issue.severity === 'Warning') { ⚠ }
+            @else { ℹ }
+          </div>
+          <div class="min-w-0 text-xs">
+            <span class="font-bold uppercase tracking-wider text-[9px] px-2 py-0.5 rounded"
+              [class.bg-red-200]="issue.severity === 'Error'" [class.text-red-800]="issue.severity === 'Error'"
+              [class.bg-amber-100]="issue.severity === 'Warning'" [class.text-amber-800]="issue.severity === 'Warning'">
+              {{ issue.module }} · {{ issue.severity }}
+            </span>
+            <h4 class="font-black text-slate-800 text-sm mt-1.5">{{ issue.title }}</h4>
+            <p class="text-slate-500 font-semibold mt-1">{{ issue.description }}</p>
+            <p class="text-indigo-650 font-bold mt-2">💡 {{ 'finance_v2.period_close.recommendation' | translate }}: {{ issue.recommendation }}</p>
+          </div>
+        </div>
+      } @empty {
+        <div class="bg-white rounded-xl border border-green-150 p-12 text-center bg-green-50/50">
+          <svg class="w-12 h-12 mx-auto text-green-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+          <p class="text-sm font-black text-green-700">{{ 'finance_v2.period_close.no_issues' | translate }}</p>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- ── 3. AUTOMATION TAB ─────────────────────────────────────── -->
+  @if (activeTab() === 'automation') {
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      @for (rule of automationRules(); track rule.id) {
+        <div class="bg-white rounded-xl border border-slate-100 shadow-sm p-4 space-y-3">
+          <div class="flex items-start justify-between gap-2">
+            <div>
+              <h4 class="font-black text-slate-850 text-sm">{{ rule.name }}</h4>
+              <p class="text-xs text-slate-400 font-semibold">{{ rule.frequency }} · {{ rule.description }}</p>
+            </div>
+            <button (click)="runJob(rule.id, rule.name)"
+              [disabled]="kpis().status === 'Closed'"
+              class="px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-200 hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200 text-slate-700 text-[10px] font-bold transition-all disabled:opacity-50">
+              ⚡ Run
+            </button>
+          </div>
+          <div class="bg-slate-50 rounded-lg p-3 text-[11px] font-mono text-slate-650 space-y-1">
+            <div class="flex justify-between"><span>Last Run:</span><span class="font-bold text-slate-800">{{ rule.lastRun }}</span></div>
+            <div class="flex justify-between"><span>Status:</span><span class="font-bold text-green-600">{{ rule.status }}</span></div>
+            <div class="flex justify-between"><span>Log:</span><span class="font-bold text-slate-800 truncate max-w-48">{{ rule.log }}</span></div>
+          </div>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- ── 4. AUDIT TAB ──────────────────────────────────────────── -->
+  @if (activeTab() === 'audit') {
+    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="w-full text-xs">
+          <thead>
+            <tr class="bg-slate-50 border-b border-slate-100 text-slate-400 font-bold">
+              <th class="px-4 py-3 text-left">Timestamp</th>
+              <th class="px-4 py-3 text-left">User</th>
+              <th class="px-4 py-3 text-left">Module</th>
+              <th class="px-4 py-3 text-left">Action</th>
+              <th class="px-4 py-3 text-left">Document</th>
+              <th class="px-4 py-3 text-left">Changes</th>
+              <th class="px-4 py-3 text-left">IP Address</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-50 font-semibold text-slate-700 bg-white">
+            @for (row of auditTrail(); track row.id) {
+              <tr class="hover:bg-slate-50 transition-colors">
+                <td class="px-4 py-3 text-slate-500 font-mono text-[10px]">{{ row.date }} {{ row.time }}</td>
+                <td class="px-4 py-3 text-slate-800 font-bold">{{ row.user }}</td>
+                <td class="px-4 py-3 text-slate-500">{{ row.module }}</td>
+                <td class="px-4 py-3 text-slate-800 font-black">{{ row.action }}</td>
+                <td class="px-4 py-3 text-slate-500 font-mono text-[10px]">{{ row.document }}</td>
+                <td class="px-4 py-3 text-slate-500">
+                  <span class="font-bold text-red-500">{{ row.beforeValue }}</span> ➜ 
+                  <span class="font-bold text-green-600">{{ row.afterValue }}</span>
+                </td>
+                <td class="px-4 py-3 text-slate-400 font-mono text-[10px]">{{ row.ip }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
+
+  <!-- Close Confirmation Dialog -->
+  @if (showCloseDlg()) {
+    <div class="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 space-y-4">
+        <h3 class="text-base font-black text-slate-800">{{ 'finance_v2.period_close.dialog_close_title' | translate }}</h3>
+        <p class="text-xs text-slate-500">{{ 'finance_v2.period_close.dialog_close_desc' | translate }}</p>
+
+        <div class="flex items-center justify-end gap-2 pt-2">
+          <button (click)="closeCloseDialog()"
+            class="px-4 py-2 rounded-xl border border-slate-200 text-slate-650 text-xs font-bold hover:bg-slate-50 transition-all">
+            {{ 'finance_v2.common.cancel' | translate }}
+          </button>
+          <button (click)="confirmPeriodClose()"
+            class="px-5 py-2 rounded-xl bg-indigo-650 hover:bg-indigo-700 text-white text-xs font-bold transition-all shadow-sm">
+            🔒 {{ 'finance_v2.period_close.btn_close_period' | translate }}
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+</div>

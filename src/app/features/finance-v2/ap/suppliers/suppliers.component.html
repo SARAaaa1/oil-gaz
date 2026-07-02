@@ -1,0 +1,294 @@
+<div class="space-y-5">
+
+  <!-- ══ PAGE HEADER ══════════════════════════════════════════════ -->
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+    <div>
+      <h1 class="text-2xl font-black text-slate-800 tracking-tight">{{ 'finance_v2.ap.sup.title' | translate }}</h1>
+      <p class="text-xs text-slate-500 font-semibold mt-1">{{ 'finance_v2.ap.sup.subtitle' | translate }}</p>
+    </div>
+    <div class="flex items-center gap-2 flex-wrap">
+      <div class="flex items-center gap-1.5 bg-white border border-slate-100 rounded-lg px-3 py-1.5 shadow-xs">
+        <span class="w-2 h-2 rounded-full bg-green-500"></span>
+        <span class="text-[11px] font-bold text-slate-600">{{ totalActive() }} {{ 'finance_v2.ap.sup.active' | translate }}</span>
+      </div>
+      <div class="flex items-center gap-1.5 bg-white border border-slate-100 rounded-lg px-3 py-1.5 shadow-xs">
+        <span class="w-2 h-2 rounded-full bg-amber-400"></span>
+        <span class="text-[11px] font-bold text-slate-600">{{ totalOnHold() }} {{ 'finance_v2.ap.sup.on_hold' | translate }}</span>
+      </div>
+      <button (click)="openAddModal()" class="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-700 text-white text-xs font-bold shadow-sm transition-all active:scale-95">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+        {{ 'finance_v2.ap.sup.new_supplier' | translate }}
+      </button>
+    </div>
+  </div>
+
+  <!-- ══ KPI ROW ════════════════════════════════════════════════════ -->
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+    <div class="bg-white rounded-xl border border-slate-100 shadow-sm p-4">
+      <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{{ 'finance_v2.ap.sup.total_suppliers' | translate }}</p>
+      <p class="text-2xl font-black text-slate-800 mt-1">{{ apService.suppliers().length }}</p>
+    </div>
+    <div class="bg-white rounded-xl border border-slate-100 shadow-sm p-4">
+      <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{{ 'finance_v2.ap.kpi.total_outstanding' | translate }}</p>
+      <p class="text-xl font-black text-red-600 mt-1">{{ formatAmt(totalBalance()) }}</p>
+      <p class="text-[9px] text-slate-400 mt-0.5">{{ 'finance_v2.common.sar' | translate }}</p>
+    </div>
+    <div class="bg-white rounded-xl border border-slate-100 shadow-sm p-4">
+      <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{{ 'finance_v2.ap.sup.active_suppliers' | translate }}</p>
+      <p class="text-2xl font-black text-green-600 mt-1">{{ totalActive() }}</p>
+    </div>
+    <div class="bg-white rounded-xl border border-slate-100 shadow-sm p-4">
+      <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{{ 'finance_v2.ap.sup.inactive_suppliers' | translate }}</p>
+      <p class="text-2xl font-black text-slate-500 mt-1">{{ totalInactive() }}</p>
+    </div>
+  </div>
+
+  <!-- ══ MAIN GRID: Master-Detail ══════════════════════════════════ -->
+  <div class="grid grid-cols-1 xl:grid-cols-12 gap-5" style="min-height: calc(100vh - 18rem)">
+
+    <!-- ── LEFT LIST (col-span-4) ───────────────────────────────── -->
+    <div class="xl:col-span-4 bg-white rounded-2xl border border-slate-100 shadow-sm flex flex-col overflow-hidden">
+
+      <!-- Filters -->
+      <div class="p-4 border-b border-slate-100 space-y-2">
+        <div class="relative">
+          <svg class="w-4 h-4 text-slate-400 absolute left-3 rtl:right-3 rtl:left-auto top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+          <input type="text" [placeholder]="'finance_v2.ap.sup.search_placeholder' | translate"
+            (input)="searchQuery.set($any($event.target).value)"
+            class="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 rtl:pr-9 rtl:pl-3 pr-3 py-2.5 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all">
+        </div>
+        <div class="flex gap-2">
+          <select (change)="statusFilter.set($any($event.target).value)"
+            class="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/10">
+            <option value="All">{{ 'finance_v2.common.all_statuses' | translate }}</option>
+            @for (s of statuses; track s) { <option [value]="s">{{ s }}</option> }
+          </select>
+          <select (change)="categoryFilter.set($any($event.target).value)"
+            class="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/10">
+            @for (c of categories(); track c) { <option [value]="c">{{ c }}</option> }
+          </select>
+        </div>
+      </div>
+
+      <!-- Supplier Rows -->
+      <div class="flex-1 overflow-y-auto divide-y divide-slate-50">
+        @for (sup of filtered(); track sup.id) {
+          <div (click)="selectSupplier(sup)"
+            [class.bg-blue-50]="selectedId() === sup.id"
+            [class.border-l-4]="selectedId() === sup.id"
+            [class.border-l-primary]="selectedId() === sup.id"
+            class="p-4 cursor-pointer hover:bg-slate-50/70 transition-all group">
+            <div class="flex items-start justify-between gap-2">
+              <div class="min-w-0">
+                <div class="flex items-center gap-2">
+                  <span class="font-black text-slate-900 text-sm truncate">{{ sup.nameEn }}</span>
+                </div>
+                <p class="text-[11px] text-slate-500 font-semibold mt-0.5 truncate">{{ sup.code }}</p>
+                <p class="text-[10px] text-slate-400 mt-1">{{ sup.city }}, {{ sup.country }}</p>
+              </div>
+              <div class="shrink-0 text-right space-y-1.5">
+                <span class="inline-block px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider" [class]="getStatusClass(sup.status)">{{ sup.status }}</span>
+                @if (sup.openBalance > 0) {
+                  <p class="text-xs font-black text-red-600">{{ formatAmt(sup.openBalance) }}</p>
+                }
+              </div>
+            </div>
+            <div class="mt-2 flex items-center gap-1.5 flex-wrap">
+              <span class="inline-flex items-center bg-slate-100 text-slate-500 px-2 py-0.5 rounded text-[9px] font-bold">{{ sup.paymentTerms }}</span>
+              <span class="inline-flex items-center bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded text-[9px] font-bold">{{ sup.currency }}</span>
+              <span class="inline-flex items-center bg-slate-100 text-slate-500 px-2 py-0.5 rounded text-[9px] font-bold">{{ sup.category }}</span>
+            </div>
+          </div>
+        } @empty {
+          <div class="p-12 text-center text-slate-400">
+            <svg class="w-10 h-10 mx-auto text-slate-200 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+            <span class="text-xs font-semibold">{{ 'finance_v2.common.no_records' | translate }}</span>
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- ── RIGHT DETAIL (col-span-8) ────────────────────────────── -->
+    <div class="xl:col-span-8 flex flex-col gap-5 overflow-y-auto" style="max-height: calc(100vh - 18rem)">
+
+      @if (activeSupplier()) {
+        @let sup = activeSupplier()!;
+
+        <!-- Top accent bar + header card -->
+        <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+          <div class="h-1.5 w-full bg-gradient-to-r from-slate-800 via-primary to-accent"></div>
+          <div class="p-5">
+            <div class="flex items-start justify-between gap-4">
+              <div>
+                <div class="flex items-center gap-3">
+                  <div class="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-700 font-black text-sm">
+                    {{ sup.nameEn.charAt(0) }}
+                  </div>
+                  <div>
+                    <h2 class="text-lg font-black text-slate-800">{{ sup.nameEn }}</h2>
+                    <p class="text-sm text-slate-500 font-semibold">{{ sup.nameAr }}</p>
+                  </div>
+                </div>
+              </div>
+              <div class="flex items-center gap-2 shrink-0">
+                <span class="inline-block px-2.5 py-1 rounded-full text-[9px] font-extrabold uppercase tracking-widest" [class]="getStatusClass(sup.status)">{{ sup.status }}</span>
+                <button (click)="toggleStatus(sup)" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg transition-all text-[10px]">
+                  {{ sup.status === 'Active' ? ('finance_v2.ap.sup.deactivate' | translate) : ('finance_v2.ap.sup.activate' | translate) }}
+                </button>
+              </div>
+            </div>
+
+            <!-- Star rating -->
+            <div class="flex items-center gap-1 mt-3">
+              @for (star of stars(sup.rating); track star) {
+                <svg class="w-4 h-4" [class.text-amber-400]="star <= sup.rating" [class.text-slate-200]="star > sup.rating" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+              }
+              <span class="text-xs text-slate-400 ml-1 font-bold">{{ sup.rating }}/5</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Info grid -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+          <!-- Financial Info -->
+          <div class="bg-white rounded-xl border border-slate-100 shadow-sm p-4 space-y-3">
+            <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-widest">{{ 'finance_v2.ap.sup.financial_info' | translate }}</h3>
+            <div class="space-y-2 text-xs">
+              <div class="flex justify-between"><span class="text-slate-500 font-semibold">{{ 'finance_v2.ap.sup.credit_limit' | translate }}</span><span class="font-black text-slate-800">{{ formatAmt(sup.creditLimit) }} {{ sup.currency }}</span></div>
+              <div class="flex justify-between"><span class="text-slate-500 font-semibold">{{ 'finance_v2.ap.kpi.total_outstanding' | translate }}</span><span class="font-black text-red-600">{{ formatAmt(sup.openBalance) }} {{ sup.currency }}</span></div>
+              <div class="flex justify-between"><span class="text-slate-500 font-semibold">{{ 'finance_v2.ap.sup.outstanding_invoices' | translate }}</span><span class="font-black text-slate-800">{{ sup.outstandingInvoices }}</span></div>
+              <div class="flex justify-between"><span class="text-slate-500 font-semibold">{{ 'finance_v2.ap.sup.last_payment' | translate }}</span><span class="font-black text-slate-800">{{ sup.lastPaymentDate || '—' }}</span></div>
+              <div class="flex justify-between"><span class="text-slate-500 font-semibold">{{ 'finance_v2.ap.sup.last_payment_amount' | translate }}</span><span class="font-black text-slate-800">{{ sup.lastPaymentAmount ? formatAmt(sup.lastPaymentAmount) : '—' }}</span></div>
+              <div class="flex justify-between"><span class="text-slate-500 font-semibold">{{ 'finance_v2.ap.sup.payment_terms' | translate }}</span><span class="font-black text-slate-800">{{ sup.paymentTerms }}</span></div>
+              <div class="flex justify-between"><span class="text-slate-500 font-semibold">{{ 'finance_v2.common.currency' | translate }}</span><span class="font-black text-slate-800">{{ sup.currency }}</span></div>
+            </div>
+          </div>
+
+          <!-- Registration Info -->
+          <div class="bg-white rounded-xl border border-slate-100 shadow-sm p-4 space-y-3">
+            <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-widest">{{ 'finance_v2.ap.sup.registration_info' | translate }}</h3>
+            <div class="space-y-2 text-xs">
+              <div class="flex justify-between"><span class="text-slate-500 font-semibold">{{ 'finance_v2.ap.sup.supplier_code' | translate }}</span><span class="font-mono font-black text-indigo-600">{{ sup.code }}</span></div>
+              <div class="flex justify-between"><span class="text-slate-500 font-semibold">{{ 'finance_v2.ap.sup.tax_number' | translate }}</span><span class="font-mono font-black text-slate-700">{{ sup.taxNumber }}</span></div>
+              <div class="flex justify-between"><span class="text-slate-500 font-semibold">{{ 'finance_v2.ap.sup.vat_number' | translate }}</span><span class="font-mono font-black text-slate-700">{{ sup.vatNumber }}</span></div>
+              <div class="flex justify-between"><span class="text-slate-500 font-semibold">{{ 'finance_v2.ap.sup.commercial_reg' | translate }}</span><span class="font-mono font-black text-slate-700">{{ sup.commercialReg }}</span></div>
+              <div class="flex justify-between"><span class="text-slate-500 font-semibold">{{ 'finance_v2.ap.sup.category' | translate }}</span><span class="font-bold text-slate-700">{{ sup.category }}</span></div>
+            </div>
+          </div>
+
+          <!-- Contact Info -->
+          <div class="bg-white rounded-xl border border-slate-100 shadow-sm p-4 space-y-3">
+            <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-widest">{{ 'finance_v2.ap.sup.contact_info' | translate }}</h3>
+            <div class="space-y-2 text-xs">
+              <div class="flex justify-between"><span class="text-slate-500 font-semibold">{{ 'finance_v2.ap.sup.contact_person' | translate }}</span><span class="font-black text-slate-800">{{ sup.contactPerson }}</span></div>
+              <div class="flex justify-between"><span class="text-slate-500 font-semibold">{{ 'finance_v2.ap.sup.email' | translate }}</span><span class="font-mono text-indigo-600 text-[10px]">{{ sup.contactEmail }}</span></div>
+              <div class="flex justify-between"><span class="text-slate-500 font-semibold">{{ 'finance_v2.ap.sup.phone' | translate }}</span><span class="font-mono text-slate-700">{{ sup.contactPhone }}</span></div>
+              <div class="flex justify-between"><span class="text-slate-500 font-semibold">{{ 'finance_v2.ap.sup.address' | translate }}</span><span class="font-bold text-slate-700">{{ sup.city }}, {{ sup.country }}</span></div>
+            </div>
+          </div>
+
+          <!-- Bank Info -->
+          <div class="bg-white rounded-xl border border-slate-100 shadow-sm p-4 space-y-3">
+            <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-widest">{{ 'finance_v2.ap.sup.bank_info' | translate }}</h3>
+            <div class="space-y-2 text-xs">
+              <div class="flex justify-between"><span class="text-slate-500 font-semibold">{{ 'finance_v2.ap.sup.bank_name' | translate }}</span><span class="font-black text-slate-800">{{ sup.bankName || '—' }}</span></div>
+              <div><span class="text-slate-500 font-semibold block">{{ 'finance_v2.ap.sup.iban' | translate }}</span><span class="font-mono text-[10px] text-slate-700 break-all">{{ sup.iban || '—' }}</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recent Invoices -->
+        @if (supplierInvoices().length > 0) {
+          <div class="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden">
+            <div class="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
+              <h3 class="text-xs font-black text-slate-700">{{ 'finance_v2.ap.sup.recent_invoices' | translate }}</h3>
+              <span class="text-[10px] font-bold text-slate-400">{{ supplierInvoices().length }} {{ 'finance_v2.ap.inv.title' | translate }}</span>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full text-xs">
+                <thead><tr class="bg-slate-50 border-b border-slate-100 text-slate-400 font-bold">
+                  <th class="px-4 py-2.5 text-left text-[10px] uppercase">{{ 'finance_v2.ap.inv.inv_number' | translate }}</th>
+                  <th class="px-4 py-2.5 text-left text-[10px] uppercase hidden md:table-cell">{{ 'finance_v2.common.date' | translate }}</th>
+                  <th class="px-4 py-2.5 text-right text-[10px] uppercase">{{ 'finance_v2.ap.inv.grand_total' | translate }}</th>
+                  <th class="px-4 py-2.5 text-right text-[10px] uppercase">{{ 'finance_v2.ap.inv.balance_due' | translate }}</th>
+                  <th class="px-4 py-2.5 text-center text-[10px] uppercase">{{ 'finance_v2.common.status' | translate }}</th>
+                </tr></thead>
+                <tbody class="divide-y divide-slate-50">
+                  @for (inv of supplierInvoices().slice(0,5); track inv.id) {
+                    <tr class="hover:bg-slate-50/50 transition-colors">
+                      <td class="px-4 py-2.5 font-mono font-black text-indigo-600 text-[10px]">{{ inv.invoiceNumber }}</td>
+                      <td class="px-4 py-2.5 text-slate-500 hidden md:table-cell">{{ inv.invoiceDate }}</td>
+                      <td class="px-4 py-2.5 text-right font-black text-slate-800">{{ formatAmt(inv.grandTotal) }}</td>
+                      <td class="px-4 py-2.5 text-right font-black" [class.text-red-600]="inv.balanceDue > 0" [class.text-green-600]="inv.balanceDue === 0">{{ inv.balanceDue > 0 ? formatAmt(inv.balanceDue) : '✓ Paid' }}</td>
+                      <td class="px-4 py-2.5 text-center">
+                        <span class="inline-block px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider"
+                          [class.bg-green-100]="inv.status === 'Approved' || inv.status === 'Paid'"
+                          [class.text-green-700]="inv.status === 'Approved' || inv.status === 'Paid'"
+                          [class.bg-amber-100]="inv.status === 'Under Review'"
+                          [class.text-amber-700]="inv.status === 'Under Review'"
+                          [class.bg-blue-100]="inv.status === 'Ready For Payment'"
+                          [class.text-blue-700]="inv.status === 'Ready For Payment'"
+                          [class.bg-slate-100]="inv.status === 'Draft'"
+                          [class.text-slate-600]="inv.status === 'Draft'"
+                          [class.bg-red-100]="inv.status === 'Rejected'"
+                          [class.text-red-700]="inv.status === 'Rejected'">{{ inv.status }}</span>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </div>
+        }
+
+      } @else {
+        <!-- Empty state -->
+        <div class="bg-white rounded-2xl border border-slate-100 shadow-sm flex-1 flex items-center justify-center py-20">
+          <div class="text-center">
+            <svg class="w-12 h-12 mx-auto text-slate-200 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+            <p class="text-sm font-black text-slate-400">{{ 'finance_v2.ap.sup.select_supplier' | translate }}</p>
+            <p class="text-xs text-slate-300 mt-1">{{ 'finance_v2.ap.sup.select_supplier_desc' | translate }}</p>
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+</div>
+
+<!-- ══ ADD SUPPLIER MODAL ═════════════════════════════════════════ -->
+@if (showAddModal()) {
+  <div class="fixed inset-0 z-50 flex items-start justify-center p-4 pt-8 overflow-y-auto" (click)="showAddModal.set(false)">
+    <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"></div>
+    <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl" (click)="$event.stopPropagation()">
+      <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+        <h2 class="text-base font-black text-slate-800">{{ 'finance_v2.ap.sup.new_supplier' | translate }}</h2>
+        <button (click)="showAddModal.set(false)" class="w-8 h-8 rounded-lg hover:bg-slate-100 flex items-center justify-center transition-colors">
+          <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div class="px-6 py-4 grid grid-cols-2 gap-4">
+        <div><label class="text-[10px] font-bold text-slate-400 uppercase block mb-1.5">{{ 'finance_v2.ap.sup.supplier_code' | translate }} *</label><input type="text" [(ngModel)]="formData.code" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs bg-slate-50 focus:outline-none focus:ring-2 focus:ring-primary/20"></div>
+        <div><label class="text-[10px] font-bold text-slate-400 uppercase block mb-1.5">{{ 'finance_v2.ap.sup.name_en' | translate }} *</label><input type="text" [(ngModel)]="formData.nameEn" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs bg-slate-50 focus:outline-none focus:ring-2 focus:ring-primary/20"></div>
+        <div><label class="text-[10px] font-bold text-slate-400 uppercase block mb-1.5">{{ 'finance_v2.ap.sup.name_ar' | translate }}</label><input type="text" [(ngModel)]="formData.nameAr" dir="rtl" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs bg-slate-50 focus:outline-none focus:ring-2 focus:ring-primary/20"></div>
+        <div><label class="text-[10px] font-bold text-slate-400 uppercase block mb-1.5">{{ 'finance_v2.ap.sup.tax_number' | translate }}</label><input type="text" [(ngModel)]="formData.taxNumber" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs bg-slate-50 focus:outline-none focus:ring-2 focus:ring-primary/20"></div>
+        <div><label class="text-[10px] font-bold text-slate-400 uppercase block mb-1.5">{{ 'finance_v2.ap.sup.vat_number' | translate }}</label><input type="text" [(ngModel)]="formData.vatNumber" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs bg-slate-50 focus:outline-none focus:ring-2 focus:ring-primary/20"></div>
+        <div><label class="text-[10px] font-bold text-slate-400 uppercase block mb-1.5">{{ 'finance_v2.ap.sup.credit_limit' | translate }}</label><input type="number" [(ngModel)]="formData.creditLimit" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs bg-slate-50 focus:outline-none focus:ring-2 focus:ring-primary/20"></div>
+        <div><label class="text-[10px] font-bold text-slate-400 uppercase block mb-1.5">{{ 'finance_v2.ap.sup.payment_terms' | translate }}</label>
+          <select [(ngModel)]="formData.paymentTerms" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs bg-slate-50 focus:outline-none focus:ring-2 focus:ring-primary/20">
+            @for (t of paymentTermsOptions; track t) { <option [value]="t">{{ t }}</option> }
+          </select>
+        </div>
+        <div><label class="text-[10px] font-bold text-slate-400 uppercase block mb-1.5">{{ 'finance_v2.ap.sup.contact_person' | translate }}</label><input type="text" [(ngModel)]="formData.contactPerson" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs bg-slate-50 focus:outline-none focus:ring-2 focus:ring-primary/20"></div>
+        <div><label class="text-[10px] font-bold text-slate-400 uppercase block mb-1.5">{{ 'finance_v2.ap.sup.email' | translate }}</label><input type="email" [(ngModel)]="formData.contactEmail" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs bg-slate-50 focus:outline-none focus:ring-2 focus:ring-primary/20"></div>
+        <div><label class="text-[10px] font-bold text-slate-400 uppercase block mb-1.5">{{ 'finance_v2.ap.sup.phone' | translate }}</label><input type="text" [(ngModel)]="formData.contactPhone" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs bg-slate-50 focus:outline-none focus:ring-2 focus:ring-primary/20"></div>
+        <div><label class="text-[10px] font-bold text-slate-400 uppercase block mb-1.5">{{ 'finance_v2.ap.sup.bank_name' | translate }}</label><input type="text" [(ngModel)]="formData.bankName" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs bg-slate-50 focus:outline-none focus:ring-2 focus:ring-primary/20"></div>
+        <div><label class="text-[10px] font-bold text-slate-400 uppercase block mb-1.5">{{ 'finance_v2.ap.sup.iban' | translate }}</label><input type="text" [(ngModel)]="formData.iban" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs bg-slate-50 focus:outline-none focus:ring-2 focus:ring-primary/20"></div>
+      </div>
+      <div class="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100">
+        <button (click)="showAddModal.set(false)" class="px-4 py-2 rounded-xl border border-slate-200 text-slate-700 text-xs font-bold hover:bg-slate-50 transition-all">{{ 'finance_v2.common.cancel' | translate }}</button>
+        <button (click)="saveSupplier()" class="px-5 py-2 rounded-xl bg-slate-900 hover:bg-slate-700 text-white text-xs font-bold shadow-sm transition-all active:scale-95">{{ 'finance_v2.common.save' | translate }}</button>
+      </div>
+    </div>
+  </div>
+}

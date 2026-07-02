@@ -1,0 +1,311 @@
+<div class="space-y-6">
+
+  <!-- ══ Page Header ══════════════════════════════════════════════ -->
+  <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-black text-slate-800 tracking-tight">{{ 'finance_v2.cost_centers.title' | translate }}</h1>
+      <p class="text-xs text-slate-500 font-semibold mt-1">{{ 'finance_v2.cost_centers.subtitle' | translate }}</p>
+    </div>
+    <div class="flex flex-wrap gap-2">
+      <button (click)="expandAll()" class="px-3.5 py-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition-all flex items-center gap-1.5">
+        <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
+        {{ 'finance_v2.coa.expand_all' | translate }}
+      </button>
+      <button (click)="collapseAll()" class="px-3.5 py-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition-all flex items-center gap-1.5">
+        <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 9V4.5M9 9H4.5M9 9L3.75 3.75M9 15v4.5M9 15H4.5M9 15l-5.25 5.25M15 9h4.5M15 9V4.5M15 9l5.25-5.25M15 15h4.5M15 15v4.5m0-4.5l5.25 5.25"/></svg>
+        {{ 'finance_v2.coa.collapse_all' | translate }}
+      </button>
+      <button (click)="openAddModal()" class="px-3.5 py-2 rounded-lg bg-slate-900 text-white text-xs font-bold hover:bg-slate-700 transition-colors shadow-sm flex items-center gap-1.5">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+        {{ 'finance_v2.cost_centers.add_cost_center' | translate }}
+      </button>
+    </div>
+  </div>
+
+  <!-- ══ Stats Cards ═══════════════════════════════════════════════ -->
+  <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+    <div class="bg-white rounded-xl border border-slate-100 shadow-sm p-4 flex items-center justify-between">
+      <div>
+        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{{ 'finance_v2.cost_centers.stat_total' | translate }}</p>
+        <h3 class="text-xl font-black text-slate-800 mt-1">{{ stats().total }}</h3>
+      </div>
+      <div class="w-9 h-9 bg-slate-100 rounded-xl flex items-center justify-center">
+        <svg class="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5"/></svg>
+      </div>
+    </div>
+    <div class="bg-white rounded-xl border border-slate-100 shadow-sm p-4 flex items-center justify-between">
+      <div>
+        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{{ 'finance_v2.cost_centers.stat_active' | translate }}</p>
+        <h3 class="text-xl font-black text-emerald-600 mt-1">{{ stats().active }}</h3>
+      </div>
+      <div class="w-9 h-9 bg-emerald-50 rounded-xl flex items-center justify-center">
+        <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      </div>
+    </div>
+    <div class="bg-white rounded-xl border border-slate-100 shadow-sm p-4 flex items-center justify-between">
+      <div>
+        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{{ 'finance_v2.cost_centers.stat_inactive' | translate }}</p>
+        <h3 class="text-xl font-black text-slate-500 mt-1">{{ stats().inactive }}</h3>
+      </div>
+      <div class="w-9 h-9 bg-slate-100 rounded-xl flex items-center justify-center">
+        <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>
+      </div>
+    </div>
+    <div class="bg-white rounded-xl border border-slate-100 shadow-sm p-4 flex items-center justify-between">
+      <div>
+        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{{ 'finance_v2.cost_centers.total_budget' | translate }}</p>
+        <h3 class="text-xl font-black text-indigo-700 mt-1">{{ formatAmount(stats().totalBudget) }}</h3>
+        <p class="text-[9px] text-slate-400">{{ 'finance_v2.common.sar' | translate }}</p>
+      </div>
+      <div class="w-9 h-9 bg-indigo-50 rounded-xl flex items-center justify-center">
+        <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+      </div>
+    </div>
+    <div class="bg-white rounded-xl border border-slate-100 shadow-sm p-4 flex items-center justify-between">
+      <div>
+        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{{ 'finance_v2.cost_centers.total_spent' | translate }}</p>
+        <h3 class="text-xl font-black text-rose-600 mt-1">{{ formatAmount(stats().totalSpent) }}</h3>
+        <p class="text-[9px] text-slate-400">{{ 'finance_v2.common.sar' | translate }}</p>
+      </div>
+      <div class="w-9 h-9 bg-rose-50 rounded-xl flex items-center justify-center">
+        <svg class="w-5 h-5 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      </div>
+    </div>
+    <div class="rounded-xl border shadow-sm p-4 flex items-center justify-between"
+      [class.bg-emerald-50]="stats().utilization <= 80"
+      [class.border-emerald-100]="stats().utilization <= 80"
+      [class.bg-amber-50]="stats().utilization > 80 && stats().utilization <= 95"
+      [class.border-amber-100]="stats().utilization > 80 && stats().utilization <= 95"
+      [class.bg-red-50]="stats().utilization > 95"
+      [class.border-red-100]="stats().utilization > 95">
+      <div>
+        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{{ 'finance_v2.cost_centers.utilization' | translate }}</p>
+        <h3 class="text-xl font-black mt-1" [class]="getUtilizationTextClass(stats().utilization)">{{ stats().utilization }}%</h3>
+      </div>
+      <div class="w-9 h-9 rounded-xl flex items-center justify-center"
+        [class.bg-emerald-100]="stats().utilization <= 80"
+        [class.bg-amber-100]="stats().utilization > 80 && stats().utilization <= 95"
+        [class.bg-red-100]="stats().utilization > 95">
+        <svg class="w-5 h-5" [class]="getUtilizationTextClass(stats().utilization)" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ Filters ════════════════════════════════════════════════════ -->
+  <div class="bg-white rounded-xl border border-slate-100 shadow-sm p-4 flex flex-col sm:flex-row gap-3">
+    <div class="relative flex-1">
+      <svg class="w-4 h-4 text-slate-400 absolute left-3 rtl:right-3 rtl:left-auto top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+      <input type="text" [placeholder]="'finance_v2.cost_centers.search_placeholder' | translate"
+        (input)="searchQuery.set($any($event.target).value)"
+        class="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 rtl:pr-9 rtl:pl-3 pr-3 py-2.5 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-300 transition-all">
+    </div>
+    <select (change)="typeFilter.set($any($event.target).value)"
+      class="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-300 transition-all">
+      <option value="All">{{ 'finance_v2.cost_centers.all_types' | translate }}</option>
+      <option value="Project">{{ 'finance_v2.cost_centers.type_project' | translate }}</option>
+      <option value="Department">{{ 'finance_v2.cost_centers.type_department' | translate }}</option>
+      <option value="Overhead">{{ 'finance_v2.cost_centers.type_overhead' | translate }}</option>
+      <option value="Administrative">{{ 'finance_v2.cost_centers.type_administrative' | translate }}</option>
+    </select>
+    <select (change)="statusFilter.set($any($event.target).value)"
+      class="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-300 transition-all">
+      <option value="All">{{ 'finance_v2.common.all_statuses' | translate }}</option>
+      <option value="Active">{{ 'finance_v2.cost_centers.status_active' | translate }}</option>
+      <option value="Inactive">{{ 'finance_v2.cost_centers.status_inactive' | translate }}</option>
+      <option value="Suspended">{{ 'finance_v2.cost_centers.status_suspended' | translate }}</option>
+    </select>
+  </div>
+
+  <!-- ══ Tree Table ════════════════════════════════════════════════ -->
+  <div class="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden">
+    <!-- Header -->
+    <div class="grid grid-cols-12 gap-2 px-4 py-3 bg-slate-50 border-b border-slate-100 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+      <div class="col-span-4">{{ 'finance_v2.cost_centers.code' | translate }} / {{ 'finance_v2.cost_centers.name' | translate }}</div>
+      <div class="col-span-2 hidden md:block">{{ 'finance_v2.cost_centers.type' | translate }}</div>
+      <div class="col-span-2 hidden md:block">{{ 'finance_v2.cost_centers.manager' | translate }}</div>
+      <div class="col-span-2 hidden lg:block">{{ 'finance_v2.cost_centers.budget_utilization' | translate }}</div>
+      <div class="col-span-2 text-right">{{ 'finance_v2.common.actions' | translate }}</div>
+    </div>
+
+    <!-- Empty State -->
+    @if (flatTree().length === 0) {
+      <div class="py-16 text-center">
+        <div class="w-12 h-12 bg-slate-100 rounded-xl flex items-center justify-center mx-auto mb-3">
+          <svg class="w-6 h-6 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+        </div>
+        <p class="text-sm font-black text-slate-500">{{ 'finance_v2.common.no_records' | translate }}</p>
+        <p class="text-xs text-slate-400 mt-1">{{ 'finance_v2.common.no_records_desc' | translate }}</p>
+      </div>
+    }
+
+    <!-- Tree Rows -->
+    @for (cc of flatTree(); track cc.id) {
+      @let util = getUtilization(cc);
+      <div class="grid grid-cols-12 gap-2 px-4 py-3.5 border-b border-slate-50 hover:bg-slate-50/70 transition-colors items-center group"
+        [class.bg-slate-50]="cc.level === 1"
+        [class.opacity-60]="cc.status === 'Inactive'">
+
+        <!-- Code + Name -->
+        <div class="col-span-4 flex items-center gap-1.5 min-w-0" [style.padding-left.px]="getLevelIndent(cc.level)">
+          @if (hasChildren(cc.code)) {
+            <button (click)="toggleExpand(cc.code)"
+              class="w-5 h-5 rounded flex items-center justify-center shrink-0 hover:bg-slate-200 transition-colors">
+              <svg class="w-3 h-3 text-slate-400 transition-transform" [class.rotate-90]="isExpanded(cc.code)"
+                fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+              </svg>
+            </button>
+          } @else {
+            <span class="w-5 shrink-0 flex justify-center"><span class="w-1 h-1 rounded-full bg-slate-300 block mt-1"></span></span>
+          }
+          <div class="min-w-0">
+            <div class="flex items-center gap-1.5">
+              <span class="text-[10px] font-black text-slate-400 shrink-0 font-mono">{{ cc.code }}</span>
+              @if (cc.childrenCount > 0) {
+                <span class="text-[9px] font-bold bg-slate-100 text-slate-500 px-1 rounded">{{ cc.childrenCount }}</span>
+              }
+            </div>
+            <p class="text-xs font-bold text-slate-800 truncate" [class.font-black]="cc.level === 1">
+              {{ langService.isRtl() ? cc.nameAr : cc.nameEn }}
+            </p>
+            <p class="text-[9px] text-slate-400 truncate hidden sm:block">
+              {{ langService.isRtl() ? cc.nameEn : cc.nameAr }}
+            </p>
+          </div>
+        </div>
+
+        <!-- Type -->
+        <div class="col-span-2 hidden md:flex items-center">
+          <span class="text-[9px] font-bold border rounded-full px-2 py-0.5" [class]="getTypeClass(cc.type)">
+            {{ getTypeKey(cc.type) | translate }}
+          </span>
+        </div>
+
+        <!-- Manager -->
+        <div class="col-span-2 hidden md:block">
+          <p class="text-[10px] font-semibold text-slate-600 truncate">{{ cc.manager }}</p>
+        </div>
+
+        <!-- Budget Utilization -->
+        <div class="col-span-2 hidden lg:block">
+          <div class="flex items-center justify-between mb-1">
+            <span class="text-[9px] font-bold text-slate-500">{{ formatAmount(cc.spent) }} / {{ formatAmount(cc.budget) }}</span>
+            <span class="text-[9px] font-black" [class]="getUtilizationTextClass(util)">{{ util }}%</span>
+          </div>
+          <div class="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+            <div class="h-full rounded-full transition-all duration-500" [class]="getUtilizationClass(util)" [style.width.%]="util"></div>
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="col-span-2 flex items-center justify-end gap-1">
+          <!-- Add Child -->
+          <button (click)="openAddModal(cc.code)"
+            class="opacity-0 group-hover:opacity-100 w-7 h-7 rounded-lg border border-slate-200 flex items-center justify-center hover:bg-indigo-50 hover:border-indigo-200 transition-all"
+            [title]="'finance_v2.cost_centers.add_child' | translate">
+            <svg class="w-3 h-3 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+          </button>
+          <!-- Edit -->
+          <button (click)="openEditModal(cc)"
+            class="opacity-0 group-hover:opacity-100 w-7 h-7 rounded-lg border border-slate-200 flex items-center justify-center hover:bg-amber-50 hover:border-amber-200 transition-all">
+            <svg class="w-3 h-3 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+          </button>
+          <!-- Toggle Status -->
+          <button (click)="toggleStatus(cc)"
+            class="opacity-0 group-hover:opacity-100 w-7 h-7 rounded-lg border border-slate-200 flex items-center justify-center transition-all"
+            [class.hover:bg-red-50]="cc.status === 'Active'" [class.hover:border-red-200]="cc.status === 'Active'"
+            [class.hover:bg-emerald-50]="cc.status !== 'Active'" [class.hover:border-emerald-200]="cc.status !== 'Active'">
+            @if (cc.status === 'Active') {
+              <svg class="w-3 h-3 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>
+            } @else {
+              <svg class="w-3 h-3 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            }
+          </button>
+        </div>
+      </div>
+    }
+  </div>
+
+</div>
+
+<!-- ══ Add / Edit Modal ══════════════════════════════════════════════ -->
+@if (showModal()) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center p-4" (click)="closeModal()">
+    <div class="absolute inset-0 bg-slate-900/50 backdrop-blur-sm"></div>
+    <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-xl max-h-[90vh] overflow-y-auto" (click)="$event.stopPropagation()">
+      <div class="flex items-center justify-between p-5 border-b border-slate-100">
+        <div>
+          <h2 class="text-base font-black text-slate-800">
+            {{ (editingCC() ? 'finance_v2.cost_centers.edit_cc' : 'finance_v2.cost_centers.add_cost_center') | translate }}
+          </h2>
+          <p class="text-[10px] text-slate-400 font-semibold mt-0.5">{{ 'finance_v2.cost_centers.modal_subtitle' | translate }}</p>
+        </div>
+        <button (click)="closeModal()" class="w-8 h-8 rounded-lg hover:bg-slate-100 flex items-center justify-center transition-colors">
+          <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <div class="p-5 grid grid-cols-2 gap-4">
+        <!-- Code -->
+        <div>
+          <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1.5">{{ 'finance_v2.cost_centers.code' | translate }} *</label>
+          <input [(ngModel)]="formCode" type="text" placeholder="e.g. CC-115"
+            class="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-800 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-300 transition-all">
+        </div>
+        <!-- Type -->
+        <div>
+          <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1.5">{{ 'finance_v2.cost_centers.type' | translate }}</label>
+          <select [(ngModel)]="formType" class="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-800 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-300 transition-all">
+            @for (t of ccTypes; track t) { <option [value]="t">{{ getTypeKey(t) | translate }}</option> }
+          </select>
+        </div>
+        <!-- English Name -->
+        <div>
+          <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1.5">{{ 'finance_v2.coa.name_en' | translate }} *</label>
+          <input [(ngModel)]="formNameEn" type="text" placeholder="Name in English"
+            class="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-800 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-300 transition-all">
+        </div>
+        <!-- Arabic Name -->
+        <div>
+          <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1.5">{{ 'finance_v2.coa.name_ar' | translate }}</label>
+          <input [(ngModel)]="formNameAr" type="text" dir="rtl" placeholder="الاسم بالعربية"
+            class="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-800 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-300 transition-all">
+        </div>
+        <!-- Manager -->
+        <div>
+          <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1.5">{{ 'finance_v2.cost_centers.manager' | translate }}</label>
+          <input [(ngModel)]="formManager" type="text" placeholder="Manager name"
+            class="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-800 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-300 transition-all">
+        </div>
+        <!-- Budget -->
+        <div>
+          <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1.5">{{ 'finance_v2.cost_centers.budget' | translate }} ({{ 'finance_v2.common.sar' | translate }})</label>
+          <input [(ngModel)]="formBudget" type="number" min="0" placeholder="0"
+            class="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-800 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-300 transition-all">
+        </div>
+        <!-- Parent -->
+        <div>
+          <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1.5">{{ 'finance_v2.cost_centers.parent' | translate }}</label>
+          <select [(ngModel)]="formParentCode" class="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-800 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-300 transition-all">
+            <option value="">— {{ 'finance_v2.coa.root_account' | translate }} —</option>
+            @for (opt of parentOptions(); track opt.id) {
+              <option [value]="opt.code">{{ opt.code }} — {{ opt.nameEn }}</option>
+            }
+          </select>
+        </div>
+        <!-- Status -->
+        <div>
+          <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1.5">{{ 'finance_v2.common.status' | translate }}</label>
+          <select [(ngModel)]="formStatus" class="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-800 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-300 transition-all">
+            @for (s of ccStatuses; track s) { <option [value]="s">{{ s }}</option> }
+          </select>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-end gap-3 p-5 border-t border-slate-100">
+        <button (click)="closeModal()" class="px-4 py-2 rounded-xl border border-slate-200 text-slate-700 text-xs font-bold hover:bg-slate-50 transition-all">{{ 'finance_v2.common.cancel' | translate }}</button>
+        <button (click)="saveCC()" class="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-sm transition-all">{{ 'finance_v2.common.save' | translate }}</button>
+      </div>
+    </div>
+  </div>
+}

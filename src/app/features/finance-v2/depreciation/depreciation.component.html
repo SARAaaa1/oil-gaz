@@ -1,0 +1,134 @@
+<div class="space-y-5">
+
+  <!-- ══ PAGE HEADER ══════════════════════════════════════════════ -->
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+    <div>
+      <h1 class="text-2xl font-black text-slate-800 tracking-tight">{{ 'finance_v2.assets.depreciation' | translate }}</h1>
+      <p class="text-xs text-slate-500 font-semibold mt-1">{{ 'finance_v2.assets.dep_subtitle' | translate }}</p>
+    </div>
+    <div class="flex items-center gap-2 flex-wrap">
+      <button (click)="showJournalDlg.set(true)"
+        class="px-3 py-2 rounded-xl border border-indigo-250 text-indigo-650 text-xs font-bold hover:bg-indigo-50 transition-all">
+        📖 {{ 'finance_v2.assets.btn_preview_journal' | translate }}
+      </button>
+      <button (click)="postMonthlyDepreciation()"
+        class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-sm transition-all">
+        ⚡ {{ 'finance_v2.assets.btn_run_dep' | translate }}
+      </button>
+      <button (click)="reverseDepreciation()"
+        class="px-3 py-2 rounded-xl border border-red-200 text-red-600 text-xs font-bold hover:bg-red-50 transition-all">
+        ↩ {{ 'finance_v2.assets.btn_reverse_dep' | translate }}
+      </button>
+    </div>
+  </div>
+
+  <!-- ══ KPI CARDS ════════════════════════════════════════════════ -->
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+    <div class="bg-white rounded-xl border border-slate-100 shadow-sm p-4">
+      <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{{ 'finance_v2.assets.kpi.total_monthly' | translate }}</p>
+      <p class="text-lg font-black text-slate-800 mt-1">{{ formatAmt(totalMonthlyDep()) }} SAR</p>
+    </div>
+    <div class="bg-green-50 rounded-xl border border-green-100 shadow-sm p-4">
+      <p class="text-[10px] font-bold text-green-500 uppercase tracking-wider">{{ 'finance_v2.assets.kpi.assets_depreciated' | translate }}</p>
+      <p class="text-2xl font-black text-green-700 mt-1">{{ depreciatedCount() }}</p>
+    </div>
+    <div class="bg-amber-50 rounded-xl border border-amber-100 shadow-sm p-4">
+      <p class="text-[10px] font-bold text-amber-500 uppercase tracking-wider">{{ 'finance_v2.assets.kpi.pending_dep' | translate }}</p>
+      <p class="text-2xl font-black text-amber-700 mt-1">{{ pendingCount() }}</p>
+    </div>
+    <div class="bg-slate-50 rounded-xl border border-slate-100 shadow-sm p-4">
+      <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{{ 'finance_v2.assets.kpi.active_assets' | translate }}</p>
+      <p class="text-2xl font-black text-slate-800 mt-1">{{ depreciableAssets().length }}</p>
+    </div>
+  </div>
+
+  <!-- ══ DEPRECIATION TABLE ═══════════════════════════════════════ -->
+  <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+    <p class="p-4 font-black text-slate-800 text-xs border-b border-slate-50 uppercase tracking-wider bg-slate-50/50">{{ 'finance_v2.assets.dep_schedule' | translate }}</p>
+    <div class="overflow-x-auto">
+      <table class="w-full text-xs">
+        <thead>
+          <tr class="bg-slate-50 border-b border-slate-100 text-slate-400 font-bold">
+            <th class="px-4 py-3 text-left text-[10px] uppercase">{{ 'finance_v2.assets.name' | translate }}</th>
+            <th class="px-4 py-3 text-left text-[10px] uppercase">{{ 'finance_v2.budget.col_category' | translate }}</th>
+            <th class="px-4 py-3 text-right text-[10px] uppercase">{{ 'finance_v2.assets.original_cost' | translate }}</th>
+            <th class="px-4 py-3 text-right text-[10px] uppercase">{{ 'finance_v2.assets.residual_value' | translate }}</th>
+            <th class="px-4 py-3 text-right text-[10px] uppercase">{{ 'finance_v2.assets.kpi.total_monthly' | translate }}</th>
+            <th class="px-4 py-3 text-right text-[10px] uppercase">{{ 'finance_v2.assets.accumulated' | translate }}</th>
+            <th class="px-4 py-3 text-right text-[10px] uppercase">{{ 'finance_v2.assets.nbv' | translate }}</th>
+            <th class="px-4 py-3 text-center text-[10px] uppercase">{{ 'finance_v2.assets.last_run' | translate }}</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-50 font-semibold text-slate-700 bg-white">
+          @for (a of depreciableAssets(); track a.id) {
+            <tr class="hover:bg-slate-50 transition-colors">
+              <td class="px-4 py-3">
+                <p class="font-bold text-slate-800">{{ a.assetName }}</p>
+                <p class="font-mono text-[9px] text-slate-400 mt-0.5">{{ a.assetCode }}</p>
+              </td>
+              <td class="px-4 py-3 text-slate-500">{{ a.category }}</td>
+              <td class="px-4 py-3 text-right text-slate-650">{{ formatAmt(a.originalCost) }}</td>
+              <td class="px-4 py-3 text-right text-slate-500">{{ formatAmt(a.residualValue) }}</td>
+              <td class="px-4 py-3 text-right font-black text-indigo-600">{{ formatAmt(assetService.calculateMonthlyDepreciation(a)) }}</td>
+              <td class="px-4 py-3 text-right text-red-600">{{ formatAmt(a.accumulatedDepreciation) }}</td>
+              <td class="px-4 py-3 text-right font-black text-slate-800">{{ formatAmt(a.currentBookValue) }}</td>
+              <td class="px-4 py-3 text-center text-slate-500 font-mono text-[10px]">
+                {{ a.lastDepreciationDate || '—' }}
+              </td>
+            </tr>
+          } @empty {
+            <tr><td colspan="8" class="py-8 text-center text-slate-400 text-xs">{{ 'finance_v2.common.no_records' | translate }}</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Journal Entry Preview Dialog -->
+  @if (showJournalDlg()) {
+    <div class="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div class="bg-white rounded-2xl shadow-2xl w-full max-w-xl p-6 space-y-4">
+        <div class="flex items-center justify-between">
+          <h3 class="text-base font-black text-slate-800">{{ 'finance_v2.assets.preview_journal' | translate }}</h3>
+          <button (click)="showJournalDlg.set(false)" class="p-2 rounded-xl hover:bg-slate-100 transition-all">
+            <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+        </div>
+
+        <div class="bg-slate-50 rounded-xl border border-slate-200 overflow-hidden">
+          <table class="w-full text-xs text-left">
+            <thead>
+              <tr class="bg-slate-100 border-b border-slate-200 text-slate-500 font-bold">
+                <th class="px-4 py-3 uppercase">{{ 'finance_v2.vat.account_code' | translate }}</th>
+                <th class="px-4 py-3 uppercase">{{ 'finance_v2.vat.account_name' | translate }}</th>
+                <th class="px-4 py-3 text-right uppercase">{{ 'finance_v2.vat.debit' | translate }}</th>
+                <th class="px-4 py-3 text-right uppercase">{{ 'finance_v2.vat.credit' | translate }}</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 font-mono text-[11px] text-slate-800">
+              <tr>
+                <td class="px-4 py-3 font-bold">550101</td>
+                <td class="px-4 py-3">Depreciation Expense - Operations</td>
+                <td class="px-4 py-3 text-right font-black text-slate-900">{{ formatAmt(totalMonthlyDep()) }}</td>
+                <td class="px-4 py-3 text-right text-slate-400">—</td>
+              </tr>
+              <tr>
+                <td class="px-4 py-3 font-bold">190101</td>
+                <td class="px-4 py-3">Accumulated Depreciation - Fixed Assets</td>
+                <td class="px-4 py-3 text-right text-slate-400">—</td>
+                <td class="px-4 py-3 text-right font-black text-slate-900">{{ formatAmt(totalMonthlyDep()) }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="flex justify-end pt-2">
+          <button (click)="showJournalDlg.set(false)"
+            class="px-5 py-2 rounded-xl bg-indigo-600 text-white text-xs font-bold hover:bg-indigo-750 transition-all">
+            {{ 'finance_v2.common.cancel' | translate }}
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+</div>
