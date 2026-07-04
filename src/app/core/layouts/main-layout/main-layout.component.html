@@ -579,7 +579,7 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               <span class="transition-all duration-300" [class.opacity-0]="isSidebarCollapsed()" [class.hidden]="isSidebarCollapsed()">
-                Finance
+                {{ 'navigation.finance' | translate }}
               </span>
             </div>
             @if (!isSidebarCollapsed()) {
@@ -594,129 +594,377 @@
 
               <!-- Financial Dashboard -->
               <a routerLink="/finance-v2/dashboard" routerLinkActive="active" class="sidebar-submenu-item">
-                📊 Financial Dashboard
+                📊 {{ 'navigation.financial_dashboard' | translate }}
               </a>
               <!-- Chart of Accounts -->
               <a routerLink="/finance-v2/chart-of-accounts" routerLinkActive="active" class="sidebar-submenu-item">
-                📋 Chart of Accounts
+                📋 {{ 'navigation.chart_of_accounts' | translate }}
               </a>
               <!-- Cost Centers -->
               <a routerLink="/finance-v2/cost-centers" routerLinkActive="active" class="sidebar-submenu-item">
-                🏢 Cost Centers
+                🏢 {{ 'navigation.cost_centers' | translate }}
               </a>
               <!-- Journal Entries -->
               <a routerLink="/finance-v2/journal-entries" routerLinkActive="active" class="sidebar-submenu-item">
-                📝 Journal Entries
+                📝 {{ 'navigation.journal_entries' | translate }}
               </a>
               <!-- General Ledger -->
               <a routerLink="/finance-v2/general-ledger" routerLinkActive="active" class="sidebar-submenu-item">
-                📖 General Ledger
+                📖 {{ 'navigation.general_ledger' | translate }}
               </a>
               <!-- Trial Balance -->
               <a routerLink="/finance-v2/trial-balance" routerLinkActive="active" class="sidebar-submenu-item">
-                ⚖️ Trial Balance
+                ⚖️ {{ 'navigation.trial_balance' | translate }}
               </a>
 
               <!-- ── Accounts Payable (sub-section) ── -->
               <button (click)="toggleFinanceV2Ap()"
                 class="sidebar-submenu-item w-full justify-between font-black text-slate-300 hover:text-white">
-                <span>Accounts Payable</span>
+                <span>{{ 'navigation.accounts_payable' | translate }}</span>
                 <svg [class.rotate-180]="isFinanceV2ApOpen()" class="w-3 h-3 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
                 </svg>
               </button>
               @if (isFinanceV2ApOpen()) {
                 <div class="pl-3 border-l border-slate-700 ml-3 space-y-0.5">
-                  <a routerLink="/finance-v2/ap/suppliers" routerLinkActive="active" class="sidebar-submenu-item text-[11px]">Suppliers</a>
-                  <a routerLink="/finance-v2/ap/vendor-invoices-draft" routerLinkActive="active" class="sidebar-submenu-item text-[11px]">Draft Vendor Invoices</a>
-                  <a routerLink="/finance-v2/ap/vendor-invoices-approved" routerLinkActive="active" class="sidebar-submenu-item text-[11px]">Approved Vendor Invoices</a>
-                  <a routerLink="/finance-v2/ap/ready-for-payment" routerLinkActive="active" class="sidebar-submenu-item text-[11px]">Ready For Payment</a>
-                  <a routerLink="/finance-v2/ap/payments" routerLinkActive="active" class="sidebar-submenu-item text-[11px]">Payments</a>
+                  <a routerLink="/finance-v2/ap/suppliers" routerLinkActive="active" class="sidebar-submenu-item text-[11px]">{{ 'navigation.suppliers' | translate }}</a>
+                  <a routerLink="/finance-v2/ap/vendor-invoices-draft" routerLinkActive="active" class="sidebar-submenu-item text-[11px]">{{ 'navigation.draft_vendor_invoices' | translate }}</a>
+                  <a routerLink="/finance-v2/ap/vendor-invoices-approved" routerLinkActive="active" class="sidebar-submenu-item text-[11px]">{{ 'navigation.approved_vendor_invoices' | translate }}</a>
+                  <a routerLink="/finance-v2/ap/ready-for-payment" routerLinkActive="active" class="sidebar-submenu-item text-[11px]">{{ 'navigation.ready_for_payment' | translate }}</a>
+                  <a routerLink="/finance-v2/ap/payments" routerLinkActive="active" class="sidebar-submenu-item text-[11px]">{{ 'navigation.payments' | translate }}</a>
                 </div>
               }
 
               <!-- ── Accounts Receivable (sub-section) ── -->
               <button (click)="toggleFinanceV2Ar()"
                 class="sidebar-submenu-item w-full justify-between font-black text-slate-300 hover:text-white">
-                <span>Accounts Receivable</span>
+                <span>{{ 'navigation.accounts_receivable' | translate }}</span>
                 <svg [class.rotate-180]="isFinanceV2ArOpen()" class="w-3 h-3 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
                 </svg>
               </button>
               @if (isFinanceV2ArOpen()) {
                 <div class="pl-3 border-l border-slate-700 ml-3 space-y-0.5">
-                  <a routerLink="/finance-v2/ar/customers" routerLinkActive="active" class="sidebar-submenu-item text-[11px]">Customers</a>
-                  <a routerLink="/finance-v2/ar/customer-invoices" routerLinkActive="active" class="sidebar-submenu-item text-[11px]">Customer Invoices</a>
-                  <a routerLink="/finance-v2/ar/collections" routerLinkActive="active" class="sidebar-submenu-item text-[11px]">Collections</a>
+                  <a routerLink="/finance-v2/ar/customers" routerLinkActive="active" class="sidebar-submenu-item text-[11px]">{{ 'navigation.customers' | translate }}</a>
+                  <a routerLink="/finance-v2/ar/customer-invoices" routerLinkActive="active" class="sidebar-submenu-item text-[11px]">{{ 'navigation.customer_invoices' | translate }}</a>
+                  <a routerLink="/finance-v2/ar/collections" routerLinkActive="active" class="sidebar-submenu-item text-[11px]">{{ 'navigation.collections' | translate }}</a>
                 </div>
               }
 
               <!-- ── Treasury (sub-section) ── -->
               <button (click)="toggleFinanceV2Treasury()"
                 class="sidebar-submenu-item w-full justify-between font-black text-slate-300 hover:text-white">
-                <span>Treasury</span>
+                <span>{{ 'navigation.treasury' | translate }}</span>
                 <svg [class.rotate-180]="isFinanceV2TreasuryOpen()" class="w-3 h-3 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
                 </svg>
               </button>
               @if (isFinanceV2TreasuryOpen()) {
                 <div class="pl-3 border-l border-slate-700 ml-3 space-y-0.5">
-                  <a routerLink="/finance-v2/treasury/cash" routerLinkActive="active" class="sidebar-submenu-item text-[11px]">Cash</a>
-                  <a routerLink="/finance-v2/treasury/banks" routerLinkActive="active" class="sidebar-submenu-item text-[11px]">Banks</a>
-                  <a routerLink="/finance-v2/treasury/transfers" routerLinkActive="active" class="sidebar-submenu-item text-[11px]">Transfers</a>
+                  <a routerLink="/finance-v2/treasury/cash" routerLinkActive="active" class="sidebar-submenu-item text-[11px]">{{ 'navigation.cash' | translate }}</a>
+                  <a routerLink="/finance-v2/treasury/banks" routerLinkActive="active" class="sidebar-submenu-item text-[11px]">{{ 'navigation.banks' | translate }}</a>
+                  <a routerLink="/finance-v2/treasury/transfers" routerLinkActive="active" class="sidebar-submenu-item text-[11px]">{{ 'navigation.transfers' | translate }}</a>
                 </div>
               }
 
               <!-- ── Assets (sub-section) ── -->
               <button (click)="toggleFinanceV2Assets()"
                 class="sidebar-submenu-item w-full justify-between font-black text-slate-300 hover:text-white">
-                <span>Assets</span>
+                <span>{{ 'navigation.assets_submenu' | translate }}</span>
                 <svg [class.rotate-180]="isFinanceV2AssetsOpen()" class="w-3 h-3 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
                 </svg>
               </button>
               @if (isFinanceV2AssetsOpen()) {
                 <div class="pl-3 border-l border-slate-700 ml-3 space-y-0.5">
-                  <a routerLink="/finance-v2/assets/fixed-assets" routerLinkActive="active" class="sidebar-submenu-item text-[11px]">Fixed Assets</a>
-                  <a routerLink="/finance-v2/assets/depreciation" routerLinkActive="active" class="sidebar-submenu-item text-[11px]">Depreciation</a>
+                  <a routerLink="/finance-v2/assets/fixed-assets" routerLinkActive="active" class="sidebar-submenu-item text-[11px]">{{ 'navigation.fixed_assets' | translate }}</a>
+                  <a routerLink="/finance-v2/assets/depreciation" routerLinkActive="active" class="sidebar-submenu-item text-[11px]">{{ 'navigation.depreciation' | translate }}</a>
                 </div>
               }
 
               <!-- ── Budget ── -->
               <a routerLink="/finance-v2/budget" routerLinkActive="active" class="sidebar-submenu-item">
-                💰 Budget
+                💰 {{ 'navigation.budget' | translate }}
               </a>
 
               <!-- ── Taxes (sub-section) ── -->
               <button (click)="toggleFinanceV2Taxes()"
                 class="sidebar-submenu-item w-full justify-between font-black text-slate-300 hover:text-white">
-                <span>Taxes</span>
+                <span>{{ 'navigation.taxes' | translate }}</span>
                 <svg [class.rotate-180]="isFinanceV2TaxesOpen()" class="w-3 h-3 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
                 </svg>
               </button>
               @if (isFinanceV2TaxesOpen()) {
                 <div class="pl-3 border-l border-slate-700 ml-3 space-y-0.5">
-                  <a routerLink="/finance-v2/taxes/vat" routerLinkActive="active" class="sidebar-submenu-item text-[11px]">VAT</a>
+                  <a routerLink="/finance-v2/taxes/vat" routerLinkActive="active" class="sidebar-submenu-item text-[11px]">{{ 'navigation.vat' | translate }}</a>
                 </div>
               }
 
               <!-- ── Reports ── -->
               <a routerLink="/finance-v2/reports" routerLinkActive="active" class="sidebar-submenu-item">
-                📈 Financial Reports
+                📈 {{ 'navigation.financial_reports' | translate }}
               </a>
 
               <!-- ── Administration (sub-section) ── -->
               <button (click)="toggleFinanceV2Admin()"
                 class="sidebar-submenu-item w-full justify-between font-black text-slate-300 hover:text-white">
-                <span>Administration</span>
+                <span>{{ 'navigation.administration' | translate }}</span>
                 <svg [class.rotate-180]="isFinanceV2AdminOpen()" class="w-3 h-3 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
                 </svg>
               </button>
               @if (isFinanceV2AdminOpen()) {
                 <div class="pl-3 border-l border-slate-700 ml-3 space-y-0.5">
-                  <a routerLink="/finance-v2/admin/period-close" routerLinkActive="active" class="sidebar-submenu-item text-[11px]">Period Close</a>
+                  <a routerLink="/finance-v2/admin/period-close" routerLinkActive="active" class="sidebar-submenu-item text-[11px]">{{ 'navigation.period_close' | translate }}</a>
+                </div>
+              }
+
+            </div>
+          }
+        </div>
+
+        <!-- ═══════════════════════════════════════════════════════
+             HUMAN RESOURCES (HR)
+             Multi-level collapsible menu architecture.
+        ════════════════════════════════════════════════════════ -->
+        <div *appRole="['Super Admin', 'General Manager']" class="space-y-0.5 animate-fade-in">
+          
+          <!-- Top-level HR toggle -->
+          <button
+            (click)="toggleHrMenu()"
+            class="sidebar-menu-item w-full justify-between group"
+            [class.active]="isHrOpen()">
+            <div class="flex items-center gap-3">
+              <svg class="w-5 h-5 shrink-0 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              <span class="transition-all duration-300" [class.opacity-0]="isSidebarCollapsed()" [class.hidden]="isSidebarCollapsed()">
+                {{ 'navigation.hr' | translate }}
+              </span>
+            </div>
+            @if (!isSidebarCollapsed()) {
+              <svg [class.rotate-180]="isHrOpen()" class="w-4 h-4 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            }
+          </button>
+
+          @if (isHrOpen() && !isSidebarCollapsed()) {
+            <div class="sidebar-submenu-container">
+              
+              <!-- HR Dashboard -->
+              <a routerLink="/hr/dashboard" routerLinkActive="active" class="sidebar-submenu-item">
+                📊 {{ 'navigation.dashboard' | translate }}
+              </a>
+
+              <!-- ── Recruitment (sub-section) ── -->
+              <button (click)="toggleHrRecruitment()"
+                class="sidebar-submenu-item w-full justify-between font-black text-slate-300 hover:text-white">
+                <span>{{ 'navigation.recruitment' | translate }}</span>
+                <svg [class.rotate-180]="isHrRecruitmentOpen()" class="w-3 h-3 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                </svg>
+              </button>
+              @if (isHrRecruitmentOpen()) {
+                <div class="pl-3 border-l border-slate-700 ml-3 space-y-0.5">
+                  <a routerLink="/hr/recruitment/applications" routerLinkActive="active" class="sidebar-submenu-item text-[11px]">{{ 'navigation.job_applications' | translate }}</a>
+                  <a routerLink="/hr/recruitment/candidates" routerLinkActive="active" class="sidebar-submenu-item text-[11px]">{{ 'navigation.candidates' | translate }}</a>
+                  <a routerLink="/hr/recruitment/interviews" routerLinkActive="active" class="sidebar-submenu-item text-[11px]">{{ 'navigation.interviews' | translate }}</a>
+                  <a routerLink="/hr/recruitment/hiring" routerLinkActive="active" class="sidebar-submenu-item text-[11px]">{{ 'navigation.hiring' | translate }}</a>
+                  <a routerLink="/hr/recruitment/onboarding" routerLinkActive="active" class="sidebar-submenu-item text-[11px]">{{ 'navigation.onboarding' | translate }}</a>
+                </div>
+              }
+
+              <!-- ── Employees (sub-section) ── -->
+              <button (click)="toggleHrEmployees()"
+                class="sidebar-submenu-item w-full justify-between font-black text-slate-300 hover:text-white">
+                <span>{{ 'navigation.employees' | translate }}</span>
+                <svg [class.rotate-180]="isHrEmployeesOpen()" class="w-3 h-3 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                </svg>
+              </button>
+              @if (isHrEmployeesOpen()) {
+                <div class="pl-3 border-l border-slate-700 ml-3 space-y-0.5">
+                  <a routerLink="/hr/employees" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" class="sidebar-submenu-item text-[11px]">{{ 'navigation.employees_list' | translate }}</a>
+                  <a routerLink="/hr/employees/profile" routerLinkActive="active" class="sidebar-submenu-item text-[11px]">{{ 'navigation.employee_profile' | translate }}</a>
+                  <a routerLink="/hr/employees/documents" routerLinkActive="active" class="sidebar-submenu-item text-[11px]">{{ 'navigation.documents' | translate }}</a>
+                </div>
+              }
+
+              <!-- ── Organization (sub-section) ── -->
+              <button (click)="toggleHrOrg()"
+                class="sidebar-submenu-item w-full justify-between font-black text-slate-300 hover:text-white">
+                <span>{{ 'navigation.organization' | translate }}</span>
+                <svg [class.rotate-180]="isHrOrgOpen()" class="w-3 h-3 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                </svg>
+              </button>
+              @if (isHrOrgOpen()) {
+                <div class="pl-3 border-l border-slate-700 ml-3 space-y-0.5">
+                  <a routerLink="/hr/organization/departments" routerLinkActive="active" class="sidebar-submenu-item text-[11px]">{{ 'navigation.departments' | translate }}</a>
+                  <a routerLink="/hr/organization/jobs" routerLinkActive="active" class="sidebar-submenu-item text-[11px]">{{ 'navigation.jobs' | translate }}</a>
+                  <a routerLink="/hr/organization/grades" routerLinkActive="active" class="sidebar-submenu-item text-[11px]">{{ 'navigation.job_grades' | translate }}</a>
+                  <a routerLink="/hr/organization/locations" routerLinkActive="active" class="sidebar-submenu-item text-[11px]">{{ 'navigation.work_locations' | translate }}</a>
+                  <a routerLink="/hr/organization/employment-types" routerLinkActive="active" class="sidebar-submenu-item text-[11px]">{{ 'navigation.employment_types' | translate }}</a>
+                  <a routerLink="/hr/organization/contract-types" routerLinkActive="active" class="sidebar-submenu-item text-[11px]">{{ 'navigation.contract_types' | translate }}</a>
+                  <a routerLink="/hr/organization/structure" routerLinkActive="active" class="sidebar-submenu-item text-[11px]">{{ 'navigation.organization_structure' | translate }}</a>
+                </div>
+              }
+
+
+              <!-- ── Attendance (sub-section) ── -->
+              <button (click)="toggleHrAttendance()"
+                class="sidebar-submenu-item w-full justify-between font-black text-slate-300 hover:text-white">
+                <span>{{ 'navigation.attendance_submenu' | translate }}</span>
+                <svg [class.rotate-180]="isHrAttendanceOpen()" class="w-3 h-3 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                </svg>
+              </button>
+              @if (isHrAttendanceOpen()) {
+                <div class="pl-3 border-l border-slate-700 ml-3 space-y-0.5">
+                  <a routerLink="/hr/attendance/dashboard" routerLinkActive="active" class="sidebar-submenu-item text-[11px]">{{ 'navigation.att_dashboard' | translate }}</a>
+                  <a routerLink="/hr/attendance" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" class="sidebar-submenu-item text-[11px]">{{ 'navigation.attendance' | translate }}</a>
+                  <a routerLink="/hr/attendance/history" routerLinkActive="active" class="sidebar-submenu-item text-[11px]">{{ 'navigation.attendance_history' | translate }}</a>
+                  <a routerLink="/hr/attendance/import" routerLinkActive="active" class="sidebar-submenu-item text-[11px]">{{ 'navigation.att_import' | translate }}</a>
+                  <a routerLink="/hr/attendance/shifts" routerLinkActive="active" class="sidebar-submenu-item text-[11px]">{{ 'navigation.shift_management' | translate }}</a>
+                  <a routerLink="/hr/attendance/schedules" routerLinkActive="active" class="sidebar-submenu-item text-[11px]">{{ 'navigation.work_schedules' | translate }}</a>
+                  <a routerLink="/hr/attendance/overtime" routerLinkActive="active" class="sidebar-submenu-item text-[11px]">{{ 'navigation.overtime' | translate }}</a>
+                  <a routerLink="/hr/attendance/permissions" routerLinkActive="active" class="sidebar-submenu-item text-[11px]">{{ 'navigation.att_permissions' | translate }}</a>
+                  <a routerLink="/hr/attendance/trips" routerLinkActive="active" class="sidebar-submenu-item text-[11px]">{{ 'navigation.business_trips' | translate }}</a>
+                  <a routerLink="/hr/attendance/exceptions" routerLinkActive="active" class="sidebar-submenu-item text-[11px]">{{ 'navigation.att_exceptions' | translate }}</a>
+                </div>
+              }
+
+
+              <!-- ── Leaves (sub-section) ── -->
+              <button (click)="toggleHrLeaves()"
+                class="sidebar-submenu-item w-full justify-between font-black text-slate-300 hover:text-white">
+                <span>{{ 'navigation.leaves' | translate }}</span>
+                <svg [class.rotate-180]="isHrLeavesOpen()" class="w-3 h-3 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                </svg>
+              </button>
+              @if (isHrLeavesOpen()) {
+                <div class="pl-3 border-l border-slate-700 ml-3 space-y-0.5">
+                  <a routerLink="/hr/leaves/requests" routerLinkActive="active" class="sidebar-submenu-item text-[11px]">{{ 'navigation.leave_requests' | translate }}</a>
+                  <a routerLink="/hr/leaves/approval" routerLinkActive="active" class="sidebar-submenu-item text-[11px]">{{ 'navigation.leave_approval' | translate }}</a>
+                  <a routerLink="/hr/leaves/balance" routerLinkActive="active" class="sidebar-submenu-item text-[11px]">{{ 'navigation.leave_balance' | translate }}</a>
+                </div>
+              }
+
+              <!-- ── Payroll (sub-section) ── -->
+              <button (click)="toggleHrPayroll()"
+                class="sidebar-submenu-item w-full justify-between font-black text-slate-300 hover:text-white">
+                <span>{{ 'navigation.payroll' | translate }}</span>
+                <svg [class.rotate-180]="isHrPayrollOpen()" class="w-3 h-3 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                </svg>
+              </button>
+              @if (isHrPayrollOpen()) {
+                <div class="pl-3 border-l border-slate-700 ml-3 space-y-0.5">
+                  <a routerLink="/hr/payroll/setup" routerLinkActive="active" class="sidebar-submenu-item text-[11px]">{{ 'navigation.payroll_setup' | translate }}</a>
+                  <a routerLink="/hr/payroll/run" routerLinkActive="active" class="sidebar-submenu-item text-[11px]">{{ 'navigation.payroll_run' | translate }}</a>
+                  <a routerLink="/hr/payroll/list" routerLinkActive="active" class="sidebar-submenu-item text-[11px]">{{ 'navigation.payroll_list' | translate }}</a>
+                </div>
+              }
+
+
+              <!-- ── Performance (sub-section) ── -->
+              <button (click)="toggleHrPerformance()"
+                class="sidebar-submenu-item w-full justify-between font-black text-slate-300 hover:text-white">
+                <span>{{ 'navigation.performance' | translate }}</span>
+                <svg [class.rotate-180]="isHrPerformanceOpen()" class="w-3 h-3 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                </svg>
+              </button>
+              @if (isHrPerformanceOpen()) {
+                <div class="pl-3 border-l border-slate-700 ml-3 space-y-0.5">
+                  <a routerLink="/hr/performance/dashboard" routerLinkActive="active" class="sidebar-submenu-item text-[11px]">{{ 'navigation.perf_dashboard' | translate }}</a>
+                  <a routerLink="/hr/performance/templates" routerLinkActive="active" class="sidebar-submenu-item text-[11px]">{{ 'navigation.performance_templates' | translate }}</a>
+                  <a routerLink="/hr/performance/reviews" routerLinkActive="active" class="sidebar-submenu-item text-[11px]">{{ 'navigation.perf_reviews' | translate }}</a>
+                  <a routerLink="/hr/performance/goals" routerLinkActive="active" class="sidebar-submenu-item text-[11px]">{{ 'navigation.perf_goals' | translate }}</a>
+                  <a routerLink="/hr/performance/competencies" routerLinkActive="active" class="sidebar-submenu-item text-[11px]">{{ 'navigation.perf_competencies' | translate }}</a>
+                  <a routerLink="/hr/performance/results" routerLinkActive="active" class="sidebar-submenu-item text-[11px]">{{ 'navigation.perf_results' | translate }}</a>
+                </div>
+              }
+
+              <!-- ── Workflow (sub-section) ── -->
+              <button (click)="toggleHrWorkflow()"
+                class="sidebar-submenu-item w-full justify-between font-black text-slate-300 hover:text-white">
+                <span>🔄 {{ 'navigation.hr_workflow' | translate }}</span>
+                <svg [class.rotate-180]="isHrWorkflowOpen()" class="w-3 h-3 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                </svg>
+              </button>
+              @if (isHrWorkflowOpen()) {
+                <div class="pl-3 border-l border-slate-700 ml-3 space-y-0.5">
+                  <a routerLink="/hr/workflow/dashboard" routerLinkActive="active" class="sidebar-submenu-item text-[11px]">{{ 'hr.reports.wf_nav_dashboard' | translate }}</a>
+                  <a routerLink="/hr/workflow/approvals" routerLinkActive="active" class="sidebar-submenu-item text-[11px]">{{ 'hr.reports.wf_nav_approvals' | translate }}</a>
+                  <a routerLink="/hr/workflow/notifications" routerLinkActive="active" class="sidebar-submenu-item text-[11px]">{{ 'hr.reports.wf_nav_notifications' | translate }}</a>
+                  <a routerLink="/hr/workflow/automation" routerLinkActive="active" class="sidebar-submenu-item text-[11px]">{{ 'hr.reports.wf_nav_automation' | translate }}</a>
+                </div>
+              }
+
+              <!-- ── Integration (sub-section) ── -->
+              <button (click)="toggleHrIntegration()"
+                class="sidebar-submenu-item w-full justify-between font-black text-slate-300 hover:text-white">
+                <span>🔌 {{ 'navigation.hr_integration' | translate }}</span>
+                <svg [class.rotate-180]="isHrIntegrationOpen()" class="w-3 h-3 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                </svg>
+              </button>
+              @if (isHrIntegrationOpen()) {
+                <div class="pl-3 border-l border-slate-700 ml-3 space-y-0.5">
+                  <a routerLink="/hr/integration/overview" routerLinkActive="active" class="sidebar-submenu-item text-[11px]">{{ 'hr.reports.int_nav_overview' | translate }}</a>
+                  <a routerLink="/hr/integration/finance" routerLinkActive="active" class="sidebar-submenu-item text-[11px]">{{ 'hr.reports.int_nav_finance' | translate }}</a>
+                  <a routerLink="/hr/integration/assets" routerLinkActive="active" class="sidebar-submenu-item text-[11px]">{{ 'hr.reports.int_nav_assets' | translate }}</a>
+                </div>
+              }
+
+              <!-- ── Enterprise (sub-section) ── -->
+              <button (click)="toggleHrEnterprise()"
+                class="sidebar-submenu-item w-full justify-between font-black text-slate-300 hover:text-white">
+                <span>🏢 Enterprise Features</span>
+                <svg [class.rotate-180]="isHrEnterpriseOpen()" class="w-3 h-3 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                </svg>
+              </button>
+              @if (isHrEnterpriseOpen()) {
+                <div class="pl-3 border-l border-slate-700 ml-3 space-y-0.5">
+                  <a routerLink="/hr/org-chart" routerLinkActive="active" class="sidebar-submenu-item text-[11px]">{{ 'navigation.hr_org_chart' | translate }}</a>
+                  <a routerLink="/hr/self-service" routerLinkActive="active" class="sidebar-submenu-item text-[11px]">{{ 'navigation.hr_self_service' | translate }}</a>
+                  <a routerLink="/hr/training" routerLinkActive="active" class="sidebar-submenu-item text-[11px]">{{ 'navigation.hr_training' | translate }}</a>
+                  <a routerLink="/hr/documents/expiry" routerLinkActive="active" class="sidebar-submenu-item text-[11px]">{{ 'navigation.hr_doc_expiry' | translate }}</a>
+                  <a routerLink="/hr/executive" routerLinkActive="active" class="sidebar-submenu-item text-[11px]">{{ 'navigation.hr_executive' | translate }}</a>
+                  <a routerLink="/hr/audit" routerLinkActive="active" class="sidebar-submenu-item text-[11px]">{{ 'navigation.hr_audit' | translate }}</a>
+                </div>
+              }
+
+              <!-- ── Reports ── -->
+              <a routerLink="/hr/reports" routerLinkActive="active" class="sidebar-submenu-item">
+                📈 {{ 'navigation.reports' | translate }}
+              </a>
+
+              <!-- ── Settings ── -->
+              <a routerLink="/hr/settings" routerLinkActive="active" class="sidebar-submenu-item">
+                ⚙️ {{ 'navigation.settings' | translate }}
+              </a>
+
+
+              <!-- ── Administration (sub-section) ── -->
+              <button (click)="toggleHrAdmin()"
+                class="sidebar-submenu-item w-full justify-between font-black text-slate-300 hover:text-white">
+                <span>{{ 'navigation.administration' | translate }}</span>
+                <svg [class.rotate-180]="isHrAdminOpen()" class="w-3 h-3 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                </svg>
+              </button>
+              @if (isHrAdminOpen()) {
+                <div class="pl-3 border-l border-slate-700 ml-3 space-y-0.5">
+                  <a routerLink="/hr/admin/users" routerLinkActive="active" class="sidebar-submenu-item text-[11px]">{{ 'navigation.users' | translate }}</a>
+                  <a routerLink="/hr/admin/roles" routerLinkActive="active" class="sidebar-submenu-item text-[11px]">{{ 'navigation.roles' | translate }}</a>
+                  <a routerLink="/hr/admin/permissions" routerLinkActive="active" class="sidebar-submenu-item text-[11px]">{{ 'navigation.permissions' | translate }}</a>
                 </div>
               }
 

@@ -53,6 +53,20 @@ export class MainLayoutComponent implements OnInit {
   readonly isFinanceV2ReportsOpen = signal<boolean>(false);
   readonly isFinanceV2AdminOpen = signal<boolean>(false);
 
+  // HR — sub-menu signals
+  readonly isHrOpen = signal<boolean>(false);
+  readonly isHrRecruitmentOpen = signal<boolean>(false);
+  readonly isHrEmployeesOpen = signal<boolean>(false);
+  readonly isHrOrgOpen = signal<boolean>(false);
+  readonly isHrAttendanceOpen = signal<boolean>(false);
+  readonly isHrLeavesOpen = signal<boolean>(false);
+  readonly isHrPayrollOpen = signal<boolean>(false);
+  readonly isHrPerformanceOpen = signal<boolean>(false);
+  readonly isHrWorkflowOpen = signal<boolean>(false);
+  readonly isHrIntegrationOpen = signal<boolean>(false);
+  readonly isHrEnterpriseOpen = signal<boolean>(false);
+  readonly isHrAdminOpen = signal<boolean>(false);
+
 
   // Link to shared notifications store
   readonly notifications = this.notificationService.notifications;
@@ -97,7 +111,22 @@ export class MainLayoutComponent implements OnInit {
       if (url.includes('/finance-v2/reports')) this.isFinanceV2ReportsOpen.set(true);
       if (url.includes('/finance-v2/admin')) this.isFinanceV2AdminOpen.set(true);
     }
+    if (url.includes('/hr')) {
+      this.isHrOpen.set(true);
+      if (url.includes('/hr/recruitment')) this.isHrRecruitmentOpen.set(true);
+      if (url.includes('/hr/employees')) this.isHrEmployeesOpen.set(true);
+      if (url.includes('/hr/organization')) this.isHrOrgOpen.set(true);
+      if (url.includes('/hr/attendance')) this.isHrAttendanceOpen.set(true);
+      if (url.includes('/hr/leaves')) this.isHrLeavesOpen.set(true);
+      if (url.includes('/hr/payroll')) this.isHrPayrollOpen.set(true);
+      if (url.includes('/hr/performance')) this.isHrPerformanceOpen.set(true);
+      if (url.includes('/hr/workflow')) this.isHrWorkflowOpen.set(true);
+      if (url.includes('/hr/integration')) this.isHrIntegrationOpen.set(true);
+      if (url.includes('/hr/org-chart') || url.includes('/hr/self-service') || url.includes('/hr/training') || url.includes('/hr/documents/expiry') || url.includes('/hr/executive') || url.includes('/hr/audit')) this.isHrEnterpriseOpen.set(true);
+      if (url.includes('/hr/admin')) this.isHrAdminOpen.set(true);
+    }
   }
+
 
   // --- ACTIONS ---
   toggleSidebar() {
@@ -150,6 +179,23 @@ export class MainLayoutComponent implements OnInit {
   toggleFinanceV2Taxes()    { this.isFinanceV2TaxesOpen.update(v => !v); }
   toggleFinanceV2Reports()  { this.isFinanceV2ReportsOpen.update(v => !v); }
   toggleFinanceV2Admin()    { this.isFinanceV2AdminOpen.update(v => !v); }
+
+  // HR toggle methods
+  toggleHrMenu() {
+    if (this.isSidebarCollapsed()) { this.isSidebarCollapsed.set(false); }
+    this.isHrOpen.update(val => !val);
+  }
+  toggleHrRecruitment() { this.isHrRecruitmentOpen.update(v => !v); }
+  toggleHrEmployees()   { this.isHrEmployeesOpen.update(v => !v); }
+  toggleHrOrg()         { this.isHrOrgOpen.update(v => !v); }
+  toggleHrAttendance()  { this.isHrAttendanceOpen.update(v => !v); }
+  toggleHrLeaves()      { this.isHrLeavesOpen.update(v => !v); }
+  toggleHrPayroll()     { this.isHrPayrollOpen.update(v => !v); }
+  toggleHrPerformance() { this.isHrPerformanceOpen.update(v => !v); }
+  toggleHrWorkflow()    { this.isHrWorkflowOpen.update(v => !v); }
+  toggleHrIntegration() { this.isHrIntegrationOpen.update(v => !v); }
+  toggleHrEnterprise()  { this.isHrEnterpriseOpen.update(v => !v); }
+  toggleHrAdmin()       { this.isHrAdminOpen.update(v => !v); }
 
   toggleMastersMenu() {
     if (this.isSidebarCollapsed()) {

@@ -270,6 +270,107 @@ export const routes: Routes = [
       },
 
       {
+        path: 'hr',
+        data: { permission: 'view:dashboard' },
+        children: [
+          { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
+          { path: 'dashboard', loadComponent: () => import('./features/hr/dashboard/dashboard.component').then(m => m.HrDashboardComponent) },
+          
+          // Recruitment
+          { path: 'recruitment/applications', loadComponent: () => import('./features/hr/recruitment/applications/applications.component').then(m => m.HrApplicationsComponent) },
+          { path: 'recruitment/candidates', loadComponent: () => import('./features/hr/recruitment/candidates/candidates.component').then(m => m.HrCandidatesComponent) },
+          { path: 'recruitment/interviews', loadComponent: () => import('./features/hr/recruitment/interviews/interviews.component').then(m => m.HrInterviewsComponent) },
+          { path: 'recruitment/hiring', loadComponent: () => import('./features/hr/recruitment/hiring/hiring.component').then(m => m.HrHiringComponent) },
+          { path: 'recruitment/onboarding', loadComponent: () => import('./features/hr/recruitment/onboarding/onboarding.component').then(m => m.HrOnboardingComponent) },
+
+          // Employees
+          { path: 'employees', loadComponent: () => import('./features/hr/employees/employees/employees.component').then(m => m.HrEmployeesListComponent) },
+          { path: 'employees/profile', loadComponent: () => import('./features/hr/employees/profile/profile.component').then(m => m.HrProfileComponent) },
+          { path: 'employees/documents', loadComponent: () => import('./features/hr/employees/documents/documents.component').then(m => m.HrDocumentsComponent) },
+
+          // Organization
+          { path: 'organization/departments', loadComponent: () => import('./features/hr/organization/departments/departments.component').then(m => m.HrDepartmentsComponent) },
+          { path: 'organization/jobs', loadComponent: () => import('./features/hr/organization/jobs/jobs.component').then(m => m.HrJobsComponent) },
+          { path: 'organization/grades', loadComponent: () => import('./features/hr/organization/grades/grades.component').then(m => m.HrGradesComponent) },
+          { path: 'organization/locations', loadComponent: () => import('./features/hr/organization/locations/locations.component').then(m => m.HrLocationsComponent) },
+          { path: 'organization/employment-types', loadComponent: () => import('./features/hr/organization/employment-types/employment-types.component').then(m => m.HrEmploymentTypesComponent) },
+          { path: 'organization/contract-types', loadComponent: () => import('./features/hr/organization/contract-types/contract-types.component').then(m => m.HrContractTypesComponent) },
+          { path: 'organization/structure', loadComponent: () => import('./features/hr/organization/structure/structure.component').then(m => m.HrStructureComponent) },
+
+          // Attendance & Time Management
+          { path: 'attendance', loadComponent: () => import('./features/hr/attendance/attendance/attendance.component').then(m => m.HrAttendanceComponent) },
+          { path: 'attendance/dashboard', loadComponent: () => import('./features/hr/attendance/dashboard/dashboard.component').then(m => m.HrAttendanceDashboardComponent) },
+          { path: 'attendance/history', loadComponent: () => import('./features/hr/attendance/history/history.component').then(m => m.HrAttendanceHistoryComponent) },
+          { path: 'attendance/import', loadComponent: () => import('./features/hr/attendance/import/import.component').then(m => m.HrAttendanceImportComponent) },
+          { path: 'attendance/shifts', loadComponent: () => import('./features/hr/attendance/shifts/shifts.component').then(m => m.HrShiftsComponent) },
+          { path: 'attendance/schedules', loadComponent: () => import('./features/hr/attendance/schedules/schedules.component').then(m => m.HrWorkSchedulesComponent) },
+          { path: 'attendance/overtime', loadComponent: () => import('./features/hr/attendance/overtime/overtime.component').then(m => m.HrOvertimeComponent) },
+          { path: 'attendance/permissions', loadComponent: () => import('./features/hr/attendance/permissions/permissions.component').then(m => m.HrPermissionsComponent) },
+          { path: 'attendance/trips', loadComponent: () => import('./features/hr/attendance/trips/trips.component').then(m => m.HrBusinessTripsComponent) },
+          { path: 'attendance/exceptions', loadComponent: () => import('./features/hr/attendance/exceptions/exceptions.component').then(m => m.HrAttendanceExceptionsComponent) },
+
+          // Leaves
+          { path: 'leaves/requests', loadComponent: () => import('./features/hr/leaves/requests/requests.component').then(m => m.HrLeaveRequestsComponent) },
+          { path: 'leaves/approval', loadComponent: () => import('./features/hr/leaves/approval/approval.component').then(m => m.HrLeaveApprovalComponent) },
+          { path: 'leaves/balance', loadComponent: () => import('./features/hr/leaves/balance/balance.component').then(m => m.HrLeaveBalanceComponent) },
+
+          // Payroll Management
+          { path: 'payroll/setup', loadComponent: () => import('./features/hr/payroll/setup/setup.component').then(m => m.HrPayrollSetupComponent) },
+          { path: 'payroll/run', loadComponent: () => import('./features/hr/payroll/run/run.component').then(m => m.HrPayrollRunComponent) },
+          { path: 'payroll/list', loadComponent: () => import('./features/hr/payroll/list/list.component').then(m => m.HrPayrollListComponent) },
+          { path: 'payroll/details/:id', loadComponent: () => import('./features/hr/payroll/details/details.component').then(m => m.HrPayrollDetailsComponent) },
+
+          // Performance Management
+          { path: 'performance/dashboard', loadComponent: () => import('./features/hr/performance/dashboard/dashboard.component').then(m => m.HrPerfDashboardComponent) },
+          { path: 'performance/templates', loadComponent: () => import('./features/hr/performance/templates/templates.component').then(m => m.HrPerformanceTemplatesComponent) },
+          { path: 'performance/reviews', loadComponent: () => import('./features/hr/performance/reviews/reviews.component').then(m => m.HrPerformanceReviewsComponent) },
+          { path: 'performance/goals', loadComponent: () => import('./features/hr/performance/goals/goals.component').then(m => m.HrPerformanceGoalsComponent) },
+          { path: 'performance/competencies', loadComponent: () => import('./features/hr/performance/competencies/competencies.component').then(m => m.HrPerformanceCompetenciesComponent) },
+          { path: 'performance/results', loadComponent: () => import('./features/hr/performance/results/results.component').then(m => m.HrPerformanceResultsComponent) },
+
+          // Phase 9 — Reports & Analytics
+          { path: 'reports', loadComponent: () => import('./features/hr/reports/reports.component').then(m => m.HrReportsComponent) },
+          { path: 'reports/dashboard', loadComponent: () => import('./features/hr/reports/exec-dashboard/exec-dashboard.component').then(m => m.HrReportsExecDashboardComponent) },
+          { path: 'reports/employees', loadComponent: () => import('./features/hr/reports/employees/employees-report.component').then(m => m.HrReportsEmployeesComponent) },
+          { path: 'reports/recruitment', loadComponent: () => import('./features/hr/reports/recruitment/recruitment-report.component').then(m => m.HrReportsRecruitmentComponent) },
+          { path: 'reports/attendance', loadComponent: () => import('./features/hr/reports/attendance/attendance-report.component').then(m => m.HrReportsAttendanceComponent) },
+          { path: 'reports/leaves', loadComponent: () => import('./features/hr/reports/leaves/leaves-report.component').then(m => m.HrReportsLeavesComponent) },
+          { path: 'reports/payroll', loadComponent: () => import('./features/hr/reports/payroll/payroll-report.component').then(m => m.HrReportsPayrollComponent) },
+          { path: 'reports/performance', loadComponent: () => import('./features/hr/reports/performance/performance-report.component').then(m => m.HrReportsPerformanceComponent) },
+          { path: 'reports/turnover', loadComponent: () => import('./features/hr/reports/turnover/turnover-report.component').then(m => m.HrReportsTurnoverComponent) },
+          { path: 'reports/custom', loadComponent: () => import('./features/hr/reports/custom/custom-report.component').then(m => m.HrReportsCustomComponent) },
+
+          // Phase 10 — Workflow & Automation
+          { path: 'workflow/dashboard', loadComponent: () => import('./features/hr/workflow/dashboard/workflow-dashboard.component').then(m => m.HrWorkflowDashboardComponent) },
+          { path: 'workflow/approvals', loadComponent: () => import('./features/hr/workflow/approvals/approvals.component').then(m => m.HrWorkflowApprovalsComponent) },
+          { path: 'workflow/notifications', loadComponent: () => import('./features/hr/workflow/notifications/notifications.component').then(m => m.HrWorkflowNotificationsComponent) },
+          { path: 'workflow/automation', loadComponent: () => import('./features/hr/workflow/automation/automation.component').then(m => m.HrWorkflowAutomationComponent) },
+
+          // Phase 11 — ERP Integration
+          { path: 'integration/overview', loadComponent: () => import('./features/hr/integration/overview/integration-overview.component').then(m => m.HrIntegrationOverviewComponent) },
+          { path: 'integration/finance', loadComponent: () => import('./features/hr/integration/finance/integration-finance.component').then(m => m.HrIntegrationFinanceComponent) },
+          { path: 'integration/assets', loadComponent: () => import('./features/hr/integration/assets/integration-assets.component').then(m => m.HrIntegrationAssetsComponent) },
+
+          // Phase 12 — Enterprise Features
+          { path: 'org-chart', loadComponent: () => import('./features/hr/enterprise/org-chart/org-chart.component').then(m => m.HrOrgChartComponent) },
+          { path: 'self-service', loadComponent: () => import('./features/hr/enterprise/self-service/self-service.component').then(m => m.HrSelfServiceComponent) },
+          { path: 'training', loadComponent: () => import('./features/hr/enterprise/training/training.component').then(m => m.HrTrainingComponent) },
+          { path: 'documents/expiry', loadComponent: () => import('./features/hr/enterprise/doc-expiry/doc-expiry.component').then(m => m.HrDocExpiryComponent) },
+          { path: 'executive', loadComponent: () => import('./features/hr/enterprise/executive/executive.component').then(m => m.HrExecutiveComponent) },
+          { path: 'audit', loadComponent: () => import('./features/hr/enterprise/audit/audit.component').then(m => m.HrAuditComponent) },
+
+          // Settings & Admin
+          { path: 'settings', loadComponent: () => import('./features/hr/settings/settings.component').then(m => m.HrSettingsComponent) },
+
+          // Admin
+          { path: 'admin/users', loadComponent: () => import('./features/hr/admin/users/users.component').then(m => m.HrAdminUsersComponent) },
+          { path: 'admin/roles', loadComponent: () => import('./features/hr/admin/roles/roles.component').then(m => m.HrAdminRolesComponent) },
+          { path: 'admin/permissions', loadComponent: () => import('./features/hr/admin/permissions/permissions.component').then(m => m.HrAdminPermissionsComponent) }
+
+        ]
+      },
+
+      {
         path: 'activity-logs',
         loadComponent: () => import('./features/audit/activity-logs/activity-logs.component').then(m => m.ActivityLogsComponent),
         data: { permission: 'view:dashboard' }

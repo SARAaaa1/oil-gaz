@@ -28,6 +28,30 @@ export type {
   VendorApprovalStatus
 } from './vendor.interface';
 export type { ChargeType, ItemType } from './purchase-request.interface';
+export * from './employee.interface';
+export * from './candidate.interface';
+export * from './interview.interface';
+export * from './department.interface';
+export * from './job-title.interface';
+export * from './work-location.interface';
+export * from './employment-type.interface';
+export * from './attendance.interface';
+export * from './shift.interface';
+export * from './overtime.interface';
+export * from './leave.interface';
+export * from './payroll.interface';
+export * from './evaluation.interface';
+export * from './role.interface';
+export * from './permission.interface';
+export * from './payroll-v2.interface';
+export * from './performance-v2.interface';
+export * from './recruitment.interface';
+export * from './hr-workflow.interface';
+
+
+
+
+
 
 
 
