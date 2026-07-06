@@ -7,6 +7,7 @@ import { BreadcrumbService } from '../../../core/services/breadcrumb.service';
 import { LanguageService } from '../../../core/services/language.service';
 import { FinanceV2MockService } from '../shared/finance-v2-mock.service';
 import { MonthlyChartData, AgingBucket } from '../shared/finance-v2.interfaces';
+import { BranchService } from '../shared/branch.service';
 
 @Component({
   selector: 'app-finv2-dashboard',
@@ -19,6 +20,9 @@ export class FinV2DashboardComponent implements OnInit {
   private readonly breadcrumbService = inject(BreadcrumbService);
   readonly langService = inject(LanguageService);
   readonly mockService = inject(FinanceV2MockService);
+  readonly branchService = inject(BranchService);
+
+  readonly activeBranch = computed(() => this.branchService.activeBranch());
 
   // Expose data signals
   readonly kpis = this.mockService.dashboardKpis;
@@ -28,6 +32,63 @@ export class FinV2DashboardComponent implements OnInit {
   readonly recentJournals = this.mockService.recentJournals;
   readonly recentVendorInvoices = this.mockService.recentVendorInvoices;
   readonly recentCollections = this.mockService.recentCollections;
+
+  readonly branchKpis = computed(() => {
+    const kpi = this.kpis();
+    const br = this.activeBranch();
+    if (br === 'FreeZone') {
+      return {
+        totalAssets: 4_280_000,
+        totalLiabilities: 1_220_000,
+        equity: 3_060_000,
+        cash: 95_000,
+        bankBalance: 580_000,
+        accountsReceivable: 480_000,
+        accountsPayable: 610_000,
+        monthRevenue: 310_000,
+        monthExpenses: 220_000,
+        netProfit: 90_000
+      };
+    } else if (br === 'HeadOffice') {
+      return {
+        totalAssets: 8_170_000,
+        totalLiabilities: 3_060_000,
+        equity: 5_110_000,
+        cash: 185_000,
+        bankBalance: 1_260_000,
+        accountsReceivable: 1_160_000,
+        accountsPayable: 1_210_000,
+        monthRevenue: 610_000,
+        monthExpenses: 460_000,
+        netProfit: 150_000
+      };
+    }
+    return kpi; // All
+  });
+
+  readonly filteredJournals = computed(() => {
+    const br = this.activeBranch();
+    const list = this.recentJournals();
+    return br === 'All' ? list : list.filter(j => (j.branchId || 'HeadOffice') === br);
+  });
+
+  readonly filteredVendorInvoices = computed(() => {
+    const br = this.activeBranch();
+    const list = this.recentVendorInvoices();
+    return br === 'All' ? list : list.filter(i => (i.branchId || 'HeadOffice') === br);
+  });
+
+  readonly filteredCollections = computed(() => {
+    const br = this.activeBranch();
+    const list = this.recentCollections();
+    return br === 'All' ? list : list.filter(c => (c.branchId || 'HeadOffice') === br);
+  });
+
+  // Currency specific computed values
+  readonly cashEgp = computed(() => this.branchKpis().cash * 48);
+  readonly cashUsd = computed(() => this.branchKpis().cash);
+  readonly bankEgp = computed(() => this.branchKpis().bankBalance * 48);
+  readonly bankUsd = computed(() => this.branchKpis().bankBalance);
 
   // Chart dimensions
   readonly chartWidth = 520;

@@ -56,12 +56,15 @@
 
   <!-- ══ Filters ════════════════════════════════════════════════════ -->
   <div class="bg-white rounded-xl border border-slate-100 shadow-sm p-4 flex flex-col sm:flex-row gap-3">
+    <!-- Search -->
     <div class="relative flex-1">
       <svg class="w-4 h-4 text-slate-400 absolute left-3 rtl:right-3 rtl:left-auto top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
       <input type="text" [placeholder]="'finance_v2.coa.search_placeholder' | translate"
         (input)="searchQuery.set($any($event.target).value)"
         class="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 rtl:pr-9 rtl:pl-3 pr-3 py-2.5 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-300 transition-all">
     </div>
+
+    <!-- Type Filter -->
     <select (change)="typeFilter.set($any($event.target).value)"
       class="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-300 transition-all">
       <option value="All">{{ 'finance_v2.coa.all_types' | translate }}</option>
@@ -71,6 +74,8 @@
       <option value="Revenue">{{ 'finance_v2.coa.type_revenue' | translate }}</option>
       <option value="Expense">{{ 'finance_v2.coa.type_expense' | translate }}</option>
     </select>
+
+    <!-- Status Filter -->
     <select (change)="statusFilter.set($any($event.target).value)"
       class="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-300 transition-all">
       <option value="All">{{ 'finance_v2.common.all_statuses' | translate }}</option>
@@ -81,16 +86,18 @@
 
   <!-- ══ Tree Table ════════════════════════════════════════════════ -->
   <div class="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden">
+
     <!-- Table Header -->
     <div class="grid grid-cols-12 gap-2 px-4 py-3 bg-slate-50 border-b border-slate-100 text-[10px] font-bold uppercase tracking-wider text-slate-400">
       <div class="col-span-4">{{ 'finance_v2.coa.account_code' | translate }} / {{ 'finance_v2.coa.account_name' | translate }}</div>
       <div class="col-span-2 hidden md:block">{{ 'finance_v2.coa.account_type' | translate }}</div>
-      <div class="col-span-2 hidden lg:block text-right">{{ 'finance_v2.coa.balance' | translate }}</div>
-      <div class="col-span-2 hidden lg:block text-center">{{ 'finance_v2.coa.flags' | translate }}</div>
+      <div class="col-span-3 hidden lg:block">{{ 'finance_v2.coa.parent_account' | translate }}</div>
+      <div class="col-span-1 hidden lg:block text-right">{{ 'finance_v2.coa.balance' | translate }}</div>
+      <div class="col-span-1 hidden lg:block text-center">{{ 'finance_v2.coa.flags' | translate }}</div>
       <div class="col-span-2 text-right">{{ 'finance_v2.common.actions' | translate }}</div>
     </div>
 
-    <!-- Tree Rows -->
+    <!-- Empty State -->
     @if (flatTree().length === 0) {
       <div class="py-16 text-center">
         <div class="w-12 h-12 bg-slate-100 rounded-xl flex items-center justify-center mx-auto mb-3">
@@ -101,20 +108,21 @@
       </div>
     }
 
-    @for (account of flatTree(); track account.id) {
+    <!-- Tree Rows -->
+    @for (row of flatTree(); track row.id) {
       <div class="grid grid-cols-12 gap-2 px-4 py-3 border-b border-slate-50 hover:bg-slate-50/60 transition-colors items-center group"
-        [class.bg-slate-50]="account.level === 1"
-        [class.opacity-60]="account.status === 'Inactive'">
+        [class.bg-slate-50]="row.level === 1"
+        [class.opacity-60]="row.status === 'Inactive'">
 
         <!-- Account Code + Name with tree indentation -->
         <div class="col-span-4 flex items-center gap-1 min-w-0"
-          [style.padding-left.px]="getLevelIndent(account.level)">
+          [style.padding-left.px]="getLevelIndent(row.level)">
           <!-- Expand / Collapse toggle -->
-          @if (hasChildren(account.code)) {
-            <button (click)="toggleExpand(account.code)"
+          @if (hasChildren(row.code)) {
+            <button (click)="toggleExpand(row.code)"
               class="w-5 h-5 rounded flex items-center justify-center shrink-0 hover:bg-slate-200 transition-colors">
               <svg class="w-3 h-3 text-slate-400 transition-transform"
-                [class.rotate-90]="isExpanded(account.code)"
+                [class.rotate-90]="isExpanded(row.code)"
                 fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
               </svg>
@@ -126,48 +134,53 @@
           }
           <div class="min-w-0">
             <div class="flex items-center gap-1.5">
-              <span class="text-[10px] font-black text-slate-400 shrink-0 font-mono">{{ account.code }}</span>
-              @if (account.isConfidential) {
+              <span class="text-[10px] font-black text-slate-400 shrink-0 font-mono">{{ row.code }}</span>
+              @if (row.isConfidential) {
                 <svg class="w-3 h-3 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
               }
             </div>
-            <p class="text-xs font-bold text-slate-800 truncate" [class.font-black]="account.level === 1">
-              {{ langService.isRtl() ? account.nameAr : account.nameEn }}
+            <p class="text-xs font-bold text-slate-800 truncate" [class.font-black]="row.level === 1">
+              {{ langService.isRtl() ? row.nameAr : row.nameEn }}
             </p>
             <p class="text-[9px] text-slate-400 truncate hidden sm:block">
-              {{ langService.isRtl() ? account.nameEn : account.nameAr }}
+              {{ langService.isRtl() ? row.nameEn : row.nameAr }}
             </p>
           </div>
         </div>
 
         <!-- Type Badge -->
         <div class="col-span-2 hidden md:flex items-center">
-          <span class="text-[9px] font-bold border rounded-full px-2 py-0.5" [class]="getTypeClass(account.type)">
-            {{ getTypeKey(account.type) | translate }}
+          <span class="text-[9px] font-bold border rounded-full px-2 py-0.5" [class]="getTypeClass(row.type)">
+            {{ getTypeKey(row.type) | translate }}
           </span>
+        </div>
+
+        <!-- Parent Account -->
+        <div class="col-span-3 hidden lg:block">
+          <span class="text-[10px] font-mono text-slate-400">{{ row.parentCode ?? '—' }}</span>
         </div>
 
         <!-- Balance -->
-        <div class="col-span-2 hidden lg:block text-right">
-          <span class="text-xs font-black" [class.text-slate-800]="account.balance >= 0" [class.text-red-600]="account.balance < 0">
-            {{ account.balance | number:'1.0-0' }}
+        <div class="col-span-1 hidden lg:block text-right">
+          <span class="text-xs font-black" [class.text-slate-800]="row.balance >= 0" [class.text-red-600]="row.balance < 0">
+            {{ row.balance | number:'1.0-0' }}
           </span>
-          <p class="text-[9px] text-slate-400">{{ account.currency }}</p>
+          <p class="text-[9px] text-slate-400">{{ row.currency }}</p>
         </div>
 
         <!-- Flags -->
-        <div class="col-span-2 hidden lg:flex items-center justify-center gap-1.5">
-          @if (account.allowManualEntries) {
+        <div class="col-span-1 hidden lg:flex items-center justify-center gap-1.5">
+          @if (row.allowManualEntries) {
             <span title="Allow Manual" class="w-4 h-4 rounded bg-indigo-100 flex items-center justify-center">
               <svg class="w-2.5 h-2.5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
             </span>
           }
-          @if (account.isReconciliation) {
+          @if (row.isReconciliation) {
             <span title="Reconciliation" class="w-4 h-4 rounded bg-amber-100 flex items-center justify-center">
               <svg class="w-2.5 h-2.5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
             </span>
           }
-          @if (account.requiresCostCenter) {
+          @if (row.requiresCostCenter) {
             <span title="Cost Center Required" class="w-4 h-4 rounded bg-emerald-100 flex items-center justify-center">
               <svg class="w-2.5 h-2.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5"/></svg>
             </span>
@@ -177,33 +190,35 @@
         <!-- Actions -->
         <div class="col-span-2 flex items-center justify-end gap-1">
           <!-- Add Child -->
-          <button (click)="openAddModal(account.code)"
+          <button (click)="openAddModal(row.code)"
             title="{{ 'finance_v2.coa.add_child' | translate }}"
             class="opacity-0 group-hover:opacity-100 w-7 h-7 rounded-lg border border-slate-200 flex items-center justify-center hover:bg-indigo-50 hover:border-indigo-200 transition-all">
             <svg class="w-3 h-3 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
           </button>
           <!-- Edit -->
-          <button (click)="openEditModal(account)"
+          <button (click)="openEditModal(row)"
             class="opacity-0 group-hover:opacity-100 w-7 h-7 rounded-lg border border-slate-200 flex items-center justify-center hover:bg-amber-50 hover:border-amber-200 transition-all">
             <svg class="w-3 h-3 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
           </button>
           <!-- Toggle Status -->
-          <button (click)="toggleStatus(account)"
+          <button (click)="toggleStatus(row)"
             class="opacity-0 group-hover:opacity-100 w-7 h-7 rounded-lg border border-slate-200 flex items-center justify-center transition-all"
-            [class.hover:bg-red-50]="account.status === 'Active'"
-            [class.hover:border-red-200]="account.status === 'Active'"
-            [class.hover:bg-emerald-50]="account.status === 'Inactive'"
-            [class.hover:border-emerald-200]="account.status === 'Inactive'">
-            @if (account.status === 'Active') {
+            [class.hover:bg-red-50]="row.status === 'Active'"
+            [class.hover:border-red-200]="row.status === 'Active'"
+            [class.hover:bg-emerald-50]="row.status === 'Inactive'"
+            [class.hover:border-emerald-200]="row.status === 'Inactive'">
+            @if (row.status === 'Active') {
               <svg class="w-3 h-3 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>
             } @else {
               <svg class="w-3 h-3 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
             }
           </button>
         </div>
+
       </div>
     }
-  </div>
+
+  </div><!-- end tree table -->
 
 </div>
 
@@ -212,6 +227,7 @@
   <div class="fixed inset-0 z-50 flex items-center justify-center p-4" (click)="closeModal()">
     <div class="absolute inset-0 bg-slate-900/50 backdrop-blur-sm"></div>
     <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto" (click)="$event.stopPropagation()">
+
       <!-- Modal Header -->
       <div class="flex items-center justify-between p-5 border-b border-slate-100">
         <div>
@@ -227,12 +243,14 @@
 
       <!-- Modal Body -->
       <div class="p-5 grid grid-cols-2 gap-4">
+
         <!-- Code -->
         <div class="col-span-1">
           <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1.5">{{ 'finance_v2.coa.account_code' | translate }} *</label>
           <input [(ngModel)]="formCode" type="text" placeholder="e.g. 1130"
             class="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-800 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-300 transition-all">
         </div>
+
         <!-- Type -->
         <div class="col-span-1">
           <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1.5">{{ 'finance_v2.coa.account_type' | translate }}</label>
@@ -242,18 +260,21 @@
             }
           </select>
         </div>
+
         <!-- English Name -->
         <div class="col-span-1">
           <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1.5">{{ 'finance_v2.coa.name_en' | translate }} *</label>
           <input [(ngModel)]="formNameEn" type="text" placeholder="Account name in English"
             class="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-800 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-300 transition-all">
         </div>
+
         <!-- Arabic Name -->
         <div class="col-span-1">
           <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1.5">{{ 'finance_v2.coa.name_ar' | translate }}</label>
           <input [(ngModel)]="formNameAr" type="text" dir="rtl" placeholder="اسم الحساب بالعربية"
             class="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-800 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-300 transition-all">
         </div>
+
         <!-- Parent Account -->
         <div class="col-span-1">
           <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1.5">{{ 'finance_v2.coa.parent_account' | translate }}</label>
@@ -264,6 +285,7 @@
             }
           </select>
         </div>
+
         <!-- Currency -->
         <div class="col-span-1">
           <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1.5">{{ 'finance_v2.common.currency' | translate }}</label>
@@ -271,6 +293,7 @@
             @for (c of currencies; track c) { <option [value]="c">{{ c }}</option> }
           </select>
         </div>
+
         <!-- Checkboxes -->
         <div class="col-span-2 grid grid-cols-2 gap-3">
           <label class="flex items-center gap-2 cursor-pointer">
@@ -290,6 +313,7 @@
             <span class="text-xs font-semibold text-slate-700">{{ 'finance_v2.coa.is_confidential' | translate }}</span>
           </label>
         </div>
+
       </div>
 
       <!-- Modal Footer -->
@@ -297,6 +321,7 @@
         <button (click)="closeModal()" class="px-4 py-2 rounded-xl border border-slate-200 text-slate-700 text-xs font-bold hover:bg-slate-50 transition-all">{{ 'finance_v2.common.cancel' | translate }}</button>
         <button (click)="saveAccount()" class="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-sm transition-all">{{ 'finance_v2.common.save' | translate }}</button>
       </div>
+
     </div>
   </div>
 }

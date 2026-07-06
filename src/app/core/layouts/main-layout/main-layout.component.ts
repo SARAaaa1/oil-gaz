@@ -52,6 +52,7 @@ export class MainLayoutComponent implements OnInit {
   readonly isFinanceV2TaxesOpen = signal<boolean>(false);
   readonly isFinanceV2ReportsOpen = signal<boolean>(false);
   readonly isFinanceV2AdminOpen = signal<boolean>(false);
+  readonly isFinanceV2AnalysisOpen = signal<boolean>(false);
 
   // HR — sub-menu signals
   readonly isHrOpen = signal<boolean>(false);
@@ -98,7 +99,12 @@ export class MainLayoutComponent implements OnInit {
       this.isAssetsOpen.set(true);
     }
     if (url.includes('/finance') && !url.includes('/finance-v2')) {
-      this.isFinanceOpen.set(true);
+      if (url.includes('-analysis') || url.includes('/profitability') || url.includes('/drill-down')) {
+        this.isFinanceV2Open.set(true);
+        this.isFinanceV2AnalysisOpen.set(true);
+      } else {
+        this.isFinanceOpen.set(true);
+      }
     }
     if (url.includes('/finance-v2')) {
       this.isFinanceV2Open.set(true);
@@ -179,6 +185,7 @@ export class MainLayoutComponent implements OnInit {
   toggleFinanceV2Taxes()    { this.isFinanceV2TaxesOpen.update(v => !v); }
   toggleFinanceV2Reports()  { this.isFinanceV2ReportsOpen.update(v => !v); }
   toggleFinanceV2Admin()    { this.isFinanceV2AdminOpen.update(v => !v); }
+  toggleFinanceV2Analysis() { this.isFinanceV2AnalysisOpen.update(v => !v); }
 
   // HR toggle methods
   toggleHrMenu() {

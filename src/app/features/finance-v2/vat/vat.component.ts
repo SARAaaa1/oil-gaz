@@ -8,6 +8,7 @@ import { BreadcrumbService } from '../../../core/services/breadcrumb.service';
 import { NotificationService } from '../../../core/services/notification.service';
 import { VatMockService } from '../shared/vat-mock.service';
 import { VatReturn, VatTransaction, VatReturnStatus, VatType } from '../shared/vat.interfaces';
+import { BranchService } from '../shared/branch.service';
 
 @Component({
   selector: 'app-finv2-vat',
@@ -20,9 +21,11 @@ export class FinV2VatComponent implements OnInit {
   private readonly breadcrumb = inject(BreadcrumbService);
   private readonly notify     = inject(NotificationService);
   readonly vatService         = inject(VatMockService);
+  readonly branchService      = inject(BranchService);
 
   readonly searchQuery  = signal('');
   readonly statusFilter = signal<VatReturnStatus | 'All'>('All');
+  readonly branchFilter = signal('All');
   readonly selectedId   = signal<string | null>(null);
 
   // Active tab inside return details
@@ -32,14 +35,16 @@ export class FinV2VatComponent implements OnInit {
   readonly showSettlementDlg = signal(false);
 
   readonly filtered = computed(() => {
-    const q   = this.searchQuery().toLowerCase();
-    const st  = this.statusFilter();
+    const q  = this.searchQuery().toLowerCase();
+    const st = this.statusFilter();
+    const br = this.branchFilter();
     return this.vatService.vatReturns()
       .filter(r => {
         const mq = !q || r.vatReturnNumber.toLowerCase().includes(q) ||
                    r.taxPeriod.toLowerCase().includes(q);
         const ms = st === 'All' || r.status === st;
-        return mq && ms;
+        const mb = br === 'All' || (r.branchId || 'HeadOffice') === br;
+        return mq && ms && mb;
       })
       .sort((a, b) => b.vatReturnNumber.localeCompare(a.vatReturnNumber));
   });

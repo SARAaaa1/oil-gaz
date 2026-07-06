@@ -60,6 +60,10 @@ export interface ProjectBudget {
   createdDate:          string;
   lastUpdated:          string;
   lines:                BudgetLine[];
+
+  branchId?: string;
+  branchCode?: string;
+  branchName?: string;
 }
 
 // ── Summary Metrics ──────────────────────────────────

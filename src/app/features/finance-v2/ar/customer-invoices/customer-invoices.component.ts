@@ -8,6 +8,7 @@ import { BreadcrumbService } from '../../../../core/services/breadcrumb.service'
 import { NotificationService } from '../../../../core/services/notification.service';
 import { ArMockService } from '../../shared/ar-mock.service';
 import { ArInvoice, ArInvoiceStatus, AgingBucket } from '../../shared/ar.interfaces';
+import { BranchService } from '../../shared/branch.service';
 
 @Component({
   selector: 'app-finv2-customer-invoices',
@@ -20,11 +21,13 @@ export class FinV2CustomerInvoicesComponent implements OnInit {
   private readonly breadcrumb = inject(BreadcrumbService);
   private readonly notify     = inject(NotificationService);
   readonly arService          = inject(ArMockService);
+  readonly branchService      = inject(BranchService);
 
   readonly searchQuery   = signal('');
   readonly statusFilter  = signal<ArInvoiceStatus | 'All'>('All');
   readonly agingFilter   = signal<AgingBucket | 'All'>('All');
   readonly sourceFilter  = signal('All');
+  readonly branchFilter  = signal('All');
   readonly selectedId    = signal<string | null>(null);
   readonly activeTab     = signal<'details' | 'traceability' | 'validation'>('details');
   readonly showRejectDlg = signal(false);
@@ -42,6 +45,7 @@ export class FinV2CustomerInvoicesComponent implements OnInit {
     const st  = this.statusFilter();
     const ag  = this.agingFilter();
     const src = this.sourceFilter();
+    const br  = this.branchFilter();
     return this.arService.customerInvoices()
       .filter(i => {
         const mq  = !q || i.invoiceNumber.toLowerCase().includes(q) ||
@@ -51,7 +55,8 @@ export class FinV2CustomerInvoicesComponent implements OnInit {
         const ms  = st  === 'All' || i.status === st;
         const ma  = ag  === 'All' || i.aging  === ag;
         const msr = src === 'All' || i.source === src;
-        return mq && ms && ma && msr;
+        const mb  = br  === 'All' || (i.branchId || 'HeadOffice') === br;
+        return mq && ms && ma && msr && mb;
       })
       .sort((a, b) => b.invoiceNumber.localeCompare(a.invoiceNumber));
   });

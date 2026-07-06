@@ -8,6 +8,7 @@ import { BreadcrumbService } from '../../../../core/services/breadcrumb.service'
 import { NotificationService } from '../../../../core/services/notification.service';
 import { TreasuryMockService } from '../../shared/treasury-mock.service';
 import { ReconciliationSession, ReconciliationStatus, StatementTransaction, SystemTransaction } from '../../shared/treasury.interfaces';
+import { BranchService } from '../../shared/branch.service';
 
 @Component({
   selector: 'app-finv2-reconciliation',
@@ -20,9 +21,11 @@ export class FinV2ReconciliationComponent implements OnInit {
   private readonly breadcrumb = inject(BreadcrumbService);
   private readonly notify     = inject(NotificationService);
   readonly treasuryService    = inject(TreasuryMockService);
+  readonly branchService      = inject(BranchService);
 
   readonly selectedId   = signal<string | null>(null);
   readonly statusFilter = signal<ReconciliationStatus | 'All'>('All');
+  readonly branchFilter = signal('All');
 
   // Manual matching selections
   readonly selectedStmtTxId = signal<string | null>(null);
@@ -30,8 +33,13 @@ export class FinV2ReconciliationComponent implements OnInit {
 
   readonly filtered = computed(() => {
     const st = this.statusFilter();
+    const br = this.branchFilter();
     return this.treasuryService.reconciliationSessions()
-      .filter(r => st === 'All' || r.status === st);
+      .filter(r => {
+        const ms = st === 'All' || r.status === st;
+        const mb = br === 'All' || (r.branchId || 'HeadOffice') === br;
+        return ms && mb;
+      });
   });
 
   readonly activeSession = computed(() => {

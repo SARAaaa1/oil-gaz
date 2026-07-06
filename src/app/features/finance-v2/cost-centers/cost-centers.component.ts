@@ -6,7 +6,14 @@ import { BreadcrumbService } from '../../../core/services/breadcrumb.service';
 import { NotificationService } from '../../../core/services/notification.service';
 import { LanguageService } from '../../../core/services/language.service';
 import { FinanceV2MockService } from '../shared/finance-v2-mock.service';
-import { CostCenter, CostCenterStatus } from '../shared/finance-v2.interfaces';
+import { CostCenter, CostCenterStatus, AccountBranch } from '../shared/finance-v2.interfaces';
+
+// ── Branch virtual node for tree rendering ───────────────────────────────────
+export interface BranchNode {
+  isBranchHeader: true;
+  branch: AccountBranch;
+}
+export type CcTreeRow = CostCenter | BranchNode;
 
 @Component({
   selector: 'app-finv2-cost-centers',
@@ -22,26 +29,37 @@ export class FinV2CostCentersComponent implements OnInit {
   readonly mockService = inject(FinanceV2MockService);
 
   // ── UI State ──────────────────────────────────────────────────────
-  readonly searchQuery = signal<string>('');
+  readonly searchQuery  = signal<string>('');
   readonly statusFilter = signal<string>('All');
-  readonly typeFilter = signal<string>('All');
-  readonly showModal = signal<boolean>(false);
-  readonly editingCC = signal<CostCenter | null>(null);
-  readonly expandedCodes = signal<Set<string>>(new Set(['CC-100', 'CC-110', 'CC-200']));
+  readonly typeFilter   = signal<string>('All');
+  readonly branchFilter = signal<AccountBranch | 'All'>('All');
+  readonly showModal    = signal<boolean>(false);
+  readonly editingCC    = signal<CostCenter | null>(null);
+
+  // Independent expand sets per branch
+  readonly expandedCodesHO = signal<Set<string>>(new Set(['CC-100', 'CC-110']));
+  readonly expandedCodesFZ = signal<Set<string>>(new Set(['FZ-CC-100', 'FZ-CC-110']));
+
+  // Branch section collapse
+  readonly branchCollapsedHO = signal<boolean>(false);
+  readonly branchCollapsedFZ = signal<boolean>(false);
 
   // ── Form ──────────────────────────────────────────────────────────
-  formCode = '';
+  formCode   = '';
   formNameEn = '';
   formNameAr = '';
   formType: CostCenter['type'] = 'Project';
   formParentCode = '';
-  formManager = '';
+  formManager    = '';
   formStatus: CostCenterStatus = 'Active';
-  formBudget = 0;
+  formBudget     = 0;
+  formBranch: AccountBranch = 'HeadOffice';
 
-  // ── Stats Cards ────────────────────────────────────────────────────
+  // ── Stats Cards (branch-scoped) ────────────────────────────────────
   readonly stats = computed(() => {
-    const list = this.mockService.costCenters();
+    const all    = this.mockService.costCenters();
+    const branch = this.branchFilter();
+    const list   = branch === 'All' ? all : all.filter(c => c.branch === branch);
     const totalBudget = list.reduce((s, c) => s + c.budget, 0);
     const totalSpent  = list.reduce((s, c) => s + c.spent, 0);
     return {
@@ -54,59 +72,122 @@ export class FinV2CostCentersComponent implements OnInit {
     };
   });
 
-  // ── Tree rendering ─────────────────────────────────────────────────
-  readonly flatTree = computed(() => {
-    const all = this.mockService.costCenters();
-    const query = this.searchQuery().toLowerCase().trim();
-    const status = this.statusFilter();
-    const type = this.typeFilter();
-    const expanded = this.expandedCodes();
+  // ── Branch-aware flat tree ─────────────────────────────────────────
+  readonly flatTree = computed((): CcTreeRow[] => {
+    const all       = this.mockService.costCenters();
+    const query     = this.searchQuery().toLowerCase().trim();
+    const status    = this.statusFilter();
+    const type      = this.typeFilter();
+    const branchSel = this.branchFilter();
 
-    // Search / filter: flatten
+    // Search / filter mode: flat list, no branch headers
     if (query || status !== 'All' || type !== 'All') {
       return all.filter(c => {
-        const matchQuery = !query ||
-          c.code.toLowerCase().includes(query) ||
-          c.nameEn.toLowerCase().includes(query) ||
-          c.nameAr.includes(query) ||
-          c.manager.toLowerCase().includes(query);
+        const matchBranch = branchSel === 'All' || c.branch === branchSel;
+        const matchQuery  = !query
+          || c.code.toLowerCase().includes(query)
+          || c.nameEn.toLowerCase().includes(query)
+          || c.nameAr.includes(query)
+          || c.manager.toLowerCase().includes(query);
         const matchStatus = status === 'All' || c.status === status;
         const matchType   = type   === 'All' || c.type   === type;
-        return matchQuery && matchStatus && matchType;
+        return matchBranch && matchQuery && matchStatus && matchType;
       });
     }
 
-    // Tree mode: DFS
-    const childrenMap = new Map<string | null, CostCenter[]>();
-    for (const cc of all) {
-      const key = cc.parentCode ?? null;
-      if (!childrenMap.has(key)) childrenMap.set(key, []);
-      childrenMap.get(key)!.push(cc);
-    }
-    const result: CostCenter[] = [];
-    const traverse = (parentCode: string | null) => {
-      const children = childrenMap.get(parentCode) ?? [];
-      children.sort((a, b) => a.code.localeCompare(b.code));
-      for (const child of children) {
-        result.push(child);
-        if (expanded.has(child.code)) traverse(child.code);
+    // Tree mode: render HO section + FZ section
+    const result: CcTreeRow[] = [];
+
+    const renderBranch = (branch: AccountBranch) => {
+      const branchCCs = all.filter(c => c.branch === branch);
+
+      const childrenMap = new Map<string | null, CostCenter[]>();
+      for (const cc of branchCCs) {
+        const key = cc.parentCode ?? null;
+        if (!childrenMap.has(key)) childrenMap.set(key, []);
+        childrenMap.get(key)!.push(cc);
       }
+
+      const expandedSet = branch === 'HeadOffice' ? this.expandedCodesHO() : this.expandedCodesFZ();
+      const collapsed   = branch === 'HeadOffice' ? this.branchCollapsedHO() : this.branchCollapsedFZ();
+
+      result.push({ isBranchHeader: true, branch });
+      if (collapsed) return;
+
+      const traverse = (parentCode: string | null) => {
+        const children = (childrenMap.get(parentCode) ?? [])
+          .sort((a, b) => a.code.localeCompare(b.code));
+        for (const child of children) {
+          result.push(child);
+          if (expandedSet.has(child.code)) traverse(child.code);
+        }
+      };
+      traverse(null);
     };
-    traverse(null);
+
+    const branches: AccountBranch[] = branchSel === 'All'
+      ? ['HeadOffice', 'FreeZone']
+      : [branchSel];
+    for (const b of branches) renderBranch(b);
+
     return result;
   });
 
+  // ── Type guards ────────────────────────────────────────────────────
+  isBranchHeader(row: CcTreeRow): row is BranchNode {
+    return (row as BranchNode).isBranchHeader === true;
+  }
+  isCC(row: CcTreeRow): row is CostCenter {
+    return !(row as BranchNode).isBranchHeader;
+  }
+
+  // ── Expand / Collapse ───────────────────────────────────────────────
   hasChildren(code: string): boolean {
     return this.mockService.costCenters().some(c => c.parentCode === code);
   }
-  isExpanded(code: string): boolean { return this.expandedCodes().has(code); }
-  toggleExpand(code: string) {
-    this.expandedCodes.update(s => { const n = new Set(s); n.has(code) ? n.delete(code) : n.add(code); return n; });
+  isExpanded(code: string, branch: AccountBranch): boolean {
+    const set = branch === 'HeadOffice' ? this.expandedCodesHO() : this.expandedCodesFZ();
+    return set.has(code);
   }
-  expandAll()   { this.expandedCodes.set(new Set(this.mockService.costCenters().map(c => c.code))); }
-  collapseAll() { this.expandedCodes.set(new Set()); }
+  toggleExpand(code: string, branch: AccountBranch) {
+    const sig = branch === 'HeadOffice' ? this.expandedCodesHO : this.expandedCodesFZ;
+    sig.update(set => {
+      const next = new Set(set);
+      next.has(code) ? next.delete(code) : next.add(code);
+      return next;
+    });
+  }
+  toggleBranchCollapse(branch: AccountBranch) {
+    if (branch === 'HeadOffice') this.branchCollapsedHO.update(v => !v);
+    else                         this.branchCollapsedFZ.update(v => !v);
+  }
+  isBranchCollapsed(branch: AccountBranch): boolean {
+    return branch === 'HeadOffice' ? this.branchCollapsedHO() : this.branchCollapsedFZ();
+  }
+
+  expandAll() {
+    const all = this.mockService.costCenters();
+    this.expandedCodesHO.set(new Set(all.filter(c => c.branch === 'HeadOffice').map(c => c.code)));
+    this.expandedCodesFZ.set(new Set(all.filter(c => c.branch === 'FreeZone').map(c => c.code)));
+    this.branchCollapsedHO.set(false);
+    this.branchCollapsedFZ.set(false);
+  }
+  collapseAll() {
+    this.expandedCodesHO.set(new Set());
+    this.expandedCodesFZ.set(new Set());
+  }
 
   getLevelIndent(level: number): number { return (level - 1) * 24; }
+
+  // ── Branch badge helpers ────────────────────────────────────────────
+  getBranchHeaderClass(branch: AccountBranch): string {
+    return branch === 'HeadOffice' ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-teal-600 hover:bg-teal-700';
+  }
+  getBranchBadgeClass(branch: AccountBranch): string {
+    return branch === 'HeadOffice'
+      ? 'bg-indigo-50 text-indigo-700 border-indigo-200'
+      : 'bg-teal-50 text-teal-700 border-teal-200';
+  }
 
   // ── Utilization helpers ────────────────────────────────────────────
   getUtilization(cc: CostCenter): number {
@@ -150,11 +231,13 @@ export class FinV2CostCentersComponent implements OnInit {
   }
 
   // ── CRUD ───────────────────────────────────────────────────────────
-  openAddModal(parentCode?: string) {
+  openAddModal(parentCode?: string, defaultBranch?: AccountBranch) {
     this.editingCC.set(null);
     this.formCode = ''; this.formNameEn = ''; this.formNameAr = '';
     this.formType = 'Project'; this.formParentCode = parentCode ?? '';
     this.formManager = ''; this.formStatus = 'Active'; this.formBudget = 0;
+    this.formBranch = defaultBranch
+      ?? (this.branchFilter() !== 'All' ? this.branchFilter() as AccountBranch : 'HeadOffice');
     this.showModal.set(true);
   }
 
@@ -162,7 +245,8 @@ export class FinV2CostCentersComponent implements OnInit {
     this.editingCC.set(cc);
     this.formCode = cc.code; this.formNameEn = cc.nameEn; this.formNameAr = cc.nameAr;
     this.formType = cc.type; this.formParentCode = cc.parentCode ?? '';
-    this.formManager = cc.manager; this.formStatus = cc.status; this.formBudget = cc.budget;
+    this.formManager = cc.manager; this.formStatus = cc.status;
+    this.formBudget = cc.budget; this.formBranch = cc.branch;
     this.showModal.set(true);
   }
 
@@ -184,7 +268,8 @@ export class FinV2CostCentersComponent implements OnInit {
           ...c,
           code: this.formCode, nameEn: this.formNameEn, nameAr: this.formNameAr,
           type: this.formType, parentCode: this.formParentCode || null,
-          manager: this.formManager, status: this.formStatus, budget: Number(this.formBudget)
+          manager: this.formManager, status: this.formStatus,
+          budget: Number(this.formBudget), branch: this.formBranch
         } : c)
       );
       this.notificationService.success('finance_v2.common.saved', 'finance_v2.cost_centers.saved_desc');
@@ -194,7 +279,8 @@ export class FinV2CostCentersComponent implements OnInit {
         code: this.formCode, nameEn: this.formNameEn, nameAr: this.formNameAr,
         type: this.formType, parentCode: this.formParentCode || null,
         level: 1, manager: this.formManager, status: this.formStatus,
-        budget: Number(this.formBudget), spent: 0, childrenCount: 0
+        budget: Number(this.formBudget), spent: 0, childrenCount: 0,
+        branch: this.formBranch
       };
       this.mockService.costCenters.update(arr => [...arr, newCC]);
       this.notificationService.success('finance_v2.common.saved', 'finance_v2.cost_centers.added_desc');
@@ -214,7 +300,8 @@ export class FinV2CostCentersComponent implements OnInit {
 
   readonly parentOptions = computed(() => {
     const editing = this.editingCC();
-    const all = this.mockService.costCenters();
+    const branch  = this.formBranch;
+    const all     = this.mockService.costCenters().filter(c => c.branch === branch);
     if (!editing) return all;
     const excl = new Set([editing.code]);
     let changed = true;
@@ -231,6 +318,7 @@ export class FinV2CostCentersComponent implements OnInit {
 
   readonly ccTypes: CostCenter['type'][] = ['Project', 'Department', 'Overhead', 'Administrative'];
   readonly ccStatuses: CostCenterStatus[] = ['Active', 'Inactive', 'Suspended'];
+  readonly branches: AccountBranch[] = ['HeadOffice', 'FreeZone'];
 
   ngOnInit() {
     this.breadcrumbService.setBreadcrumbs([

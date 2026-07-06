@@ -8,6 +8,7 @@ import { BreadcrumbService } from '../../../../core/services/breadcrumb.service'
 import { NotificationService } from '../../../../core/services/notification.service';
 import { TreasuryMockService } from '../../shared/treasury-mock.service';
 import { CashBox, CashBoxStatus, TreasuryMovement } from '../../shared/treasury.interfaces';
+import { BranchService } from '../../shared/branch.service';
 
 @Component({
   selector: 'app-finv2-cash',
@@ -20,9 +21,11 @@ export class FinV2CashComponent implements OnInit {
   private readonly breadcrumb = inject(BreadcrumbService);
   private readonly notify     = inject(NotificationService);
   readonly treasuryService    = inject(TreasuryMockService);
+  readonly branchService      = inject(BranchService);
 
   readonly searchQuery  = signal('');
   readonly statusFilter = signal<CashBoxStatus | 'All'>('All');
+  readonly branchFilter = signal('All');
   readonly selectedId   = signal<string | null>(null);
 
   // Transaction dialogs
@@ -35,13 +38,15 @@ export class FinV2CashComponent implements OnInit {
   readonly filtered = computed(() => {
     const q  = this.searchQuery().toLowerCase();
     const st = this.statusFilter();
+    const br = this.branchFilter();
     return this.treasuryService.cashBoxes()
       .filter(c => {
         const mq = !q || c.name.toLowerCase().includes(q) ||
                    c.code.toLowerCase().includes(q) ||
                    c.responsibleEmployee.toLowerCase().includes(q);
         const ms = st === 'All' || c.status === st;
-        return mq && ms;
+        const mb = br === 'All' || (c.branchId || 'HeadOffice') === br;
+        return mq && ms && mb;
       })
       .sort((a, b) => b.currentBalance - a.currentBalance);
   });
@@ -60,15 +65,17 @@ export class FinV2CashComponent implements OnInit {
   });
 
   // KPI calculations
-  readonly totalCashBalance = computed(() =>
-    this.treasuryService.cashBoxes()
-      .filter(c => c.status === 'Open')
-      .reduce((s, c) => s + (c.currency === 'USD' ? c.currentBalance * 3.75 : c.currentBalance), 0)
-  );
+  readonly totalCashBalance = computed(() => {
+    const br = this.branchFilter();
+    return this.treasuryService.cashBoxes()
+      .filter(c => c.status === 'Open' && (br === 'All' || (c.branchId || 'HeadOffice') === br))
+      .reduce((s, c) => s + (c.currency === 'USD' ? c.currentBalance * 3.75 : c.currentBalance), 0);
+  });
 
-  readonly activeCount = computed(() =>
-    this.treasuryService.cashBoxes().filter(c => c.status === 'Open').length
-  );
+  readonly activeCount = computed(() => {
+    const br = this.branchFilter();
+    return this.treasuryService.cashBoxes().filter(c => c.status === 'Open' && (br === 'All' || (c.branchId || 'HeadOffice') === br)).length;
+  });
 
   selectBox(box: CashBox) {
     this.selectedId.set(box.id);

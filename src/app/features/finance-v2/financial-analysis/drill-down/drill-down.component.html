@@ -1,0 +1,271 @@
+<div class="space-y-6 animate-fade-in" [dir]="langService.isRtl() ? 'rtl' : 'ltr'">
+
+  <!-- ══ Page Header ══════════════════════════════════════════════ -->
+  <div>
+    <h1 class="text-2xl font-black text-slate-800 tracking-tight">{{ 'finance_v2.analysis.drill_title' | translate }}</h1>
+    <p class="text-xs text-slate-500 font-semibold mt-1">{{ 'finance_v2.analysis.drill_subtitle' | translate }}</p>
+  </div>
+
+  <!-- ══ Drill Down Stepper Navigation ═════════════════════════════ -->
+  <div class="bg-white rounded-xl border border-slate-100 shadow-sm p-4">
+    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-3">{{ 'finance_v2.analysis.drill_nav_path' | translate }}</p>
+    
+    <div class="flex flex-wrap items-center gap-2">
+      @for (step of drillPath(); track step.type; let idx = $index) {
+        <button (click)="jumpToStep(idx)"
+          class="px-3.5 py-2 text-xs font-bold rounded-lg border flex items-center gap-1.5 transition-all"
+          [class.bg-indigo-600]="currentStepIndex() === idx"
+          [class.border-indigo-600]="currentStepIndex() === idx"
+          [class.text-white]="currentStepIndex() === idx"
+          [class.bg-slate-50]="currentStepIndex() !== idx"
+          [class.border-slate-200]="currentStepIndex() !== idx"
+          [class.text-slate-600]="currentStepIndex() !== idx"
+          [class.hover:bg-slate-100]="currentStepIndex() !== idx">
+          <span>{{ idx + 1 }}. {{ step.labelKey | translate }}</span>
+          @if (step.id) {
+            <span class="text-[10px] opacity-75 font-mono">({{ step.id }})</span>
+          }
+        </button>
+        
+        @if (idx < drillPath().length - 1) {
+          <span class="text-slate-300 font-bold">➔</span>
+        }
+      }
+    </div>
+
+    <p class="text-[10px] text-slate-400 font-semibold mt-3 italic">
+      💡 {{ 'finance_v2.analysis.drill_click_helper' | translate }}
+    </p>
+  </div>
+
+  <!-- ══ Step Detail Card ═════════════════════════════════════════ -->
+  @if (activeStep(); as step) {
+    <div class="bg-white rounded-xl border border-slate-100 shadow-sm p-6 space-y-6">
+      
+      <!-- Top banner for Active Step -->
+      <div class="flex items-center justify-between border-b pb-4">
+        <div>
+          <span class="text-[10px] font-bold text-indigo-600 uppercase tracking-wider">Active Step — {{ currentStepIndex() + 1 }} of {{ drillPath().length }}</span>
+          <h2 class="text-lg font-black text-slate-800 mt-1">{{ step.labelKey | translate }}</h2>
+        </div>
+        <div class="text-right">
+          @if (step.amount) {
+            <p class="text-[10px] text-slate-400 font-bold uppercase">Associated Amount</p>
+            <p class="text-xl font-black text-slate-800">{{ formatAmount(step.amount) }} SAR</p>
+          }
+        </div>
+      </div>
+
+      <!-- Step Content Renderers -->
+      
+      <!-- 1. Revenue Ledger Details -->
+      @if (step.type === 'revenue') {
+        <div class="space-y-4">
+          <h3 class="text-sm font-black text-slate-800">Ledger Account Profile</h3>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4 border rounded-xl p-4 bg-slate-50/50">
+            <div>
+              <p class="text-[10px] text-slate-400 font-bold uppercase">Account Code</p>
+              <p class="text-sm font-black text-slate-700 font-mono">400000</p>
+            </div>
+            <div>
+              <p class="text-[10px] text-slate-400 font-bold uppercase">Account Name (EN)</p>
+              <p class="text-sm font-bold text-slate-700">{{ step.details.accountNameEn }}</p>
+            </div>
+            <div>
+              <p class="text-[10px] text-slate-400 font-bold uppercase">Account Name (AR)</p>
+              <p class="text-sm font-bold text-slate-700">{{ step.details.accountNameAr }}</p>
+            </div>
+            <div>
+              <p class="text-[10px] text-slate-400 font-bold uppercase">Ledger Balance</p>
+              <p class="text-sm font-black text-emerald-600">{{ formatAmount(step.details.balance) }} {{ step.details.currency }}</p>
+            </div>
+          </div>
+          <button (click)="jumpToStep(1)" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-bold text-xs">
+            Drill Down to Customer Invoice ➔
+          </button>
+        </div>
+      }
+
+      <!-- 2. Customer Invoice Details -->
+      @if (step.type === 'invoice') {
+        <div class="space-y-4">
+          <h3 class="text-sm font-black text-slate-800">Progress Billing Customer Invoice Details</h3>
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-4 border rounded-xl p-4 bg-slate-50/50">
+            <div>
+              <p class="text-[10px] text-slate-400 font-bold uppercase">Customer</p>
+              <p class="text-sm font-bold text-slate-700">{{ step.details.customer }}</p>
+            </div>
+            <div>
+              <p class="text-[10px] text-slate-400 font-bold uppercase">Contract Reference</p>
+              <p class="text-sm font-bold text-slate-700">{{ step.details.contractRef }}</p>
+            </div>
+            <div>
+              <p class="text-[10px] text-slate-400 font-bold uppercase">WCC Certificate #</p>
+              <p class="text-sm font-bold text-slate-700">{{ step.details.wccRef }}</p>
+            </div>
+            <div>
+              <p class="text-[10px] text-slate-400 font-bold uppercase">Subtotal</p>
+              <p class="text-sm font-bold text-slate-700">{{ formatAmount(step.details.subtotal) }} SAR</p>
+            </div>
+            <div>
+              <p class="text-[10px] text-slate-400 font-bold uppercase">Retention (10%)</p>
+              <p class="text-sm font-bold text-slate-700">{{ formatAmount(step.details.retention) }} SAR</p>
+            </div>
+            <div>
+              <p class="text-[10px] text-slate-400 font-bold uppercase">VAT (15%)</p>
+              <p class="text-sm font-bold text-slate-700">{{ formatAmount(step.details.vatAmount) }} SAR</p>
+            </div>
+            <div>
+              <p class="text-[10px] text-slate-400 font-bold uppercase">Total Invoice Claim</p>
+              <p class="text-sm font-black text-indigo-600">{{ formatAmount(step.details.grandTotal) }} SAR</p>
+            </div>
+          </div>
+          <div class="flex gap-2">
+            <button (click)="jumpToStep(0)" class="px-4 py-2 border rounded-lg font-bold text-xs text-slate-600">
+              Back to Ledger
+            </button>
+            <button (click)="jumpToStep(2)" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-bold text-xs">
+              Drill Down to Collection ➔
+            </button>
+          </div>
+        </div>
+      }
+
+      <!-- 3. Collection Voucher Details -->
+      @if (step.type === 'collection') {
+        <div class="space-y-4">
+          <h3 class="text-sm font-black text-slate-800">Collection & Receipt Clearing</h3>
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-4 border rounded-xl p-4 bg-slate-50/50">
+            <div>
+              <p class="text-[10px] text-slate-400 font-bold uppercase">Deposit Bank</p>
+              <p class="text-sm font-bold text-slate-700">{{ step.details.bankName }}</p>
+            </div>
+            <div>
+              <p class="text-[10px] text-slate-400 font-bold uppercase">Clearing Ref #</p>
+              <p class="text-sm font-mono font-bold text-slate-700">{{ step.details.refNumber }}</p>
+            </div>
+            <div>
+              <p class="text-[10px] text-slate-400 font-bold uppercase">Payment Mode</p>
+              <p class="text-sm font-bold text-slate-700">{{ step.details.paymentMethod }}</p>
+            </div>
+            <div>
+              <p class="text-[10px] text-slate-400 font-bold uppercase">Clearing Date</p>
+              <p class="text-sm font-bold text-slate-700">{{ step.details.clearingDate }}</p>
+            </div>
+          </div>
+          <div class="flex gap-2">
+            <button (click)="jumpToStep(1)" class="px-4 py-2 border rounded-lg font-bold text-xs text-slate-600">
+              Back to Invoice
+            </button>
+            <button (click)="jumpToStep(3)" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-bold text-xs">
+              Drill Down to JV Voucher ➔
+            </button>
+          </div>
+        </div>
+      }
+
+      <!-- 4. Journal Entry Voucher Lines -->
+      @if (step.type === 'je') {
+        <div class="space-y-4">
+          <h3 class="text-sm font-black text-slate-800">JV Double-Entry Audit</h3>
+          <p class="text-xs text-slate-500 font-semibold">{{ step.details.description }}</p>
+          
+          <div class="overflow-x-auto border rounded-xl overflow-hidden">
+            <table class="w-full text-left text-xs">
+              <thead>
+                <tr class="bg-slate-50 border-b">
+                  <th class="p-3">Account Code</th>
+                  <th class="p-3">Account Name</th>
+                  <th class="p-3 text-right">Debit</th>
+                  <th class="p-3 text-right">Credit</th>
+                  <th class="p-3">Cost Center</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (line of step.details.lines; track line.code) {
+                  <tr class="border-b">
+                    <td class="p-3 font-mono font-bold text-slate-700">{{ line.code }}</td>
+                    <td class="p-3">{{ line.name }}</td>
+                    <td class="p-3 text-right text-blue-700 font-bold">{{ line.dr ? formatAmount(line.dr) : '—' }}</td>
+                    <td class="p-3 text-right text-rose-600 font-bold">{{ line.cr ? formatAmount(line.cr) : '—' }}</td>
+                    <td class="p-3 font-mono text-slate-500">{{ line.cc }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+          <div class="flex gap-2">
+            <button (click)="jumpToStep(2)" class="px-4 py-2 border rounded-lg font-bold text-xs text-slate-600">
+              Back to Collection
+            </button>
+            <button (click)="jumpToStep(4)" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-bold text-xs">
+              Drill Down to Bank Ledger ➔
+            </button>
+          </div>
+        </div>
+      }
+
+      <!-- 5. Bank Ledger Details -->
+      @if (step.type === 'ledger') {
+        <div class="space-y-4">
+          <h3 class="text-sm font-black text-slate-800">SAB Bank Ledger Details</h3>
+          <div class="grid grid-cols-2 md:grid-cols-3 gap-4 border rounded-xl p-4 bg-slate-50/50">
+            <div>
+              <p class="text-[10px] text-slate-400 font-bold uppercase">Available Balance</p>
+              <p class="text-sm font-black text-slate-800">{{ formatAmount(step.details.currentBalance) }} SAR</p>
+            </div>
+            <div>
+              <p class="text-[10px] text-slate-400 font-bold uppercase">Last Statement Reconciliation</p>
+              <p class="text-sm font-bold text-slate-700">{{ step.details.lastReconciliation }}</p>
+            </div>
+            <div>
+              <p class="text-[10px] text-slate-400 font-bold uppercase">Unreconciled Items Count</p>
+              <p class="text-sm font-bold text-rose-600 font-black">{{ step.details.unreconciledItems }} items</p>
+            </div>
+          </div>
+          <div class="flex gap-2">
+            <button (click)="jumpToStep(3)" class="px-4 py-2 border rounded-lg font-bold text-xs text-slate-600">
+              Back to JV
+            </button>
+            <button (click)="jumpToStep(5)" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-bold text-xs">
+              Drill Down to Related Vendor Payment ➔
+            </button>
+          </div>
+        </div>
+      }
+
+      <!-- 6. Payment Voucher Details -->
+      @if (step.type === 'payment') {
+        <div class="space-y-4">
+          <h3 class="text-sm font-black text-slate-800">Payment Voucher (Settlement Outflow)</h3>
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-4 border rounded-xl p-4 bg-slate-50/50">
+            <div>
+              <p class="text-[10px] text-slate-400 font-bold uppercase">Vendor / Payee</p>
+              <p class="text-sm font-bold text-slate-700">{{ step.details.vendorName }}</p>
+            </div>
+            <div>
+              <p class="text-[10px] text-slate-400 font-bold uppercase">Associated PO</p>
+              <p class="text-sm font-mono font-bold text-slate-700">{{ step.details.refPO }}</p>
+            </div>
+            <div>
+              <p class="text-[10px] text-slate-400 font-bold uppercase">Payment Type</p>
+              <p class="text-sm font-bold text-slate-700">{{ step.details.paymentMethod }}</p>
+            </div>
+            <div>
+              <p class="text-[10px] text-slate-400 font-bold uppercase">Description</p>
+              <p class="text-sm font-bold text-slate-700">{{ step.details.description }}</p>
+            </div>
+          </div>
+          <div class="flex gap-2">
+            <button (click)="jumpToStep(4)" class="px-4 py-2 border rounded-lg font-bold text-xs text-slate-600">
+              Back to Bank Ledger
+            </button>
+            <span class="text-xs text-slate-400 font-bold self-center">End of Drill Down Audit Path</span>
+          </div>
+        </div>
+      }
+
+    </div>
+  }
+
+</div>

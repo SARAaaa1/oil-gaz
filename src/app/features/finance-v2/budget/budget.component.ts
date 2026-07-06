@@ -8,6 +8,7 @@ import { BreadcrumbService } from '../../../core/services/breadcrumb.service';
 import { NotificationService } from '../../../core/services/notification.service';
 import { BudgetMockService } from '../shared/budget-mock.service';
 import { ProjectBudget, BudgetLine, BudgetStatus, BudgetCategory, BudgetLineStatus } from '../shared/budget.interfaces';
+import { BranchService } from '../shared/branch.service';
 
 @Component({
   selector: 'app-finv2-budget',
@@ -20,13 +21,15 @@ export class FinV2BudgetComponent implements OnInit {
   private readonly breadcrumb = inject(BreadcrumbService);
   private readonly notify     = inject(NotificationService);
   readonly budgetService      = inject(BudgetMockService);
+  readonly branchService      = inject(BranchService);
 
-  readonly searchQuery     = signal('');
-  readonly projectFilter   = signal('All');
+  readonly searchQuery      = signal('');
+  readonly projectFilter    = signal('All');
   readonly costCenterFilter = signal('All');
   readonly categoryFilter   = signal('All');
   readonly statusFilter     = signal<BudgetStatus | 'All'>('All');
   readonly fiscalYearFilter = signal('All');
+  readonly branchFilter     = signal('All');
 
   readonly selectedId = signal<string | null>(null);
 
@@ -58,6 +61,7 @@ export class FinV2BudgetComponent implements OnInit {
     const prj = this.projectFilter();
     const st  = this.statusFilter();
     const yr  = this.fiscalYearFilter();
+    const br  = this.branchFilter();
 
     return this.budgetService.budgets()
       .filter(b => {
@@ -65,9 +69,10 @@ export class FinV2BudgetComponent implements OnInit {
                    b.projectName.toLowerCase().includes(q) ||
                    b.projectManager.toLowerCase().includes(q);
         const mp = prj === 'All' || b.projectCode === prj;
-        const ms = st === 'All' || b.status === st;
-        const my = yr === 'All' || b.fiscalYear === yr;
-        return mq && mp && ms && my;
+        const ms = st  === 'All' || b.status === st;
+        const my = yr  === 'All' || b.fiscalYear === yr;
+        const mb = br  === 'All' || (b.branchId || 'HeadOffice') === br;
+        return mq && mp && ms && my && mb;
       })
       .sort((a, b) => b.budgetNumber.localeCompare(a.budgetNumber));
   });

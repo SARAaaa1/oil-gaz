@@ -73,6 +73,10 @@ export interface FixedAsset {
   notes:                   string;
   lastDepreciationDate:    string;
   history:                 AssetHistoryEvent[];
+
+  branchId?: string;
+  branchCode?: string;
+  branchName?: string;
 }
 
 // ── Dashboard Metrics ────────────────────────────────

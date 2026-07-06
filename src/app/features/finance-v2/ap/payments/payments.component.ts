@@ -8,6 +8,7 @@ import { BreadcrumbService } from '../../../../core/services/breadcrumb.service'
 import { NotificationService } from '../../../../core/services/notification.service';
 import { ApMockService } from '../../shared/ap-mock.service';
 import { ApPayment, ApInvoice, PaymentAllocation, PaymentMethod, PaymentStatus } from '../../shared/ap.interfaces';
+import { BranchService } from '../../shared/branch.service';
 
 @Component({
   selector: 'app-finv2-ap-payments',
@@ -20,10 +21,12 @@ export class FinV2ApPaymentsComponent implements OnInit {
   private readonly breadcrumb = inject(BreadcrumbService);
   private readonly notify     = inject(NotificationService);
   readonly apService          = inject(ApMockService);
+  readonly branchService      = inject(BranchService);
 
   // ── UI State ──────────────────────────────────────────────────────
   readonly searchQuery   = signal('');
   readonly statusFilter  = signal<PaymentStatus | 'All'>('All');
+  readonly branchFilter  = signal('All');
   readonly selectedId    = signal<string | null>(null);
   readonly showAddModal  = signal(false);
 
@@ -42,12 +45,14 @@ export class FinV2ApPaymentsComponent implements OnInit {
   readonly filtered = computed(() => {
     const q  = this.searchQuery().toLowerCase();
     const st = this.statusFilter();
+    const br = this.branchFilter();
     return this.apService.payments()
       .filter(p => {
         const mq = !q || p.voucherNumber.toLowerCase().includes(q) ||
                    p.allocations.some(a => a.supplierName.toLowerCase().includes(q));
         const ms = st === 'All' || p.status === st;
-        return mq && ms;
+        const mb = br === 'All' || (p.branchId || 'HeadOffice') === br;
+        return mq && ms && mb;
       })
       .sort((a, b) => b.voucherNumber.localeCompare(a.voucherNumber));
   });

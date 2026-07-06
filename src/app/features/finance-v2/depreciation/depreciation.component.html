@@ -7,6 +7,16 @@
       <p class="text-xs text-slate-500 font-semibold mt-1">{{ 'finance_v2.assets.dep_subtitle' | translate }}</p>
     </div>
     <div class="flex items-center gap-2 flex-wrap">
+      <!-- Branch Filter -->
+      <div class="flex items-center rounded-xl border border-slate-200 overflow-hidden bg-slate-50 text-xs font-semibold mr-2 rtl:ml-2 rtl:mr-0">
+        <button (click)="branchFilter.set('All')"
+          [class]="branchFilter() === 'All' ? 'bg-slate-700 text-white px-3 py-2' : 'text-slate-500 px-3 py-2 hover:bg-slate-100'">All</button>
+        <button (click)="branchFilter.set('HeadOffice')"
+          [class]="branchFilter() === 'HeadOffice' ? 'bg-blue-600 text-white px-3 py-2' : 'text-blue-600 px-3 py-2 hover:bg-blue-50'">🏢 HO</button>
+        <button (click)="branchFilter.set('FreeZone')"
+          [class]="branchFilter() === 'FreeZone' ? 'bg-emerald-600 text-white px-3 py-2' : 'text-emerald-600 px-3 py-2 hover:bg-emerald-50'">🏭 FZ</button>
+      </div>
+
       <button (click)="showJournalDlg.set(true)"
         class="px-3 py-2 rounded-xl border border-indigo-250 text-indigo-650 text-xs font-bold hover:bg-indigo-50 transition-all">
         📖 {{ 'finance_v2.assets.btn_preview_journal' | translate }}
@@ -63,7 +73,13 @@
           @for (a of depreciableAssets(); track a.id) {
             <tr class="hover:bg-slate-50 transition-colors">
               <td class="px-4 py-3">
-                <p class="font-bold text-slate-800">{{ a.assetName }}</p>
+                <div class="flex items-center gap-1.5">
+                  <p class="font-bold text-slate-800">{{ a.assetName }}</p>
+                  <span class="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded-full text-[8px] font-bold border"
+                    [class]="a.branchId === 'FreeZone' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-blue-50 text-blue-700 border-blue-200'">
+                    {{ a.branchId === 'FreeZone' ? '🏭 FZ' : '🏢 HO' }}
+                  </span>
+                </div>
                 <p class="font-mono text-[9px] text-slate-400 mt-0.5">{{ a.assetCode }}</p>
               </td>
               <td class="px-4 py-3 text-slate-500">{{ a.category }}</td>

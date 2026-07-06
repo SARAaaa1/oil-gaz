@@ -1,0 +1,431 @@
+<div class="space-y-6 animate-fade-in" [dir]="langService.isRtl() ? 'rtl' : 'ltr'">
+
+  <!-- ══ Toast Notification ══════════════════════════════════════ -->
+  @if (toastMessage()) {
+    <div class="fixed top-4 right-4 z-50 bg-emerald-600 text-white px-4 py-3 rounded-xl shadow-lg font-bold text-xs flex items-center gap-2 animate-bounce">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+      {{ toastMessage() | translate }}
+    </div>
+  }
+
+  <!-- ══ Page Header ══════════════════════════════════════════════ -->
+  <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-black text-slate-800 tracking-tight">{{ 'finance_v2.analysis.cc_title' | translate }}</h1>
+      <p class="text-xs text-slate-500 font-semibold mt-1">{{ 'finance_v2.analysis.cc_subtitle' | translate }}</p>
+    </div>
+    
+    <div class="flex flex-wrap gap-2">
+      <!-- Saved Views -->
+      <div class="flex items-center gap-1.5">
+        <label class="text-[10px] font-bold text-slate-400 uppercase">{{ 'finance_v2.analysis.saved_views' | translate }}:</label>
+        <select [value]="currentView()" (change)="currentView.set($any($event.target).value); showToast('finance_v2.analysis.msg_view_saved')"
+          class="bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-slate-700 focus:outline-none">
+          @for (view of savedViews(); track view) {
+            <option [value]="view">{{ view }}</option>
+          }
+        </select>
+      </div>
+
+      <button (click)="exportToExcel()" class="px-3 py-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition-all">
+        📊 {{ 'finance_v2.analysis.export_excel' | translate }}
+      </button>
+      <button (click)="exportToPDF()" class="px-3 py-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition-all">
+        📄 {{ 'finance_v2.analysis.export_pdf' | translate }}
+      </button>
+      <button (click)="printReport()" class="px-3 py-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition-all">
+        🖨️ {{ 'finance_v2.analysis.print_report' | translate }}
+      </button>
+    </div>
+  </div>
+
+  <!-- ══ Filters ════════════════════════════════════════════════════ -->
+  <div class="bg-white rounded-xl border border-slate-100 shadow-sm p-4 flex flex-wrap gap-4 items-end">
+    <!-- Cost Center selection -->
+    <div class="w-full sm:w-64">
+      <label class="text-[10px] font-bold text-slate-400 uppercase block mb-1">{{ 'finance_v2.analysis.filter_cc' | translate }}</label>
+      <select [value]="selectedCcCode()" (change)="selectedCcCode.set($any($event.target).value)"
+        class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-300">
+        @for (cc of costCentersList(); track cc.code) {
+          <option [value]="cc.code">[{{ cc.code }}] {{ cc.nameAr }} ({{ cc.nameEn }})</option>
+        }
+      </select>
+    </div>
+
+    <!-- Department -->
+    <div>
+      <label class="text-[10px] font-bold text-slate-400 uppercase block mb-1">{{ 'finance_v2.analysis.filter_dept' | translate }}</label>
+      <select [value]="selectedDept()" (change)="selectedDept.set($any($event.target).value)"
+        class="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 focus:outline-none">
+        <option value="ALL">All Departments</option>
+        <option value="OPERATIONS">Operations (العمليات)</option>
+        <option value="LOGISTICS">Logistics (الخدمات اللوجستية)</option>
+        <option value="FINANCE">Finance (المالية)</option>
+        <option value="ADMIN">Administration (الإدارة)</option>
+      </select>
+    </div>
+
+    <!-- Project filter -->
+    <div>
+      <label class="text-[10px] font-bold text-slate-400 uppercase block mb-1">{{ 'finance_v2.analysis.filter_project' | translate }}</label>
+      <select [value]="selectedProjCode()" (change)="selectedProjCode.set($any($event.target).value)"
+        class="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 focus:outline-none">
+        <option value="ALL">All Projects</option>
+        @for (p of workflowService.projects(); track p.code) {
+          <option [value]="p.code">{{ p.name }}</option>
+        }
+      </select>
+    </div>
+
+    <!-- Period filter -->
+    <div>
+      <label class="text-[10px] font-bold text-slate-400 uppercase block mb-1">{{ 'finance_v2.analysis.filter_period' | translate }}</label>
+      <select [value]="periodFilter()" (change)="periodFilter.set($any($event.target).value)"
+        class="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 focus:outline-none">
+        <option value="2025-Q1">2025 - Q1</option>
+        <option value="2025-Q2">2025 - Q2</option>
+        <option value="2025-Q3">2025 - Q3</option>
+        <option value="2025-Q4">2025 - Q4</option>
+      </select>
+    </div>
+
+    <!-- Global search -->
+    <div class="ml-auto w-full md:w-48">
+      <input type="text" [placeholder]="'finance_v2.common.search' | translate" [value]="searchQuery()" (input)="searchQuery.set($any($event.target).value)"
+        class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:outline-none">
+    </div>
+  </div>
+
+  <!-- ══ KPI Summary Cards (5 Cards) ══════════════════════════════ -->
+  <div class="grid grid-cols-1 sm:grid-cols-5 gap-4">
+    <!-- Budget -->
+    <div class="bg-white rounded-xl border border-slate-100 shadow-sm p-4 text-center">
+      <p class="text-[9px] font-bold text-slate-400 uppercase tracking-wider">{{ 'finance_v2.analysis.card_budget' | translate }}</p>
+      <p class="text-lg font-black text-slate-800 mt-2 truncate">{{ formatAmount(ccBudget()) }}</p>
+      <span class="text-[9px] text-slate-500 font-bold block mt-1">SAR</span>
+    </div>
+
+    <!-- Actual -->
+    <div class="bg-white rounded-xl border border-slate-100 shadow-sm p-4 text-center">
+      <p class="text-[9px] font-bold text-slate-400 uppercase tracking-wider">{{ 'finance_v2.analysis.card_actual' | translate }}</p>
+      <p class="text-lg font-black text-rose-600 mt-2 truncate cursor-pointer hover:underline" (click)="onDrillDown('ledger', '5000')">{{ formatAmount(ccActual()) }}</p>
+      <span class="text-[9px] text-rose-500 font-bold block mt-1">SAR</span>
+    </div>
+
+    <!-- Variance -->
+    <div class="bg-white rounded-xl border border-slate-100 shadow-sm p-4 text-center"
+         [class.bg-emerald-50]="ccVariance() >= 0"
+         [class.bg-red-50]="ccVariance() < 0">
+      <p class="text-[9px] font-bold text-slate-400 uppercase tracking-wider">{{ 'finance_v2.analysis.card_variance' | translate }}</p>
+      <p class="text-lg font-black mt-2 truncate" [class.text-emerald-700]="ccVariance() >= 0" [class.text-red-700]="ccVariance() < 0">{{ formatAmount(ccVariance()) }}</p>
+      <span class="text-[9px] font-bold block mt-1" [class.text-emerald-600]="ccVariance() >= 0" [class.text-red-600]="ccVariance() < 0">SAR</span>
+    </div>
+
+    <!-- Committed -->
+    <div class="bg-white rounded-xl border border-slate-100 shadow-sm p-4 text-center">
+      <p class="text-[9px] font-bold text-slate-400 uppercase tracking-wider">{{ 'finance_v2.analysis.card_committed' | translate }}</p>
+      <p class="text-lg font-black text-blue-700 mt-2 truncate">{{ formatAmount(ccCommitted()) }}</p>
+      <span class="text-[9px] text-blue-500 font-bold block mt-1">SAR</span>
+    </div>
+
+    <!-- Remaining -->
+    <div class="bg-white rounded-xl border border-slate-100 shadow-sm p-4 text-center"
+         [class.bg-emerald-50]="ccRemainingBudget() >= 0"
+         [class.bg-red-50]="ccRemainingBudget() < 0">
+      <p class="text-[9px] font-bold text-slate-400 uppercase tracking-wider">{{ 'finance_v2.analysis.card_remaining' | translate }}</p>
+      <p class="text-lg font-black mt-2 truncate" [class.text-emerald-700]="ccRemainingBudget() >= 0" [class.text-red-700]="ccRemainingBudget() < 0">{{ formatAmount(ccRemainingBudget()) }}</p>
+      <span class="text-[9px] font-bold block mt-1" [class.text-emerald-600]="ccRemainingBudget() >= 0" [class.text-red-600]="ccRemainingBudget() < 0">SAR</span>
+    </div>
+  </div>
+
+  <!-- ══ Charts Row ════════════════════════════════════════════════ -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <!-- Expense breakdown by category -->
+    <div class="bg-white rounded-xl border border-slate-100 shadow-sm p-5">
+      <h3 class="text-xs font-black text-slate-700 mb-4">{{ 'finance_v2.analysis.chart_exp_cat' | translate }}</h3>
+      <div class="space-y-3">
+        @for (cat of expenseBreakdown(); track cat.category) {
+          <div>
+            <div class="flex justify-between text-[10px] font-bold text-slate-500 mb-1">
+              <span>{{ cat.category }}</span>
+              <span>{{ formatAmount(cat.amount) }} ({{ cat.pct }}%)</span>
+            </div>
+            <div class="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
+              <div class="h-full rounded-full transition-all duration-700"
+                   [style.background-color]="cat.color"
+                   [style.width.%]="cat.pct"></div>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- Budget usage speedo/bar -->
+    <div class="bg-white rounded-xl border border-slate-100 shadow-sm p-5 flex flex-col justify-between">
+      <div>
+        <h3 class="text-xs font-black text-slate-700 mb-2">{{ 'finance_v2.analysis.chart_bud_usage' | translate }}</h3>
+        <p class="text-[10px] text-slate-400 font-semibold mb-4">Total budget utilization against limits</p>
+      </div>
+      <div class="text-center space-y-2 py-4">
+        @let pct = (ccCommitted() / ccBudget()) * 100;
+        <div class="inline-block relative">
+          <!-- Circular bar simulation -->
+          <div class="w-24 h-24 rounded-full border-8 border-slate-100 flex items-center justify-center border-t-indigo-600 border-r-indigo-600">
+            <span class="text-lg font-black text-slate-800">{{ pct | number:'1.0-0' }}%</span>
+          </div>
+        </div>
+        <p class="text-[10px] text-slate-500 font-bold">Committed: {{ formatAmount(ccCommitted()) }} / {{ formatAmount(ccBudget()) }}</p>
+      </div>
+    </div>
+
+    <!-- Monthly Trend -->
+    <div class="bg-white rounded-xl border border-slate-100 shadow-sm p-5">
+      <h3 class="text-xs font-black text-slate-700 mb-4">{{ 'finance_v2.analysis.chart_monthly_cost' | translate }}</h3>
+      <div class="h-28 flex items-end justify-between gap-1 pt-2">
+        @for (m of ['Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep']; track m; let i = $index) {
+          <div class="flex-1 text-center">
+            <div class="h-20 flex items-end justify-center mb-1">
+              <div class="w-8 rounded-t bg-indigo-500 hover:bg-indigo-600 transition-all cursor-pointer"
+                   [style.height.%]="(45 + (i * 8) + (i % 2 * 12))"
+                   [title]="m + ' Cost'">
+              </div>
+            </div>
+            <span class="text-[8px] font-bold text-slate-400">{{ m }}</span>
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ Tabs Navigation ══════════════════════════════════════════ -->
+  <div class="border-b border-slate-200">
+    <nav class="flex flex-wrap -mb-px gap-1">
+      @for (tab of ['expenses', 'revenue', 'payroll', 'purchase_orders', 'assets', 'inventory', 'journal_entries']; track tab) {
+        <button (click)="currentTab.set(tab)"
+          class="px-4 py-2.5 font-black text-xs border-b-2 transition-all capitalize"
+          [class.border-indigo-600]="currentTab() === tab"
+          [class.text-indigo-600]="currentTab() === tab"
+          [class.border-transparent]="currentTab() !== tab"
+          [class.text-slate-400]="currentTab() !== tab">
+          {{ tab.replace('_', ' ') }}
+        </button>
+      }
+    </nav>
+  </div>
+
+  <!-- ══ Tab Contents ═════════════════════════════════════════════ -->
+  <div class="bg-white rounded-xl border border-slate-100 shadow-sm p-5">
+
+    <!-- Tab: Expenses breakdown table -->
+    @if (currentTab() === 'expenses') {
+      <div class="space-y-4">
+        <h4 class="text-xs font-black text-slate-700 uppercase">Expense Breakdown</h4>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead>
+              <tr class="bg-slate-50 border-b">
+                <th class="p-3">Category Name</th>
+                <th class="p-3">Account Code</th>
+                <th class="p-3 text-right">Actual Cost</th>
+                <th class="p-3 text-right">Percentage</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (cat of expenseBreakdown(); track cat.category) {
+                <tr class="border-b hover:bg-slate-50/80">
+                  <td class="p-3 font-bold text-slate-700">{{ cat.category }}</td>
+                  <td class="p-3 font-mono text-slate-500 cursor-pointer hover:underline text-indigo-600 font-bold" (click)="onDrillDown('ledger', cat.code)">{{ cat.code }}</td>
+                  <td class="p-3 text-right font-black text-slate-700 cursor-pointer hover:underline" (click)="onDrillDown('ledger', cat.code)">{{ formatAmount(cat.amount) }}</td>
+                  <td class="p-3 text-right font-semibold text-slate-500">{{ cat.pct }}%</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    }
+
+    <!-- Tab: Revenue -->
+    @if (currentTab() === 'revenue') {
+      <div class="space-y-4">
+        <h4 class="text-xs font-black text-slate-700 uppercase">Revenue Receipts & Customer Invoices</h4>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead>
+              <tr class="bg-slate-50 border-b">
+                <th class="p-3">Invoice Code</th>
+                <th class="p-3">Client Reference</th>
+                <th class="p-3 text-right">Invoice Value</th>
+                <th class="p-3">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (rev of revenueList(); track rev.id) {
+                <tr class="border-b hover:bg-slate-50/80">
+                  <td class="p-3 font-mono font-bold text-indigo-600 cursor-pointer hover:underline" (click)="onDrillDown('invoice', rev.id)">{{ rev.invoiceNumber || rev.id }}</td>
+                  <td class="p-3">{{ rev.wccNumber || 'Progress WCC Claim' }}</td>
+                  <td class="p-3 text-right font-black text-emerald-600 cursor-pointer hover:underline" (click)="onDrillDown('invoice', rev.id)">{{ formatAmount(rev.totalAmount) }}</td>
+                  <td class="p-3">
+                    <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-700">{{ rev.status }}</span>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    }
+
+    <!-- Tab: Payroll -->
+    @if (currentTab() === 'payroll') {
+      <div class="space-y-4">
+        <h4 class="text-xs font-black text-slate-700 uppercase">Payroll Allocations</h4>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead>
+              <tr class="bg-slate-50 border-b">
+                <th class="p-3">Crew / Employee group</th>
+                <th class="p-3">Period</th>
+                <th class="p-3 text-right">Hours Clocked</th>
+                <th class="p-3 text-right">Direct payroll cost</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (pay of payrollList(); track pay.id) {
+                <tr class="border-b hover:bg-slate-50/80">
+                  <td class="p-3 font-bold text-slate-700">{{ pay.employeeName }}</td>
+                  <td class="p-3 text-slate-500">{{ pay.period }}</td>
+                  <td class="p-3 text-right">{{ pay.hours }} hrs</td>
+                  <td class="p-3 text-right font-black text-rose-600 cursor-pointer hover:underline" (click)="onDrillDown('ledger', '5120')">{{ formatAmount(pay.cost) }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    }
+
+    <!-- Tab: Purchase Orders -->
+    @if (currentTab() === 'purchase_orders') {
+      <div class="space-y-4">
+        <h4 class="text-xs font-black text-slate-700 uppercase">PO Commitments</h4>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead>
+              <tr class="bg-slate-50 border-b">
+                <th class="p-3">PO Number</th>
+                <th class="p-3">Vendor</th>
+                <th class="p-3 text-right">Amount</th>
+                <th class="p-3">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (po of poList(); track po.poNumber) {
+                <tr class="border-b hover:bg-slate-50/80">
+                  <td class="p-3 font-mono font-bold text-indigo-600">{{ po.poNumber }}</td>
+                  <td class="p-3">{{ po.vendorName }}</td>
+                  <td class="p-3 text-right font-bold text-slate-800 cursor-pointer hover:underline" (click)="onDrillDown('payment', po.poNumber)">{{ formatAmount(po.totalAmount) }}</td>
+                  <td class="p-3">
+                    <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-700">{{ po.status }}</span>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    }
+
+    <!-- Tab: Assets -->
+    @if (currentTab() === 'assets') {
+      <div class="space-y-4">
+        <h4 class="text-xs font-black text-slate-700 uppercase">Assets assigned to CC</h4>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead>
+              <tr class="bg-slate-50 border-b">
+                <th class="p-3">Asset ID</th>
+                <th class="p-3">Asset Name</th>
+                <th class="p-3">Location</th>
+                <th class="p-3">Assigned Date</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (ass of assetsList(); track ass.id) {
+                <tr class="border-b hover:bg-slate-50/80">
+                  <td class="p-3 font-mono font-bold text-indigo-600">{{ ass.assetId }}</td>
+                  <td class="p-3 font-bold text-slate-700">{{ ass.equipmentName }}</td>
+                  <td class="p-3 text-slate-500">{{ ass.assignedToName || ass.notes || 'Deployed' }}</td>
+                  <td class="p-3 text-slate-500">{{ ass.assignmentDate }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    }
+
+    <!-- Tab: Inventory -->
+    @if (currentTab() === 'inventory') {
+      <div class="space-y-4">
+        <h4 class="text-xs font-black text-slate-700 uppercase">Material issues (MIV)</h4>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead>
+              <tr class="bg-slate-50 border-b">
+                <th class="p-3">MIV Ref</th>
+                <th class="p-3">Material Name</th>
+                <th class="p-3 text-right">Quantity</th>
+                <th class="p-3 text-right">Unit Price</th>
+                <th class="p-3 text-right">Total Cost</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (miv of inventoryList(); track miv.id) {
+                <tr class="border-b hover:bg-slate-50/80">
+                  <td class="p-3 font-mono font-bold text-slate-600">{{ miv.voucherNumber }}</td>
+                  <td class="p-3 font-semibold text-slate-700">{{ miv.destinationId }}</td>
+                  <td class="p-3 text-right font-bold text-slate-800">{{ formatAmount(miv.totalAmount) }}</td>
+                  <td class="p-3 text-slate-500">{{ miv.issueDate }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    }
+
+    <!-- Tab: Journal Entries -->
+    @if (currentTab() === 'journal_entries') {
+      <div class="space-y-4">
+        <h4 class="text-xs font-black text-slate-700 uppercase">Journal Entries General Ledger</h4>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead>
+              <tr class="bg-slate-50 border-b">
+                <th class="p-3">JV Number</th>
+                <th class="p-3">Posting Date</th>
+                <th class="p-3">Description</th>
+                <th class="p-3 text-right">Total Debit</th>
+                <th class="p-3 text-right">Total Credit</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (je of journalEntriesList(); track je.id) {
+                <tr class="border-b hover:bg-slate-50/80">
+                  <td class="p-3 font-mono font-bold text-indigo-600 cursor-pointer hover:underline" (click)="onDrillDown('je', je.id)">{{ je.journalNumber }}</td>
+                  <td class="p-3 text-slate-500">{{ je.date }}</td>
+                  <td class="p-3 text-slate-600 truncate max-w-xs">{{ je.description }}</td>
+                  <td class="p-3 text-right font-bold text-blue-700 cursor-pointer hover:underline" (click)="onDrillDown('je', je.id)">{{ formatAmount(je.totalDebit) }}</td>
+                  <td class="p-3 text-right font-bold text-rose-600 cursor-pointer hover:underline" (click)="onDrillDown('je', je.id)">{{ formatAmount(je.totalCredit) }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    }
+
+  </div>
+
+</div>

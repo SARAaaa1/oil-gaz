@@ -28,6 +28,10 @@ export interface VatTransaction {
   type:            VatType; // Input (purchases) / Output (sales)
   status:          'Pending' | 'Settled';
   notes:           string;
+
+  branchId?: string;
+  branchCode?: string;
+  branchName?: string;
 }
 
 // ── VAT Return Sheet ─────────────────────────────────
@@ -50,6 +54,10 @@ export interface VatReturn {
   vatInput:        number;
   netVat:          number; // Output - Input (positive = Payable, negative = Refund)
   transactions:    VatTransaction[];
+
+  branchId?: string;
+  branchCode?: string;
+  branchName?: string;
 }
 
 // ── Dashboard Metrics ────────────────────────────────

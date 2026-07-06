@@ -63,6 +63,15 @@
             }
           </select>
         </div>
+        <!-- Branch Filter -->
+        <div class="flex items-center rounded-xl border border-slate-200 overflow-hidden bg-slate-50 text-xs font-semibold">
+          <button (click)="branchFilter.set('All')"
+            [class]="branchFilter() === 'All' ? 'bg-slate-700 text-white px-3 py-2' : 'text-slate-500 px-3 py-2 hover:bg-slate-100'">All</button>
+          <button (click)="branchFilter.set('HeadOffice')"
+            [class]="branchFilter() === 'HeadOffice' ? 'bg-blue-600 text-white px-3 py-2' : 'text-blue-600 px-3 py-2 hover:bg-blue-50'">🏢 HO</button>
+          <button (click)="branchFilter.set('FreeZone')"
+            [class]="branchFilter() === 'FreeZone' ? 'bg-emerald-600 text-white px-3 py-2' : 'text-emerald-600 px-3 py-2 hover:bg-emerald-50'">🏭 FZ</button>
+        </div>
       </div>
 
       <!-- Budget items -->

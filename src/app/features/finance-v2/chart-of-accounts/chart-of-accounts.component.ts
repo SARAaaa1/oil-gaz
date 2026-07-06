@@ -22,94 +22,87 @@ export class FinV2ChartOfAccountsComponent implements OnInit {
   readonly mockService = inject(FinanceV2MockService);
 
   // ── UI State ──────────────────────────────────────────────────────
-  readonly searchQuery = signal<string>('');
-  readonly typeFilter = signal<string>('All');
+  readonly searchQuery  = signal<string>('');
+  readonly typeFilter   = signal<string>('All');
   readonly statusFilter = signal<string>('All');
-  readonly showModal = signal<boolean>(false);
+  readonly showModal    = signal<boolean>(false);
   readonly editingAccount = signal<CoaAccount | null>(null);
+
   readonly expandedCodes = signal<Set<string>>(new Set(['1000','1100','1120','2000','2100']));
 
   // ── Form State ────────────────────────────────────────────────────
-  formCode = '';
-  formNameEn = '';
-  formNameAr = '';
-  formType: AccountType = 'Asset';
-  formParentCode = '';
-  formCurrency = 'SAR';
+  formCode             = '';
+  formNameEn           = '';
+  formNameAr           = '';
+  formType: AccountType  = 'Asset';
+  formParentCode       = '';
+  formCurrency         = 'SAR';
   formStatus: AccountStatus = 'Active';
-  formAllowManual = true;
+  formAllowManual      = true;
   formRequiresCostCenter = false;
   formIsReconciliation = false;
-  formIsConfidential = false;
+  formIsConfidential   = false;
 
   // ── Stats ──────────────────────────────────────────────────────────
   readonly stats = computed(() => {
     const accounts = this.mockService.accounts();
     return {
-      total: accounts.length,
-      active: accounts.filter(a => a.status === 'Active').length,
-      assets: accounts.filter(a => a.type === 'Asset').length,
+      total:       accounts.length,
+      active:      accounts.filter(a => a.status === 'Active').length,
+      assets:      accounts.filter(a => a.type === 'Asset').length,
       liabilities: accounts.filter(a => a.type === 'Liability').length,
-      equity: accounts.filter(a => a.type === 'Equity').length,
-      revenue: accounts.filter(a => a.type === 'Revenue').length,
-      expenses: accounts.filter(a => a.type === 'Expense').length,
+      equity:      accounts.filter(a => a.type === 'Equity').length,
+      revenue:     accounts.filter(a => a.type === 'Revenue').length,
+      expenses:    accounts.filter(a => a.type === 'Expense').length,
     };
   });
 
-  // ── Tree rendering ─────────────────────────────────────────────────
-  readonly flatTree = computed(() => {
-    const all = this.mockService.accounts();
-    const query = this.searchQuery().toLowerCase().trim();
-    const type = this.typeFilter();
+  // ── Flat Tree ──────────────────────────────────────────────────────
+  readonly flatTree = computed((): CoaAccount[] => {
+    const all    = this.mockService.accounts();
+    const query  = this.searchQuery().toLowerCase().trim();
+    const type   = this.typeFilter();
     const status = this.statusFilter();
-    const expanded = this.expandedCodes();
 
-    // Build parent → children map
+    // Search / filter: flat list
+    if (query || type !== 'All' || status !== 'All') {
+      return all.filter(a => {
+        const matchQuery  = !query
+          || a.code.toLowerCase().includes(query)
+          || a.nameEn.toLowerCase().includes(query)
+          || a.nameAr.includes(query);
+        const matchType   = type   === 'All' || a.type   === type;
+        const matchStatus = status === 'All' || a.status === status;
+        return matchQuery && matchType && matchStatus;
+      }).sort((a, b) => a.code.localeCompare(b.code));
+    }
+
+    // Tree mode: DFS
     const childrenMap = new Map<string | null, CoaAccount[]>();
     for (const acc of all) {
       const key = acc.parentCode ?? null;
       if (!childrenMap.has(key)) childrenMap.set(key, []);
       childrenMap.get(key)!.push(acc);
     }
-
-    // Search mode: flatten everything visible
-    if (query || type !== 'All' || status !== 'All') {
-      return all.filter(a => {
-        const matchQuery = !query ||
-          a.code.toLowerCase().includes(query) ||
-          a.nameEn.toLowerCase().includes(query) ||
-          a.nameAr.includes(query);
-        const matchType = type === 'All' || a.type === type;
-        const matchStatus = status === 'All' || a.status === status;
-        return matchQuery && matchType && matchStatus;
-      }).sort((a, b) => a.code.localeCompare(b.code));
-    }
-
-    // Tree mode: DFS respecting expanded state
     const result: CoaAccount[] = [];
+    const expanded = this.expandedCodes();
     const traverse = (parentCode: string | null) => {
-      const children = childrenMap.get(parentCode) ?? [];
-      children.sort((a, b) => a.code.localeCompare(b.code));
+      const children = (childrenMap.get(parentCode) ?? [])
+        .sort((a, b) => a.code.localeCompare(b.code));
       for (const child of children) {
         result.push(child);
-        if (expanded.has(child.code)) {
-          traverse(child.code);
-        }
+        if (expanded.has(child.code)) traverse(child.code);
       }
     };
     traverse(null);
     return result;
   });
 
-  // Check if account has children
+  // ── Expand / Collapse ───────────────────────────────────────────────
   hasChildren(code: string): boolean {
     return this.mockService.accounts().some(a => a.parentCode === code);
   }
-
-  isExpanded(code: string): boolean {
-    return this.expandedCodes().has(code);
-  }
-
+  isExpanded(code: string): boolean { return this.expandedCodes().has(code); }
   toggleExpand(code: string) {
     this.expandedCodes.update(set => {
       const next = new Set(set);
@@ -117,65 +110,57 @@ export class FinV2ChartOfAccountsComponent implements OnInit {
       return next;
     });
   }
-
   expandAll() {
-    const codes = new Set(this.mockService.accounts().map(a => a.code));
-    this.expandedCodes.set(codes);
+    this.expandedCodes.set(new Set(this.mockService.accounts().map(a => a.code)));
   }
+  collapseAll() { this.expandedCodes.set(new Set()); }
 
-  collapseAll() {
-    this.expandedCodes.set(new Set());
-  }
+  getLevelIndent(level: number): number { return (level - 1) * 20; }
 
   // ── Type helpers ───────────────────────────────────────────────────
   getTypeClass(type: AccountType): string {
     switch (type) {
-      case 'Asset': return 'bg-blue-50 text-blue-700 border-blue-200';
+      case 'Asset':     return 'bg-blue-50 text-blue-700 border-blue-200';
       case 'Liability': return 'bg-red-50 text-red-700 border-red-200';
-      case 'Equity': return 'bg-violet-50 text-violet-700 border-violet-200';
-      case 'Revenue': return 'bg-emerald-50 text-emerald-700 border-emerald-200';
-      case 'Expense': return 'bg-orange-50 text-orange-700 border-orange-200';
+      case 'Equity':    return 'bg-violet-50 text-violet-700 border-violet-200';
+      case 'Revenue':   return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+      case 'Expense':   return 'bg-orange-50 text-orange-700 border-orange-200';
     }
   }
-
   getTypeKey(type: AccountType): string {
     return `finance_v2.coa.type_${type.toLowerCase()}`;
-  }
-
-  getLevelIndent(level: number): number {
-    return (level - 1) * 20;
   }
 
   // ── CRUD ───────────────────────────────────────────────────────────
   openAddModal(parentCode?: string) {
     this.editingAccount.set(null);
-    this.formCode = '';
-    this.formNameEn = '';
-    this.formNameAr = '';
-    this.formType = 'Asset';
-    this.formParentCode = parentCode ?? '';
-    this.formCurrency = 'SAR';
-    this.formStatus = 'Active';
-    this.formAllowManual = true;
-    this.formRequiresCostCenter = false;
-    this.formIsReconciliation = false;
-    this.formIsConfidential = false;
+    this.formCode        = '';
+    this.formNameEn      = '';
+    this.formNameAr      = '';
+    this.formType        = 'Asset';
+    this.formParentCode  = parentCode ?? '';
+    this.formCurrency    = 'SAR';
+    this.formStatus      = 'Active';
+    this.formAllowManual         = true;
+    this.formRequiresCostCenter  = false;
+    this.formIsReconciliation    = false;
+    this.formIsConfidential      = false;
     this.showModal.set(true);
   }
 
   openEditModal(account: CoaAccount) {
     this.editingAccount.set(account);
-    this.formCode = account.code;
-    this.formNameEn = account.nameEn;
-    this.formNameAr = account.nameAr;
-    this.formType = account.type;
-    this.formParentCode = account.parentCode ?? '';
-    this.formCurrency = account.currency;
-    this.formStatus = account.status;
-    this.formAllowManual = account.allowManualEntries;
-    this.formRequiresCostCenter = account.requiresCostCenter;
-    this.formIsReconciliation = account.isReconciliation;
-    this.formIsConfidential = account.isConfidential;
+    this.formCode        = account.code;
+    this.formNameEn      = account.nameEn;
+    this.formNameAr      = account.nameAr;
+    this.formType        = account.type;
+    this.formParentCode  = account.parentCode ?? '';
+    this.formCurrency    = account.currency;
+    this.formStatus      = account.status;
+    this.formAllowManual         = account.allowManualEntries;
+    this.formRequiresCostCenter  = account.requiresCostCenter;
+    this.formIsReconciliation    = account.isReconciliation;
+    this.formIsConfidential      = account.isConfidential;
     this.showModal.set(true);
   }
 
@@ -241,9 +226,9 @@ export class FinV2ChartOfAccountsComponent implements OnInit {
     ]);
   }
 
-  // Parent account options (excludes self and descendants during edit)
+  // Parent options (excludes self and descendants when editing)
   readonly parentOptions = computed(() => {
-    const editing = this.editingAccount();
+    const editing  = this.editingAccount();
     const accounts = this.mockService.accounts();
     if (!editing) return accounts;
     const excluded = new Set<string>([editing.code]);
@@ -260,5 +245,5 @@ export class FinV2ChartOfAccountsComponent implements OnInit {
   });
 
   readonly accountTypes: AccountType[] = ['Asset', 'Liability', 'Equity', 'Revenue', 'Expense'];
-  readonly currencies = ['SAR', 'USD', 'EUR', 'GBP'];
+  readonly currencies = ['SAR', 'AED', 'USD', 'EUR', 'GBP'];
 }

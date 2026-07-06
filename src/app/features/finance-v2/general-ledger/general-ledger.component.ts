@@ -8,6 +8,7 @@ import { BreadcrumbService } from '../../../core/services/breadcrumb.service';
 import { LanguageService } from '../../../core/services/language.service';
 import { FinanceV2MockService } from '../shared/finance-v2-mock.service';
 import { LedgerAccount, LedgerTransaction, BalanceType } from '../shared/finance-v2.interfaces';
+import { BranchService } from '../shared/branch.service';
 
 @Component({
   selector: 'app-finv2-general-ledger',
@@ -18,8 +19,9 @@ import { LedgerAccount, LedgerTransaction, BalanceType } from '../shared/finance
 })
 export class FinV2GeneralLedgerComponent implements OnInit {
   private readonly breadcrumbService = inject(BreadcrumbService);
-  readonly langService = inject(LanguageService);
-  readonly mockService = inject(FinanceV2MockService);
+  readonly langService  = inject(LanguageService);
+  readonly mockService  = inject(FinanceV2MockService);
+  readonly branchService = inject(BranchService);
 
   // ── Filters ───────────────────────────────────────────────────────
   readonly selectedAccountCode = signal<string>('1121');
@@ -27,11 +29,21 @@ export class FinV2GeneralLedgerComponent implements OnInit {
   readonly dateTo              = signal<string>('');
   readonly costCenterFilter    = signal<string>('');
   readonly postedOnly          = signal<boolean>(true);
+  readonly branchFilter        = signal<string>('All');
 
   // ── Selected ledger account ────────────────────────────────────────
   readonly selectedAccount = computed<LedgerAccount | null>(() => {
-    const code = this.selectedAccountCode();
-    return this.mockService.ledgerAccounts().find(a => a.accountCode === code) ?? null;
+    const code   = this.selectedAccountCode();
+    const branch = this.branchFilter();
+    const account = this.mockService.ledgerAccounts().find(a => a.accountCode === code) ?? null;
+    // Filter transactions to the selected branch if not 'All'
+    if (!account || branch === 'All') return account;
+    return {
+      ...account,
+      transactions: account.transactions.filter(t =>
+        !t.branchId || t.branchId === branch
+      )
+    };
   });
 
   // ── Filtered + running-balance recalculated transactions ───────────
@@ -108,7 +120,21 @@ export class FinV2GeneralLedgerComponent implements OnInit {
     return v.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
   }
 
-  readonly availableAccounts = computed(() => this.mockService.ledgerAccounts());
+  readonly availableAccounts = computed(() => {
+    const branch = this.branchFilter();
+    if (branch === 'All') return this.mockService.ledgerAccounts();
+    // Show accounts from selected branch (prefix 'fz-' for Free Zone)
+    return this.mockService.ledgerAccounts().filter(a =>
+      branch === 'FreeZone' ? a.accountCode.startsWith('FZ.') || a.id?.startsWith('fz-')
+                             : !a.accountCode.startsWith('FZ.') && !a.id?.startsWith('fz-')
+    );
+  });
+
+  getBranchClass(branchId?: string): string {
+    return branchId === 'FreeZone'
+      ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+      : 'bg-blue-50 text-blue-700 border border-blue-200';
+  }
 
   ngOnInit() {
     this.breadcrumbService.setBreadcrumbs([

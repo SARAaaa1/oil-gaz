@@ -9,6 +9,7 @@ import { NotificationService } from '../../../../core/services/notification.serv
 import { LanguageService } from '../../../../core/services/language.service';
 import { ApMockService } from '../../shared/ap-mock.service';
 import { ApInvoice, InvoiceStatus } from '../../shared/ap.interfaces';
+import { BranchService } from '../../shared/branch.service';
 
 @Component({
   selector: 'app-finv2-ap-vendor-invoices-draft',
@@ -22,11 +23,13 @@ export class FinV2ApVendorInvoicesDraftComponent implements OnInit {
   private readonly notify     = inject(NotificationService);
   readonly lang               = inject(LanguageService);
   readonly apService          = inject(ApMockService);
+  readonly branchService      = inject(BranchService);
 
   // ── UI State ──────────────────────────────────────────────────────
   readonly searchQuery    = signal('');
   readonly statusFilter   = signal<InvoiceStatus | 'All'>('All');
   readonly supplierFilter = signal('All');
+  readonly branchFilter   = signal('All');
   readonly dateFrom       = signal('');
   readonly dateTo         = signal('');
   readonly selectedId     = signal<string | null>(null);
@@ -45,6 +48,7 @@ export class FinV2ApVendorInvoicesDraftComponent implements OnInit {
     const q   = this.searchQuery().toLowerCase();
     const st  = this.statusFilter();
     const sup = this.supplierFilter();
+    const br  = this.branchFilter();
     const from = this.dateFrom();
     const to   = this.dateTo();
     return this.apService.invoices()
@@ -55,9 +59,10 @@ export class FinV2ApVendorInvoicesDraftComponent implements OnInit {
                      inv.poNumber.toLowerCase().includes(q);
         const ms   = st  === 'All' || inv.status === st;
         const msup = sup === 'All' || inv.supplierId === sup;
+        const mbr  = br  === 'All' || (inv.branchId || 'HeadOffice') === br;
         const mfrom = !from || inv.invoiceDate >= from;
         const mto   = !to   || inv.invoiceDate <= to;
-        return inScope && mq && ms && msup && mfrom && mto;
+        return inScope && mq && ms && msup && mbr && mfrom && mto;
       })
       .sort((a, b) => b.invoiceNumber.localeCompare(a.invoiceNumber));
   });

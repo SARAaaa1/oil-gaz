@@ -204,6 +204,30 @@ export const routes: Routes = [
           {
             path: 'period-close',
             loadComponent: () => import('./features/finance/period-close/period-close.component').then(m => m.PeriodCloseComponent)
+          },
+          {
+            path: 'project-analysis',
+            loadComponent: () => import('./features/finance-v2/financial-analysis/project-analysis/project-analysis.component').then(m => m.ProjectAnalysisComponent)
+          },
+          {
+            path: 'cost-center-analysis',
+            loadComponent: () => import('./features/finance-v2/financial-analysis/cost-center-analysis/cost-center-analysis.component').then(m => m.CostCenterAnalysisComponent)
+          },
+          {
+            path: 'equipment-analysis',
+            loadComponent: () => import('./features/finance-v2/financial-analysis/equipment-analysis/equipment-analysis.component').then(m => m.EquipmentAnalysisComponent)
+          },
+          {
+            path: 'job-cost-analysis',
+            loadComponent: () => import('./features/finance-v2/financial-analysis/job-cost-analysis/job-cost-analysis.component').then(m => m.JobCostAnalysisComponent)
+          },
+          {
+            path: 'profitability',
+            loadComponent: () => import('./features/finance-v2/financial-analysis/profitability/profitability.component').then(m => m.ProfitabilityAnalysisComponent)
+          },
+          {
+            path: 'drill-down',
+            loadComponent: () => import('./features/finance-v2/financial-analysis/drill-down/drill-down.component').then(m => m.FinancialDrillDownComponent)
           }
         ]
       },

@@ -22,7 +22,15 @@ export class TreasuryMockService {
     { id: 'cb06', code: 'CSH-006', name: 'PetroFlow Project Site Box B', currency: 'SAR', currentBalance: 20_000, responsibleEmployee: 'Sultan Al-Otaibi', status: 'Open', openingBalance: 25_000, todayReceipts: 0, todayPayments: 5_000, closingBalance: 20_000 },
     { id: 'cb07', code: 'CSH-007', name: 'HQ Petty Cash Box', currency: 'SAR', currentBalance: 8_500, responsibleEmployee: 'Sara Al-Rasheed', status: 'Open', openingBalance: 10_000, todayReceipts: 0, todayPayments: 1_500, closingBalance: 8_500 },
     { id: 'cb08', code: 'CSH-008', name: 'Yanbu Warehouse Box', currency: 'SAR', currentBalance: 0, responsibleEmployee: 'Ahmad Al-Subaie', status: 'Closed', openingBalance: 0, todayReceipts: 0, todayPayments: 0, closingBalance: 0 }
-  ]);
+  ].map(c => {
+    const isFZ = ['cb07', 'cb08'].includes(c.id);
+    return {
+      ...c,
+      branchId: isFZ ? 'FreeZone' : 'HeadOffice',
+      branchName: isFZ ? 'Free Zone' : 'Head Office',
+      branchCode: isFZ ? 'FreeZone' : 'HeadOffice'
+    } as CashBox;
+  }));
 
   // ── Bank Accounts (12) ──────────────────────────────────────────────
   readonly bankAccounts = signal<BankAccount[]>([
@@ -38,16 +46,56 @@ export class TreasuryMockService {
     { id: 'ba10', bankName: 'Arab National Bank', branch: 'Jubail Industrial', iban: 'SA6630000000608010167510', accountNumber: '80806630010', swiftCode: 'ARABRIYXXX', currency: 'SAR', openingBalance: 3_800_000, currentBalance: 3_800_000, availableBalance: 3_800_000, status: 'Active' },
     { id: 'ba11', bankName: 'Alinma Bank', branch: 'Diriyah Branch', iban: 'SA9940000000608010167511', accountNumber: '90809940011', swiftCode: 'ALINRIYXXX', currency: 'SAR', openingBalance: 2_100_000, currentBalance: 2_100_000, availableBalance: 2_100_000, status: 'Active' },
     { id: 'ba12', bankName: 'Saudi Investment Bank', branch: 'HQ Riyadh', iban: 'SA7750000000608010167512', accountNumber: '99807750012', swiftCode: 'SAIBRIYXXX', currency: 'SAR', openingBalance: 1_500_000, currentBalance: 1_500_000, availableBalance: 1_500_000, status: 'Inactive' }
-  ]);
+  ].map(b => {
+    const isFZ = ['ba11', 'ba12'].includes(b.id);
+    return {
+      ...b,
+      branchId: isFZ ? 'FreeZone' : 'HeadOffice',
+      branchName: isFZ ? 'Free Zone' : 'Head Office',
+      branchCode: isFZ ? 'FreeZone' : 'HeadOffice'
+    } as BankAccount;
+  }));
 
   // ── Cash & Bank Transfers (40) ──────────────────────────────────────
-  readonly transfers = signal<TreasuryTransfer[]>(this._buildTransfers());
+  readonly transfers = signal<TreasuryTransfer[]>(this._buildTransfers().map(t => {
+    const fromFZ = ['ba11', 'ba12', 'cb07', 'cb08'].includes(t.fromAccountId);
+    const toFZ = ['ba11', 'ba12', 'cb07', 'cb08'].includes(t.toAccountId);
+    const fromBranchId = fromFZ ? 'FreeZone' : 'HeadOffice';
+    const toBranchId = toFZ ? 'FreeZone' : 'HeadOffice';
+    return {
+      ...t,
+      branchId: fromBranchId,
+      branchCode: fromBranchId,
+      branchName: fromBranchId === 'FreeZone' ? 'Free Zone' : 'Head Office',
+      fromBranchId,
+      fromBranchName: fromBranchId === 'FreeZone' ? 'Free Zone' : 'Head Office',
+      toBranchId,
+      toBranchName: toBranchId === 'FreeZone' ? 'Free Zone' : 'Head Office',
+      isCrossBranch: fromBranchId !== toBranchId
+    } as TreasuryTransfer;
+  }));
 
   // ── Deposits (30) & Withdrawals (30) + Movement ledger ─────────────
-  readonly movements = signal<TreasuryMovement[]>(this._buildMovements());
+  readonly movements = signal<TreasuryMovement[]>(this._buildMovements().map(m => {
+    const isFZ = ['ba11', 'ba12', 'cb07', 'cb08'].includes(m.accountId);
+    return {
+      ...m,
+      branchId: isFZ ? 'FreeZone' : 'HeadOffice',
+      branchName: isFZ ? 'Free Zone' : 'Head Office',
+      branchCode: isFZ ? 'FreeZone' : 'HeadOffice'
+    } as TreasuryMovement;
+  }));
 
   // ── Bank Reconciliation Sessions (20) ──────────────────────────────
-  readonly reconciliationSessions = signal<ReconciliationSession[]>(this._buildReconciliationSessions());
+  readonly reconciliationSessions = signal<ReconciliationSession[]>(this._buildReconciliationSessions().map(r => {
+    const isFZ = ['ba11', 'ba12'].includes(r.bankAccountId);
+    return {
+      ...r,
+      branchId: isFZ ? 'FreeZone' : 'HeadOffice',
+      branchName: isFZ ? 'Free Zone' : 'Head Office',
+      branchCode: isFZ ? 'FreeZone' : 'HeadOffice'
+    } as ReconciliationSession;
+  }));
 
   // ── Dashboard KPIs ─────────────────────────────────────────────────
   readonly kpis = computed<TreasuryDashboardKpi>(() => {

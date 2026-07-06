@@ -8,6 +8,7 @@ import { BreadcrumbService } from '../../../core/services/breadcrumb.service';
 import { NotificationService } from '../../../core/services/notification.service';
 import { AssetsMockService } from '../shared/assets-mock.service';
 import { FixedAsset, AssetStatus, AssetCategory } from '../shared/assets.interfaces';
+import { BranchService } from '../shared/branch.service';
 
 @Component({
   selector: 'app-finv2-fixed-assets',
@@ -20,10 +21,12 @@ export class FinV2FixedAssetsComponent implements OnInit {
   private readonly breadcrumb = inject(BreadcrumbService);
   private readonly notify     = inject(NotificationService);
   readonly assetService       = inject(AssetsMockService);
+  readonly branchService      = inject(BranchService);
 
-  readonly searchQuery   = signal('');
-  readonly statusFilter  = signal<AssetStatus | 'All'>('All');
+  readonly searchQuery    = signal('');
+  readonly statusFilter   = signal<AssetStatus | 'All'>('All');
   readonly categoryFilter = signal<AssetCategory | 'All'>('All');
+  readonly branchFilter   = signal('All');
   readonly selectedId     = signal<string | null>(null);
 
   // Transfer popup form state
@@ -59,14 +62,16 @@ export class FinV2FixedAssetsComponent implements OnInit {
     const q   = this.searchQuery().toLowerCase();
     const st  = this.statusFilter();
     const cat = this.categoryFilter();
+    const br  = this.branchFilter();
     return this.assetService.assets()
       .filter(a => {
         const mq = !q || a.assetName.toLowerCase().includes(q) ||
                    a.assetCode.toLowerCase().includes(q) ||
                    a.serialNumber.toLowerCase().includes(q);
-        const ms = st === 'All' || a.status === st;
+        const ms = st  === 'All' || a.status === st;
         const mc = cat === 'All' || a.category === cat;
-        return mq && ms && mc;
+        const mb = br  === 'All' || (a.branchId || 'HeadOffice') === br;
+        return mq && ms && mc && mb;
       })
       .sort((a, b) => b.assetCode.localeCompare(a.assetCode));
   });

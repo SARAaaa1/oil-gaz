@@ -38,6 +38,10 @@ export interface ApSupplier {
   iban: string;
   category: string;
   notes: string;
+
+  branchId?: string;
+  branchCode?: string;
+  branchName?: string;
 }
 
 // ─── Invoice Validation Flags ──────────────────────────────────────────────
@@ -124,6 +128,10 @@ export interface ApInvoice {
 
   lines: ApInvoiceLine[];
   validation: InvoiceValidation;
+
+  branchId?: string;
+  branchCode?: string;
+  branchName?: string;
 }
 
 // ─── Payment Voucher ───────────────────────────────────────────────────────
@@ -155,6 +163,10 @@ export interface ApPayment {
   approvalDate: string;
   allocations: PaymentAllocation[];
   attachments: string[];
+
+  branchId?: string;
+  branchCode?: string;
+  branchName?: string;
 }
 
 // ─── AP Dashboard KPIs ─────────────────────────────────────────────────────

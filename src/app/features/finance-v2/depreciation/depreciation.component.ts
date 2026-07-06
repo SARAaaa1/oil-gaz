@@ -8,6 +8,7 @@ import { BreadcrumbService } from '../../../core/services/breadcrumb.service';
 import { NotificationService } from '../../../core/services/notification.service';
 import { AssetsMockService } from '../shared/assets-mock.service';
 import { FixedAsset } from '../shared/assets.interfaces';
+import { BranchService } from '../shared/branch.service';
 
 @Component({
   selector: 'app-finv2-depreciation',
@@ -20,12 +21,19 @@ export class FinV2DepreciationComponent implements OnInit {
   private readonly breadcrumb = inject(BreadcrumbService);
   private readonly notify     = inject(NotificationService);
   readonly assetService       = inject(AssetsMockService);
+  readonly branchService      = inject(BranchService);
 
   readonly showJournalDlg = signal(false);
+  readonly branchFilter   = signal('All');
 
   // Filter Active assets that can be depreciated
   readonly depreciableAssets = computed(() => {
-    return this.assetService.assets().filter(a => a.status === 'Active' || a.status === 'Under Maintenance');
+    const br = this.branchFilter();
+    return this.assetService.assets().filter(a => {
+      const matchStatus = a.status === 'Active' || a.status === 'Under Maintenance';
+      const matchBranch = br === 'All' || (a.branchId || 'HeadOffice') === br;
+      return matchStatus && matchBranch;
+    });
   });
 
   // KPIs

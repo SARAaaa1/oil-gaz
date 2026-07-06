@@ -8,6 +8,7 @@ import { BreadcrumbService } from '../../../core/services/breadcrumb.service';
 import { NotificationService } from '../../../core/services/notification.service';
 import { ReportsMockService } from '../shared/reports-mock.service';
 import { ReportType, ReportFilter, ReportMetadata } from '../shared/reports.interfaces';
+import { BranchService } from '../shared/branch.service';
 
 @Component({
   selector: 'app-finv2-reports',
@@ -20,8 +21,23 @@ export class FinV2ReportsComponent implements OnInit {
   private readonly breadcrumb = inject(BreadcrumbService);
   private readonly notify     = inject(NotificationService);
   readonly reportService      = inject(ReportsMockService);
+  readonly branchService      = inject(BranchService);
 
   readonly selectedReport = signal<ReportType>('Trial Balance');
+
+  readonly branchFilter = computed(() => {
+    const br = this.reportService.activeFilter().branch;
+    if (br === 'Head Office') return 'HeadOffice';
+    if (br === 'Free Zone') return 'FreeZone';
+    return 'All';
+  });
+
+  updateBranch(branch: string) {
+    this.reportService.activeFilter.update(o => ({
+      ...o,
+      branch: branch === 'All' ? 'All Branches' : branch === 'HeadOffice' ? 'Head Office' : 'Free Zone'
+    }));
+  }
 
   // Drill down simulator state
   readonly showDrillDownDlg = signal(false);

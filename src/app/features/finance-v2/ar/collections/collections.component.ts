@@ -8,6 +8,7 @@ import { BreadcrumbService } from '../../../../core/services/breadcrumb.service'
 import { NotificationService } from '../../../../core/services/notification.service';
 import { ArMockService } from '../../shared/ar-mock.service';
 import { ArCollection, CollectionStatus, CollectionMethod, CollectionAllocation } from '../../shared/ar.interfaces';
+import { BranchService } from '../../shared/branch.service';
 
 @Component({
   selector: 'app-finv2-collections',
@@ -20,10 +21,12 @@ export class FinV2CollectionsComponent implements OnInit {
   private readonly breadcrumb = inject(BreadcrumbService);
   private readonly notify     = inject(NotificationService);
   readonly arService          = inject(ArMockService);
+  readonly branchService      = inject(BranchService);
 
   readonly searchQuery    = signal('');
   readonly statusFilter   = signal<CollectionStatus | 'All'>('All');
   readonly methodFilter   = signal<CollectionMethod | 'All'>('All');
+  readonly branchFilter   = signal('All');
   readonly selectedId     = signal<string | null>(null);
   readonly showModal      = signal(false);
   readonly activeTab      = signal<'details' | 'allocations'>('details');
@@ -44,6 +47,7 @@ export class FinV2CollectionsComponent implements OnInit {
     const q   = this.searchQuery().toLowerCase();
     const st  = this.statusFilter();
     const mt  = this.methodFilter();
+    const br  = this.branchFilter();
     return this.arService.collections()
       .filter(c => {
         const mq = !q || c.voucherNumber.toLowerCase().includes(q) ||
@@ -51,7 +55,8 @@ export class FinV2CollectionsComponent implements OnInit {
                    c.referenceNumber.toLowerCase().includes(q);
         const ms = st === 'All' || c.status === st;
         const mm = mt === 'All' || c.collectionMethod === mt;
-        return mq && ms && mm;
+        const mb = br === 'All' || (c.branchId || 'HeadOffice') === br;
+        return mq && ms && mm && mb;
       })
       .sort((a, b) => b.voucherNumber.localeCompare(a.voucherNumber));
   });

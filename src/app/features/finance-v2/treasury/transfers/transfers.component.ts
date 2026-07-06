@@ -8,6 +8,7 @@ import { BreadcrumbService } from '../../../../core/services/breadcrumb.service'
 import { NotificationService } from '../../../../core/services/notification.service';
 import { TreasuryMockService } from '../../shared/treasury-mock.service';
 import { TreasuryTransfer, TransferStatus, AccountType, TreasuryMovement } from '../../shared/treasury.interfaces';
+import { BranchService } from '../../shared/branch.service';
 
 @Component({
   selector: 'app-finv2-transfers',
@@ -20,9 +21,11 @@ export class FinV2TransfersComponent implements OnInit {
   private readonly breadcrumb = inject(BreadcrumbService);
   private readonly notify     = inject(NotificationService);
   readonly treasuryService    = inject(TreasuryMockService);
+  readonly branchService      = inject(BranchService);
 
   readonly searchQuery  = signal('');
   readonly statusFilter = signal<TransferStatus | 'All'>('All');
+  readonly branchFilter = signal('All');
   readonly selectedId   = signal<string | null>(null);
 
   // New transfer modal form
@@ -36,10 +39,12 @@ export class FinV2TransfersComponent implements OnInit {
   readonly formReason       = signal('');
   readonly formRemarks      = signal('');
   readonly formReference    = signal('');
+  readonly formBranchId     = signal('HeadOffice');
 
   readonly filtered = computed(() => {
     const q  = this.searchQuery().toLowerCase();
     const st = this.statusFilter();
+    const br = this.branchFilter();
     return this.treasuryService.transfers()
       .filter(t => {
         const mq = !q || t.transferNumber.toLowerCase().includes(q) ||
@@ -47,7 +52,8 @@ export class FinV2TransfersComponent implements OnInit {
                    t.toAccountName.toLowerCase().includes(q) ||
                    t.reference.toLowerCase().includes(q);
         const ms = st === 'All' || t.status === st;
-        return mq && ms;
+        const mb = br === 'All' || (t.branchId || 'HeadOffice') === br;
+        return mq && ms && mb;
       })
       .sort((a, b) => b.transferNumber.localeCompare(a.transferNumber));
   });
@@ -75,9 +81,18 @@ export class FinV2TransfersComponent implements OnInit {
   });
 
   // KPIs
-  readonly countDraft     = computed(() => this.treasuryService.transfers().filter(t => t.status === 'Draft').length);
-  readonly countApproved  = computed(() => this.treasuryService.transfers().filter(t => t.status === 'Approved').length);
-  readonly countExecuted  = computed(() => this.treasuryService.transfers().filter(t => t.status === 'Executed').length);
+  readonly countDraft     = computed(() => {
+    const br = this.branchFilter();
+    return this.treasuryService.transfers().filter(t => t.status === 'Draft' && (br === 'All' || (t.branchId || 'HeadOffice') === br)).length;
+  });
+  readonly countApproved  = computed(() => {
+    const br = this.branchFilter();
+    return this.treasuryService.transfers().filter(t => t.status === 'Approved' && (br === 'All' || (t.branchId || 'HeadOffice') === br)).length;
+  });
+  readonly countExecuted  = computed(() => {
+    const br = this.branchFilter();
+    return this.treasuryService.transfers().filter(t => t.status === 'Executed' && (br === 'All' || (t.branchId || 'HeadOffice') === br)).length;
+  });
 
   selectTransfer(t: TreasuryTransfer) {
     this.selectedId.set(t.id);
@@ -93,6 +108,7 @@ export class FinV2TransfersComponent implements OnInit {
     this.formReason.set('');
     this.formRemarks.set('');
     this.formReference.set('');
+    this.formBranchId.set(this.branchService.activeBranch() === 'All' ? 'HeadOffice' : this.branchService.activeBranch());
     this.showModal.set(true);
   }
 
@@ -151,7 +167,10 @@ export class FinV2TransfersComponent implements OnInit {
       reason: this.formReason(),
       remarks: this.formRemarks(),
       status: 'Draft',
-      attachments: []
+      attachments: [],
+      branchId: this.formBranchId(),
+      branchCode: this.formBranchId(),
+      branchName: this.formBranchId() === 'FreeZone' ? 'Free Zone' : 'Head Office'
     };
 
     this.treasuryService.transfers.update(list => [newTr, ...list]);

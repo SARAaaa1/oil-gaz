@@ -1,0 +1,224 @@
+<div class="space-y-6 animate-fade-in" [dir]="langService.isRtl() ? 'rtl' : 'ltr'">
+
+  <!-- ══ Toast Notification ══════════════════════════════════════ -->
+  @if (toastMessage()) {
+    <div class="fixed top-4 right-4 z-50 bg-emerald-600 text-white px-4 py-3 rounded-xl shadow-lg font-bold text-xs flex items-center gap-2 animate-bounce">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+      {{ toastMessage() | translate }}
+    </div>
+  }
+
+  <!-- ══ Page Header ══════════════════════════════════════════════ -->
+  <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-black text-slate-800 tracking-tight">{{ 'finance_v2.analysis.job_title' | translate }}</h1>
+      <p class="text-xs text-slate-500 font-semibold mt-1">{{ 'finance_v2.analysis.job_subtitle' | translate }}</p>
+    </div>
+    
+    <div class="flex flex-wrap gap-2">
+      <button (click)="exportToExcel()" class="px-3 py-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition-all">
+        📊 {{ 'finance_v2.analysis.export_excel' | translate }}
+      </button>
+      <button (click)="exportToPDF()" class="px-3 py-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition-all">
+        📄 {{ 'finance_v2.analysis.export_pdf' | translate }}
+      </button>
+      <button (click)="printReport()" class="px-3 py-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition-all">
+        🖨️ {{ 'finance_v2.analysis.print_report' | translate }}
+      </button>
+    </div>
+  </div>
+
+  <!-- ══ Filters ════════════════════════════════════════════════════ -->
+  <div class="bg-white rounded-xl border border-slate-100 shadow-sm p-4 flex flex-wrap gap-4 items-end">
+    <!-- Project -->
+    <div class="w-full sm:w-64">
+      <label class="text-[10px] font-bold text-slate-400 uppercase block mb-1">{{ 'finance_v2.analysis.filter_project' | translate }}</label>
+      <select [value]="selectedProjCode()" (change)="selectedProjCode.set($any($event.target).value)"
+        class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-300">
+        @for (p of workflowService.projects(); track p.code) {
+          <option [value]="p.code">[{{ p.code }}] {{ p.name }}</option>
+        }
+      </select>
+    </div>
+
+    <!-- Period -->
+    <div>
+      <label class="text-[10px] font-bold text-slate-400 uppercase block mb-1">{{ 'finance_v2.analysis.filter_period' | translate }}</label>
+      <select [value]="periodFilter()" (change)="periodFilter.set($any($event.target).value)"
+        class="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 focus:outline-none">
+        <option value="2025-Q1">2025 - Q1</option>
+        <option value="2025-Q2">2025 - Q2</option>
+        <option value="2025-Q3">2025 - Q3</option>
+        <option value="2025-Q4">2025 - Q4</option>
+      </select>
+    </div>
+
+    <!-- Search box -->
+    <div class="ml-auto w-full md:w-48">
+      <input type="text" [placeholder]="'finance_v2.common.search' | translate" [value]="searchQuery()" (input)="searchQuery.set($any($event.target).value)"
+        class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:outline-none">
+    </div>
+  </div>
+
+  <!-- ══ Summary Cards (7 Grid) ════════════════════════════════════ -->
+  <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
+    <!-- Material Cost -->
+    <div class="bg-white rounded-xl border border-slate-100 shadow-sm p-4 text-center">
+      <p class="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Material Cost</p>
+      <p class="text-base font-black text-slate-800 mt-2 truncate cursor-pointer hover:underline text-indigo-600" (click)="onDrillDown('ledger', '5110')">{{ formatAmount(materialCost()) }}</p>
+      <span class="text-[9px] text-slate-500 font-bold block mt-1">SAR</span>
+    </div>
+
+    <!-- Labor Cost -->
+    <div class="bg-white rounded-xl border border-slate-100 shadow-sm p-4 text-center">
+      <p class="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Labor Cost</p>
+      <p class="text-base font-black text-slate-800 mt-2 truncate cursor-pointer hover:underline text-indigo-600" (click)="onDrillDown('ledger', '5120')">{{ formatAmount(laborCost()) }}</p>
+      <span class="text-[9px] text-slate-500 font-bold block mt-1">SAR</span>
+    </div>
+
+    <!-- Equipment Cost -->
+    <div class="bg-white rounded-xl border border-slate-100 shadow-sm p-4 text-center">
+      <p class="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Equipment Cost</p>
+      <p class="text-base font-black text-slate-800 mt-2 truncate cursor-pointer hover:underline text-indigo-600" (click)="onDrillDown('ledger', '5135')">{{ formatAmount(equipmentCost()) }}</p>
+      <span class="text-[9px] text-slate-500 font-bold block mt-1">SAR</span>
+    </div>
+
+    <!-- Subcontractors -->
+    <div class="bg-white rounded-xl border border-slate-100 shadow-sm p-4 text-center">
+      <p class="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Subcontractors</p>
+      <p class="text-base font-black text-slate-800 mt-2 truncate cursor-pointer hover:underline text-indigo-600" (click)="onDrillDown('ledger', '5150')">{{ formatAmount(subcontractorCost()) }}</p>
+      <span class="text-[9px] text-slate-500 font-bold block mt-1">SAR</span>
+    </div>
+
+    <!-- Indirect Cost -->
+    <div class="bg-white rounded-xl border border-slate-100 shadow-sm p-4 text-center">
+      <p class="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Indirect Cost</p>
+      <p class="text-base font-black text-slate-800 mt-2 truncate cursor-pointer hover:underline text-indigo-600" (click)="onDrillDown('ledger', '5160')">{{ formatAmount(indirectCost()) }}</p>
+      <span class="text-[9px] text-slate-500 font-bold block mt-1">SAR</span>
+    </div>
+
+    <!-- Overhead -->
+    <div class="bg-white rounded-xl border border-slate-100 shadow-sm p-4 text-center">
+      <p class="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Overhead</p>
+      <p class="text-base font-black text-slate-800 mt-2 truncate cursor-pointer hover:underline text-indigo-600" (click)="onDrillDown('ledger', '5190')">{{ formatAmount(overheadCost()) }}</p>
+      <span class="text-[9px] text-slate-500 font-bold block mt-1">SAR</span>
+    </div>
+
+    <!-- Profit Margin -->
+    <div class="bg-white rounded-xl border border-slate-100 shadow-sm p-4 text-center"
+         [class.bg-emerald-50]="profitMargin() >= 0"
+         [class.bg-red-50]="profitMargin() < 0">
+      <p class="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Profit Margin</p>
+      <p class="text-base font-black mt-2 truncate" [class.text-emerald-700]="profitMargin() >= 0" [class.text-red-700]="profitMargin() < 0">{{ profitMargin() | number:'1.1-1' }}%</p>
+      <span class="text-[9px] font-bold block mt-1" [class.text-emerald-600]="profitMargin() >= 0" [class.text-red-600]="profitMargin() < 0">Rate</span>
+    </div>
+  </div>
+
+  <!-- ══ Charts Row ════════════════════════════════════════════════ -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <!-- Cost Distribution chart (progress bars) -->
+    <div class="bg-white rounded-xl border border-slate-100 shadow-sm p-5">
+      <h3 class="text-xs font-black text-slate-700 mb-4">{{ 'finance_v2.analysis.chart_cost_dist' | translate }}</h3>
+      <div class="space-y-3.5">
+        @for (item of costBreakdown(); track item.name) {
+          <div>
+            <div class="flex justify-between text-[10px] font-bold text-slate-500 mb-1">
+              <span>{{ item.name }}</span>
+              <span>{{ formatAmount(item.value) }} ({{ item.pct | number:'1.0-0' }}%)</span>
+            </div>
+            <div class="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
+              <div class="h-full rounded-full transition-all duration-700"
+                   [style.background-color]="item.color"
+                   [style.width.%]="item.pct"></div>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- Monthly Cost trend -->
+    <div class="bg-white rounded-xl border border-slate-100 shadow-sm p-5">
+      <h3 class="text-xs font-black text-slate-700 mb-4">{{ 'finance_v2.analysis.chart_monthly_cost' | translate }}</h3>
+      <div class="h-28 flex items-end justify-between gap-1.5 pt-2">
+        @for (m of ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun']; track m; let i = $index) {
+          <div class="flex-1 text-center">
+            <div class="h-20 flex items-end justify-center mb-1">
+              <div class="w-8 rounded-t bg-indigo-500 hover:bg-indigo-600 transition-all cursor-pointer"
+                   [style.height.%]="(40 + (i * 9) + (i % 2 * 14))"
+                   [title]="m + ' Cost'">
+              </div>
+            </div>
+            <span class="text-[8px] font-bold text-slate-400">{{ m }}</span>
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- Budget vs Actual (horizontal bar) -->
+    <div class="bg-white rounded-xl border border-slate-100 shadow-sm p-5 flex flex-col justify-between">
+      <div>
+        <h3 class="text-xs font-black text-slate-700 mb-2">{{ 'finance_v2.analysis.chart_bud_vs_act' | translate }}</h3>
+        <p class="text-[10px] text-slate-400 font-semibold mb-4">Total budget utilization against contract value</p>
+      </div>
+      <div class="space-y-4 py-4">
+        <div>
+          <div class="flex justify-between text-[10px] font-bold text-slate-500 mb-1">
+            <span>Contract Budget</span>
+            <span>{{ formatAmount(projectRevenue()) }}</span>
+          </div>
+          <div class="w-full bg-slate-100 h-3 rounded-full overflow-hidden">
+            <div class="bg-indigo-600 h-full rounded-full" [style.width.%]="100"></div>
+          </div>
+        </div>
+        <div>
+          <div class="flex justify-between text-[10px] font-bold text-slate-500 mb-1">
+            <span>Aggregated Cost</span>
+            <span>{{ formatAmount(totalCost()) }} ({{ (totalCost()/projectRevenue()*100) | number:'1.0-0' }}%)</span>
+          </div>
+          <div class="w-full bg-slate-100 h-3 rounded-full overflow-hidden">
+            <div class="bg-rose-500 h-full rounded-full" [style.width.%]="(totalCost()/projectRevenue())*100"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ Detailed Table ═══════════════════════════════════════════ -->
+  <div class="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden p-5">
+    <h3 class="text-sm font-black text-slate-800 mb-4">Job Cost Details Breakdown</h3>
+    <div class="overflow-x-auto">
+      <table class="w-full text-left text-xs">
+        <thead>
+          <tr class="bg-slate-50 border-b">
+            <th class="p-3">Cost Category</th>
+            <th class="p-3">GL Ledger Account</th>
+            <th class="p-3 text-right">Job Cost Amount</th>
+            <th class="p-3 text-right">Percentage of Total Cost</th>
+            <th class="p-3 text-center">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (item of costBreakdown(); track item.name) {
+            <tr class="border-b hover:bg-slate-50/80">
+              <td class="p-3 font-bold text-slate-700">{{ item.name }}</td>
+              <td class="p-3 font-mono text-indigo-600 font-bold cursor-pointer hover:underline" (click)="onDrillDown('ledger', item.code)">{{ item.code }}</td>
+              <td class="p-3 text-right font-black text-slate-700 cursor-pointer hover:underline" (click)="onDrillDown('ledger', item.code)">{{ formatAmount(item.value) }}</td>
+              <td class="p-3 text-right font-semibold text-slate-500">{{ item.pct | number:'1.1-1' }}%</td>
+              <td class="p-3 text-center">
+                <span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-700 text-[10px] font-bold">Allocated</span>
+              </td>
+            </tr>
+          }
+          <tr class="bg-slate-50 font-black border-t border-slate-200">
+            <td class="p-3 text-slate-800">Total Project Costs</td>
+            <td class="p-3">—</td>
+            <td class="p-3 text-right text-rose-600">{{ formatAmount(totalCost()) }}</td>
+            <td class="p-3 text-right text-slate-700">100.0%</td>
+            <td class="p-3 text-center">—</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>

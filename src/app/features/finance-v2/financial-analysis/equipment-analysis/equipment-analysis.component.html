@@ -1,0 +1,442 @@
+<div class="space-y-6 animate-fade-in" [dir]="langService.isRtl() ? 'rtl' : 'ltr'">
+
+  <!-- ══ Toast Notification ══════════════════════════════════════ -->
+  @if (toastMessage()) {
+    <div class="fixed top-4 right-4 z-50 bg-emerald-600 text-white px-4 py-3 rounded-xl shadow-lg font-bold text-xs flex items-center gap-2 animate-bounce">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+      {{ toastMessage() | translate }}
+    </div>
+  }
+
+  <!-- ══ Page Header ══════════════════════════════════════════════ -->
+  <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-black text-slate-800 tracking-tight">{{ 'finance_v2.analysis.equip_title' | translate }}</h1>
+      <p class="text-xs text-slate-500 font-semibold mt-1">{{ 'finance_v2.analysis.equip_subtitle' | translate }}</p>
+    </div>
+    
+    <div class="flex flex-wrap gap-2">
+      <button (click)="exportToExcel()" class="px-3 py-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition-all">
+        📊 {{ 'finance_v2.analysis.export_excel' | translate }}
+      </button>
+      <button (click)="exportToPDF()" class="px-3 py-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition-all">
+        📄 {{ 'finance_v2.analysis.export_pdf' | translate }}
+      </button>
+      <button (click)="printReport()" class="px-3 py-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition-all">
+        🖨️ {{ 'finance_v2.analysis.print_report' | translate }}
+      </button>
+    </div>
+  </div>
+
+  <!-- ══ Filters ════════════════════════════════════════════════════ -->
+  <div class="bg-white rounded-xl border border-slate-100 shadow-sm p-4 flex flex-wrap gap-4 items-end">
+    <!-- Equipment Selection -->
+    <div class="w-full sm:w-64">
+      <label class="text-[10px] font-bold text-slate-400 uppercase block mb-1">{{ 'finance_v2.analysis.filter_equip' | translate }}</label>
+      <select [value]="selectedEquipId()" (change)="selectedEquipId.set($any($event.target).value)"
+        class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-300">
+        @for (e of equipmentList(); track e.id) {
+          <option [value]="e.id">[{{ e.equipmentCode }}] {{ e.equipmentName }}</option>
+        }
+      </select>
+    </div>
+
+    <!-- Period filter -->
+    <div>
+      <label class="text-[10px] font-bold text-slate-400 uppercase block mb-1">{{ 'finance_v2.analysis.filter_period' | translate }}</label>
+      <select [value]="periodFilter()" (change)="periodFilter.set($any($event.target).value)"
+        class="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 focus:outline-none">
+        <option value="2024">Fiscal Year 2024</option>
+        <option value="2025">Fiscal Year 2025</option>
+        <option value="2026">Fiscal Year 2026</option>
+      </select>
+    </div>
+
+    <!-- Search box -->
+    <div class="ml-auto w-full md:w-48">
+      <input type="text" [placeholder]="'finance_v2.common.search' | translate" [value]="searchQuery()" (input)="searchQuery.set($any($event.target).value)"
+        class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:outline-none">
+    </div>
+  </div>
+
+  <!-- ══ Summary Cards (8 Grid) ════════════════════════════════════ -->
+  <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
+    <!-- Purchase Cost -->
+    <div class="bg-white rounded-xl border border-slate-100 shadow-sm p-4 text-center">
+      <p class="text-[9px] font-bold text-slate-400 uppercase tracking-wider">{{ 'finance_v2.analysis.card_purchase_cost' | translate }}</p>
+      <p class="text-base font-black text-slate-800 mt-2 truncate">{{ formatAmount(purchaseCost()) }}</p>
+      <span class="text-[9px] text-slate-500 font-bold block mt-1">SAR</span>
+    </div>
+
+    <!-- Maintenance Cost -->
+    <div class="bg-white rounded-xl border border-slate-100 shadow-sm p-4 text-center">
+      <p class="text-[9px] font-bold text-slate-400 uppercase tracking-wider">{{ 'finance_v2.analysis.card_maint_cost' | translate }}</p>
+      <p class="text-base font-black text-rose-600 mt-2 truncate cursor-pointer hover:underline" (click)="currentTab.set('maint')">{{ formatAmount(maintenanceCost()) }}</p>
+      <span class="text-[9px] text-rose-500 font-bold block mt-1">SAR</span>
+    </div>
+
+    <!-- Fuel Cost -->
+    <div class="bg-white rounded-xl border border-slate-100 shadow-sm p-4 text-center">
+      <p class="text-[9px] font-bold text-slate-400 uppercase tracking-wider">{{ 'finance_v2.analysis.card_fuel_cost' | translate }}</p>
+      <p class="text-base font-black text-amber-600 mt-2 truncate cursor-pointer hover:underline" (click)="currentTab.set('fuel')">{{ formatAmount(fuelCost()) }}</p>
+      <span class="text-[9px] text-amber-500 font-bold block mt-1">SAR</span>
+    </div>
+
+    <!-- Operating Cost -->
+    <div class="bg-white rounded-xl border border-slate-100 shadow-sm p-4 text-center">
+      <p class="text-[9px] font-bold text-slate-400 uppercase tracking-wider">{{ 'finance_v2.analysis.card_operating_cost' | translate }}</p>
+      <p class="text-base font-black text-slate-800 mt-2 truncate">{{ formatAmount(operatingCost()) }}</p>
+      <span class="text-[9px] text-slate-500 font-bold block mt-1">SAR</span>
+    </div>
+
+    <!-- Depreciation -->
+    <div class="bg-white rounded-xl border border-slate-100 shadow-sm p-4 text-center">
+      <p class="text-[9px] font-bold text-slate-400 uppercase tracking-wider">{{ 'finance_v2.analysis.card_depreciation' | translate }}</p>
+      <p class="text-base font-black text-slate-700 mt-2 truncate cursor-pointer hover:underline" (click)="currentTab.set('depreciation')">{{ formatAmount(depreciation()) }}</p>
+      <span class="text-[9px] text-slate-500 font-bold block mt-1">SAR</span>
+    </div>
+
+    <!-- Current Value -->
+    <div class="bg-white rounded-xl border border-slate-100 shadow-sm p-4 text-center">
+      <p class="text-[9px] font-bold text-slate-400 uppercase tracking-wider">{{ 'finance_v2.analysis.card_current_value' | translate }}</p>
+      <p class="text-base font-black text-indigo-600 mt-2 truncate">{{ formatAmount(currentValue()) }}</p>
+      <span class="text-[9px] text-indigo-500 font-bold block mt-1">SAR</span>
+    </div>
+
+    <!-- Revenue Generated -->
+    <div class="bg-white rounded-xl border border-slate-100 shadow-sm p-4 text-center">
+      <p class="text-[9px] font-bold text-slate-400 uppercase tracking-wider">{{ 'finance_v2.analysis.card_revenue_gen' | translate }}</p>
+      <p class="text-base font-black text-emerald-600 mt-2 truncate cursor-pointer hover:underline" (click)="onDrillDown('revenue', '4000')">{{ formatAmount(revenueGenerated()) }}</p>
+      <span class="text-[9px] text-emerald-500 font-bold block mt-1">SAR</span>
+    </div>
+
+    <!-- Profitability -->
+    <div class="bg-white rounded-xl border border-slate-100 shadow-sm p-4 text-center"
+         [class.bg-emerald-50]="profitability() >= 0"
+         [class.bg-red-50]="profitability() < 0">
+      <p class="text-[9px] font-bold text-slate-400 uppercase tracking-wider">{{ 'finance_v2.analysis.card_profitability' | translate }}</p>
+      <p class="text-base font-black mt-2 truncate" [class.text-emerald-700]="profitability() >= 0" [class.text-red-700]="profitability() < 0">{{ formatAmount(profitability()) }}</p>
+      <span class="text-[9px] font-bold block mt-1" [class.text-emerald-600]="profitability() >= 0" [class.text-red-600]="profitability() < 0">SAR</span>
+    </div>
+  </div>
+
+  <!-- ══ Charts Row ════════════════════════════════════════════════ -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <!-- Cost breakdown trend -->
+    <div class="bg-white rounded-xl border border-slate-100 shadow-sm p-5">
+      <h3 class="text-xs font-black text-slate-700 mb-3">{{ 'finance_v2.analysis.chart_cost_dist' | translate }}</h3>
+      <div class="space-y-4 pt-2">
+        <div>
+          <div class="flex justify-between text-[10px] font-bold text-slate-500 mb-1">
+            <span>Maintenance Cost</span>
+            <span>{{ formatAmount(maintenanceCost()) }} ({{ (maintenanceCost()/operatingCost()*100) | number:'1.0-0' }}%)</span>
+          </div>
+          <div class="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
+            <div class="bg-rose-500 h-full rounded-full" [style.width.%]="(maintenanceCost()/operatingCost())*100"></div>
+          </div>
+        </div>
+        <div>
+          <div class="flex justify-between text-[10px] font-bold text-slate-500 mb-1">
+            <span>Fuel Cost</span>
+            <span>{{ formatAmount(fuelCost()) }} ({{ (fuelCost()/operatingCost()*100) | number:'1.0-0' }}%)</span>
+          </div>
+          <div class="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
+            <div class="bg-amber-500 h-full rounded-full" [style.width.%]="(fuelCost()/operatingCost())*100"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Monthly Cost trend -->
+    <div class="bg-white rounded-xl border border-slate-100 shadow-sm p-5 col-span-2">
+      <h3 class="text-xs font-black text-slate-700 mb-3">{{ 'finance_v2.analysis.chart_monthly_cost' | translate }}</h3>
+      <div class="h-24 flex items-end justify-between gap-1.5 pt-2">
+        @for (m of ['Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct']; track m; let i = $index) {
+          <div class="flex-1 text-center">
+            <div class="h-16 flex items-end justify-center mb-1">
+              <div class="w-8 rounded-t bg-amber-400 hover:bg-amber-500 transition-all cursor-pointer"
+                   [style.height.%]="(35 + (i * 7) + (i % 2 * 15))"
+                   [title]="m + ' Cost'">
+              </div>
+            </div>
+            <span class="text-[8px] font-bold text-slate-400">{{ m }}</span>
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ Tabs Navigation ══════════════════════════════════════════ -->
+  <div class="border-b border-slate-200">
+    <nav class="flex flex-wrap -mb-px gap-1">
+      @for (tab of ['purchase', 'maint', 'fuel', 'projects', 'assignments', 'depreciation', 'journal_entries', 'vendor_bills']; track tab) {
+        <button (click)="currentTab.set(tab)"
+          class="px-4 py-2.5 font-black text-xs border-b-2 transition-all capitalize"
+          [class.border-indigo-600]="currentTab() === tab"
+          [class.text-indigo-600]="currentTab() === tab"
+          [class.border-transparent]="currentTab() !== tab"
+          [class.text-slate-400]="currentTab() !== tab">
+          {{ 'finance_v2.analysis.tab_' + tab | translate }}
+        </button>
+      }
+    </nav>
+  </div>
+
+  <!-- ══ Tab Contents ═════════════════════════════════════════════ -->
+  <div class="bg-white rounded-xl border border-slate-100 shadow-sm p-5">
+    
+    <!-- Tab: Purchase Details -->
+    @if (currentTab() === 'purchase') {
+      <div class="space-y-4">
+        <h4 class="text-xs font-black text-slate-700 uppercase">Procurement Asset Purchase Details</h4>
+        @if (purchaseDetails(); as p) {
+          <div class="grid grid-cols-2 md:grid-cols-3 gap-4 border rounded-xl p-4">
+            <div>
+              <p class="text-[10px] text-slate-400 font-bold uppercase">Associated PO</p>
+              <p class="text-xs font-black text-indigo-600 cursor-pointer hover:underline" (click)="onDrillDown('payment', p.poNumber)">{{ p.poNumber }}</p>
+            </div>
+            <div>
+              <p class="text-[10px] text-slate-400 font-bold uppercase">Vendor Invoice</p>
+              <p class="text-xs font-black text-indigo-600 cursor-pointer hover:underline" (click)="onDrillDown('invoice', p.invoiceNumber)">{{ p.invoiceNumber }}</p>
+            </div>
+            <div>
+              <p class="text-[10px] text-slate-400 font-bold uppercase">Purchase Date</p>
+              <p class="text-xs font-bold text-slate-700">{{ p.poDate }}</p>
+            </div>
+            <div>
+              <p class="text-[10px] text-slate-400 font-bold uppercase">Manufacturer / Vendor</p>
+              <p class="text-xs font-bold text-slate-700">{{ p.supplier }}</p>
+            </div>
+            <div>
+              <p class="text-[10px] text-slate-400 font-bold uppercase">Purchase Price</p>
+              <p class="text-xs font-black text-slate-700">{{ formatAmount(p.cost) }} SAR</p>
+            </div>
+            <div>
+              <p class="text-[10px] text-slate-400 font-bold uppercase">Asset Status</p>
+              <span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-700 text-[10px] font-bold">{{ p.status }}</span>
+            </div>
+          </div>
+        }
+      </div>
+    }
+
+    <!-- Tab: Maintenance History -->
+    @if (currentTab() === 'maint') {
+      <div class="space-y-4">
+        <h4 class="text-xs font-black text-slate-700 uppercase">Preventive & Breakdown Maintenance Orders</h4>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead>
+              <tr class="bg-slate-50 border-b">
+                <th class="p-3">Work Order #</th>
+                <th class="p-3">Issue Description</th>
+                <th class="p-3">Type</th>
+                <th class="p-3 text-right">Maintenance Cost</th>
+                <th class="p-3">Date Completed</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (wo of maintenanceList(); track wo.id) {
+                <tr class="border-b hover:bg-slate-50/80">
+                  <td class="p-3 font-mono font-bold text-slate-700">{{ wo.woNumber }}</td>
+                  <td class="p-3 font-semibold text-slate-600">{{ wo.issueDescription }}</td>
+                  <td class="p-3">{{ wo.type }}</td>
+                  <td class="p-3 text-right font-black text-rose-600 cursor-pointer hover:underline" (click)="onDrillDown('payment', wo.woNumber)">{{ formatAmount(wo.laborHoursCost || 2500) }}</td>
+                  <td class="p-3 text-slate-500">{{ wo.completedDate || wo.createdDate }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    }
+
+    <!-- Tab: Fuel -->
+    @if (currentTab() === 'fuel') {
+      <div class="space-y-4">
+        <h4 class="text-xs font-black text-slate-700 uppercase">Fuel Issues & Diesel Allocations</h4>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead>
+              <tr class="bg-slate-50 border-b">
+                <th class="p-3">Slip Ref</th>
+                <th class="p-3">Project / Cost Center</th>
+                <th class="p-3 text-right">Quantity Liters</th>
+                <th class="p-3 text-right">Total Cost</th>
+                <th class="p-3">Refueling Date</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (fi of fuelList(); track fi.id) {
+                <tr class="border-b hover:bg-slate-50/80">
+                  <td class="p-3 font-mono font-bold text-slate-500">{{ fi.id }}</td>
+                  <td class="p-3">{{ fi.costCenterCode }}</td>
+                  <td class="p-3 text-right">{{ fi.quantityLiters }} L</td>
+                  <td class="p-3 text-right font-black text-rose-600 cursor-pointer hover:underline" (click)="onDrillDown('ledger', '5135')">{{ formatAmount(fi.totalCost || fi.quantityLiters * 2.2) }}</td>
+                  <td class="p-3 text-slate-500">{{ fi.issueDate }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    }
+
+    <!-- Tab: Projects History -->
+    @if (currentTab() === 'projects') {
+      <div class="space-y-4">
+        <h4 class="text-xs font-black text-slate-700 uppercase">Operational Projects Assignments</h4>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead>
+              <tr class="bg-slate-50 border-b">
+                <th class="p-3">Project Code</th>
+                <th class="p-3">Deployment Site</th>
+                <th class="p-3">Start Date</th>
+                <th class="p-3">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (proj of projectHistory(); track proj.projectCode) {
+                <tr class="border-b hover:bg-slate-50/80">
+                  <td class="p-3 font-mono font-bold text-indigo-600">{{ proj.projectCode }}</td>
+                  <td class="p-3">{{ proj.site }}</td>
+                  <td class="p-3 text-slate-500">{{ proj.assignedDate }}</td>
+                  <td class="p-3">
+                    <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-700">{{ proj.status }}</span>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    }
+
+    <!-- Tab: Assignments (Crew/Operators) -->
+    @if (currentTab() === 'assignments') {
+      <div class="space-y-4">
+        <h4 class="text-xs font-black text-slate-700 uppercase">Operator & Crew Logs</h4>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead>
+              <tr class="bg-slate-50 border-b">
+                <th class="p-3">Assigned Operator</th>
+                <th class="p-3">Date</th>
+                <th class="p-3">Change Type</th>
+                <th class="p-3">Details</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (ass of assignmentsList(); track ass.operatorName) {
+                <tr class="border-b hover:bg-slate-50/80">
+                  <td class="p-3 font-bold text-slate-700">{{ ass.operatorName }}</td>
+                  <td class="p-3 text-slate-500">{{ ass.assignmentDate }}</td>
+                  <td class="p-3 font-semibold text-slate-600">{{ ass.type }}</td>
+                  <td class="p-3 font-mono text-slate-500 text-[10px]">{{ ass.details }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    }
+
+    <!-- Tab: Depreciation -->
+    @if (currentTab() === 'depreciation') {
+      <div class="space-y-4">
+        <h4 class="text-xs font-black text-slate-700 uppercase">Straight-Line Depreciation Schedule</h4>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead>
+              <tr class="bg-slate-50 border-b">
+                <th class="p-3">Accounting Month</th>
+                <th class="p-3 text-right">Cost Base</th>
+                <th class="p-3 text-right">Monthly Dep</th>
+                <th class="p-3 text-right">Accumulated Dep</th>
+                <th class="p-3 text-right">Net Book Value</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (row of depreciationSchedule(); track row.month) {
+                <tr class="border-b hover:bg-slate-50/80">
+                  <td class="p-3 font-mono font-bold text-slate-600">{{ row.month }}</td>
+                  <td class="p-3 text-right text-slate-500">{{ formatAmount(row.cost) }}</td>
+                  <td class="p-3 text-right font-bold text-rose-500">{{ formatAmount(row.depreciation) }}</td>
+                  <td class="p-3 text-right text-slate-600">{{ formatAmount(row.accumulated) }}</td>
+                  <td class="p-3 text-right font-black text-blue-700">{{ formatAmount(row.bookValue) }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    }
+
+    <!-- Tab: Journal Entries -->
+    @if (currentTab() === 'journal_entries') {
+      <div class="space-y-4">
+        <h4 class="text-xs font-black text-slate-700 uppercase">Asset JVs</h4>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead>
+              <tr class="bg-slate-50 border-b">
+                <th class="p-3">JV Number</th>
+                <th class="p-3">Date</th>
+                <th class="p-3">Description</th>
+                <th class="p-3 text-right">Total Debit</th>
+                <th class="p-3 text-right">Total Credit</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (je of journalEntriesList(); track je.id) {
+                <tr class="border-b hover:bg-slate-50/80">
+                  <td class="p-3 font-mono font-bold text-indigo-600 cursor-pointer hover:underline" (click)="onDrillDown('je', je.id)">{{ je.journalNumber }}</td>
+                  <td class="p-3 text-slate-500">{{ je.date }}</td>
+                  <td class="p-3 text-slate-600 truncate max-w-xs">{{ je.description }}</td>
+                  <td class="p-3 text-right font-bold text-blue-700 cursor-pointer hover:underline" (click)="onDrillDown('je', je.id)">{{ formatAmount(je.totalDebit) }}</td>
+                  <td class="p-3 text-right font-bold text-rose-600 cursor-pointer hover:underline" (click)="onDrillDown('je', je.id)">{{ formatAmount(je.totalCredit) }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    }
+
+    <!-- Tab: Vendor Bills -->
+    @if (currentTab() === 'vendor_bills') {
+      <div class="space-y-4">
+        <h4 class="text-xs font-black text-slate-700 uppercase">Vendor Bills (AP Invoices)</h4>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead>
+              <tr class="bg-slate-50 border-b">
+                <th class="p-3">Invoice Number</th>
+                <th class="p-3">Supplier Name</th>
+                <th class="p-3">Posting Date</th>
+                <th class="p-3 text-right">Grand Total</th>
+                <th class="p-3">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (bill of vendorBillsList(); track bill.id) {
+                <tr class="border-b hover:bg-slate-50/80">
+                  <td class="p-3 font-mono font-bold text-indigo-600 cursor-pointer hover:underline" (click)="onDrillDown('invoice', bill.id)">{{ bill.invoiceNumber }}</td>
+                  <td class="p-3">{{ bill.vendorName }}</td>
+                  <td class="p-3 text-slate-500">{{ bill.invoiceDate || '2025-05-15' }}</td>
+                  <td class="p-3 text-right font-bold text-slate-800 cursor-pointer hover:underline" (click)="onDrillDown('invoice', bill.id)">{{ formatAmount(bill.totalAmount) }}</td>
+                  <td class="p-3">
+                    <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-700">Approved</span>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    }
+
+  </div>
+
+</div>

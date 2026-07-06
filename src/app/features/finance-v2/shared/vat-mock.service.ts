@@ -64,16 +64,35 @@ export class VatMockService {
       vatOutput: 0,
       vatInput: 0,
       netVat: 0,
-      transactions: []
     }
-  ]);
+  ].map((vr, idx) => ({
+    ...vr,
+    branchId: idx === 1 ? 'FreeZone' : 'HeadOffice',
+    branchName: idx === 1 ? 'Free Zone' : 'Head Office',
+    branchCode: idx === 1 ? 'FreeZone' : 'HeadOffice',
+    // Inject branch to transaction list inside return
+    transactions: (vr.transactions || []).map(t => ({
+      ...t,
+      branchId: idx === 1 ? 'FreeZone' : 'HeadOffice',
+      branchName: idx === 1 ? 'Free Zone' : 'Head Office',
+      branchCode: idx === 1 ? 'FreeZone' : 'HeadOffice'
+    }))
+  } as VatReturn)));
 
   // ── Global VAT Transactions Ledger (All matching items) ─────────────
   readonly transactions = signal<VatTransaction[]>([
     ...this._buildTransactions('Q1'),
     ...this._buildTransactions('Q2'),
     ...this._buildTransactions('Q3_unlinked')
-  ]);
+  ].map((t, idx) => {
+    const isFZ = idx % 3 === 0;
+    return {
+      ...t,
+      branchId: isFZ ? 'FreeZone' : 'HeadOffice',
+      branchName: isFZ ? 'Free Zone' : 'Head Office',
+      branchCode: isFZ ? 'FreeZone' : 'HeadOffice'
+    };
+  }));
 
   // ── Dashboard KPIs computed from current transactions/returns ──────
   readonly kpis = computed(() => {

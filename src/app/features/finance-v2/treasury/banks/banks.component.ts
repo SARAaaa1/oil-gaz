@@ -9,6 +9,7 @@ import { NotificationService } from '../../../../core/services/notification.serv
 import { TreasuryMockService } from '../../shared/treasury-mock.service';
 import { BankAccount, BankAccountStatus, TreasuryMovement } from '../../shared/treasury.interfaces';
 import { Router } from '@angular/router';
+import { BranchService } from '../../shared/branch.service';
 
 @Component({
   selector: 'app-finv2-banks',
@@ -22,9 +23,11 @@ export class FinV2BanksComponent implements OnInit {
   private readonly notify     = inject(NotificationService);
   private readonly router     = inject(Router);
   readonly treasuryService    = inject(TreasuryMockService);
+  readonly branchService      = inject(BranchService);
 
   readonly searchQuery  = signal('');
   readonly statusFilter = signal<BankAccountStatus | 'All'>('All');
+  readonly branchFilter = signal('All');
   readonly selectedId   = signal<string | null>(null);
 
   // Deposit/Withdraw popup dialogs
@@ -37,6 +40,7 @@ export class FinV2BanksComponent implements OnInit {
   readonly filtered = computed(() => {
     const q  = this.searchQuery().toLowerCase();
     const st = this.statusFilter();
+    const br = this.branchFilter();
     return this.treasuryService.bankAccounts()
       .filter(b => {
         const mq = !q || b.bankName.toLowerCase().includes(q) ||
@@ -44,7 +48,8 @@ export class FinV2BanksComponent implements OnInit {
                    b.iban.toLowerCase().includes(q) ||
                    b.accountNumber.toLowerCase().includes(q);
         const ms = st === 'All' || b.status === st;
-        return mq && ms;
+        const mb = br === 'All' || (b.branchId || 'HeadOffice') === br;
+        return mq && ms && mb;
       })
       .sort((a, b) => b.currentBalance - a.currentBalance);
   });
@@ -63,15 +68,17 @@ export class FinV2BanksComponent implements OnInit {
   });
 
   // KPIs
-  readonly totalBankBalance = computed(() =>
-    this.treasuryService.bankAccounts()
-      .filter(b => b.status === 'Active')
-      .reduce((s, b) => s + (b.currency === 'USD' ? b.currentBalance * 3.75 : b.currency === 'EUR' ? b.currentBalance * 4.0 : b.currentBalance), 0)
-  );
+  readonly totalBankBalance = computed(() => {
+    const br = this.branchFilter();
+    return this.treasuryService.bankAccounts()
+      .filter(b => b.status === 'Active' && (br === 'All' || (b.branchId || 'HeadOffice') === br))
+      .reduce((s, b) => s + (b.currency === 'USD' ? b.currentBalance * 3.75 : b.currency === 'EUR' ? b.currentBalance * 4.0 : b.currentBalance), 0);
+  });
 
-  readonly activeCount = computed(() =>
-    this.treasuryService.bankAccounts().filter(b => b.status === 'Active').length
-  );
+  readonly activeCount = computed(() => {
+    const br = this.branchFilter();
+    return this.treasuryService.bankAccounts().filter(b => b.status === 'Active' && (br === 'All' || (b.branchId || 'HeadOffice') === br)).length;
+  });
 
   selectAccount(acc: BankAccount) {
     this.selectedId.set(acc.id);

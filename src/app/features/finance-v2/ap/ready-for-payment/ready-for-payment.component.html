@@ -53,10 +53,19 @@
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
       </svg>
       <input type="text"
-        [placeholder]="'finance_v2.ap.inv.search_placeholder' | translate"
+         [placeholder]="'finance_v2.ap.inv.search_placeholder' | translate"
         (input)="searchQuery.set($any($event.target).value)"
         class="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-3 py-2.5 text-xs placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/10 transition-all">
     </div>
+
+    <!-- Branch Filter Selector -->
+    <select (change)="branchFilter.set($any($event.target).value)"
+      class="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-300 transition-all">
+      <option value="All">{{ 'finance_v2.coa.branch_all' | translate }}</option>
+      <option value="HeadOffice">🏢 {{ 'finance_v2.coa.branch_head_office' | translate }}</option>
+      <option value="FreeZone">🏭 {{ 'finance_v2.coa.branch_free_zone' | translate }}</option>
+    </select>
+
     <button (click)="selectAll()"
       class="px-3 py-2 rounded-xl border border-slate-200 text-slate-600 text-xs font-bold hover:bg-slate-50 transition-all">
       {{ 'finance_v2.ap.rfp.select_all' | translate }}
@@ -79,6 +88,7 @@
             <th class="px-4 py-3 text-left text-[10px] uppercase hidden md:table-cell">{{ 'finance_v2.ap.inv.due_date' | translate }}</th>
             <th class="px-4 py-3 text-left text-[10px] uppercase hidden lg:table-cell">{{ 'finance_v2.ap.sup.payment_terms' | translate }}</th>
             <th class="px-4 py-3 text-center text-[10px] uppercase">{{ 'finance_v2.ap.inv.aging' | translate }}</th>
+            <th class="px-4 py-3 text-left text-[10px] uppercase">Branch</th>
             <th class="px-4 py-3 text-left text-[10px] uppercase hidden lg:table-cell">{{ 'finance_v2.common.currency' | translate }}</th>
             <th class="px-4 py-3 text-right text-[10px] uppercase">{{ 'finance_v2.ap.inv.balance_due' | translate }}</th>
             <th class="px-4 py-3 text-left text-[10px] uppercase hidden xl:table-cell">{{ 'finance_v2.ap.inv.project' | translate }}</th>
@@ -106,6 +116,12 @@
                 <span class="inline-block px-2 py-0.5 rounded-full text-[9px] font-extrabold"
                   [class]="getAgingClass(inv.aging)">{{ inv.aging }}</span>
               </td>
+              <td class="px-4 py-3">
+                <span class="text-[9px] font-bold border rounded-full px-2 py-0.5 inline-flex items-center gap-1"
+                  [class]="inv.branchId === 'FreeZone' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-blue-50 text-blue-700 border-blue-200'">
+                  {{ inv.branchId === 'FreeZone' ? '🏭 FZ' : '🏢 HO' }}
+                </span>
+              </td>
               <td class="px-4 py-3 hidden lg:table-cell">
                 <span class="inline-flex items-center bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded text-[9px] font-bold">{{ inv.currency }}</span>
               </td>
@@ -114,7 +130,7 @@
             </tr>
           } @empty {
             <tr>
-              <td colspan="9" class="py-16 text-center">
+              <td colspan="10" class="py-16 text-center">
                 <div class="w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center mx-auto mb-3">
                   <svg class="w-6 h-6 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
@@ -128,7 +144,7 @@
         <tfoot>
           <tr [class.hidden]="rfpInvoices().length === 0"
             class="bg-slate-100 border-t-2 border-slate-200">
-            <td colspan="7" class="px-4 py-3 font-black text-slate-600 text-xs text-right">{{ 'finance_v2.tb.grand_total' | translate }}</td>
+            <td colspan="8" class="px-4 py-3 font-black text-slate-600 text-xs text-right">{{ 'finance_v2.tb.grand_total' | translate }}</td>
             <td class="px-4 py-3 text-right font-black text-slate-800 text-sm">{{ formatAmt(totalDue()) }}</td>
             <td class="hidden xl:table-cell"></td>
           </tr>

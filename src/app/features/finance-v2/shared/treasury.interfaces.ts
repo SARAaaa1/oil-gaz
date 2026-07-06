@@ -22,6 +22,10 @@ export interface CashBox {
   todayReceipts:       number;
   todayPayments:       number;
   closingBalance:      number;
+
+  branchId?: string;
+  branchCode?: string;
+  branchName?: string;
 }
 
 // ── Bank Account ──────────────────────────────────────
@@ -37,6 +41,10 @@ export interface BankAccount {
   currentBalance: number;
   availableBalance: number;
   status:         BankAccountStatus;
+
+  branchId?: string;
+  branchCode?: string;
+  branchName?: string;
 }
 
 // ── Treasury Transfer ──────────────────────────────────
@@ -58,6 +66,11 @@ export interface TreasuryTransfer {
   remarks:         string;
   status:          TransferStatus;
   attachments:     string[];
+
+  branchId?: string;
+  branchCode?: string;
+  branchName?: string;
+  isCrossBranch?: boolean;
 }
 
 // ── Treasury Movement ──────────────────────────────────
@@ -73,6 +86,10 @@ export interface TreasuryMovement {
   reference:   string;
   description: string;
   matched:     boolean;
+
+  branchId?: string;
+  branchCode?: string;
+  branchName?: string;
 }
 
 // ── Reconciliation Transactions ─────────────────────────
@@ -110,6 +127,10 @@ export interface ReconciliationSession {
   unmatchedCount:       number;
   statementTransactions: StatementTransaction[];
   systemTransactions:   SystemTransaction[];
+
+  branchId?: string;
+  branchCode?: string;
+  branchName?: string;
 }
 
 // ── Dashboard KPIs ─────────────────────────────────────

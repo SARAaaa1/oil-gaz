@@ -123,7 +123,14 @@ export class BudgetMockService {
         this.createLine('bl05_2', 'Labor', 'CC-PRJ-006-B', 'Acwa Boiler Station', 1_200_000, 0, 0, 'Mechanical engineers hourly team')
       ]
     }
-  ]);
+  ].map((b, idx) => {
+    return {
+      ...b,
+      branchId: idx === 2 ? 'FreeZone' : 'HeadOffice',
+      branchName: idx === 2 ? 'Free Zone' : 'Head Office',
+      branchCode: idx === 2 ? 'FreeZone' : 'HeadOffice'
+    } as ProjectBudget;
+  }));
 
   // ── Summary KPIs computed from all active budgets ──────────────────
   readonly kpis = computed(() => {

@@ -11,8 +11,8 @@ export class ArMockService {
 
   // ── Customers ─────────────────────────────────────────────────────
   readonly customers = signal<ArCustomer[]>([
-    { id:'c01', code:'CUS-001', nameEn:'Saudi Aramco',           nameAr:'أرامكو السعودية',      taxNumber:'310001234500003', vatNumber:'310001234500003', commercialReg:'1010123456', industry:'Oil & Gas', contactPerson:'Khalid Al-Ghamdi', contactEmail:'k.alghamdi@aramco.com', contactPhone:'+966 13 872 0000', address:'King Abdulaziz St', city:'Dhahran', country:'Saudi Arabia', currency:'SAR', creditLimit:50_000_000, paymentTerms:'Net 30', openBalance:2_850_000, outstandingInvoices:4, totalInvoiced:18_500_000, totalCollected:15_650_000, lastInvoiceDate:'2025-06-01', lastCollectionDate:'2025-05-28', lastCollectionAmount:1_200_000, avgCollectionDays:28, status:'Active', rating:5, bankName:'Riyad Bank', iban:'SA0380000000608010167519', notes:'Preferred client. Early payer.' },
-    { id:'c02', code:'CUS-002', nameEn:'SABIC Industries',       nameAr:'سابك للصناعات',        taxNumber:'310009876500003', vatNumber:'310009876500003', commercialReg:'1010987654', industry:'Petrochemicals', contactPerson:'Faisal Al-Qahtani', contactEmail:'f.qahtani@sabic.com', contactPhone:'+966 12 422 4000', address:'Prince Sultan St', city:'Riyadh', country:'Saudi Arabia', currency:'SAR', creditLimit:20_000_000, paymentTerms:'Net 45', openBalance:3_600_000, outstandingInvoices:6, totalInvoiced:22_000_000, totalCollected:18_400_000, lastInvoiceDate:'2025-06-10', lastCollectionDate:'2025-05-20', lastCollectionAmount:800_000, avgCollectionDays:42, status:'Active', rating:4, bankName:'Al Rajhi Bank', iban:'SA4420000001234567891234', notes:'Regular billing cycle.' },
+    { id:'c01', code:'CUS-001', nameEn:'Saudi Aramco',           nameAr:'أرامكو السعودية',      taxNumber:'310001234500003', vatNumber:'310001234500003', commercialReg:'1010123456', industry:'Oil & Gas', contactPerson:'Khalid Al-Ghamdi', contactEmail:'k.alghamdi@aramco.com', contactPhone:'+966 13 872 0000', address:'King Abdulaziz St', city:'Dhahran', country:'Saudi Arabia', currency:'SAR', creditLimit:50_000_000, paymentTerms:'Net 30', openBalance:2_850_000, outstandingInvoices:4, totalInvoiced:18_500_000, totalCollected:15_650_000, lastInvoiceDate:'2025-06-01', lastCollectionDate:'2025-05-28', lastCollectionAmount:1_200_000, avgCollectionDays:28, status:'Active', rating:5, bankName:'Riyad Bank', iban:'SA0380000000608010167519', notes:'Preferred client. Early payer.', branchId:'HeadOffice', branchName:'Head Office' },
+    { id:'c02', code:'CUS-002', nameEn:'SABIC Industries',       nameAr:'سابك للصناعات',        taxNumber:'310009876500003', vatNumber:'310009876500003', commercialReg:'1010987654', industry:'Petrochemicals', contactPerson:'Faisal Al-Qahtani', contactEmail:'f.qahtani@sabic.com', contactPhone:'+966 12 422 4000', address:'Prince Sultan St', city:'Riyadh', country:'Saudi Arabia', currency:'SAR', creditLimit:20_000_000, paymentTerms:'Net 45', openBalance:3_600_000, outstandingInvoices:6, totalInvoiced:22_000_000, totalCollected:18_400_000, lastInvoiceDate:'2025-06-10', lastCollectionDate:'2025-05-20', lastCollectionAmount:800_000, avgCollectionDays:42, status:'Active', rating:4, bankName:'Al Rajhi Bank', iban:'SA4420000001234567891234', notes:'Regular billing cycle.', branchId:'HeadOffice', branchName:'Head Office' },
     { id:'c03', code:'CUS-003', nameEn:'Ma\'aden Mining',        nameAr:'معادن التعدين',        taxNumber:'310005555500003', vatNumber:'310005555500003', commercialReg:'1010555555', industry:'Mining', contactPerson:'Omar Al-Zahrani', contactEmail:'o.zahrani@maaden.com.sa', contactPhone:'+966 14 825 0000', address:'Industrial City', city:'Al-Jubail', country:'Saudi Arabia', currency:'SAR', creditLimit:15_000_000, paymentTerms:'Net 60', openBalance:1_200_000, outstandingInvoices:2, totalInvoiced:9_000_000, totalCollected:7_800_000, lastInvoiceDate:'2025-05-15', lastCollectionDate:'2025-04-30', lastCollectionAmount:600_000, avgCollectionDays:55, status:'Active', rating:4, bankName:'SAB Bank', iban:'SA7780000000608010167532', notes:'' },
     { id:'c04', code:'CUS-004', nameEn:'SWCC Water',             nameAr:'شركة المياه',          taxNumber:'310007777500003', vatNumber:'310007777500003', commercialReg:'1010777777', industry:'Utilities', contactPerson:'Tariq Al-Mutairi', contactEmail:'t.mutairi@swcc.gov.sa', contactPhone:'+966 14 321 0000', address:'Ministry of Water St', city:'Riyadh', country:'Saudi Arabia', currency:'SAR', creditLimit:8_000_000, paymentTerms:'Net 90', openBalance:4_100_000, outstandingInvoices:5, totalInvoiced:11_000_000, totalCollected:6_900_000, lastInvoiceDate:'2025-06-05', lastCollectionDate:'2025-04-15', lastCollectionAmount:500_000, avgCollectionDays:85, status:'Active', rating:3, bankName:'NCB', iban:'SA3680000000608010167543', notes:'Government entity — slow payer.' },
     { id:'c05', code:'CUS-005', nameEn:'Neom Tech Corp',         nameAr:'نيوم للتقنية',         taxNumber:'310002222500003', vatNumber:'310002222500003', commercialReg:'1010222222', industry:'Technology', contactPerson:'Sara Al-Rasheed', contactEmail:'s.rasheed@neom.com', contactPhone:'+966 50 123 4567', address:'NEOM Bay', city:'Tabuk', country:'Saudi Arabia', currency:'USD', creditLimit:25_000_000, paymentTerms:'Net 30', openBalance:6_200_000, outstandingInvoices:8, totalInvoiced:31_000_000, totalCollected:24_800_000, lastInvoiceDate:'2025-06-20', lastCollectionDate:'2025-06-01', lastCollectionAmount:2_000_000, avgCollectionDays:30, status:'Active', rating:5, bankName:'HSBC Saudi', iban:'SA8880000000608010167554', notes:'Large pipeline contract.' },
@@ -31,6 +31,7 @@ export class ArMockService {
     { id:'c18', code:'CUS-018', nameEn:'Durrat Thuwal Marine',   nameAr:'دُرّة ثول البحرية',   taxNumber:'310007070500003', vatNumber:'310007070500003', commercialReg:'1010707070', industry:'Marine', contactPerson:'Mohammed Al-Sehli', contactEmail:'m.sehli@durrat.sa', contactPhone:'+966 12 780 0000', address:'Thuwal Bay', city:'Jeddah', country:'Saudi Arabia', currency:'USD', creditLimit:5_000_000, paymentTerms:'Net 30', openBalance:900_000, outstandingInvoices:2, totalInvoiced:4_500_000, totalCollected:3_600_000, lastInvoiceDate:'2025-05-30', lastCollectionDate:'2025-05-20', lastCollectionAmount:400_000, avgCollectionDays:29, status:'Active', rating:4, bankName:'NCB', iban:'SA3680000000608010167655', notes:'' },
     { id:'c19', code:'CUS-019', nameEn:'Vision 2030 Fund',       nameAr:'صندوق رؤية 2030',     taxNumber:'310008080500003', vatNumber:'310008080500003', commercialReg:'1010808080', industry:'Investment', contactPerson:'Ibrahim Al-Assaf', contactEmail:'i.assaf@v2030.sa', contactPhone:'+966 11 700 0000', address:'Ministry of Finance Complex', city:'Riyadh', country:'Saudi Arabia', currency:'SAR', creditLimit:100_000_000, paymentTerms:'Net 45', openBalance:15_000_000, outstandingInvoices:12, totalInvoiced:60_000_000, totalCollected:45_000_000, lastInvoiceDate:'2025-06-25', lastCollectionDate:'2025-06-10', lastCollectionAmount:5_000_000, avgCollectionDays:40, status:'Active', rating:5, bankName:'SAMA', iban:'SA0080000000608010167666', notes:'Strategic partner.' },
     { id:'c20', code:'CUS-020', nameEn:'Al-Khafji Joint Ops',    nameAr:'الخفجي المشتركة',     taxNumber:'310009090500003', vatNumber:'310009090500003', commercialReg:'1010909090', industry:'Oil & Gas', contactPerson:'Yousef Al-Blooshi', contactEmail:'y.blooshi@kjo.com', contactPhone:'+966 13 750 0000', address:'Neutral Zone', city:'Al Khafji', country:'Saudi Arabia', currency:'USD', creditLimit:20_000_000, paymentTerms:'Net 60', openBalance:8_400_000, outstandingInvoices:10, totalInvoiced:35_000_000, totalCollected:26_600_000, lastInvoiceDate:'2025-06-18', lastCollectionDate:'2025-05-05', lastCollectionAmount:3_000_000, avgCollectionDays:55, status:'Active', rating:4, bankName:'Kuwait Finance House', iban:'SA4020000001234567891278', notes:'Joint venture client.' },
+    { id:'c21', code:'CUS-021', nameEn:'FZ Saudi Exports',        nameAr:'المنطقة الحرة للصادرات السعودية', taxNumber:'310009876500021', vatNumber:'310009876500021', commercialReg:'1010987621', industry:'Trade', contactPerson:'Salim Al-Alawi', contactEmail:'salim@fzexports.ae', contactPhone:'+971 50 422 4021', address:'FZ Cargo Area', city:'FZ City', country:'UAE', currency:'AED', creditLimit:10_000_000, paymentTerms:'Net 30', openBalance:500_000, outstandingInvoices:1, totalInvoiced:2_000_000, totalCollected:1_500_000, lastInvoiceDate:'2025-06-20', lastCollectionDate:'2025-06-05', lastCollectionAmount:300_000, avgCollectionDays:30, status:'Active', rating:4, bankName:'ADIB', iban:'AE0000000000000000021', notes:'', branchId:'FreeZone', branchName:'Free Zone' }
   ]);
 
   // ── Customer Invoices ─────────────────────────────────────────────
@@ -77,7 +78,9 @@ export class ArMockService {
       cur: string, sub: number, discPct: number, vatPct: number, retPct: number,
       status: ArInvoiceStatus, aging: AgingBucket,
       colAmt: number, remarks: string, by: string,
-      val?: Partial<ArInvoiceValidation>
+      val?: Partial<ArInvoiceValidation>,
+      branchId: string = 'HeadOffice',
+      branchName: string = 'Head Office'
     ): ArInvoice => {
       const disc   = Math.round(sub * discPct / 100);
       const net    = sub - disc;
@@ -98,7 +101,8 @@ export class ArMockService {
         invoicePdfAttached:status !== 'Draft', completionAttached:cert !== '',
         attachments: cert ? ['completion_cert.pdf'] : [],
         lines:[{ id:'l1', description:'Pipeline Installation Services', qty:1, unitPrice:sub, uom:'LS', vatPct, vatAmount:vat, total:sub, milestoneRef:milestone, progressPct:100 }],
-        validation: { ...v, ...val }
+        validation: { ...v, ...val },
+        branchId, branchName, branchCode: branchId
       };
     };
 
@@ -143,6 +147,7 @@ export class ArMockService {
       mk('i38','SINV-2025-038','c18','Durrat Thuwal Marine','دُرّة ثول البحرية','PRJ-019','Marine Platform Survey','CTR-2024-019','SVC-038','CERT-034','M-01','Service Completion','2025-06-05','2025-07-05','Net 30','USD',600_000,0,15,0,'Sent To Customer','Current',0,'','Reem Al-Muaiqel'),
       mk('i39','SINV-2025-039','c13','KFUPM Research','بحوث الملك فهد','PRJ-020','Lab Equipment Testing','CTR-2024-020','SVC-039','CERT-035','M-01','Service Completion','2025-04-20','2025-06-20','Net 60','SAR',280_000,0,15,0,'Collected','Current',322_000,'','Sara Al-Rasheed'),
       mk('i40','SINV-2025-040','c19','Vision 2030 Fund','صندوق رؤية 2030','PRJ-014','Vision Projects Support','CTR-2024-014','SVC-040','CERT-036','M-03','Progress Billing','2025-06-25','2025-08-09','Net 45','SAR',6_500_000,0,15,0,'Draft','Current',0,'Q3 billing','Reem Al-Muaiqel'),
+      mk('i_fz1','SINV-FZ-2025-01','c21','FZ Saudi Exports','المنطقة الحرة للصادرات السعودية','PRJ-005','FZ Export Cargo','CTR-2024-005','SVC-005','CERT-005','M-01','Service Completion','2025-06-10','2025-07-10','Net 30','AED',500_000,0,15,0,'Approved','Current',0,'FZ invoice','Reem Al-Muaiqel',{},'FreeZone','Free Zone')
     ];
   }
 
@@ -152,13 +157,16 @@ export class ArMockService {
       cid: string, cname: string,
       method: CollectionMethod, bank: string, ref: string, cur: string,
       total: number, status: CollectionStatus,
-      allocations: CollectionAllocation[]
+      allocations: CollectionAllocation[],
+      branchId: string = 'HeadOffice',
+      branchName: string = 'Head Office'
     ): ArCollection => ({
       id, voucherNumber:num, collectionDate:date, customerId:cid, customerName:cname,
       collectionMethod:method, bankName:bank, chequeNumber:'', referenceNumber:ref,
       currency:cur, totalAmount:total, status, remarks:'', createdBy:'Reem Al-Muaiqel',
       createdDate:date, approvedBy: status === 'Posted' ? 'Sara Al-Rasheed' : '', approvalDate: status === 'Posted' ? date : '',
-      allocations, attachments: status === 'Posted' ? ['bank_transfer.pdf'] : []
+      allocations, attachments: status === 'Posted' ? ['bank_transfer.pdf'] : [],
+      branchId, branchName, branchCode: branchId
     });
 
     return [

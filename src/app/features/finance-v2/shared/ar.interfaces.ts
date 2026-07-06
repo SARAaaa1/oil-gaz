@@ -43,6 +43,10 @@ export interface ArCustomer {
   bankName:             string;
   iban:                 string;
   notes:                string;
+
+  branchId?: string;
+  branchCode?: string;
+  branchName?: string;
 }
 
 // ── Invoice Validation ────────────────────────────────
@@ -123,6 +127,10 @@ export interface ArInvoice {
   lines:                ArInvoiceLine[];
   // Validation
   validation:           ArInvoiceValidation;
+
+  branchId?: string;
+  branchCode?: string;
+  branchName?: string;
 }
 
 // ── Collection Allocation ─────────────────────────────
@@ -157,6 +165,10 @@ export interface ArCollection {
   approvalDate:     string;
   allocations:      CollectionAllocation[];
   attachments:      string[];
+
+  branchId?: string;
+  branchCode?: string;
+  branchName?: string;
 }
 
 // ── AR Dashboard KPIs ─────────────────────────────────

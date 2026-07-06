@@ -266,7 +266,14 @@ export class AssetsMockService {
         { id: 'h07_1', eventDate: '2025-05-01', type: 'Purchase', description: 'Dell computer purchased', user: 'Reem Al-Muaiqel' }
       ]
     }
-  ]);
+  ].map((a, idx) => {
+    return {
+      ...a,
+      branchId: idx === 3 ? 'FreeZone' : 'HeadOffice',
+      branchName: idx === 3 ? 'Free Zone' : 'Head Office',
+      branchCode: idx === 3 ? 'FreeZone' : 'HeadOffice'
+    } as FixedAsset;
+  }));
 
   // ── Dashboard metrics computed signal ──────────────────────────────
   readonly kpis = computed(() => {

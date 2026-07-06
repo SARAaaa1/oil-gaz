@@ -8,6 +8,7 @@ import { BreadcrumbService } from '../../../core/services/breadcrumb.service';
 import { LanguageService } from '../../../core/services/language.service';
 import { FinanceV2MockService } from '../shared/finance-v2-mock.service';
 import { TrialBalanceLine, TrialBalanceTotals, AccountType } from '../shared/finance-v2.interfaces';
+import { BranchService } from '../shared/branch.service';
 
 @Component({
   selector: 'app-finv2-trial-balance',
@@ -18,23 +19,27 @@ import { TrialBalanceLine, TrialBalanceTotals, AccountType } from '../shared/fin
 })
 export class FinV2TrialBalanceComponent implements OnInit {
   private readonly breadcrumbService = inject(BreadcrumbService);
-  readonly langService = inject(LanguageService);
-  readonly mockService = inject(FinanceV2MockService);
+  readonly langService   = inject(LanguageService);
+  readonly mockService   = inject(FinanceV2MockService);
+  readonly branchService = inject(BranchService);
 
-  // ── Filters ───────────────────────────────────────────────────────
+  // ── Filters ──────────────────────────────────────────────────
   readonly reportDate       = signal<string>('2025-06-30');
   readonly levelFilter      = signal<number>(0);          // 0 = All
   readonly includeZero      = signal<boolean>(false);
   readonly includeInactive  = signal<boolean>(false);
+  readonly branchFilter     = signal<string>('All');
 
   // ── Filtered lines ────────────────────────────────────────────────
   readonly filteredLines = computed<TrialBalanceLine[]>(() => {
-    const level       = this.levelFilter();
-    const incZero     = this.includeZero();
+    const level   = this.levelFilter();
+    const incZero = this.includeZero();
+    const branch  = this.branchFilter();
     return this.mockService.trialBalanceLines().filter(line => {
       const matchLevel  = level === 0 || line.level === level;
       const hasBalance  = incZero || (line.closingDebit + line.closingCredit) > 0;
-      return matchLevel && hasBalance;
+      const matchBranch = branch === 'All' || (line.branchId || 'HeadOffice') === branch;
+      return matchLevel && hasBalance && matchBranch;
     });
   });
 

@@ -22,11 +22,16 @@ export class FinV2ApReadyForPaymentComponent implements OnInit {
   readonly apService          = inject(ApMockService);
 
   readonly searchQuery  = signal('');
+  readonly branchFilter = signal('All');
   readonly selectedIds  = signal<Set<string>>(new Set());
 
   readonly rfpInvoices = computed(() =>
     this.apService.invoices()
       .filter(i => i.status === 'Ready For Payment')
+      .filter(i => {
+        const br = this.branchFilter();
+        return br === 'All' || i.branchId === br;
+      })
       .filter(i => {
         const q = this.searchQuery().toLowerCase();
         return !q || i.invoiceNumber.toLowerCase().includes(q) ||

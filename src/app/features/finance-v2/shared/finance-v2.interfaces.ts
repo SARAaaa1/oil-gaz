@@ -5,6 +5,7 @@ export type AccountType = 'Asset' | 'Liability' | 'Equity' | 'Revenue' | 'Expens
 export type AccountLevel = 1 | 2 | 3 | 4 | 5;
 export type CostCenterStatus = 'Active' | 'Inactive' | 'Suspended';
 export type AccountStatus = 'Active' | 'Inactive';
+export type AccountBranch = 'HeadOffice' | 'FreeZone';
 
 // ─── Chart of Accounts ───────────────────────────────────────────
 export interface CoaAccount {
@@ -40,6 +41,7 @@ export interface CostCenter {
   budget: number;
   spent: number;
   childrenCount: number;
+  branch: AccountBranch;
   children?: CostCenter[];
   isExpanded?: boolean;
 }
@@ -65,6 +67,9 @@ export interface RecentJournalEntry {
   description: string;
   amount: number;
   status: 'Draft' | 'Posted';
+  branchId?: string;
+  branchCode?: string;
+  branchName?: string;
 }
 
 export interface RecentVendorInvoice {
@@ -74,6 +79,9 @@ export interface RecentVendorInvoice {
   date: string;
   amount: number;
   status: 'Draft' | 'Approved' | 'Paid';
+  branchId?: string;
+  branchCode?: string;
+  branchName?: string;
 }
 
 export interface RecentCollection {
@@ -82,6 +90,9 @@ export interface RecentCollection {
   customer: string;
   date: string;
   amount: number;
+  branchId?: string;
+  branchCode?: string;
+  branchName?: string;
 }
 
 // ─── Chart data points ─────────────────────────────────────────────
@@ -121,6 +132,19 @@ export interface JournalLine {
   debit: number;
   credit: number;
   notes: string;
+  
+  // Advanced fields
+  equipmentCode?: string;
+  currency?: string;
+  exchangeRate?: number;
+  taxCode?: string;
+  reference?: string;
+
+  branchId?: string;
+  branchCode?: string;
+  branchName?: string;
+  partnerId?: string;
+  partnerName?: string;
 }
 
 export interface JournalEntry {
@@ -144,6 +168,25 @@ export interface JournalEntry {
   totalDebit: number;
   totalCredit: number;
   isBalanced: boolean;
+
+  // Advanced ERP fields
+  documentDate?: string;
+  sourceModule?: string;
+  journalType?: string;
+  businessUnit?: string;
+  branch?: string;
+  equipmentCode?: string;
+  internalNotes?: string;
+  attachments?: any[];
+  auditHistory?: any[];
+  lastModified?: string;
+  exchangeRate?: number;
+
+  branchId?: string;
+  branchCode?: string;
+  branchName?: string;
+  partnerId?: string;
+  partnerName?: string;
 }
 
 // ─── General Ledger (Phase 3) ─────────────────────────────────────
@@ -165,15 +208,23 @@ export interface LedgerTransaction {
   costCenterCode: string;
   projectCode: string;
   createdBy: string;
+  
+  branchId?: string;
+  branchCode?: string;
+  branchName?: string;
 }
 
 export interface LedgerAccount {
+  id?: string;
   accountCode: string;
   accountNameEn: string;
   accountNameAr: string;
   openingBalance: number;
   openingBalanceType: BalanceType;
   transactions: LedgerTransaction[];
+  branchId?: string;
+  branchCode?: string;
+  branchName?: string;
 }
 
 // ─── Trial Balance (Phase 3) ──────────────────────────────────────
@@ -190,6 +241,9 @@ export interface TrialBalanceLine {
   periodCredit: number;
   closingDebit: number;
   closingCredit: number;
+  branchId?: string;
+  branchCode?: string;
+  branchName?: string;
 }
 
 export interface TrialBalanceTotals {
