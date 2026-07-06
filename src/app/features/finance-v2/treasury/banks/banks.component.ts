@@ -10,6 +10,8 @@ import { TreasuryMockService } from '../../shared/treasury-mock.service';
 import { BankAccount, BankAccountStatus, TreasuryMovement } from '../../shared/treasury.interfaces';
 import { Router } from '@angular/router';
 import { BranchService } from '../../shared/branch.service';
+import { ApMockService } from '../../shared/ap-mock.service';
+import { ArMockService } from '../../shared/ar-mock.service';
 
 @Component({
   selector: 'app-finv2-banks',
@@ -24,18 +26,28 @@ export class FinV2BanksComponent implements OnInit {
   private readonly router     = inject(Router);
   readonly treasuryService    = inject(TreasuryMockService);
   readonly branchService      = inject(BranchService);
+  readonly apService          = inject(ApMockService);
+  readonly arService          = inject(ArMockService);
 
+  // قوائم المحاسبين
+  readonly accountants = [
+    'ريم المعيقل', 'سارة الرشيد', 'إبراهيم الحربي', 'خالد الغامدي', 'نوال العمري'
+  ];
   readonly searchQuery  = signal('');
   readonly statusFilter = signal<BankAccountStatus | 'All'>('All');
   readonly branchFilter = signal('All');
   readonly selectedId   = signal<string | null>(null);
 
-  // Deposit/Withdraw popup dialogs
-  readonly showTxDialog = signal(false);
-  readonly txType       = signal<'Deposit' | 'Withdrawal'>('Deposit');
-  readonly txAmount     = signal<number>(0);
-  readonly txReference  = signal('');
-  readonly txReason     = signal('');
+  // Bank Voucher dialogs (سند قبض / سند صرف)
+  readonly showTxDialog      = signal(false);
+  readonly txType            = signal<'Deposit' | 'Withdrawal'>('Deposit');
+  readonly txAmount          = signal<number>(0);
+  readonly txReference       = signal('');
+  readonly txReason          = signal('');
+  readonly txPartnerId       = signal('');    // id العميل / المورد
+  readonly txPartnerName     = signal('');    // اسم الجهة الدافعة / المستفيد
+  readonly txPaymentMethod   = signal<'cheque' | 'transfer' | 'book_transfer'>('transfer');
+  readonly txChequeNumber    = signal('');    // رقم الشيك
 
   readonly filtered = computed(() => {
     const q  = this.searchQuery().toLowerCase();
@@ -103,7 +115,23 @@ export class FinV2BanksComponent implements OnInit {
     this.txAmount.set(0);
     this.txReference.set('');
     this.txReason.set('');
+    this.txPartnerId.set('');
+    this.txPartnerName.set('');
+    this.txPaymentMethod.set('transfer');
+    this.txChequeNumber.set('');
     this.showTxDialog.set(true);
+  }
+
+  // ربط اختيار الطرف من القائمة
+  onPartnerChange(id: string) {
+    this.txPartnerId.set(id);
+    if (this.txType() === 'Withdrawal') {
+      const s = this.apService.suppliers().find(x => x.id === id);
+      this.txPartnerName.set(s ? s.nameAr || s.nameEn : '');
+    } else {
+      const c = this.arService.customers().find(x => x.id === id);
+      this.txPartnerName.set(c ? c.nameAr || c.nameEn : '');
+    }
   }
 
   closeTxDialog() { this.showTxDialog.set(false); }
@@ -131,6 +159,11 @@ export class FinV2BanksComponent implements OnInit {
     );
 
     // Append to movement ledger
+    const voucherLabel  = this.txType() === 'Deposit' ? 'سند قبض' : 'سند صرف';
+    const methodMap: Record<string, string> = { cheque: 'شيك', transfer: 'تحويل إلكتروني', book_transfer: 'تحويل دفتري' };
+    const methodLabel   = methodMap[this.txPaymentMethod()] ?? '';
+    const chequeInfo    = this.txPaymentMethod() === 'cheque' && this.txChequeNumber() ? ` شيك رقم: ${this.txChequeNumber()}` : '';
+    const partnerInfo   = this.txPartnerName() ? ` — ${this.txPartnerName()}` : '';
     const newMovement: TreasuryMovement = {
       id: `mov-bank-manual-${Date.now()}`,
       accountType: 'Bank',
@@ -140,8 +173,8 @@ export class FinV2BanksComponent implements OnInit {
       date: '2025-07-01',
       amount: amt,
       currency: acc.currency,
-      reference: this.txReference() || `MAN-B-${Date.now().toString().slice(-6)}`,
-      description: this.txReason() || `${this.txType()} entry`,
+      reference: this.txReference() || `BNK-${this.txType() === 'Deposit' ? 'RCV' : 'PAY'}-${Date.now().toString().slice(-6)}`,
+      description: this.txReason() || `${voucherLabel} ${methodLabel}${chequeInfo}${partnerInfo}`,
       matched: false
     };
     this.treasuryService.movements.update(list => [newMovement, ...list]);
@@ -173,5 +206,8 @@ export class FinV2BanksComponent implements OnInit {
       { label: 'finance_v2.treasury.title' },
       { label: 'finance_v2.treasury.banks.title' }
     ]);
+    // Auto-select first bank account
+    const first = this.treasuryService.bankAccounts()[0];
+    if (first) this.selectedId.set(first.id);
   }
 }

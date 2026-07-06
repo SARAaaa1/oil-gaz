@@ -9,6 +9,8 @@ import { NotificationService } from '../../../../core/services/notification.serv
 import { TreasuryMockService } from '../../shared/treasury-mock.service';
 import { CashBox, CashBoxStatus, TreasuryMovement } from '../../shared/treasury.interfaces';
 import { BranchService } from '../../shared/branch.service';
+import { ApMockService } from '../../shared/ap-mock.service';
+import { ArMockService } from '../../shared/ar-mock.service';
 
 @Component({
   selector: 'app-finv2-cash',
@@ -22,18 +24,27 @@ export class FinV2CashComponent implements OnInit {
   private readonly notify     = inject(NotificationService);
   readonly treasuryService    = inject(TreasuryMockService);
   readonly branchService      = inject(BranchService);
+  readonly apService          = inject(ApMockService);
+  readonly arService          = inject(ArMockService);
 
+  // قوائم المحاسبين
+  readonly accountants = [
+    'ريم المعيقل', 'سارة الرشيد', 'إبراهيم الحربي', 'خالد الغامدي', 'نوال العمري'
+  ];
   readonly searchQuery  = signal('');
   readonly statusFilter = signal<CashBoxStatus | 'All'>('All');
   readonly branchFilter = signal('All');
   readonly selectedId   = signal<string | null>(null);
 
-  // Transaction dialogs
-  readonly showTxDialog = signal(false);
-  readonly txType       = signal<'Deposit' | 'Withdrawal'>('Deposit');
-  readonly txAmount     = signal<number>(0);
-  readonly txReference  = signal('');
-  readonly txReason     = signal('');
+  // Cash Voucher dialogs  (إذن وارد / إذن صرف)
+  readonly showTxDialog    = signal(false);
+  readonly txType          = signal<'Deposit' | 'Withdrawal'>('Deposit');
+  readonly txAmount        = signal<number>(0);
+  readonly txReference     = signal('');
+  readonly txReason        = signal('');
+  readonly txAccountant    = signal('');   // اسم المحاسب
+  readonly txPartnerId     = signal('');   // id المورد / العميل
+  readonly txPartnerName   = signal('');   // اسم الجهة
 
   readonly filtered = computed(() => {
     const q  = this.searchQuery().toLowerCase();
@@ -107,7 +118,22 @@ export class FinV2CashComponent implements OnInit {
     this.txAmount.set(0);
     this.txReference.set('');
     this.txReason.set('');
+    this.txAccountant.set('');
+    this.txPartnerId.set('');
+    this.txPartnerName.set('');
     this.showTxDialog.set(true);
+  }
+
+  // ربط اختيار المورد/العميل بالاسم
+  onPartnerChange(id: string) {
+    this.txPartnerId.set(id);
+    if (this.txType() === 'Withdrawal') {
+      const s = this.apService.suppliers().find(x => x.id === id);
+      this.txPartnerName.set(s ? s.nameAr || s.nameEn : '');
+    } else {
+      const c = this.arService.customers().find(x => x.id === id);
+      this.txPartnerName.set(c ? c.nameAr || c.nameEn : '');
+    }
   }
 
   closeTxDialog() {
@@ -139,6 +165,9 @@ export class FinV2CashComponent implements OnInit {
     );
 
     // Append movement ledger
+    const voucherLabel = this.txType() === 'Deposit' ? 'إذن وارد' : 'إذن صرف';
+    const partnerInfo  = this.txPartnerName() ? ` — ${this.txPartnerName()}` : '';
+    const acctInfo     = this.txAccountant() ? ` (المحاسب: ${this.txAccountant()})` : '';
     const newMovement: TreasuryMovement = {
       id: `mov-manual-${Date.now()}`,
       accountType: 'Cash',
@@ -148,8 +177,8 @@ export class FinV2CashComponent implements OnInit {
       date: '2025-07-01',
       amount: amt,
       currency: box.currency,
-      reference: this.txReference() || `MAN-${Date.now().toString().slice(-6)}`,
-      description: this.txReason() || `${this.txType()} entry`,
+      reference: this.txReference() || `CASH-${this.txType() === 'Deposit' ? 'RCV' : 'PAY'}-${Date.now().toString().slice(-6)}`,
+      description: this.txReason() || `${voucherLabel}${partnerInfo}${acctInfo}`,
       matched: true
     };
     this.treasuryService.movements.update(list => [newMovement, ...list]);
@@ -177,5 +206,8 @@ export class FinV2CashComponent implements OnInit {
       { label: 'finance_v2.treasury.title' },
       { label: 'finance_v2.treasury.cash.title' }
     ]);
+    // Auto-select first cash box
+    const first = this.treasuryService.cashBoxes()[0];
+    if (first) this.selectedId.set(first.id);
   }
 }

@@ -14,6 +14,19 @@
       <div class="flex items-center gap-1.5 bg-white border border-slate-100 rounded-lg px-3 py-1.5 shadow-sm">
         <span class="text-[11px] font-bold text-slate-600">{{ 'finance_v2.treasury.banks.total_bank' | translate }}: <span class="text-indigo-600">{{ formatAmt(totalBankBalance()) }} SAR</span></span>
       </div>
+      <!-- سند قبض / سند صرف في رأس الصفحة -->
+      <button (click)="openTxDialog('Deposit')"
+        [disabled]="!activeAccount() || activeAccount()!.status === 'Inactive'"
+        class="btn-primary px-4 py-2 rounded-xl text-xs font-bold transition-all disabled:opacity-40 flex items-center gap-1.5 shadow-sm">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"/></svg>
+        سند قبض
+      </button>
+      <button (click)="openTxDialog('Withdrawal')"
+        [disabled]="!activeAccount() || activeAccount()!.status === 'Inactive'"
+        class="px-4 py-2 rounded-xl bg-red-500 hover:bg-red-600 text-white text-xs font-bold transition-all disabled:opacity-40 flex items-center gap-1.5 shadow-sm">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"/></svg>
+        سند صرف
+      </button>
     </div>
   </div>
 
@@ -118,15 +131,17 @@
             <!-- Actions Bar -->
             <div class="mt-4 pt-4 border-t border-slate-50 flex items-center justify-between flex-wrap gap-2">
               <div class="flex items-center gap-2">
+                <!-- سند قبض (Bank Receipt) -->
                 <button (click)="openTxDialog('Deposit')" [disabled]="b.status === 'Inactive'"
-                  class="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-bold transition-all disabled:opacity-50 flex items-center gap-1">
-                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-                  {{ 'finance_v2.treasury.cash.btn_deposit' | translate }}
+                  class="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-bold transition-all disabled:opacity-50 flex items-center gap-1.5 shadow-sm">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"/></svg>
+                  سند قبض
                 </button>
+                <!-- سند صرف (Bank Payment) -->
                 <button (click)="openTxDialog('Withdrawal')" [disabled]="b.status === 'Inactive'"
-                  class="px-3 py-1.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-[10px] font-bold transition-all disabled:opacity-50 flex items-center gap-1">
-                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"/></svg>
-                  {{ 'finance_v2.treasury.cash.btn_withdraw' | translate }}
+                  class="px-3 py-1.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-[10px] font-bold transition-all disabled:opacity-50 flex items-center gap-1.5 shadow-sm">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"/></svg>
+                  سند صرف
                 </button>
               </div>
               <div class="flex items-center gap-2">
@@ -200,46 +215,122 @@
     </div>
   </div>
 
-  <!-- Deposit / Withdrawal Dialog -->
+  <!-- سند قبض / سند صرف Dialog -->
   @if (showTxDialog()) {
-    <div class="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
-        <h3 class="text-base font-black text-slate-800 mb-1">
-          {{ (txType() === 'Deposit' ? 'finance_v2.treasury.cash.dialog_deposit' : 'finance_v2.treasury.cash.dialog_withdraw') | translate }}
-        </h3>
-        <p class="text-xs text-slate-500 mb-4">{{ 'finance_v2.treasury.cash.dialog_desc' | translate }}</p>
+    <div class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden">
 
-        <div class="space-y-3">
-          <div>
-            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">{{ 'finance_v2.common.amount' | translate }}</label>
-            <input type="number" [value]="txAmount()" (input)="txAmount.set(+$any($event.target).value)"
-              class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-bold text-slate-800 focus:outline-none focus:border-primary">
-          </div>
-          <div>
-            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">{{ 'finance_v2.common.reference' | translate }}</label>
-            <input type="text" [value]="txReference()" (input)="txReference.set($any($event.target).value)"
-              class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xs placeholder-slate-300 focus:outline-none focus:border-primary">
-          </div>
-          <div>
-            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">{{ 'finance_v2.common.description' | translate }}</label>
-            <textarea rows="3" [value]="txReason()" (input)="txReason.set($any($event.target).value)"
-              class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xs placeholder-slate-300 focus:outline-none focus:border-primary resize-none"></textarea>
+        <!-- Dialog Header -->
+        <div class="px-6 pt-5 pb-4 border-b border-slate-100"
+          [style.borderTop]="txType() === 'Deposit' ? '4px solid var(--primary)' : '4px solid #EF4444'">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+              [style.backgroundColor]="txType() === 'Deposit' ? 'rgba(0,159,227,0.1)' : '#FEE2E2'">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                [style.color]="txType() === 'Deposit' ? 'var(--primary)' : '#EF4444'">
+                @if (txType() === 'Deposit') {
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"/>
+                } @else {
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"/>
+                }
+              </svg>
+            </div>
+            <div>
+              <h3 class="text-base font-black text-slate-800">
+                {{ txType() === 'Deposit' ? 'سند قبض — تحصيل بنكي' : 'سند صرف — دفع بنكي' }}
+              </h3>
+              <p class="text-[11px] text-slate-400 mt-0.5">{{ activeAccount()?.bankName }} — {{ activeAccount()?.accountNumber }}</p>
+            </div>
           </div>
         </div>
 
-        <div class="flex items-center justify-end gap-2 mt-5">
+        <!-- Form Body -->
+        <div class="px-6 py-5 space-y-4">
+
+          <!-- Row 1: Amount + Reference -->
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wide mb-1.5">المبلغ *</label>
+              <input type="number" [value]="txAmount()" (input)="txAmount.set(+$any($event.target).value)"
+                class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 transition-all">
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wide mb-1.5">رقم المرجع</label>
+              <input type="text" [value]="txReference()" (input)="txReference.set($any($event.target).value)"
+                [placeholder]="txType() === 'Deposit' ? 'BNK-RCV-2025-' : 'BNK-PAY-2025-'"
+                class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm placeholder-slate-300 focus:outline-none focus:ring-2 transition-all font-mono">
+            </div>
+          </div>
+
+          <!-- Row 2: Partner select -->
+          <div>
+            <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wide mb-1.5">
+              {{ txType() === 'Deposit' ? 'العميل / الجهة الدافعة' : 'المورد / الجهة المستفيدة' }}
+            </label>
+            @if (txType() === 'Deposit') {
+              <select (change)="onPartnerChange($any($event.target).value)"
+                class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-700 font-semibold focus:outline-none focus:ring-2 transition-all">
+                <option value="">— اختر العميل —</option>
+                @for (c of arService.customers(); track c.id) {
+                  <option [value]="c.id">{{ c.nameAr || c.nameEn }} ({{ c.code }})</option>
+                }
+              </select>
+            } @else {
+              <select (change)="onPartnerChange($any($event.target).value)"
+                class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-700 font-semibold focus:outline-none focus:ring-2 transition-all">
+                <option value="">— اختر المورد —</option>
+                @for (s of apService.suppliers(); track s.id) {
+                  <option [value]="s.id">{{ s.nameAr || s.nameEn }} ({{ s.code }})</option>
+                }
+              </select>
+            }
+          </div>
+
+          <!-- Row 3: Payment Method -->
+          <div>
+            <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wide mb-1.5">طريقة الدفع</label>
+            <select (change)="txPaymentMethod.set($any($event.target).value)"
+              class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-700 font-semibold focus:outline-none focus:ring-2 transition-all">
+              <option value="transfer">💳 تحويل إلكتروني (SWIFT / TT)</option>
+              <option value="cheque">📖 شيك بنكي</option>
+              <option value="book_transfer">📑 تحويل دفتري (Book Transfer)</option>
+            </select>
+          </div>
+
+          <!-- Row 4: Cheque Number (conditional) -->
+          @if (txPaymentMethod() === 'cheque') {
+            <div>
+              <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wide mb-1.5">رقم الشيك</label>
+              <input type="text" [value]="txChequeNumber()" (input)="txChequeNumber.set($any($event.target).value)"
+                placeholder="مثال: CHQ-2025-0045"
+                class="w-full bg-amber-50 border border-amber-200 rounded-xl px-3 py-2.5 text-sm placeholder-slate-300 focus:outline-none focus:ring-2 transition-all font-mono">
+            </div>
+          }
+
+          <!-- Row 5: Description -->
+          <div>
+            <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wide mb-1.5">البيان</label>
+            <textarea rows="2" [value]="txReason()" (input)="txReason.set($any($event.target).value)"
+              placeholder="أدخل بيان السند أو سبب التحويل..."
+              class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm placeholder-slate-300 focus:outline-none focus:ring-2 transition-all resize-none"></textarea>
+          </div>
+        </div>
+
+        <!-- Footer Actions -->
+        <div class="px-6 pb-5 flex items-center justify-end gap-2">
           <button (click)="closeTxDialog()"
             class="px-4 py-2 rounded-xl border border-slate-200 text-slate-600 text-xs font-bold hover:bg-slate-50 transition-all">
-            {{ 'finance_v2.common.cancel' | translate }}
+            إلغاء
           </button>
           <button (click)="submitTransaction()"
-            class="px-4 py-2 rounded-xl text-white text-xs font-bold transition-all"
-            [class.bg-emerald-600]="txType() === 'Deposit'" [class.hover:bg-emerald-700]="txType() === 'Deposit'"
-            [class.bg-red-600]="txType() === 'Withdrawal'" [class.hover:bg-red-700]="txType() === 'Withdrawal'">
-            {{ 'finance_v2.common.save' | translate }}
+            class="px-5 py-2 rounded-xl text-white text-xs font-bold transition-all shadow-sm"
+            [class]="txType() === 'Deposit' ? 'btn-primary' : 'bg-red-500 hover:bg-red-600'">
+            {{ txType() === 'Deposit' ? '✓ حفظ سند القبض' : '✓ حفظ سند الصرف' }}
           </button>
         </div>
+
       </div>
     </div>
   }
 </div>
+
