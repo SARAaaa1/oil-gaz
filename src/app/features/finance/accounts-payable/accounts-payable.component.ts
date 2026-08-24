@@ -11,6 +11,8 @@ import { SupplierInvoice, APAgingEntry, PaymentVoucher, BankAccountDetails, Cash
 import { Vendor } from '../../../shared/interfaces/vendor.interface';
 import { PurchaseOrder } from '../../../shared/interfaces/purchase-order.interface';
 
+import { FinanceApiService } from '../../../core/services/finance-api.service';
+
 @Component({
   selector: 'app-accounts-payable',
   standalone: true,
@@ -21,16 +23,19 @@ import { PurchaseOrder } from '../../../shared/interfaces/purchase-order.interfa
 export class AccountsPayableComponent implements OnInit {
   private readonly mockDataService = inject(MockDataService);
   private readonly financeService = inject(FinanceCoreService);
+  private readonly financeApi = inject(FinanceApiService);
   private readonly breadcrumbService = inject(BreadcrumbService);
   private readonly notificationService = inject(NotificationService);
   private readonly translate = inject(TranslateService);
 
-  // Core signals from service
-  readonly invoices = this.mockDataService.supplierInvoices;
-  readonly aging = this.mockDataService.apAging;
-  readonly vouchers = this.mockDataService.paymentVouchers;
-  readonly bankAccounts = this.mockDataService.bankAccountsDetails;
-  readonly cashAccounts = this.mockDataService.cashAccountsDetails;
+  // Core signals — populated from API
+  readonly invoices = signal<any[]>([]);
+  readonly aging = signal<any[]>([]);
+  readonly vouchers = signal<any[]>([]);
+  readonly bankAccounts = signal<any[]>([]);
+  readonly cashAccounts = signal<any[]>([]);
+  readonly isLoading = signal(false);
+  // Vendors/POs still from mock (Procurement module owns these)
   readonly vendors = this.mockDataService.vendors;
   readonly purchaseOrders = this.mockDataService.purchaseOrders;
 
@@ -128,6 +133,34 @@ export class AccountsPayableComponent implements OnInit {
       { label: 'navigation.finance' },
       { label: 'navigation.ap_ledger' }
     ]);
+    this.loadAll();
+  }
+
+  loadAll() {
+    this.isLoading.set(true);
+    this.financeApi.getApInvoices({ limit: 200 }).subscribe({
+      next: (res) => {
+        this.invoices.set((res.data || []).map((i: any) => ({ ...i, id: i._id ?? i.id })));
+        this.isLoading.set(false);
+      },
+      error: () => this.isLoading.set(false)
+    });
+    this.financeApi.getApAging().subscribe({
+      next: (res: any) => this.aging.set(Array.isArray(res) ? res : (res.data ?? [])),
+      error: () => {}
+    });
+    this.financeApi.getApVouchers().subscribe({
+      next: (res: any) => this.vouchers.set((Array.isArray(res) ? res : (res.data ?? [])).map((v: any) => ({ ...v, id: v._id ?? v.id }))),
+      error: () => {}
+    });
+    this.financeApi.getBankAccounts().subscribe({
+      next: (res) => this.bankAccounts.set((res.data || []).map((b: any) => ({ ...b, id: b._id ?? b.id }))),
+      error: () => {}
+    });
+    this.financeApi.getCashAccounts().subscribe({
+      next: (res: any) => this.cashAccounts.set((Array.isArray(res) ? res : (res.data ?? [])).map((c: any) => ({ ...c, id: c._id ?? c.id }))),
+      error: () => {}
+    });
   }
 
   // Invoice calculations
@@ -165,7 +198,7 @@ export class AccountsPayableComponent implements OnInit {
   }
 
   submitInvoice() {
-    if (!this.invoiceNumber || !this.selectedVendorId) {
+    if (!this.selectedVendorId && !this.invoiceNumber) {
       this.notificationService.danger('common.validation_error', 'common.fill_required_fields');
       return;
     }
@@ -173,42 +206,30 @@ export class AccountsPayableComponent implements OnInit {
     const vendor = this.vendors().find(v => v.id === this.selectedVendorId);
     const po = this.purchaseOrders().find(p => p.id === this.selectedPoId);
 
-    const newInvoice: SupplierInvoice = {
-      id: 'ap-' + Math.random().toString(36).substring(2, 9),
-      invoiceNumber: this.invoiceNumber,
-      poId: this.selectedPoId || undefined,
-      poNumber: po?.poNumber || undefined,
-      vendorId: this.selectedVendorId,
+    this.financeApi.createApInvoice({
+      invoiceNumber: this.invoiceNumber || undefined,
       vendorName: vendor?.vendorName || 'Unknown Vendor',
+      vendorId: this.selectedVendorId || undefined,
       invoiceDate: this.invoiceDate,
       dueDate: this.dueDate,
       subTotal: Number(this.subTotal),
       taxAmount: Number(this.taxAmount),
-      totalAmount: this.totalInvoiceAmount(),
-      status: 'Unpaid',
-      paymentTerms: this.paymentTerms
-    };
-
-    // Update invoices list
-    this.invoices.update(prev => [newInvoice, ...prev]);
-
-    // Recalculate or append aging entry
-    this.updateAgingOnNewInvoice(newInvoice);
-
-    // ── AUTO-POST to General Ledger ──────────────────────────────────
-    this.financeService.autoPostAPInvoice({
-      invoiceNumber: newInvoice.invoiceNumber,
-      vendorName: newInvoice.vendorName,
-      date: newInvoice.invoiceDate,
-      subTotal: newInvoice.subTotal,
-      taxAmount: newInvoice.taxAmount,
-      totalAmount: newInvoice.totalAmount,
-      poNumber: newInvoice.poNumber,
-      chargeAccountCode: '521000'
+      paymentTerms: this.paymentTerms,
+      chargeAccountCode: '521000',
+      poId: this.selectedPoId || undefined,
+      poNumber: po?.poNumber || undefined
+    }).subscribe({
+      next: (created: any) => {
+        const normalized = { ...created, id: created._id ?? created.id };
+        this.invoices.update(list => [normalized, ...list]);
+        this.showInvoiceModal.set(false);
+        this.notificationService.success('finance.ap.invoice_created_title', 'finance.ap.invoice_created_desc');
+        this.loadAll();
+      },
+      error: (err: any) => {
+        this.notificationService.danger('finance.ap.title', err?.error?.message || 'Failed to create invoice');
+      }
     });
-
-    this.showInvoiceModal.set(false);
-    this.notificationService.success('finance.ap.invoice_created_title', 'finance.ap.invoice_created_desc');
   }
 
   private updateAgingOnNewInvoice(invoice: SupplierInvoice) {
@@ -255,7 +276,7 @@ export class AccountsPayableComponent implements OnInit {
       const alreadyPaid = this.vouchers()
         .filter(v => v.status === 'Posted' && v.vendorId === vendorId)
         .reduce((sum, v) => {
-          const invMatch = v.invoicesPaid.find(ip => ip.invoiceId === i.id);
+          const invMatch = v.invoicesPaid.find((ip: any) => ip.invoiceId === i.id);
           return sum + (invMatch ? invMatch.amountPaid : 0);
         }, 0);
 
@@ -331,113 +352,45 @@ export class AccountsPayableComponent implements OnInit {
       return;
     }
 
-    const vendor = this.vendors().find(v => v.id === vendorId);
-    let accountName = '';
-
-    // Verify account and decrement balance
+    // Balance check
     if (this.selectedAccountType() === 'bank') {
-      const bank = this.bankAccounts().find(b => b.id === this.selectedAccountId);
-      if (bank) {
-        accountName = bank.bankName + ' (' + bank.accountNumber + ')';
-        if (bank.balance < this.paymentAmount) {
-          this.notificationService.danger('finance.ap.insufficient_funds_title', 'finance.ap.insufficient_funds_desc');
-          return;
-        }
-        // Deduct from bank balance
-        this.bankAccounts.update(accounts => 
-          accounts.map(a => a.id === bank.id ? { ...a, balance: a.balance - this.paymentAmount } : a)
-        );
+      const bank = this.bankAccounts().find((b: any) => b.id === this.selectedAccountId);
+      if (bank && bank.balance < this.paymentAmount) {
+        this.notificationService.danger('finance.ap.insufficient_funds_title', 'finance.ap.insufficient_funds_desc');
+        return;
       }
     } else {
-      const cash = this.cashAccounts().find(c => c.id === this.selectedAccountId);
-      if (cash) {
-        accountName = cash.officeLocation + ' Custodian: ' + cash.custodianName;
-        if (cash.balance < this.paymentAmount) {
-          this.notificationService.danger('finance.ap.insufficient_funds_title', 'finance.ap.insufficient_funds_desc');
-          return;
-        }
-        // Deduct from cash balance
-        this.cashAccounts.update(accounts => 
-          accounts.map(a => a.id === cash.id ? { ...a, balance: a.balance - this.paymentAmount } : a)
-        );
+      const cash = this.cashAccounts().find((c: any) => c.id === this.selectedAccountId);
+      if (cash && cash.balance < this.paymentAmount) {
+        this.notificationService.danger('finance.ap.insufficient_funds_title', 'finance.ap.insufficient_funds_desc');
+        return;
       }
     }
 
-    const voucherNum = 'PV-2026-' + Math.floor(100 + Math.random() * 900);
-    const newVoucher: PaymentVoucher = {
-      id: 'pv-' + Math.random().toString(36).substring(2, 9),
-      voucherNumber: voucherNum,
+    const vendor = this.vendors().find(v => v.id === vendorId);
+
+    this.financeApi.createApVoucher({
       paymentDate: this.voucherDate,
-      vendorId: vendorId,
       vendorName: vendor?.vendorName || 'Unknown Vendor',
+      vendorId: vendorId || undefined,
       bankAccountId: this.selectedAccountId,
-      bankAccountName: accountName,
       paymentMethod: this.paymentMethod,
-      referenceNumber: this.referenceNumber,
-      amount: this.paymentAmount,
-      status: 'Posted',
+      referenceNumber: this.referenceNumber || undefined,
       invoicesPaid: selectedInvoices.map(si => ({
         invoiceId: si.invoiceId,
         invoiceNumber: si.invoiceNumber,
         amountPaid: si.amountPaid
       }))
-    };
-
-    // Update vouchers list
-    this.vouchers.update(prev => [newVoucher, ...prev]);
-
-    // ── AUTO-POST to General Ledger ──────────────────────────────────
-    this.financeService.autoPostAPPayment({
-      voucherNumber: newVoucher.voucherNumber,
-      vendorName: newVoucher.vendorName,
-      date: newVoucher.paymentDate,
-      amount: newVoucher.amount,
-      paymentMethod: newVoucher.paymentMethod
+    }).subscribe({
+      next: (created: any) => {
+        this.showVoucherModal.set(false);
+        this.notificationService.success('finance.ap.voucher_posted_title', 'finance.ap.voucher_posted_desc');
+        this.loadAll();
+      },
+      error: (err: any) => {
+        this.notificationService.danger('finance.ap.title', err?.error?.message || 'Failed to create payment voucher');
+      }
     });
-
-    // Update status and paid amounts of paid invoices
-    this.invoices.update(invoicesList => 
-      invoicesList.map(inv => {
-        const paymentDetails = selectedInvoices.find(si => si.invoiceId === inv.id);
-        if (paymentDetails) {
-          // Calculate new total paid
-          const invoicePaidSoFar = this.vouchers()
-            .filter(v => v.status === 'Posted')
-            .reduce((sum, v) => {
-              const matches = v.invoicesPaid.find(ip => ip.invoiceId === inv.id);
-              return sum + (matches ? matches.amountPaid : 0);
-            }, 0);
-
-          let newStatus: 'Paid' | 'Partially Paid' | 'Unpaid' = 'Unpaid';
-          if (invoicePaidSoFar >= inv.totalAmount) {
-            newStatus = 'Paid';
-          } else if (invoicePaidSoFar > 0) {
-            newStatus = 'Partially Paid';
-          }
-          return { ...inv, status: newStatus };
-        }
-        return inv;
-      })
-    );
-
-    // Update aging entry
-    this.aging.update(entries => 
-      entries.map(entry => {
-        if (entry.vendorId === vendorId) {
-          const newTotal = Math.max(0, entry.totalDue - this.paymentAmount);
-          const newCurrent = Math.max(0, entry.current - this.paymentAmount);
-          return {
-            ...entry,
-            totalDue: newTotal,
-            current: newCurrent
-          };
-        }
-        return entry;
-      })
-    );
-
-    this.showVoucherModal.set(false);
-    this.notificationService.success('finance.ap.voucher_posted_title', 'finance.ap.voucher_posted_desc');
   }
 
   viewInvoiceDetails(invoice: SupplierInvoice) {

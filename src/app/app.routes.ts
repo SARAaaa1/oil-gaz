@@ -8,6 +8,12 @@ export const routes: Routes = [
     path: 'login',
     loadComponent: () => import('./features/auth/login/login.component').then(m => m.LoginComponent)
   },
+  // ─── Public route — no login required (share in job ads) ─────────────────
+  {
+    path: 'apply',
+    loadComponent: () => import('./features/hr/recruitment/apply/apply.component').then(m => m.HrApplyComponent),
+    title: 'تقديم طلب توظيف — PetroFlow'
+  },
   {
     path: '',
     component: MainLayoutComponent,
@@ -19,6 +25,12 @@ export const routes: Routes = [
         path: 'dashboard',
         loadComponent: () => import('./features/dashboard/dashboard.component').then(m => m.DashboardComponent),
         data: { permission: 'view:dashboard' }
+      },
+      // ─── User Profile ──────────────────────────────────────────────────────
+      {
+        path: 'profile',
+        loadComponent: () => import('./features/profile/profile.component').then(m => m.ProfileComponent),
+        title: 'الملف الشخصي — PetroFlow'
       },
       {
         path: 'procurement',
@@ -99,39 +111,52 @@ export const routes: Routes = [
       {
         path: 'assets',
         children: [
-          { path: '', loadComponent: () => import('./features/assets/assets.component').then(m => m.AssetsComponent) },
-          { path: 'maintenance', loadComponent: () => import('./features/maintenance/maintenance.component').then(m => m.MaintenanceComponent) }
+          { path: '', redirectTo: 'register', pathMatch: 'full' },
+          {
+            path: 'register',
+            loadComponent: () => import('./features/assets/assets.component').then(m => m.AssetsComponent),
+            title: 'سجل الأصول والمعدات — PetroFlow'
+          },
+          {
+            path: 'rigs',
+            loadComponent: () => import('./features/operations/rigs/rigs.component').then(m => m.RigsComponent),
+            title: 'سجل أسطول الحفارات — PetroFlow'
+          },
+          {
+            path: 'camps',
+            loadComponent: () => import('./features/operations/camps/camps.component').then(m => m.CampsComponent),
+            title: 'المخيمات والكرافانات — PetroFlow'
+          },
+          {
+            path: 'fleet',
+            loadComponent: () => import('./features/operations/fleet/fleet.component').then(m => m.FleetComponent),
+            title: 'إدارة الأسطول والمركبات — PetroFlow'
+          },
+          {
+            path: 'fuel',
+            loadComponent: () => import('./features/operations/fuel/fuel.component').then(m => m.FuelComponent),
+            title: 'إدارة الوقود والمحروقات — PetroFlow'
+          },
+          {
+            path: 'maintenance',
+            loadComponent: () => import('./features/maintenance/maintenance.component').then(m => m.MaintenanceComponent),
+            title: 'الصيانة الوقائية وأوامر الإصلاح — PetroFlow'
+          }
         ]
       },
 
       {
         path: 'operations',
         children: [
-          { path: '', redirectTo: 'rigs', pathMatch: 'full' },
-          {
-            path: 'rigs',
-            loadComponent: () => import('./features/operations/rigs/rigs.component').then(m => m.RigsComponent),
-            data: { permission: 'view:rigs' }
-          },
+          { path: '', redirectTo: 'timesheets', pathMatch: 'full' },
+          { path: 'rigs', redirectTo: '/assets/rigs', pathMatch: 'full' },
+          { path: 'camps', redirectTo: '/assets/camps', pathMatch: 'full' },
+          { path: 'fleet', redirectTo: '/assets/fleet', pathMatch: 'full' },
+          { path: 'fuel', redirectTo: '/assets/fuel', pathMatch: 'full' },
           {
             path: 'timesheets',
             loadComponent: () => import('./features/operations/timesheets/timesheets.component').then(m => m.TimesheetsComponent),
             data: { permission: 'view:timesheets' }
-          },
-          {
-            path: 'camps',
-            loadComponent: () => import('./features/operations/camps/camps.component').then(m => m.CampsComponent),
-            data: { permission: 'view:rigs' }
-          },
-          {
-            path: 'fleet',
-            loadComponent: () => import('./features/operations/fleet/fleet.component').then(m => m.FleetComponent),
-            data: { permission: 'view:rigs' }
-          },
-          {
-            path: 'fuel',
-            loadComponent: () => import('./features/operations/fuel/fuel.component').then(m => m.FuelComponent),
-            data: { permission: 'view:rigs' }
           },
           {
             path: 'projects',
@@ -386,9 +411,10 @@ export const routes: Routes = [
           // Settings & Admin
           { path: 'settings', loadComponent: () => import('./features/hr/settings/settings.component').then(m => m.HrSettingsComponent) },
 
-          // Admin
-          { path: 'admin/users', loadComponent: () => import('./features/hr/admin/users/users.component').then(m => m.HrAdminUsersComponent) },
-          { path: 'admin/roles', loadComponent: () => import('./features/hr/admin/roles/roles.component').then(m => m.HrAdminRolesComponent) },
+          // ─── Admin — Users, Roles, Departments ────────────────────────
+          { path: 'admin/users',       loadComponent: () => import('./features/hr/admin/users/users.component').then(m => m.HrAdminUsersComponent),           title: 'إدارة المستخدمين — PetroFlow' },
+          { path: 'admin/roles',       loadComponent: () => import('./features/hr/admin/roles/roles.component').then(m => m.HrAdminRolesComponent),             title: 'إدارة الأدوار — PetroFlow' },
+          { path: 'admin/departments', loadComponent: () => import('./features/hr/admin/departments/departments.component').then(m => m.HrDepartmentsComponent), title: 'إدارة الأقسام — PetroFlow' },
           { path: 'admin/permissions', loadComponent: () => import('./features/hr/admin/permissions/permissions.component').then(m => m.HrAdminPermissionsComponent) }
 
         ]

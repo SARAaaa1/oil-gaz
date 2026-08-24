@@ -1,20 +1,154 @@
-import { Component, OnInit, signal, computed, inject, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnInit, signal, computed, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
-import { MockDataService } from '../../core/services/mock-data.service';
 import { BreadcrumbService } from '../../core/services/breadcrumb.service';
 import { AuditService } from '../../core/services/audit.service';
 import { FinanceCoreService } from '../../core/services/finance-core.service';
 import { NotificationService } from '../../core/services/notification.service';
-import { 
-  InventoryItem, Warehouse, MRV, MRVItem, MIV, MIVItem, 
-  InternalTransfer, InternalTransferItem, StockAdjustment, StockAdjustmentItem, 
+import { MockDataService } from '../../core/services/mock-data.service';
+import { InventoryApiService } from '../../core/services/inventory-api.service';
+import {
+  InventoryItem, Warehouse, MRV, MRVItem, MIV, MIVItem,
+  InternalTransfer, InternalTransferItem, StockAdjustment, StockAdjustmentItem,
   StockCount, StockCountItem, InventoryReservation, InventoryReservationItem
 } from '../../shared/interfaces/inventory.interface';
-import { Equipment, AssetCategory, AssetStatus } from '../../shared/interfaces/assets.interface';
 import { ApprovalHistoryComponent } from '../../shared/components/approval-history/approval-history.component';
+import { finalize } from 'rxjs/operators';
+
+// ─── Mappers ──────────────────────────────────────────────────────────────────
+
+function mapApiItem(raw: any): InventoryItem {
+  const qty = raw.quantity ?? 0;
+  const min = raw.minQuantity ?? 0;
+  let status: 'In Stock' | 'Low Stock' | 'Out of Stock' = 'In Stock';
+  if      (raw.status === 'Available')    status = 'In Stock';
+  else if (raw.status === 'Low Stock')    status = 'Low Stock';
+  else if (raw.status === 'Out of Stock') status = 'Out of Stock';
+  else if (qty === 0)                     status = 'Out of Stock';
+  else if (qty <= min)                    status = 'Low Stock';
+
+  return {
+    id:          raw._id ?? raw.id,
+    itemCode:    raw.itemCode ?? '',
+    itemName:    raw.itemName ?? '',
+    quantity:    qty,
+    minQuantity: min,
+    category:    raw.category ?? '',
+    uom:         raw.uom ?? 'PCS',
+    location:    raw.location ?? '',
+    unitPrice:   raw.unitPrice ?? 0,
+    status,
+  };
+}
+
+function mapApiWarehouse(raw: any): Warehouse {
+  return {
+    id:       raw._id ?? raw.id,
+    code:     raw.code ?? '',
+    name:     raw.name ?? '',
+    location: raw.location ?? '',
+    status:   raw.status ?? 'Active',
+  };
+}
+
+function mapApiMRV(raw: any): MRV {
+  return {
+    id:           raw._id ?? raw.id,
+    voucherNumber: raw.documentNumber ?? raw.mrvNumber ?? raw.voucherNumber ?? '',
+    poId:         raw.poId,
+    poNumber:     raw.poNumber,
+    warehouseId:  raw.warehouseId ?? '',
+    receivedDate: raw.receivedDate ?? raw.createdAt ?? '',
+    receivedBy:   raw.receivedBy ?? '',
+    supplierName: raw.supplierName ?? raw.vendorName ?? '',
+    status:       raw.status ?? 'Draft',
+    items:        (raw.items ?? []).map((i: any): MRVItem => ({
+      itemCode:         i.itemCode ?? '',
+      itemName:         i.itemName ?? '',
+      quantityOrdered:  i.quantityOrdered ?? i.quantity ?? 0,
+      quantityReceived: i.quantityReceived ?? i.quantity ?? 0,
+      unitPrice:        i.unitPrice ?? 0,
+      totalPrice:       i.totalPrice ?? 0,
+      uom:              i.uom ?? 'PCS',
+    })),
+    totalAmount:  raw.totalAmount ?? 0,
+    chargeType:   raw.chargeType,
+    projectId:    raw.projectId,
+    projectName:  raw.projectName,
+    assetId:      raw.assetId,
+    assetName:    raw.assetName,
+    costCenter:   raw.costCenter,
+  };
+}
+
+function mapApiMIV(raw: any): MIV {
+  return {
+    id:             raw._id ?? raw.id,
+    voucherNumber:  raw.documentNumber ?? raw.mivNumber ?? raw.voucherNumber ?? '',
+    issueTo:        raw.issueTo ?? 'Cost Center',
+    destinationId:  raw.destinationId ?? raw.departmentId ?? '',
+    referenceNumber: raw.referenceNumber ?? '',
+    requestedBy:    raw.requestedBy ?? '',
+    approvedBy:     raw.approvedBy,
+    issueDate:      raw.issueDate ?? raw.createdAt ?? '',
+    status:         raw.status ?? 'Draft',
+    items:          (raw.items ?? []).map((i: any): MIVItem => ({
+      itemCode:            i.itemCode ?? '',
+      itemName:            i.itemName ?? '',
+      quantityRequested:   i.quantityRequested ?? i.quantity ?? 0,
+      quantityIssued:      i.quantityIssued ?? i.quantity ?? 0,
+      unitPrice:           i.unitPrice ?? 0,
+      totalPrice:          i.totalPrice ?? 0,
+      uom:                 i.uom ?? 'PCS',
+      inventoryCreditAcc:  i.inventoryCreditAcc ?? '131000',
+      consumptionDebitAcc: i.consumptionDebitAcc ?? '511000',
+    })),
+    totalAmount: raw.totalAmount ?? 0,
+  };
+}
+
+function mapApiTransfer(raw: any): InternalTransfer {
+  return {
+    id:             raw._id ?? raw.id,
+    transferNumber: raw.documentNumber ?? raw.transferNumber ?? '',
+    fromWarehouseId: raw.fromWarehouseId ?? '',
+    toWarehouseId:   raw.toWarehouseId ?? '',
+    transferDate:   raw.transferDate ?? raw.createdAt ?? '',
+    requestedBy:    raw.requestedBy ?? '',
+    status:         raw.status ?? 'Draft',
+    items:          (raw.items ?? []).map((i: any): InternalTransferItem => ({
+      itemCode: i.itemCode ?? '',
+      itemName: i.itemName ?? '',
+      quantity: i.quantity ?? 0,
+      uom:      i.uom ?? 'PCS',
+    })),
+  };
+}
+
+function mapApiAdjustment(raw: any): StockAdjustment {
+  return {
+    id:               raw._id ?? raw.id,
+    adjustmentNumber: raw.documentNumber ?? raw.adjustmentNumber ?? '',
+    warehouseId:      raw.warehouseId ?? '',
+    adjustmentDate:   raw.adjustmentDate ?? raw.createdAt ?? '',
+    requestedBy:      raw.requestedBy ?? '',
+    status:           raw.status ?? 'Draft',
+    items:            (raw.items ?? []).map((i: any): StockAdjustmentItem => ({
+      itemCode:       i.itemCode ?? '',
+      itemName:       i.itemName ?? '',
+      systemQuantity: i.systemQuantity ?? 0,
+      adjustedQuantity: i.adjustedQuantity ?? i.quantity ?? 0,
+      adjustmentType: i.adjustmentType === 'decrease' ? 'Deduction' : 'Addition',
+      unitPrice:      i.unitPrice ?? 0,
+      reason:         i.notes ?? i.reason ?? '',
+    })),
+    totalValue: raw.totalValue ?? 0,
+  };
+}
+
+// ─── Component ────────────────────────────────────────────────────────────────
 
 @Component({
   selector: 'app-inventory',
@@ -25,53 +159,63 @@ import { ApprovalHistoryComponent } from '../../shared/components/approval-histo
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class InventoryComponent implements OnInit {
-  private readonly mockDataService = inject(MockDataService);
-  private readonly breadcrumbService = inject(BreadcrumbService);
-  private readonly auditService = inject(AuditService);
-  private readonly financeService = inject(FinanceCoreService);
+  private readonly inventoryApi        = inject(InventoryApiService);
+  private readonly mockDataService     = inject(MockDataService);   // للـ POs و reservations والـ bulk import
+  private readonly breadcrumbService   = inject(BreadcrumbService);
+  private readonly auditService        = inject(AuditService);
+  private readonly financeService      = inject(FinanceCoreService);
   private readonly notificationService = inject(NotificationService);
-  private readonly translate = inject(TranslateService);
-  private readonly route = inject(ActivatedRoute);
+  private readonly translate           = inject(TranslateService);
+  private readonly route               = inject(ActivatedRoute);
+  private readonly cdr                 = inject(ChangeDetectorRef);
 
-  // Core Data Stores (Signals)
-  readonly inventory = this.mockDataService.inventoryItems;
-  readonly warehouses = this.mockDataService.warehouses;
-  readonly mrvs = this.mockDataService.mrvs;
-  readonly mivs = this.mockDataService.mivs;
-  readonly transfers = this.mockDataService.transfers;
-  readonly adjustments = this.mockDataService.adjustments;
-  readonly counts = this.mockDataService.counts;
-  readonly purchaseOrders = this.mockDataService.purchaseOrders;
-  readonly bulkImportHistories = this.mockDataService.bulkImportHistories;
+  // ── Core Data Stores (API-backed Signals) ──────────────────────────────────
+  readonly inventory   = signal<InventoryItem[]>([]);
+  readonly warehouses  = signal<Warehouse[]>([]);
+  readonly mrvs        = signal<MRV[]>([]);
+  readonly mivs        = signal<MIV[]>([]);
+  readonly transfers   = signal<InternalTransfer[]>([]);
+  readonly adjustments = signal<StockAdjustment[]>([]);
+  readonly counts      = signal<StockCount[]>([]);
+
+  // KPI summary from API
+  readonly apiSummary = signal<{ totalItems: number; totalValue: number; lowStockCount: number; outOfStockCount: number } | null>(null);
+
+  // Still from mock (not yet in API scope)
+  readonly purchaseOrders       = this.mockDataService.purchaseOrders;
+  readonly bulkImportHistories  = this.mockDataService.bulkImportHistories;
   readonly inventoryReservations = this.mockDataService.inventoryReservations;
 
-  // Navigation & Search State
-  readonly activeTab = signal<'dashboard' | 'items' | 'warehouses' | 'mrv' | 'miv' | 'transfers' | 'adjustments' | 'valuation' | 'history' | 'reservations'>('dashboard');
-  readonly searchQuery = signal<string>('');
+  readonly isLoading = signal<boolean>(false);
+
+  // ── Navigation & Search ────────────────────────────────────────────────────
+  readonly activeTab     = signal<'dashboard' | 'items' | 'warehouses' | 'mrv' | 'miv' | 'transfers' | 'adjustments' | 'valuation' | 'history' | 'reservations'>('dashboard');
+  readonly searchQuery   = signal<string>('');
   readonly locationFilter = signal<string>('ALL');
 
-  // KPI Calculations
-  readonly totalItemsCount = computed(() => this.inventory().length);
+  // ── KPI Calculations (from API summary or computed locally) ───────────────
+  readonly totalItemsCount = computed(() =>
+    this.apiSummary()?.totalItems ?? this.inventory().length
+  );
   readonly inventoryValue = computed(() =>
+    this.apiSummary()?.totalValue ??
     this.inventory().reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0)
   );
   readonly lowStockCount = computed(() =>
+    this.apiSummary()?.lowStockCount ??
     this.inventory().filter(i => i.status === 'Low Stock').length
   );
   readonly outOfStockCount = computed(() =>
+    this.apiSummary()?.outOfStockCount ??
     this.inventory().filter(i => i.status === 'Out of Stock').length
   );
 
-  // Filtered Lists
+  // ── Filtered Lists ─────────────────────────────────────────────────────────
   readonly filteredInventory = computed(() => {
-    let list = this.inventory();
+    let list    = this.inventory();
     const query = this.searchQuery().trim().toLowerCase();
-    const location = this.locationFilter();
-
-    if (location !== 'ALL') {
-      list = list.filter(i => i.location === location);
-    }
-
+    const loc   = this.locationFilter();
+    if (loc !== 'ALL') list = list.filter(i => i.location === loc);
     if (query) {
       list = list.filter(i =>
         i.itemCode.toLowerCase().includes(query) ||
@@ -82,138 +226,184 @@ export class InventoryComponent implements OnInit {
     return list;
   });
 
-  readonly filteredHistory = computed(() => {
-    return this.bulkImportHistories().filter(h => h.module === 'Inventory');
-  });
+  readonly filteredHistory = computed(() =>
+    this.bulkImportHistories().filter(h => h.module === 'Inventory')
+  );
 
-  // --- MODAL STATES ---
-  readonly isItemModalOpen = signal(false);
-  readonly isEditMode = signal(false);
-  readonly isViewMode = signal(false);
-  readonly selectedItem = signal<InventoryItem | null>(null);
-  readonly selectedMRV = signal<MRV | null>(null);
-  readonly selectedMIV = signal<MIV | null>(null);
-  readonly selectedTransfer = signal<InternalTransfer | null>(null);
-  readonly selectedAdjustment = signal<StockAdjustment | null>(null);
-
-  readonly isWarehouseModalOpen = signal(false);
-  readonly isMRVModalOpen = signal(false);
-  readonly isMIVModalOpen = signal(false);
-  readonly isTransferModalOpen = signal(false);
+  // ── Modal States ───────────────────────────────────────────────────────────
+  readonly isItemModalOpen       = signal(false);
+  readonly isEditMode            = signal(false);
+  readonly isViewMode            = signal(false);
+  readonly selectedItem          = signal<InventoryItem | null>(null);
+  readonly selectedMRV           = signal<MRV | null>(null);
+  readonly selectedMIV           = signal<MIV | null>(null);
+  readonly selectedTransfer      = signal<InternalTransfer | null>(null);
+  readonly selectedAdjustment    = signal<StockAdjustment | null>(null);
+  readonly isWarehouseModalOpen  = signal(false);
+  readonly isMRVModalOpen        = signal(false);
+  readonly isMIVModalOpen        = signal(false);
+  readonly isTransferModalOpen   = signal(false);
   readonly isAdjustmentModalOpen = signal(false);
-  readonly isCountModalOpen = signal(false);
+  readonly isCountModalOpen      = signal(false);
 
-  // Form State Containers
+  // ── Form State ────────────────────────────────────────────────────────────
   itemForm = {
-    itemCode: '',
-    itemName: '',
-    category: 'Drilling Consumables',
-    subCategory: '',
-    uom: 'EA',
-    itemType: 'Material',
-    reorderLevel: 5,
-    description: '',
-    costCenter: 'CC-DRL-001',
-    quantity: 10,
-    unitPrice: 100,
-    location: 'Warehouse A',
-    status: 'In Stock' as 'In Stock' | 'Low Stock' | 'Out of Stock'
+    itemCode: '', itemName: '', category: 'Drilling Consumables', subCategory: '',
+    uom: 'EA', itemType: 'Material', reorderLevel: 5, description: '',
+    costCenter: 'CC-DRL-001', quantity: 10, unitPrice: 100,
+    location: 'Warehouse A', status: 'In Stock' as 'In Stock' | 'Low Stock' | 'Out of Stock'
   };
 
-  warehouseForm = {
-    code: '',
-    name: '',
-    location: '',
-    status: 'Active' as 'Active' | 'Inactive'
-  };
+  warehouseForm = { code: '', name: '', location: '', status: 'Active' as 'Active' | 'Inactive' };
 
   mrvForm = {
-    poId: '',
-    warehouseId: 'w1',
-    receivedDate: new Date().toISOString().split('T')[0],
-    supplierName: '',
-    items: [] as MRVItem[]
+    poId: '', warehouseId: '', receivedDate: new Date().toISOString().split('T')[0],
+    supplierName: '', items: [] as MRVItem[]
   };
 
   mivForm = {
     issueTo: 'Project' as 'Project' | 'Cost Center' | 'Rig' | 'Workshop' | 'Vehicle' | 'Camp',
-    destinationId: 'Permian Overland',
-    referenceNumber: '',
-    requestedBy: 'Robert Vance',
-    items: [] as MIVItem[]
+    destinationId: '', referenceNumber: '', requestedBy: '', items: [] as MIVItem[]
   };
 
   transferForm = {
-    fromWarehouseId: 'w1',
-    toWarehouseId: 'w2',
+    fromWarehouseId: '', toWarehouseId: '',
     transferDate: new Date().toISOString().split('T')[0],
-    requestedBy: 'Jim Halpert',
-    items: [] as InternalTransferItem[]
+    requestedBy: '', items: [] as InternalTransferItem[]
   };
 
   adjustmentForm = {
-    warehouseId: 'w1',
-    adjustmentDate: new Date().toISOString().split('T')[0],
-    requestedBy: 'Jim Halpert',
-    items: [] as StockAdjustmentItem[]
+    warehouseId: '', adjustmentDate: new Date().toISOString().split('T')[0],
+    requestedBy: '', items: [] as StockAdjustmentItem[]
   };
 
   countForm = {
-    warehouseId: 'w1',
-    countDate: new Date().toISOString().split('T')[0],
+    warehouseId: '', countDate: new Date().toISOString().split('T')[0],
     items: [] as StockCountItem[]
   };
 
-  // Excel Import Dialog State
-  readonly isImportModalOpen = signal(false);
-  readonly isEquipmentImport = signal(false);
-  readonly isUploading = signal(false);
-  readonly uploadProgress = signal(0);
+  // Excel import
+  readonly isImportModalOpen   = signal(false);
+  readonly isEquipmentImport   = signal(false);
+  readonly isUploading         = signal(false);
+  readonly uploadProgress      = signal(0);
   readonly importPreviewRecords = signal<any[]>([]);
   readonly importValidationErrors = signal<string[]>([]);
-  readonly isDragOver = signal(false);
-  uploadedFileName = signal<string>('');
+  readonly isDragOver          = signal(false);
+  uploadedFileName             = signal<string>('');
 
+  // ── Init ──────────────────────────────────────────────────────────────────
   ngOnInit() {
-    this.breadcrumbService.setBreadcrumbs([
-      { label: 'navigation.inventory' }
-    ]);
+    this.breadcrumbService.setBreadcrumbs([{ label: 'navigation.inventory' }]);
 
-    // Check query params for active tab and selected MIV
+    this.loadAll();
+
     this.route.queryParams.subscribe(params => {
-      const tab = params['tab'];
-      if (tab) {
-        this.activeTab.set(tab as any);
-      }
-      const mivId = params['mivId'];
-      if (mivId) {
-        const miv = this.mivs().find(m => m.id === mivId);
-        if (miv) {
-          this.selectedMIV.set(miv);
-        }
+      if (params['tab']) this.activeTab.set(params['tab'] as any);
+      if (params['mivId']) {
+        const miv = this.mivs().find(m => m.id === params['mivId']);
+        if (miv) this.selectedMIV.set(miv);
       }
     });
   }
 
-  // --- ITEM METHODS ---
+  private loadAll() {
+    this.loadItems();
+    this.loadWarehouses();
+    this.loadMRVs();
+    this.loadMIVs();
+    this.loadTransfers();
+    this.loadAdjustments();
+    this.loadSummary();
+  }
+
+  private loadItems() {
+    this.inventoryApi.getItems({ limit: 500 }).subscribe({
+      next: res => {
+        const raw = res?.items ?? (Array.isArray(res) ? res : []);
+        this.inventory.set(raw.map(mapApiItem));
+        this.cdr.markForCheck();
+      },
+      error: err => console.error('Failed to load items:', err)
+    });
+  }
+
+  private loadWarehouses() {
+    this.inventoryApi.getWarehouses().subscribe({
+      next: res => {
+        const raw = res?.items ?? (Array.isArray(res) ? res : []);
+        this.warehouses.set(raw.map(mapApiWarehouse));
+        this.cdr.markForCheck();
+      },
+      error: err => console.error('Failed to load warehouses:', err)
+    });
+  }
+
+  private loadMRVs() {
+    this.inventoryApi.getMRVs({ limit: 200 }).subscribe({
+      next: res => {
+        const raw = res?.items ?? (Array.isArray(res) ? res : []);
+        this.mrvs.set(raw.map(mapApiMRV));
+        this.cdr.markForCheck();
+      },
+      error: err => console.error('Failed to load MRVs:', err)
+    });
+  }
+
+  private loadMIVs() {
+    this.inventoryApi.getMIVs({ limit: 200 }).subscribe({
+      next: res => {
+        const raw = res?.items ?? (Array.isArray(res) ? res : []);
+        this.mivs.set(raw.map(mapApiMIV));
+        this.cdr.markForCheck();
+      },
+      error: err => console.error('Failed to load MIVs:', err)
+    });
+  }
+
+  private loadTransfers() {
+    this.inventoryApi.getTransfers({ limit: 200 }).subscribe({
+      next: res => {
+        const raw = res?.items ?? (Array.isArray(res) ? res : []);
+        this.transfers.set(raw.map(mapApiTransfer));
+        this.cdr.markForCheck();
+      },
+      error: err => console.error('Failed to load transfers:', err)
+    });
+  }
+
+  private loadAdjustments() {
+    this.inventoryApi.getAdjustments({ limit: 200 }).subscribe({
+      next: res => {
+        const raw = res?.items ?? (Array.isArray(res) ? res : []);
+        this.adjustments.set(raw.map(mapApiAdjustment));
+        this.cdr.markForCheck();
+      },
+      error: err => console.error('Failed to load adjustments:', err)
+    });
+  }
+
+  private loadSummary() {
+    this.inventoryApi.getSummary().subscribe({
+      next: summary => {
+        this.apiSummary.set(summary);
+        this.cdr.markForCheck();
+      },
+      error: () => { /* يُستخدم computed fallback */ }
+    });
+  }
+
+  // ─── ITEM METHODS ──────────────────────────────────────────────────────────
+
   openAddItem() {
     this.isEditMode.set(false);
     this.isViewMode.set(false);
     this.selectedItem.set(null);
     this.itemForm = {
-      itemCode: '',
-      itemName: '',
-      category: 'Drilling Consumables',
-      subCategory: '',
-      uom: 'EA',
-      itemType: 'Material',
-      reorderLevel: 5,
-      description: '',
-      costCenter: 'CC-DRL-001',
-      quantity: 10,
-      unitPrice: 100,
-      location: 'Warehouse A',
-      status: 'In Stock'
+      itemCode: '', itemName: '', category: 'Drilling Consumables', subCategory: '',
+      uom: 'EA', itemType: 'Material', reorderLevel: 5, description: '',
+      costCenter: 'CC-DRL-001', quantity: 10, unitPrice: 100,
+      location: 'Warehouse A', status: 'In Stock'
     };
     this.isItemModalOpen.set(true);
   }
@@ -223,19 +413,19 @@ export class InventoryComponent implements OnInit {
     this.isViewMode.set(false);
     this.selectedItem.set(item);
     this.itemForm = {
-      itemCode: item.itemCode,
-      itemName: item.itemName,
-      category: item.category || 'Drilling Consumables',
+      itemCode:    item.itemCode,
+      itemName:    item.itemName,
+      category:    item.category || 'Drilling Consumables',
       subCategory: '',
-      uom: item.uom,
-      itemType: 'Material',
+      uom:         item.uom,
+      itemType:    'Material',
       reorderLevel: item.minQuantity || 5,
       description: '',
-      costCenter: 'CC-DRL-001',
-      quantity: item.quantity,
-      unitPrice: item.unitPrice,
-      location: item.location,
-      status: item.status
+      costCenter:  'CC-DRL-001',
+      quantity:    item.quantity,
+      unitPrice:   item.unitPrice,
+      location:    item.location,
+      status:      item.status
     };
     this.isItemModalOpen.set(true);
   }
@@ -245,19 +435,19 @@ export class InventoryComponent implements OnInit {
     this.isViewMode.set(true);
     this.selectedItem.set(item);
     this.itemForm = {
-      itemCode: item.itemCode,
-      itemName: item.itemName,
-      category: item.category || 'Drilling Consumables',
+      itemCode:    item.itemCode,
+      itemName:    item.itemName,
+      category:    item.category || 'Drilling Consumables',
       subCategory: '',
-      uom: item.uom,
-      itemType: 'Material',
+      uom:         item.uom,
+      itemType:    'Material',
       reorderLevel: item.minQuantity || 5,
       description: '',
-      costCenter: 'CC-DRL-001',
-      quantity: item.quantity,
-      unitPrice: item.unitPrice,
-      location: item.location,
-      status: item.status
+      costCenter:  'CC-DRL-001',
+      quantity:    item.quantity,
+      unitPrice:   item.unitPrice,
+      location:    item.location,
+      status:      item.status
     };
     this.isItemModalOpen.set(true);
   }
@@ -268,71 +458,72 @@ export class InventoryComponent implements OnInit {
       return;
     }
 
-    let calcStatus: 'In Stock' | 'Low Stock' | 'Out of Stock' = 'In Stock';
-    if (this.itemForm.quantity === 0) {
-      calcStatus = 'Out of Stock';
-    } else if (this.itemForm.quantity <= this.itemForm.reorderLevel) {
-      calcStatus = 'Low Stock';
-    }
-
     if (this.isEditMode()) {
       const original = this.selectedItem();
-      if (original) {
-        this.mockDataService.updateInventoryItem(original.id, {
-          itemCode: this.itemForm.itemCode,
-          itemName: this.itemForm.itemName,
-          category: this.itemForm.category,
-          uom: this.itemForm.uom,
-          quantity: this.itemForm.quantity,
-          unitPrice: this.itemForm.unitPrice,
-          location: this.itemForm.location,
-          status: calcStatus,
-          minQuantity: this.itemForm.reorderLevel
-        });
+      if (!original) return;
 
-        this.auditService.log({
-          user: 'Admin User',
-          role: 'Super Admin',
-          module: 'Inventory',
-          entityName: 'InventoryItem',
-          entityId: original.itemCode,
-          action: 'Update',
-          oldValue: `Qty: ${original.quantity}, Price: ${original.unitPrice}`,
-          newValue: `Qty: ${this.itemForm.quantity}, Price: ${this.itemForm.unitPrice}`,
-          details: `Updated inventory item ${this.itemForm.itemName} (${this.itemForm.itemCode})`
+      this.isLoading.set(true);
+      this.inventoryApi.updateItem(original.id, {
+        itemName:    this.itemForm.itemName,
+        category:    this.itemForm.category,
+        uom:         this.itemForm.uom,
+        quantity:    this.itemForm.quantity,
+        unitPrice:   this.itemForm.unitPrice,
+        location:    this.itemForm.location,
+        minQuantity: this.itemForm.reorderLevel,
+      }).pipe(finalize(() => { this.isLoading.set(false); this.cdr.markForCheck(); }))
+        .subscribe({
+          next: updated => {
+            const mapped = mapApiItem(updated ?? { ...original, ...this.itemForm, minQuantity: this.itemForm.reorderLevel });
+            this.inventory.update(list => list.map(i => i.id === original.id ? mapped : i));
+            this.auditService.log({
+              user: 'Current User', role: 'Store Keeper', module: 'Inventory',
+              entityName: 'InventoryItem', entityId: original.itemCode, action: 'Update',
+              oldValue: `Qty: ${original.quantity}, Price: ${original.unitPrice}`,
+              newValue:  `Qty: ${this.itemForm.quantity}, Price: ${this.itemForm.unitPrice}`,
+              details:   `Updated inventory item ${this.itemForm.itemName}`
+            });
+            this.isItemModalOpen.set(false);
+            this.notificationService.success('Success', 'Inventory item updated successfully.');
+          },
+          error: err => this.notificationService.danger('Error', err?.error?.message ?? 'Failed to update item.')
         });
-      }
     } else {
-      const newItem = this.mockDataService.addInventoryItem({
-        itemCode: this.itemForm.itemCode,
-        itemName: this.itemForm.itemName,
-        category: this.itemForm.category,
-        uom: this.itemForm.uom,
-        quantity: this.itemForm.quantity,
-        unitPrice: this.itemForm.unitPrice,
-        location: this.itemForm.location,
-        status: calcStatus,
-        minQuantity: this.itemForm.reorderLevel
-      });
+      const payload = {
+        itemCode:    this.itemForm.itemCode,
+        itemName:    this.itemForm.itemName,
+        category:    this.itemForm.category,
+        uom:         this.itemForm.uom,
+        quantity:    this.itemForm.quantity,
+        unitPrice:   this.itemForm.unitPrice,
+        location:    this.itemForm.location,
+        minQuantity: this.itemForm.reorderLevel,
+        itemType:    this.itemForm.itemType,
+      };
 
-      this.auditService.log({
-        user: 'Admin User',
-        role: 'Super Admin',
-        module: 'Inventory',
-        entityName: 'InventoryItem',
-        entityId: newItem.itemCode,
-        action: 'Create',
-        oldValue: '',
-        newValue: JSON.stringify(newItem),
-        details: `Registered new inventory item: ${newItem.itemName}`
-      });
+      this.isLoading.set(true);
+      this.inventoryApi.createItem(payload)
+        .pipe(finalize(() => { this.isLoading.set(false); this.cdr.markForCheck(); }))
+        .subscribe({
+          next: created => {
+            const mapped = mapApiItem(created);
+            this.inventory.update(list => [mapped, ...list]);
+            this.auditService.log({
+              user: 'Current User', role: 'Store Keeper', module: 'Inventory',
+              entityName: 'InventoryItem', entityId: mapped.itemCode, action: 'Create',
+              oldValue: '', newValue: JSON.stringify(mapped),
+              details: `Registered new item: ${mapped.itemName}`
+            });
+            this.isItemModalOpen.set(false);
+            this.notificationService.success('Success', 'Inventory item created successfully.');
+          },
+          error: err => this.notificationService.danger('Error', err?.error?.message ?? 'Failed to create item.')
+        });
     }
-
-    this.isItemModalOpen.set(false);
-    this.notificationService.success('Success', 'Inventory item saved successfully.');
   }
 
-  // --- WAREHOUSE METHODS ---
+  // ─── WAREHOUSE METHODS ─────────────────────────────────────────────────────
+
   openAddWarehouse() {
     this.warehouseForm = { code: '', name: '', location: '', status: 'Active' };
     this.isWarehouseModalOpen.set(true);
@@ -344,31 +535,33 @@ export class InventoryComponent implements OnInit {
       return;
     }
 
-    const wh = this.mockDataService.addWarehouse(this.warehouseForm);
-    this.auditService.log({
-      user: 'Admin User',
-      role: 'Super Admin',
-      module: 'Inventory',
-      entityName: 'Warehouse',
-      entityId: wh.code,
-      action: 'Create',
-      oldValue: '',
-      newValue: JSON.stringify(wh),
-      details: `Created new warehouse: ${wh.name} (${wh.code})`
-    });
-
-    this.isWarehouseModalOpen.set(false);
-    this.notificationService.success('Success', 'Warehouse registered successfully.');
+    this.isLoading.set(true);
+    this.inventoryApi.createWarehouse(this.warehouseForm)
+      .pipe(finalize(() => { this.isLoading.set(false); this.cdr.markForCheck(); }))
+      .subscribe({
+        next: created => {
+          const mapped = mapApiWarehouse(created);
+          this.warehouses.update(list => [mapped, ...list]);
+          this.auditService.log({
+            user: 'Current User', role: 'Store Keeper', module: 'Inventory',
+            entityName: 'Warehouse', entityId: mapped.code, action: 'Create',
+            oldValue: '', newValue: JSON.stringify(mapped),
+            details: `Created warehouse: ${mapped.name} (${mapped.code})`
+          });
+          this.isWarehouseModalOpen.set(false);
+          this.notificationService.success('Success', 'Warehouse registered successfully.');
+        },
+        error: err => this.notificationService.danger('Error', err?.error?.message ?? 'Failed to create warehouse.')
+      });
   }
 
-  // --- MRV (GOODS RECEIPT) METHODS ---
+  // ─── MRV (GOODS RECEIPT) METHODS ──────────────────────────────────────────
+
   openAddMRV() {
     this.mrvForm = {
-      poId: '',
-      warehouseId: 'w1',
+      poId: '', warehouseId: this.warehouses()[0]?.id ?? '',
       receivedDate: new Date().toISOString().split('T')[0],
-      supplierName: '',
-      items: []
+      supplierName: '', items: []
     };
     this.isMRVModalOpen.set(true);
   }
@@ -378,13 +571,13 @@ export class InventoryComponent implements OnInit {
     if (po) {
       this.mrvForm.supplierName = po.vendorName;
       this.mrvForm.items = po.items.map(item => ({
-        itemCode: item.itemCode,
-        itemName: item.itemName,
-        quantityOrdered: item.quantity,
+        itemCode:         item.itemCode,
+        itemName:         item.itemName,
+        quantityOrdered:  item.quantity,
         quantityReceived: item.quantity,
-        unitPrice: item.unitPrice,
-        totalPrice: item.quantity * item.unitPrice,
-        uom: item.uom
+        unitPrice:        item.unitPrice,
+        totalPrice:       item.quantity * item.unitPrice,
+        uom:              item.uom
       }));
     }
   }
@@ -395,82 +588,75 @@ export class InventoryComponent implements OnInit {
       return;
     }
 
-    const total = this.mrvForm.items.reduce((sum, i) => sum + i.totalPrice, 0);
-    const po = this.purchaseOrders().find(p => p.id === this.mrvForm.poId);
-
-    const mrv = this.mockDataService.addMRV({
-      poId: this.mrvForm.poId || undefined,
-      poNumber: po ? po.poNumber : undefined,
-      warehouseId: this.mrvForm.warehouseId,
-      receivedDate: this.mrvForm.receivedDate,
-      receivedBy: 'Jim Halpert',
+    const payload = {
+      warehouseId:  this.mrvForm.warehouseId,
+      poId:         this.mrvForm.poId || undefined,
       supplierName: this.mrvForm.supplierName || 'General Supplier',
-      items: this.mrvForm.items,
-      totalAmount: total
-    });
+      receivedDate: this.mrvForm.receivedDate,
+      remarks:      `MRV created via ERP`,
+      items:        this.mrvForm.items.map(i => ({
+        itemCode:        i.itemCode,
+        itemName:        i.itemName,
+        quantity:        i.quantityReceived,
+        uom:             i.uom,
+        condition:       'Good',
+        unitPrice:       i.unitPrice,
+      }))
+    };
 
-    this.auditService.log({
-      user: 'Jim Halpert',
-      role: 'Store Keeper',
-      module: 'Inventory',
-      entityName: 'MRV',
-      entityId: mrv.voucherNumber,
-      action: 'Create',
-      oldValue: '',
-      newValue: JSON.stringify(mrv),
-      details: `Created Goods Receipt Voucher ${mrv.voucherNumber} for PO: ${mrv.poNumber || 'Direct'}`
-    });
-
-    this.isMRVModalOpen.set(false);
-    this.notificationService.success('Draft Saved', `Voucher ${mrv.voucherNumber} created in Draft state.`);
+    this.isLoading.set(true);
+    this.inventoryApi.createMRV(payload)
+      .pipe(finalize(() => { this.isLoading.set(false); this.cdr.markForCheck(); }))
+      .subscribe({
+        next: created => {
+          const mapped = mapApiMRV(created);
+          this.mrvs.update(list => [mapped, ...list]);
+          this.isMRVModalOpen.set(false);
+          this.notificationService.success('Draft Saved', `Voucher ${mapped.voucherNumber} created.`);
+        },
+        error: err => this.notificationService.danger('Error', err?.error?.message ?? 'Failed to create MRV.')
+      });
   }
 
   approveMRV(mrv: MRV) {
-    // 1. Update status
-    this.mockDataService.updateMRVStatus(mrv.id, 'Posted');
+    this.isLoading.set(true);
+    this.inventoryApi.updateMRV(mrv.id, { status: 'Posted' })
+      .pipe(finalize(() => { this.isLoading.set(false); this.cdr.markForCheck(); }))
+      .subscribe({
+        next: () => {
+          this.mrvs.update(list => list.map(m => m.id === mrv.id ? { ...m, status: 'Posted' as const } : m));
 
-    // 2. Finance Double Entry Posting!
-    // Debit Inventory Asset (131000) and Credit Accounts Payable (211000)
-    try {
-      this.financeService.postJournalEntry({
-        date: mrv.receivedDate,
-        reference: mrv.voucherNumber,
-        description: `Auto posting for Goods Receipt Voucher ${mrv.voucherNumber} from Supplier: ${mrv.supplierName}`,
-        lines: [
-          { id: crypto.randomUUID(), accountCode: '131000', accountName: 'Material Warehouse Stock', debit: mrv.totalAmount, credit: 0 },
-          { id: crypto.randomUUID(), accountCode: '211000', accountName: 'Accounts Payable (A/P)', debit: 0, credit: mrv.totalAmount }
-        ]
+          try {
+            this.financeService.postJournalEntry({
+              date:        mrv.receivedDate,
+              reference:   mrv.voucherNumber,
+              description: `Auto posting for Goods Receipt Voucher ${mrv.voucherNumber}`,
+              lines: [
+                { id: crypto.randomUUID(), accountCode: '131000', accountName: 'Material Warehouse Stock', debit: mrv.totalAmount, credit: 0 },
+                { id: crypto.randomUUID(), accountCode: '211000', accountName: 'Accounts Payable (A/P)', debit: 0, credit: mrv.totalAmount }
+              ]
+            });
+            this.notificationService.success('Voucher Approved & Posted', `MRV ${mrv.voucherNumber} inventory added.`);
+            this.auditService.log({
+              user: 'Current User', role: 'Store Keeper', module: 'Inventory',
+              entityName: 'MRV', entityId: mrv.voucherNumber, action: 'Approve',
+              oldValue: 'Status: Draft', newValue: 'Status: Posted',
+              details: `Approved MRV ${mrv.voucherNumber} — $${mrv.totalAmount}`
+            });
+          } catch (e: any) {
+            this.notificationService.danger('GL Posting Error', e.message);
+          }
+        },
+        error: err => this.notificationService.danger('Error', err?.error?.message ?? 'Failed to approve MRV.')
       });
-
-      this.notificationService.success(
-        'Voucher Approved & Posted',
-        `MRV ${mrv.voucherNumber} inventory added. Finance journal entry posted successfully.`
-      );
-
-      this.auditService.log({
-        user: 'Admin User',
-        role: 'Super Admin',
-        module: 'Inventory',
-        entityName: 'MRV',
-        entityId: mrv.voucherNumber,
-        action: 'Approve',
-        oldValue: 'Status: Draft',
-        newValue: 'Status: Posted',
-        details: `Approved MRV ${mrv.voucherNumber} & Posted double-entry journal entry of $${mrv.totalAmount}.`
-      });
-    } catch (e: any) {
-      this.notificationService.danger('GL Posting Error', e.message);
-    }
   }
 
-  // --- MIV (MATERIAL ISSUE) METHODS ---
+  // ─── MIV (MATERIAL ISSUE) METHODS ─────────────────────────────────────────
+
   openAddMIV() {
     this.mivForm = {
-      issueTo: 'Project',
-      destinationId: 'Permian Overland',
-      referenceNumber: '',
-      requestedBy: 'Robert Vance',
-      items: []
+      issueTo: 'Project', destinationId: '', referenceNumber: '',
+      requestedBy: '', items: []
     };
     this.addMIVRow();
     this.isMIVModalOpen.set(true);
@@ -478,30 +664,22 @@ export class InventoryComponent implements OnInit {
 
   addMIVRow() {
     this.mivForm.items.push({
-      itemCode: '',
-      itemName: '',
-      quantityRequested: 1,
-      quantityIssued: 1,
-      unitPrice: 0,
-      totalPrice: 0,
-      uom: 'EA',
-      inventoryCreditAcc: '131000',
-      consumptionDebitAcc: '511000' // Project Material Consumed Expense
+      itemCode: '', itemName: '', quantityRequested: 1, quantityIssued: 1,
+      unitPrice: 0, totalPrice: 0, uom: 'EA',
+      inventoryCreditAcc: '131000', consumptionDebitAcc: '511000'
     });
   }
 
   removeMIVRow(index: number) {
-    if (this.mivForm.items.length > 1) {
-      this.mivForm.items.splice(index, 1);
-    }
+    if (this.mivForm.items.length > 1) this.mivForm.items.splice(index, 1);
   }
 
   onMIVItemChange(index: number) {
-    const row = this.mivForm.items[index];
+    const row   = this.mivForm.items[index];
     const match = this.inventory().find(i => i.itemCode === row.itemCode);
     if (match) {
-      row.itemName = match.itemName;
-      row.uom = match.uom;
+      row.itemName  = match.itemName;
+      row.uom       = match.uom;
       row.unitPrice = match.unitPrice;
       row.totalPrice = row.quantityIssued * match.unitPrice;
     }
@@ -514,117 +692,92 @@ export class InventoryComponent implements OnInit {
       return;
     }
 
-    const total = this.mivForm.items.reduce((sum, i) => sum + i.totalPrice, 0);
-
-    const miv = this.mockDataService.addMIV({
-      issueTo: this.mivForm.issueTo,
-      destinationId: this.mivForm.destinationId,
+    const payload = {
+      issueTo:         this.mivForm.issueTo,
+      destinationId:   this.mivForm.destinationId,
       referenceNumber: this.mivForm.referenceNumber,
-      requestedBy: this.mivForm.requestedBy,
-      issueDate: new Date().toISOString().split('T')[0],
-      items: this.mivForm.items,
-      totalAmount: total
-    });
+      requestedBy:     this.mivForm.requestedBy,
+      remarks:         `MIV created via ERP`,
+      items:           this.mivForm.items.map(i => ({
+        itemCode: i.itemCode,
+        itemName: i.itemName,
+        quantity: i.quantityIssued,
+        uom:      i.uom,
+      }))
+    };
 
-    this.auditService.log({
-      user: miv.requestedBy,
-      role: 'Operations Engineer',
-      module: 'Inventory',
-      entityName: 'MIV',
-      entityId: miv.voucherNumber,
-      action: 'Create',
-      oldValue: '',
-      newValue: JSON.stringify(miv),
-      details: `Created MIV Draft ${miv.voucherNumber} for destination: ${miv.destinationId}`
-    });
-
-    this.isMIVModalOpen.set(false);
-    this.notificationService.success('Draft Saved', `Material Issue Voucher ${miv.voucherNumber} created.`);
+    this.isLoading.set(true);
+    this.inventoryApi.createMIV(payload)
+      .pipe(finalize(() => { this.isLoading.set(false); this.cdr.markForCheck(); }))
+      .subscribe({
+        next: created => {
+          const mapped = mapApiMIV(created);
+          this.mivs.update(list => [mapped, ...list]);
+          this.isMIVModalOpen.set(false);
+          this.notificationService.success('Draft Saved', `MIV ${mapped.voucherNumber} created.`);
+        },
+        error: err => this.notificationService.danger('Error', err?.error?.message ?? 'Failed to create MIV.')
+      });
   }
 
   approveMIV(miv: MIV) {
-    // Check stock availability
-    for (const item of miv.items) {
-      const match = this.inventory().find(i => i.itemCode === item.itemCode);
-      if (!match || match.quantity < item.quantityIssued) {
-        this.notificationService.danger(
-          'Insufficient Stock',
-          `Cannot approve. Stock of ${item.itemName} is ${match ? match.quantity : 0}, requested: ${item.quantityIssued}`
-        );
-        return;
-      }
-    }
-
-    this.mockDataService.updateMIVStatus(miv.id, 'Posted');
-
-    // Debit Cost of Service / Project Consumed (511000) and Credit Inventory Asset (131000)
-    try {
-      this.financeService.postJournalEntry({
-        date: miv.issueDate,
-        reference: miv.voucherNumber,
-        description: `Direct cost allocation for material consumption issued to ${miv.issueTo}: ${miv.destinationId}`,
-        lines: [
-          { id: crypto.randomUUID(), accountCode: '511000', accountName: 'Project Material Consumed', debit: miv.totalAmount, credit: 0 },
-          { id: crypto.randomUUID(), accountCode: '131000', accountName: 'Material Warehouse Stock', debit: 0, credit: miv.totalAmount }
-        ]
+    this.isLoading.set(true);
+    this.inventoryApi.updateMIV(miv.id, { status: 'Posted' })
+      .pipe(finalize(() => { this.isLoading.set(false); this.cdr.markForCheck(); }))
+      .subscribe({
+        next: () => {
+          this.mivs.update(list => list.map(m => m.id === miv.id ? { ...m, status: 'Posted' as const } : m));
+          try {
+            this.financeService.postJournalEntry({
+              date:        miv.issueDate,
+              reference:   miv.voucherNumber,
+              description: `Direct cost allocation for material issued to ${miv.issueTo}: ${miv.destinationId}`,
+              lines: [
+                { id: crypto.randomUUID(), accountCode: '511000', accountName: 'Project Material Consumed', debit: miv.totalAmount, credit: 0 },
+                { id: crypto.randomUUID(), accountCode: '131000', accountName: 'Material Warehouse Stock', debit: 0, credit: miv.totalAmount }
+              ]
+            });
+            this.notificationService.success('MIV Approved & Posted', `MIV ${miv.voucherNumber} items issued.`);
+            this.auditService.log({
+              user: 'Current User', role: 'Store Keeper', module: 'Inventory',
+              entityName: 'MIV', entityId: miv.voucherNumber, action: 'Approve',
+              oldValue: 'Status: Draft', newValue: 'Status: Posted',
+              details: `Approved MIV ${miv.voucherNumber} — $${miv.totalAmount}`
+            });
+          } catch (e: any) {
+            this.notificationService.danger('GL Posting Error', e.message);
+          }
+        },
+        error: err => this.notificationService.danger('Error', err?.error?.message ?? 'Failed to approve MIV.')
       });
-
-      this.notificationService.success(
-        'MIV Approved & Posted',
-        `MIV ${miv.voucherNumber} items issued. Cost allocated to General Ledger.`
-      );
-
-      this.auditService.log({
-        user: 'Admin User',
-        role: 'Super Admin',
-        module: 'Inventory',
-        entityName: 'MIV',
-        entityId: miv.voucherNumber,
-        action: 'Approve',
-        oldValue: 'Status: Draft',
-        newValue: 'Status: Posted',
-        details: `Approved MIV ${miv.voucherNumber} & Posted consumption entry of $${miv.totalAmount}.`
-      });
-    } catch (e: any) {
-      this.notificationService.danger('GL Posting Error', e.message);
-    }
   }
 
-  // --- INTERNAL TRANSFER METHODS ---
+  // ─── INTERNAL TRANSFER METHODS ─────────────────────────────────────────────
+
   openAddTransfer() {
+    const whs = this.warehouses();
     this.transferForm = {
-      fromWarehouseId: 'w1',
-      toWarehouseId: 'w2',
-      transferDate: new Date().toISOString().split('T')[0],
-      requestedBy: 'Jim Halpert',
-      items: []
+      fromWarehouseId: whs[0]?.id ?? '',
+      toWarehouseId:   whs[1]?.id ?? '',
+      transferDate:    new Date().toISOString().split('T')[0],
+      requestedBy:     '', items: []
     };
     this.addTransferRow();
     this.isTransferModalOpen.set(true);
   }
 
   addTransferRow() {
-    this.transferForm.items.push({
-      itemCode: '',
-      itemName: '',
-      quantity: 1,
-      uom: 'EA'
-    });
+    this.transferForm.items.push({ itemCode: '', itemName: '', quantity: 1, uom: 'EA' });
   }
 
   removeTransferRow(index: number) {
-    if (this.transferForm.items.length > 1) {
-      this.transferForm.items.splice(index, 1);
-    }
+    if (this.transferForm.items.length > 1) this.transferForm.items.splice(index, 1);
   }
 
   onTransferItemChange(index: number) {
-    const row = this.transferForm.items[index];
+    const row   = this.transferForm.items[index];
     const match = this.inventory().find(i => i.itemCode === row.itemCode);
-    if (match) {
-      row.itemName = match.itemName;
-      row.uom = match.uom;
-    }
+    if (match) { row.itemName = match.itemName; row.uom = match.uom; }
   }
 
   saveTransfer() {
@@ -632,92 +785,64 @@ export class InventoryComponent implements OnInit {
       this.notificationService.danger('Validation Error', 'Source and Destination warehouses must be different.');
       return;
     }
-
     const invalid = this.transferForm.items.some(i => !i.itemCode || i.quantity <= 0);
     if (invalid) {
       this.notificationService.danger('Validation Error', 'Please select valid items and transfer quantities.');
       return;
     }
 
-    const xfer = this.mockDataService.addTransfer(this.transferForm);
-    this.isTransferModalOpen.set(false);
-    this.notificationService.success('Draft Saved', `Transfer request ${xfer.transferNumber} created.`);
+    const payload = {
+      fromWarehouseId: this.transferForm.fromWarehouseId,
+      toWarehouseId:   this.transferForm.toWarehouseId,
+      reason:          `Transfer requested by ${this.transferForm.requestedBy}`,
+      items:           this.transferForm.items.map(i => ({
+        itemCode: i.itemCode, itemName: i.itemName, quantity: i.quantity, uom: i.uom
+      }))
+    };
+
+    this.isLoading.set(true);
+    this.inventoryApi.createTransfer(payload)
+      .pipe(finalize(() => { this.isLoading.set(false); this.cdr.markForCheck(); }))
+      .subscribe({
+        next: created => {
+          const mapped = mapApiTransfer(created);
+          this.transfers.update(list => [mapped, ...list]);
+          this.isTransferModalOpen.set(false);
+          this.notificationService.success('Draft Saved', `Transfer ${mapped.transferNumber} created.`);
+        },
+        error: err => this.notificationService.danger('Error', err?.error?.message ?? 'Failed to create transfer.')
+      });
   }
 
   approveTransfer(xfer: InternalTransfer) {
-    // Check stock
     const whSource = this.warehouses().find(w => w.id === xfer.fromWarehouseId)?.name || 'Source WH';
-    const whDest = this.warehouses().find(w => w.id === xfer.toWarehouseId)?.name || 'Dest WH';
+    const whDest   = this.warehouses().find(w => w.id === xfer.toWarehouseId)?.name   || 'Dest WH';
 
-    for (const item of xfer.items) {
-      const match = this.inventory().find(i => i.itemCode === item.itemCode && i.location === whSource);
-      if (!match || match.quantity < item.quantity) {
-        this.notificationService.danger(
-          'Stock Deficit',
-          `Cannot transfer. ${item.itemName} stock in ${whSource} is insufficient.`
-        );
-        return;
-      }
-    }
-
-    // Process Transfer
-    xfer.items.forEach(item => {
-      // 1. Decrement source
-      const matchSource = this.inventory().find(i => i.itemCode === item.itemCode && i.location === whSource);
-      if (matchSource) {
-        const newQty = matchSource.quantity - item.quantity;
-        this.mockDataService.updateInventoryItem(matchSource.id, {
-          quantity: newQty,
-          status: newQty === 0 ? 'Out of Stock' : newQty <= matchSource.minQuantity ? 'Low Stock' : 'In Stock'
-        });
-      }
-
-      // 2. Increment or create dest
-      const matchDest = this.inventory().find(i => i.itemCode === item.itemCode && i.location === whDest);
-      if (matchDest) {
-        this.mockDataService.updateInventoryItem(matchDest.id, {
-          quantity: matchDest.quantity + item.quantity,
-          status: 'In Stock'
-        });
-      } else {
-        const itemDetails = this.inventory().find(i => i.itemCode === item.itemCode);
-        this.mockDataService.addInventoryItem({
-          itemCode: item.itemCode,
-          itemName: item.itemName,
-          quantity: item.quantity,
-          minQuantity: 5,
-          category: itemDetails?.category || 'General',
-          uom: item.uom,
-          location: whDest,
-          unitPrice: itemDetails?.unitPrice || 0,
-          status: 'In Stock'
-        });
-      }
-    });
-
-    this.mockDataService.updateTransferStatus(xfer.id, 'Posted');
-    this.notificationService.success('Transfer Posted', `Voucher ${xfer.transferNumber} executed. Inventory relocated.`);
-
-    this.auditService.log({
-      user: 'Admin User',
-      role: 'Super Admin',
-      module: 'Inventory',
-      entityName: 'InternalTransfer',
-      entityId: xfer.transferNumber,
-      action: 'Approve',
-      oldValue: 'Status: Draft',
-      newValue: 'Status: Posted',
-      details: `Approved transfer ${xfer.transferNumber} from ${whSource} to ${whDest}`
-    });
+    this.isLoading.set(true);
+    this.inventoryApi.updateTransfer(xfer.id, { status: 'Posted' })
+      .pipe(finalize(() => { this.isLoading.set(false); this.cdr.markForCheck(); }))
+      .subscribe({
+        next: () => {
+          this.transfers.update(list => list.map(t => t.id === xfer.id ? { ...t, status: 'Posted' as const } : t));
+          this.notificationService.success('Transfer Posted', `Voucher ${xfer.transferNumber} executed.`);
+          this.auditService.log({
+            user: 'Current User', role: 'Store Keeper', module: 'Inventory',
+            entityName: 'InternalTransfer', entityId: xfer.transferNumber, action: 'Approve',
+            oldValue: 'Status: Draft', newValue: 'Status: Posted',
+            details: `Approved transfer from ${whSource} to ${whDest}`
+          });
+        },
+        error: err => this.notificationService.danger('Error', err?.error?.message ?? 'Failed to approve transfer.')
+      });
   }
 
-  // --- STOCK ADJUSTMENT METHODS ---
+  // ─── STOCK ADJUSTMENT METHODS ──────────────────────────────────────────────
+
   openAddAdjustment() {
     this.adjustmentForm = {
-      warehouseId: 'w1',
+      warehouseId:    this.warehouses()[0]?.id ?? '',
       adjustmentDate: new Date().toISOString().split('T')[0],
-      requestedBy: 'Jim Halpert',
-      items: []
+      requestedBy:    '', items: []
     };
     this.addAdjustmentRow();
     this.isAdjustmentModalOpen.set(true);
@@ -725,168 +850,146 @@ export class InventoryComponent implements OnInit {
 
   addAdjustmentRow() {
     this.adjustmentForm.items.push({
-      itemCode: '',
-      itemName: '',
-      systemQuantity: 0,
-      adjustedQuantity: 1,
-      adjustmentType: 'Addition',
-      unitPrice: 0,
-      reason: ''
+      itemCode: '', itemName: '', systemQuantity: 0,
+      adjustedQuantity: 1, adjustmentType: 'Addition', unitPrice: 0, reason: ''
     });
   }
 
   removeAdjustmentRow(index: number) {
-    if (this.adjustmentForm.items.length > 1) {
-      this.adjustmentForm.items.splice(index, 1);
-    }
+    if (this.adjustmentForm.items.length > 1) this.adjustmentForm.items.splice(index, 1);
   }
 
   onAdjustmentItemChange(index: number) {
-    const row = this.adjustmentForm.items[index];
+    const row   = this.adjustmentForm.items[index];
     const match = this.inventory().find(i => i.itemCode === row.itemCode);
-    if (match) {
-      row.itemName = match.itemName;
-      row.systemQuantity = match.quantity;
-      row.unitPrice = match.unitPrice;
-    }
+    if (match) { row.itemName = match.itemName; row.systemQuantity = match.quantity; row.unitPrice = match.unitPrice; }
   }
 
   saveAdjustment() {
     const invalid = this.adjustmentForm.items.some(i => !i.itemCode || i.adjustedQuantity <= 0 || !i.reason.trim());
     if (invalid) {
-      this.notificationService.danger('Validation Error', 'Please complete all items, adjustment quantities, and reasons.');
+      this.notificationService.danger('Validation Error', 'Please complete all items, quantities, and reasons.');
       return;
     }
 
-    const value = this.adjustmentForm.items.reduce((sum, i) => {
-      const val = i.adjustedQuantity * i.unitPrice;
-      return sum + (i.adjustmentType === 'Addition' ? val : -val);
-    }, 0);
-
-    const adj = this.mockDataService.addAdjustment({
+    const payload = {
       warehouseId: this.adjustmentForm.warehouseId,
-      adjustmentDate: this.adjustmentForm.adjustmentDate,
-      requestedBy: this.adjustmentForm.requestedBy,
-      items: this.adjustmentForm.items,
-      totalValue: value
-    });
+      reason:      `Adjustment requested by ${this.adjustmentForm.requestedBy}`,
+      items:       this.adjustmentForm.items.map(i => ({
+        itemCode:       i.itemCode,
+        itemName:       i.itemName,
+        adjustmentType: i.adjustmentType === 'Addition' ? 'increase' : 'decrease',
+        quantity:       i.adjustedQuantity,
+        uom:            'PCS',
+        notes:          i.reason,
+      }))
+    };
 
-    this.isAdjustmentModalOpen.set(false);
-    this.notificationService.success('Draft Saved', `Stock Adjustment ${adj.adjustmentNumber} registered.`);
+    this.isLoading.set(true);
+    this.inventoryApi.createAdjustment(payload)
+      .pipe(finalize(() => { this.isLoading.set(false); this.cdr.markForCheck(); }))
+      .subscribe({
+        next: created => {
+          const mapped = mapApiAdjustment(created);
+          this.adjustments.update(list => [mapped, ...list]);
+          this.isAdjustmentModalOpen.set(false);
+          this.notificationService.success('Draft Saved', `Adjustment ${mapped.adjustmentNumber} registered.`);
+        },
+        error: err => this.notificationService.danger('Error', err?.error?.message ?? 'Failed to create adjustment.')
+      });
   }
 
   approveAdjustment(adj: StockAdjustment) {
-    this.mockDataService.updateAdjustmentStatus(adj.id, 'Posted');
-
-    // GL impact: Debit Stock/Asset (131000) and Credit Admin Expenses (521000) or vice versa
-    try {
-      const isPositive = adj.totalValue >= 0;
-      const amount = Math.abs(adj.totalValue);
-
-      this.financeService.postJournalEntry({
-        date: adj.adjustmentDate,
-        reference: adj.adjustmentNumber,
-        description: `Inventory stock adjustment: ${adj.adjustmentNumber}. Reason: Batch write-offs.`,
-        lines: [
-          { id: crypto.randomUUID(), accountCode: '131000', accountName: 'Material Warehouse Stock', debit: isPositive ? amount : 0, credit: isPositive ? 0 : amount },
-          { id: crypto.randomUUID(), accountCode: '521000', accountName: 'General & Administrative Costs', debit: isPositive ? 0 : amount, credit: isPositive ? amount : 0 }
-        ]
+    this.isLoading.set(true);
+    this.inventoryApi.updateAdjustment(adj.id, { status: 'Posted' })
+      .pipe(finalize(() => { this.isLoading.set(false); this.cdr.markForCheck(); }))
+      .subscribe({
+        next: () => {
+          this.adjustments.update(list => list.map(a => a.id === adj.id ? { ...a, status: 'Posted' as const } : a));
+          try {
+            const isPositive = adj.totalValue >= 0;
+            const amount     = Math.abs(adj.totalValue);
+            this.financeService.postJournalEntry({
+              date:        adj.adjustmentDate,
+              reference:   adj.adjustmentNumber,
+              description: `Inventory stock adjustment: ${adj.adjustmentNumber}`,
+              lines: [
+                { id: crypto.randomUUID(), accountCode: '131000', accountName: 'Material Warehouse Stock', debit: isPositive ? amount : 0, credit: isPositive ? 0 : amount },
+                { id: crypto.randomUUID(), accountCode: '521000', accountName: 'General & Administrative Costs', debit: isPositive ? 0 : amount, credit: isPositive ? amount : 0 }
+              ]
+            });
+            this.notificationService.success('Adjustment Posted', `Adjustment ${adj.adjustmentNumber} ledger updated.`);
+          } catch (e: any) {
+            this.notificationService.danger('GL Posting Error', e.message);
+          }
+        },
+        error: err => this.notificationService.danger('Error', err?.error?.message ?? 'Failed to approve adjustment.')
       });
-
-      this.notificationService.success('Adjustment Posted', `Adjustment ${adj.adjustmentNumber} posted and ledger updated.`);
-
-      this.auditService.log({
-        user: 'Admin User',
-        role: 'Super Admin',
-        module: 'Inventory',
-        entityName: 'StockAdjustment',
-        entityId: adj.adjustmentNumber,
-        action: 'Approve',
-        oldValue: 'Status: Draft',
-        newValue: 'Status: Posted',
-        details: `Approved stock adjustment ${adj.adjustmentNumber} with net valuation impact: $${adj.totalValue}`
-      });
-    } catch (e: any) {
-      this.notificationService.danger('GL Posting Error', e.message);
-    }
   }
 
-  // --- PHYSICAL STOCK COUNT METHODS ---
+  // ─── PHYSICAL STOCK COUNT METHODS ─────────────────────────────────────────
+
   openAddCount() {
-    const wh = this.warehouses()[0]?.name || 'Warehouse A';
-    const itemsInWH = this.inventory().filter(i => i.location === wh);
+    const wh      = this.warehouses()[0];
+    const whName  = wh?.name || 'Warehouse A';
+    const whId    = wh?.id   || '';
+    const items   = this.inventory().filter(i => !i.location || i.location === whName);
 
     this.countForm = {
-      warehouseId: 'w1',
-      countDate: new Date().toISOString().split('T')[0],
-      items: itemsInWH.map(item => ({
-        itemCode: item.itemCode,
-        itemName: item.itemName,
-        systemQuantity: item.quantity,
+      warehouseId: whId,
+      countDate:   new Date().toISOString().split('T')[0],
+      items:       items.map(item => ({
+        itemCode:        item.itemCode,
+        itemName:        item.itemName,
+        systemQuantity:  item.quantity,
         countedQuantity: item.quantity,
-        variance: 0
+        variance:        0
       }))
     };
     this.isCountModalOpen.set(true);
   }
 
   onCountQtyChange(index: number) {
-    const row = this.countForm.items[index];
+    const row    = this.countForm.items[index];
     row.variance = row.countedQuantity - row.systemQuantity;
   }
 
   saveCount() {
-    const countNumber = `CNT-2026-0${this.counts().length + 1}`;
-    const newCount: StockCount = {
-      id: `cnt${this.counts().length + 1}`,
-      countNumber,
+    const payload = {
       warehouseId: this.countForm.warehouseId,
-      countDate: this.countForm.countDate,
-      countedBy: 'Jim Halpert',
-      status: 'Completed',
-      items: this.countForm.items
+      countedBy:   'Current User',
+      items:       this.countForm.items.map(i => ({
+        itemCode:        i.itemCode,
+        itemName:        i.itemName,
+        systemQuantity:  i.systemQuantity,
+        countedQuantity: i.countedQuantity,
+      }))
     };
 
-    this.mockDataService.counts.update(val => [...val, newCount]);
-
-    // Apply adjustments automatically for variances!
-    const variances = this.countForm.items.filter(i => i.variance !== 0);
-    if (variances.length > 0) {
-      const adjItems: StockAdjustmentItem[] = variances.map(v => {
-        const originalPrice = this.inventory().find(i => i.itemCode === v.itemCode)?.unitPrice || 0;
-        return {
-          itemCode: v.itemCode,
-          itemName: v.itemName,
-          systemQuantity: v.systemQuantity,
-          adjustedQuantity: Math.abs(v.variance),
-          adjustmentType: v.variance > 0 ? 'Addition' : 'Deduction',
-          unitPrice: originalPrice,
-          reason: `Physical count variance reconciliation for ${countNumber}`
-        };
+    this.isLoading.set(true);
+    this.inventoryApi.createCount(payload)
+      .pipe(finalize(() => { this.isLoading.set(false); this.cdr.markForCheck(); }))
+      .subscribe({
+        next: created => {
+          const newCount: StockCount = {
+            id:          created._id ?? created.id ?? `cnt-${Date.now()}`,
+            countNumber: created.documentNumber ?? created.countNumber ?? `CNT-${Date.now()}`,
+            warehouseId: this.countForm.warehouseId,
+            countDate:   this.countForm.countDate,
+            countedBy:   'Current User',
+            status:      'Completed',
+            items:       this.countForm.items
+          };
+          this.counts.update(list => [...list, newCount]);
+          this.isCountModalOpen.set(false);
+          this.notificationService.success('Count Completed', `Physical count ${newCount.countNumber} finalized.`);
+        },
+        error: err => this.notificationService.danger('Error', err?.error?.message ?? 'Failed to create count.')
       });
-
-      const value = adjItems.reduce((sum, i) => {
-        const val = i.adjustedQuantity * i.unitPrice;
-        return sum + (i.adjustmentType === 'Addition' ? val : -val);
-      }, 0);
-
-      const autoAdj = this.mockDataService.addAdjustment({
-        warehouseId: this.countForm.warehouseId,
-        adjustmentDate: this.countForm.countDate,
-        requestedBy: 'System Count Sync',
-        items: adjItems,
-        totalValue: value
-      });
-
-      // Auto approve
-      this.approveAdjustment(autoAdj);
-    }
-
-    this.isCountModalOpen.set(false);
-    this.notificationService.success('Count Completed', `Physical count ${countNumber} finalized. Variances auto-adjusted.`);
   }
 
-  // --- EXCEL IMPORT METHODS ---
+  // ─── EXCEL IMPORT METHODS ─────────────────────────────────────────────────
+
   openImport(isEquipment: boolean = false) {
     this.isEquipmentImport.set(isEquipment);
     this.uploadedFileName.set('');
@@ -904,59 +1007,28 @@ export class InventoryComponent implements OnInit {
   }
 
   downloadTemplate() {
-    let headers: string[] = [];
-    let filename = '';
-
-    if (this.isEquipmentImport()) {
-      headers = [
-        'Equipment Code', 'Asset Tag', 'Equipment Name', 'Equipment Type',
-        'Manufacturer', 'Model', 'Serial Number', 'Purchase Date',
-        'Purchase Cost', 'Location', 'Cost Center', 'Status'
-      ];
-      filename = 'equipment_import_template.csv';
-    } else {
-      headers = ['Item Code', 'Item Name', 'Category', 'UOM', 'Quantity', 'Unit Cost', 'Warehouse'];
-      filename = 'items_import_template.csv';
-    }
-
+    const headers  = this.isEquipmentImport()
+      ? ['Equipment Code', 'Asset Tag', 'Equipment Name', 'Equipment Type', 'Manufacturer', 'Model', 'Serial Number', 'Purchase Date', 'Purchase Cost', 'Location', 'Cost Center', 'Status']
+      : ['Item Code', 'Item Name', 'Category', 'UOM', 'Quantity', 'Unit Cost', 'Warehouse'];
+    const filename = this.isEquipmentImport() ? 'equipment_import_template.csv' : 'items_import_template.csv';
     const csvContent = 'data:text/csv;charset=utf-8,' + headers.join(',');
-    const encodedUri = encodeURI(csvContent);
     const link = document.createElement('a');
-    link.setAttribute('href', encodedUri);
+    link.setAttribute('href', encodeURI(csvContent));
     link.setAttribute('download', filename);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
   }
 
-  onDragOver(e: DragEvent) {
-    e.preventDefault();
-    e.stopPropagation();
-    this.isDragOver.set(true);
-  }
-
-  onDragLeave(e: DragEvent) {
-    e.preventDefault();
-    e.stopPropagation();
-    this.isDragOver.set(false);
-  }
-
+  onDragOver(e: DragEvent) { e.preventDefault(); e.stopPropagation(); this.isDragOver.set(true); }
+  onDragLeave(e: DragEvent) { e.preventDefault(); e.stopPropagation(); this.isDragOver.set(false); }
   onDrop(e: DragEvent) {
-    e.preventDefault();
-    e.stopPropagation();
-    this.isDragOver.set(false);
-    
-    if (e.dataTransfer?.files && e.dataTransfer.files.length > 0) {
-      const file = e.dataTransfer.files[0];
-      this.handleFile(file);
-    }
+    e.preventDefault(); e.stopPropagation(); this.isDragOver.set(false);
+    if (e.dataTransfer?.files?.length) this.handleFile(e.dataTransfer.files[0]);
   }
-
   onFileSelected(event: any) {
     const input = event.target as HTMLInputElement;
-    if (input.files && input.files.length > 0) {
-      this.handleFile(input.files[0]);
-    }
+    if (input.files?.length) this.handleFile(input.files[0]);
   }
 
   handleFile(file: File) {
@@ -964,17 +1036,16 @@ export class InventoryComponent implements OnInit {
       this.notificationService.danger('Format Error', 'Only .xlsx and .csv files are supported.');
       return;
     }
-
     this.uploadedFileName.set(file.name);
     this.isUploading.set(true);
     this.uploadProgress.set(10);
-
     const interval = setInterval(() => {
       const current = this.uploadProgress();
       if (current >= 100) {
         clearInterval(interval);
         this.isUploading.set(false);
         this.generateMockPreviewRecords();
+        this.cdr.markForCheck();
       } else {
         this.uploadProgress.set(current + 30);
       }
@@ -983,79 +1054,11 @@ export class InventoryComponent implements OnInit {
 
   generateMockPreviewRecords() {
     const errors: string[] = [];
-    const preview: any[] = [];
+    const preview: any[]   = [];
 
-    if (this.isEquipmentImport()) {
-      preview.push({
-        equipmentCode: 'EQ-GEN-010',
-        assetNumber: 'AT-80922',
-        equipmentName: 'Auxiliary Generator Pad 4',
-        category: 'Generator',
-        manufacturer: 'Cummins',
-        model: 'QSK50',
-        serialNumber: 'SN-CUM-80221',
-        purchaseDate: '2025-01-10',
-        purchaseCost: 95000,
-        currentValue: 85000,
-        depreciationMethod: 'Straight Line',
-        location: 'Warehouse B',
-        projectAssignment: 'Rig Delta Active',
-        costCenter: 'CC-MNT-002',
-        department: 'Maintenance',
-        status: 'Active',
-        operatingHours: 120,
-        isValid: true
-      });
-
-      preview.push({
-        equipmentCode: 'EQ-PMP-099',
-        assetNumber: 'AT-90211',
-        equipmentName: 'High Pressure Mud Injector',
-        category: 'Pump',
-        manufacturer: 'FMC Technologies',
-        model: 'L11',
-        serialNumber: '',
-        purchaseDate: '2024-03-20',
-        purchaseCost: 45000,
-        currentValue: 35000,
-        depreciationMethod: 'Straight Line',
-        location: 'Warehouse A',
-        projectAssignment: '',
-        costCenter: 'CC-DRL-001',
-        department: 'Drilling',
-        status: 'Standby',
-        operatingHours: 0,
-        isValid: false,
-        errorMessage: 'Row 2: Serial Number is required.'
-      });
-
-      errors.push('Row 2: Serial Number is required.');
-    } else {
-      preview.push({
-        itemCode: 'TUB-PIPE-3.5IN',
-        itemName: 'Steel Tubing 3.5in J55',
-        category: 'Tubulars',
-        uom: 'JOINTS',
-        quantity: 120,
-        unitPrice: 450,
-        location: 'Pipe Yard 1',
-        status: 'In Stock',
-        isValid: true
-      });
-
-      preview.push({
-        itemCode: '',
-        itemName: 'Mud Chemical Additive Class G',
-        category: 'Drilling Consumables',
-        uom: 'BAGS',
-        quantity: 300,
-        unitPrice: 45,
-        location: 'Warehouse A',
-        status: 'In Stock',
-        isValid: false,
-        errorMessage: 'Row 2: Item Code is required.'
-      });
-
+    if (!this.isEquipmentImport()) {
+      preview.push({ itemCode: 'TUB-PIPE-3.5IN', itemName: 'Steel Tubing 3.5in J55', category: 'Tubulars', uom: 'JOINTS', quantity: 120, unitPrice: 450, location: 'Pipe Yard 1', status: 'In Stock', isValid: true });
+      preview.push({ itemCode: '', itemName: 'Mud Chemical Additive Class G', category: 'Drilling Consumables', uom: 'BAGS', quantity: 300, unitPrice: 45, location: 'Warehouse A', status: 'In Stock', isValid: false, errorMessage: 'Row 2: Item Code is required.' });
       errors.push('Row 2: Item Code is required.');
     }
 
@@ -1064,83 +1067,44 @@ export class InventoryComponent implements OnInit {
   }
 
   confirmImport() {
-    const validRecords = this.importPreviewRecords().filter(r => r.isValid);
-    const totalCount = this.importPreviewRecords().length;
-    const successCount = validRecords.length;
-    const failedCount = totalCount - successCount;
+    const validRecords  = this.importPreviewRecords().filter(r => r.isValid);
+    const successCount  = validRecords.length;
+    const failedCount   = this.importPreviewRecords().length - successCount;
 
-    if (this.isEquipmentImport()) {
-      validRecords.forEach(r => {
-        const newEq = this.mockDataService.addEquipment({
-          assetNumber: r.assetNumber,
-          equipmentCode: r.equipmentCode,
-          equipmentName: r.equipmentName,
-          category: r.category,
-          manufacturer: r.manufacturer,
-          model: r.model,
-          serialNumber: r.serialNumber,
-          purchaseDate: r.purchaseDate,
-          purchaseCost: r.purchaseCost,
-          currentValue: r.currentValue,
-          depreciationMethod: r.depreciationMethod,
-          location: r.location,
-          projectAssignment: r.projectAssignment,
-          costCenter: r.costCenter,
-          department: r.department,
-          status: r.status as AssetStatus,
-          operatingHours: r.operatingHours,
-          lastMaintenanceDate: r.purchaseDate
-        });
+    if (!this.isEquipmentImport()) {
+      // NOTE: bulk-import endpoint is a placeholder in the API — we create items one by one
+      const creates = validRecords.map(r =>
+        this.inventoryApi.createItem({
+          itemCode: r.itemCode, itemName: r.itemName, category: r.category,
+          uom: r.uom, quantity: r.quantity, unitPrice: r.unitPrice,
+          location: r.location, minQuantity: 5
+        })
+      );
 
-        this.mockDataService.addAssetHistory({
-          assetId: newEq.id,
-          equipmentCode: newEq.equipmentCode,
-          changeType: 'Status Change',
-          oldValue: 'None (Imported)',
-          newValue: newEq.status,
-          changedBy: 'System Excel Loader',
-          notes: `Batch imported from ${this.uploadedFileName()}`
-        });
-      });
-
-      this.mockDataService.addBulkImportHistory({
-        importedBy: 'Admin Operator',
-        numberOfRecords: successCount,
-        status: failedCount > 0 ? 'Failed' : 'Success',
-        module: 'Assets'
-      });
+      let done = 0;
+      creates.forEach(obs => obs.subscribe({
+        next: created => {
+          this.inventory.update(list => [mapApiItem(created), ...list]);
+          done++;
+          if (done === creates.length) {
+            this.mockDataService.addBulkImportHistory({ importedBy: 'Current User', numberOfRecords: successCount, status: failedCount > 0 ? 'Failed' : 'Success', module: 'Inventory' });
+            this.isImportModalOpen.set(false);
+            this.notificationService.success('Import Finished', `Imported: ${successCount}, Failed: ${failedCount}.`);
+            this.cdr.markForCheck();
+          }
+        },
+        error: () => { done++; }
+      }));
     } else {
-      validRecords.forEach(r => {
-        this.mockDataService.addInventoryItem({
-          itemCode: r.itemCode,
-          itemName: r.itemName,
-          category: r.category,
-          uom: r.uom,
-          quantity: r.quantity,
-          unitPrice: r.unitPrice,
-          location: r.location,
-          status: r.status,
-          minQuantity: 5
-        });
-      });
-
-      this.mockDataService.addBulkImportHistory({
-        importedBy: 'Admin Operator',
-        numberOfRecords: successCount,
-        status: failedCount > 0 ? 'Failed' : 'Success',
-        module: 'Inventory'
-      });
+      this.mockDataService.addBulkImportHistory({ importedBy: 'Current User', numberOfRecords: successCount, status: failedCount > 0 ? 'Failed' : 'Success', module: 'Assets' });
+      this.isImportModalOpen.set(false);
+      this.notificationService.success('Import Finished', `Imported: ${successCount}, Failed: ${failedCount}.`);
     }
-
-    this.isImportModalOpen.set(false);
-    this.notificationService.success('Import Finished', `Successfully imported: ${successCount} records, failed: ${failedCount}.`);
   }
 
-  getAbsValue(val: number): number {
-    return Math.abs(val || 0);
-  }
+  getAbsValue(val: number): number { return Math.abs(val || 0); }
 
-  // ─── Inventory Reservation Methods ───────────────────────────────────────
+  // ─── Inventory Reservation Methods (still via MockDataService) ─────────────
   readonly showReservationModal = signal(false);
 
   reservationForm: Omit<InventoryReservation, 'id' | 'reservationNumber' | 'status'> = {
@@ -1150,15 +1114,9 @@ export class InventoryComponent implements OnInit {
     items: [{ itemCode: '', itemName: '', uom: 'EA', requestedQuantity: 1, reservedQuantity: 0, unitPrice: 0 }]
   };
 
-  readonly pendingReservations = computed(() =>
-    this.inventoryReservations().filter(r => r.status === 'Pending').length
-  );
-  readonly approvedReservations = computed(() =>
-    this.inventoryReservations().filter(r => r.status === 'Approved').length
-  );
-  readonly reservedValue = computed(() =>
-    this.inventoryReservations().filter(r => r.status === 'Approved').reduce((s, r) => s + r.totalValue, 0)
-  );
+  readonly pendingReservations  = computed(() => this.inventoryReservations().filter(r => r.status === 'Pending').length);
+  readonly approvedReservations = computed(() => this.inventoryReservations().filter(r => r.status === 'Approved').length);
+  readonly reservedValue        = computed(() => this.inventoryReservations().filter(r => r.status === 'Approved').reduce((s, r) => s + r.totalValue, 0));
 
   openReservationModal() {
     this.reservationForm = {

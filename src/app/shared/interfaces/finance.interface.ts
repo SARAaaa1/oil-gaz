@@ -5,16 +5,19 @@ export interface ChartOfAccount {
   code: string;
   name: string;
   type: AccountType;
-  parentCode?: string;
-  description?: string;
+  parentCode?: string | null;
+  description?: string | null;
   balance?: number;
   isActive: boolean;
   isReconciliation: boolean;
-  costCenterCode?: string;
+  costCenterCode?: string | null;
+  _id?: string;
+  children?: ChartOfAccount[];
+  createdAt?: string;
 }
 
 export interface JournalLine {
-  id: string;
+  id?: string;
   accountCode: string;
   accountName: string;
   debit: number;
@@ -22,6 +25,9 @@ export interface JournalLine {
   description?: string;
   projectCode?: string;
   costCenterCode?: string;
+  type?: 'Debit' | 'Credit';
+  amount?: number;
+  notes?: string;
 }
 
 export type JournalStatus = 'Draft' | 'Posted' | 'Voided';
@@ -30,14 +36,17 @@ export interface JournalEntry {
   id: string;
   journalNumber: string;
   date: string;
-  reference: string;
+  reference?: string;
   description: string;
   status: JournalStatus;
   lines: JournalLine[];
   totalDebit: number;
   totalCredit: number;
-  createdDate: string;
-  createdBy: string;
+  createdDate?: string;
+  createdBy?: string;
   postedDate?: string;
   postedBy?: string;
+  _id?: string;
+  sourceType?: string;
+  createdAt?: string;
 }

@@ -64,11 +64,11 @@
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-50 font-medium text-slate-700">
-              @for (inv of filteredInvoices(); track inv.id) {
+              @for (inv of filteredInvoices(); track inv._id) {
                 <tr 
                   (click)="selectInvoice(inv)"
                   class="hover:bg-indigo-50/25 transition-colors cursor-pointer"
-                  [class.bg-indigo-50]="selectedInvoice()?.id === inv.id"
+                  [class.bg-indigo-50]="selectedInvoice()?._id === inv._id"
                 >
                   <td class="p-4">
                     <div class="font-bold text-slate-900 font-mono text-[11px]">{{ inv.invoiceNumber }}</div>
@@ -101,7 +101,7 @@
                     <span class="text-sm font-black text-slate-800">
                       {{ inv.netPayable | currency:inv.currency:'symbol':'1.0-0' }}
                     </span>
-                    <div class="text-[9px] text-slate-400 font-bold mt-0.5" *ngIf="inv.paidAmount > 0">
+                    <div class="text-[9px] text-slate-400 font-bold mt-0.5" *ngIf="(inv.paidAmount || 0) > 0">
                       {{ 'workflow.invoices.paid_label' | translate }}: {{ inv.paidAmount | currency:inv.currency:'symbol':'1.0-0' }}
                     </div>
                   </td>
@@ -130,10 +130,10 @@
               <span class="font-mono text-[10px] font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded">{{ inv.invoiceNumber }}</span>
               <div class="flex items-center space-x-1.5">
                 @if (inv.status === 'Draft' && canApprove()) {
-                  <button (click)="approveInvoice(inv.id)" class="px-2 py-1 bg-green-50 hover:bg-green-100 text-success text-[10px] font-bold rounded border border-green-200 transition-colors">{{ 'workflow.invoices.approve' | translate }}</button>
+                  <button (click)="approveInvoice(inv._id)" class="px-2 py-1 bg-green-50 hover:bg-green-100 text-success text-[10px] font-bold rounded border border-green-200 transition-colors">{{ 'workflow.invoices.approve' | translate }}</button>
                 }
                 @if (inv.status === 'Approved' && canCreate()) {
-                  <button (click)="sendInvoice(inv.id)" class="px-2.5 py-1 bg-blue-50 hover:bg-blue-100 text-blue-650 text-[10px] font-bold rounded border border-blue-200 transition-colors uppercase tracking-wider">{{ 'workflow.invoices.send_client' | translate }}</button>
+                  <button (click)="sendInvoice(inv._id)" class="px-2.5 py-1 bg-blue-50 hover:bg-blue-100 text-blue-650 text-[10px] font-bold rounded border border-blue-200 transition-colors uppercase tracking-wider">{{ 'workflow.invoices.send_client' | translate }}</button>
                 }
               </div>
             </div>
@@ -222,7 +222,7 @@
           }
 
           <!-- Multistage Approval Workflow status -->
-          @if (inv.approvalWorkflow[0].approverName) {
+          @if (inv.approvalWorkflow && inv.approvalWorkflow.length > 0 && inv.approvalWorkflow[0]?.approverName) {
             <div class="pt-4 border-t border-slate-100 text-[10px]">
               <h3 class="text-xs font-black text-slate-750 uppercase tracking-wider mb-2">{{ 'workflow.invoices.finance_audit' | translate }}</h3>
               <div class="p-3 bg-slate-50 rounded-lg border border-slate-100 font-bold">
@@ -230,7 +230,6 @@
                   <span>{{ 'workflow.invoices.certified' | translate }}: {{ inv.approvalWorkflow[0].approverName }}</span>
                   <span class="text-slate-455">{{ inv.approvalWorkflow[0].actionDate }}</span>
                 </div>
-                <div class="mt-1 text-slate-500 font-medium italic">"{{ inv.approvalWorkflow[0].comments }}"</div>
               </div>
             </div>
           }

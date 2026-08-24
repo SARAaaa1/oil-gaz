@@ -193,13 +193,13 @@
                 <span class="text-slate-700 font-bold block mt-0.5">{{ contract.paymentTerms }}</span>
               </div>
             </div>
-            @if (contract.exchangeRateUSDtoEGP) {
+            <!-- @if (contract.exchangeRateUSDtoEGP) { -->
               <div class="flex items-center justify-between pt-2 border-t border-slate-200 text-[9px]">
                 <span class="text-amber-600 font-bold">{{ 'workflow.contracts.fx_snapshot_label' | translate }}</span>
-                <span class="text-amber-700 font-black font-mono">1 USD = {{ contract.exchangeRateUSDtoEGP | number:'1.2-4' }} EGP</span>
+                <!-- <span class="text-amber-700 font-black font-mono">1 USD = {{ contract.exchangeRateUSDtoEGP | number:'1.2-4' }} EGP</span> -->
                 <span class="text-slate-400 font-semibold">{{ contract.rateSnapshotDate | date:'d MMM y' }}</span>
               </div>
-            }
+            <!-- } -->
           </div>
 
           <!-- Project Operations & Cost Center Details -->
@@ -367,75 +367,79 @@
           <!-- Form Fields -->
           <div class="space-y-3.5">
             <div>
-              <label class="block text-[10px] uppercase font-bold tracking-wider text-slate-400 mb-1">{{ 'workflow.contracts.label_title' | translate }}</label>
-              <input type="text" [(ngModel)]="formModel.title" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-800 focus:outline-none focus:border-indigo-500/50" />
+              <label class="block text-[10px] uppercase font-bold tracking-wider text-slate-700 mb-1">{{ 'workflow.contracts.label_title' | translate }} *</label>
+              <input type="text" [(ngModel)]="formModel.title" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400" style="color: #0f172a !important; background-color: #f8fafc !important;" />
             </div>
 
             <div class="grid grid-cols-2 gap-3">
               <div>
-                <label class="block text-[10px] uppercase font-bold tracking-wider text-slate-400 mb-1">{{ 'workflow.contracts.label_client_name' | translate }}</label>
-                <input type="text" [(ngModel)]="formModel.clientName" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-800 focus:outline-none focus:border-indigo-500/50" />
+                <label class="block text-[10px] uppercase font-bold tracking-wider text-slate-700 mb-1">{{ 'workflow.contracts.label_client_name' | translate }} *</label>
+                <input type="text" [(ngModel)]="formModel.clientName" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400" style="color: #0f172a !important; background-color: #f8fafc !important;" />
               </div>
               <div>
-                <label class="block text-[10px] uppercase font-bold tracking-wider text-slate-400 mb-1">{{ 'workflow.contracts.label_pm_assigned' | translate }}</label>
-                <input type="text" [(ngModel)]="formModel.projectManager" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-800 focus:outline-none focus:border-indigo-500/50" />
-              </div>
-            </div>
-
-            <div class="grid grid-cols-2 gap-3">
-              <div>
-                <label class="block text-[10px] uppercase font-bold tracking-wider text-slate-400 mb-1">{{ 'workflow.contracts.label_client_email' | translate }}</label>
-                <input type="email" [(ngModel)]="formModel.clientEmail" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-800 focus:outline-none focus:border-indigo-500/50" />
-              </div>
-              <div>
-                <label class="block text-[10px] uppercase font-bold tracking-wider text-slate-400 mb-1">{{ 'workflow.contracts.label_client_phone' | translate }}</label>
-                <input type="text" [(ngModel)]="formModel.clientContact" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-800 focus:outline-none focus:border-indigo-500/50" />
+                <label class="block text-[10px] uppercase font-bold tracking-wider text-slate-700 mb-1">{{ 'workflow.contracts.label_pm_assigned' | translate }}</label>
+                <input type="text" [(ngModel)]="formModel.projectManager" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400" style="color: #0f172a !important; background-color: #f8fafc !important;" />
               </div>
             </div>
 
             <div class="grid grid-cols-2 gap-3">
               <div>
-                <label class="block text-[10px] uppercase font-bold tracking-wider text-slate-400 mb-1">{{ 'workflow.contracts.label_type' | translate }}</label>
-                <select [(ngModel)]="formModel.type" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-slate-800 font-bold focus:outline-none">
-                  <option value="Daily Rate">{{ 'workflow.contracts.type_daily' | translate }}</option>
-                  <option value="Time & Material">{{ 'workflow.contracts.type_tm' | translate }}</option>
-                  <option value="Lump Sum">{{ 'workflow.contracts.type_lump' | translate }}</option>
+                <label class="block text-[10px] uppercase font-bold tracking-wider text-slate-700 mb-1">{{ 'workflow.contracts.label_client_email' | translate }}</label>
+                <input type="email" [(ngModel)]="formModel.clientEmail" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400" style="color: #0f172a !important; background-color: #f8fafc !important;" />
+              </div>
+              <div>
+                <label class="block text-[10px] uppercase font-bold tracking-wider text-slate-700 mb-1">{{ 'workflow.contracts.label_client_phone' | translate }}</label>
+                <input type="text" [(ngModel)]="formModel.clientContact" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400" style="color: #0f172a !important; background-color: #f8fafc !important;" />
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-[10px] uppercase font-bold tracking-wider text-slate-700 mb-1">{{ 'workflow.contracts.label_type' | translate }}</label>
+                <select [(ngModel)]="formModel.type" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400" style="color: #0f172a !important; background-color: #f8fafc !important;">
+                  <option value="Daily Rate" style="color: #0f172a !important;">{{ 'workflow.contracts.type_daily' | translate }}</option>
+                  <option value="Time & Material" style="color: #0f172a !important;">{{ 'workflow.contracts.type_tm' | translate }}</option>
+                  <option value="Lump Sum" style="color: #0f172a !important;">{{ 'workflow.contracts.type_lump' | translate }}</option>
                 </select>
               </div>
               <div>
-                <label class="block text-[10px] uppercase font-bold tracking-wider text-slate-400 mb-1">{{ 'workflow.contracts.label_rig_site' | translate }}</label>
-                <select [(ngModel)]="formModel.rigId" (change)="onRigChange()" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-slate-800 font-bold focus:outline-none">
-                  <option value="">{{ 'workflow.contracts.no_rig_associated' | translate }}</option>
-                  <option value="rig1">{{ 'workflow.contracts.rig_alpha' | translate }}</option>
-                  <option value="rig2">{{ 'workflow.contracts.rig_beta' | translate }}</option>
-                  <option value="rig3">{{ 'workflow.contracts.rig_gamma' | translate }}</option>
+                <label class="block text-[10px] uppercase font-bold tracking-wider text-slate-700 mb-1">{{ 'workflow.contracts.label_rig_site' | translate }}</label>
+                <select [(ngModel)]="formModel.rigId" (change)="onRigChange()" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400" style="color: #0f172a !important; background-color: #f8fafc !important;">
+                  <option value="" style="color: #0f172a !important;">{{ 'workflow.contracts.no_rig_associated' | translate }}</option>
+                  @for (rig of rigs(); track (rig._id ?? rig.id)) {
+                    <option [value]="rig._id ?? rig.id" style="color: #0f172a !important;">
+                      {{ rig.equipmentName || rig.rigName || rig.equipmentCode }} - {{ rig.location || rig.category || 'Rig' }}
+                    </option>
+                  }
                 </select>
               </div>
             </div>
 
+            <!-- Date Fields (With Explicit Black Text Color) -->
             <div class="grid grid-cols-2 gap-3">
               <div>
-                <label class="block text-[10px] uppercase font-bold tracking-wider text-slate-400 mb-1">{{ 'workflow.contracts.label_start_date' | translate }}</label>
-                <input type="date" [(ngModel)]="formModel.startDate" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-850 focus:outline-none" />
+                <label class="block text-[10px] uppercase font-bold tracking-wider text-slate-700 mb-1">{{ 'workflow.contracts.label_start_date' | translate }} *</label>
+                <input type="date" [(ngModel)]="formModel.startDate" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400" style="color: #0f172a !important; background-color: #f8fafc !important;" />
               </div>
               <div>
-                <label class="block text-[10px] uppercase font-bold tracking-wider text-slate-400 mb-1">{{ 'workflow.contracts.label_end_date' | translate }}</label>
-                <input type="date" [(ngModel)]="formModel.endDate" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-850 focus:outline-none" />
+                <label class="block text-[10px] uppercase font-bold tracking-wider text-slate-700 mb-1">{{ 'workflow.contracts.label_end_date' | translate }} *</label>
+                <input type="date" [(ngModel)]="formModel.endDate" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400" style="color: #0f172a !important; background-color: #f8fafc !important;" />
               </div>
             </div>
 
+            <!-- Contract Values in USD and EGP -->
             <div class="grid grid-cols-3 gap-3">
               <div>
-                <label class="block text-[10px] uppercase font-bold tracking-wider text-slate-400 mb-1">{{ 'workflow.contracts.label_value' | translate }}</label>
-                <input type="number" [(ngModel)]="formModel.value" (ngModelChange)="recalcEGP()" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-800 focus:outline-none focus:border-indigo-500/50" />
+                <label class="block text-[10px] uppercase font-bold tracking-wider text-slate-700 mb-1">{{ 'workflow.contracts.label_value' | translate }} ($ USD) *</label>
+                <input type="number" [(ngModel)]="formModel.value" (ngModelChange)="recalcEGP()" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400" style="color: #0f172a !important; background-color: #f8fafc !important;" />
               </div>
               <div>
-                <label class="block text-[10px] uppercase font-bold tracking-wider text-slate-400 mb-1">{{ 'workflow.contracts.label_retention' | translate }}</label>
-                <input type="number" [(ngModel)]="formModel.retentionPercent" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-800 focus:outline-none focus:border-indigo-500/50" />
+                <label class="block text-[10px] uppercase font-bold tracking-wider text-emerald-700 mb-1">القيمة المحولة (EGP جنيه)</label>
+                <input type="number" [(ngModel)]="formModel.contractValueEGP" class="w-full bg-emerald-50 border border-emerald-300 rounded-lg px-3 py-2 text-emerald-950 font-black focus:outline-none focus:ring-2 focus:ring-emerald-400" style="color: #064e3b !important; background-color: #ecfdf5 !important;" />
               </div>
               <div>
-                <label class="block text-[10px] uppercase font-bold tracking-wider text-slate-400 mb-1">{{ 'workflow.contracts.label_payment_terms' | translate }}</label>
-                <input type="text" [(ngModel)]="formModel.paymentTerms" [placeholder]="'workflow.contracts.placeholder_terms' | translate" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-800 focus:outline-none focus:border-indigo-500/50" />
+                <label class="block text-[10px] uppercase font-bold tracking-wider text-slate-700 mb-1">{{ 'workflow.contracts.label_retention' | translate }} (%)</label>
+                <input type="number" [(ngModel)]="formModel.retentionPercent" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400" style="color: #0f172a !important; background-color: #f8fafc !important;" />
               </div>
             </div>
 
@@ -499,8 +503,8 @@
             </div>
 
             <div>
-              <label class="block text-[10px] uppercase font-bold tracking-wider text-slate-400 mb-1">{{ 'workflow.contracts.label_scope' | translate }}</label>
-              <textarea [(ngModel)]="formModel.scope" rows="3" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-800 focus:outline-none focus:border-indigo-500/50"></textarea>
+              <label class="block text-[10px] uppercase font-bold tracking-wider text-slate-700 mb-1">{{ 'workflow.contracts.label_scope' | translate }}</label>
+              <textarea [(ngModel)]="formModel.scope" rows="3" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400" style="color: #0f172a !important; background-color: #f8fafc !important;"></textarea>
             </div>
 
             <!-- Project Operations & Cost Center Settings -->
@@ -508,70 +512,70 @@
               <h4 class="text-xs font-black text-slate-800 uppercase tracking-wider border-b pb-1.5 mb-2">{{ 'workflow.contracts.project_ops_heading' | translate }}</h4>
               
               <div>
-                <label class="block text-[10px] uppercase font-bold tracking-wider text-slate-400 mb-1">{{ 'workflow.contracts.project_name' | translate }}</label>
-                <input type="text" [(ngModel)]="formModel.projectName" [placeholder]="'workflow.contracts.projectName_placeholder' | translate" class="w-full bg-white border border-slate-200 rounded px-2.5 py-1.5 text-slate-800 focus:outline-none" />
+                <label class="block text-[10px] uppercase font-bold tracking-wider text-slate-700 mb-1">{{ 'workflow.contracts.project_name' | translate }}</label>
+                <input type="text" [(ngModel)]="formModel.projectName" [placeholder]="'workflow.contracts.projectName_placeholder' | translate" class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400" style="color: #0f172a !important; background-color: #ffffff !important;" />
               </div>
 
               <div class="grid grid-cols-2 gap-2">
                 <div>
-                  <label class="block text-[10px] uppercase font-bold tracking-wider text-slate-400 mb-1">{{ 'workflow.contracts.country' | translate }}</label>
-                  <input type="text" [(ngModel)]="formModel.country" class="w-full bg-white border border-slate-200 rounded px-2.5 py-1.5 text-slate-800 focus:outline-none" />
+                  <label class="block text-[10px] uppercase font-bold tracking-wider text-slate-700 mb-1">{{ 'workflow.contracts.country' | translate }}</label>
+                  <input type="text" [(ngModel)]="formModel.country" class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400" style="color: #0f172a !important; background-color: #ffffff !important;" />
                 </div>
                 <div>
-                  <label class="block text-[10px] uppercase font-bold tracking-wider text-slate-400 mb-1">{{ 'workflow.contracts.region' | translate }}</label>
-                  <input type="text" [(ngModel)]="formModel.region" class="w-full bg-white border border-slate-200 rounded px-2.5 py-1.5 text-slate-800 focus:outline-none" />
+                  <label class="block text-[10px] uppercase font-bold tracking-wider text-slate-700 mb-1">{{ 'workflow.contracts.region' | translate }}</label>
+                  <input type="text" [(ngModel)]="formModel.region" class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400" style="color: #0f172a !important; background-color: #ffffff !important;" />
                 </div>
               </div>
 
               <div class="grid grid-cols-2 gap-2">
                 <div>
-                  <label class="block text-[10px] uppercase font-bold tracking-wider text-slate-400 mb-1">{{ 'workflow.contracts.site_name' | translate }}</label>
-                  <input type="text" [(ngModel)]="formModel.siteName" class="w-full bg-white border border-slate-200 rounded px-2.5 py-1.5 text-slate-800 focus:outline-none" />
+                  <label class="block text-[10px] uppercase font-bold tracking-wider text-slate-700 mb-1">{{ 'workflow.contracts.site_name' | translate }}</label>
+                  <input type="text" [(ngModel)]="formModel.siteName" class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400" style="color: #0f172a !important; background-color: #ffffff !important;" />
                 </div>
                 <div>
-                  <label class="block text-[10px] uppercase font-bold tracking-wider text-slate-400 mb-1">{{ 'workflow.contracts.gps_coords' | translate }}</label>
-                  <input type="text" [(ngModel)]="formModel.gpsCoordinates" placeholder="e.g. 28.3N, 89.6W" class="w-full bg-white border border-slate-200 rounded px-2.5 py-1.5 text-slate-800 focus:outline-none" />
+                  <label class="block text-[10px] uppercase font-bold tracking-wider text-slate-700 mb-1">{{ 'workflow.contracts.gps_coords' | translate }}</label>
+                  <input type="text" [(ngModel)]="formModel.gpsCoordinates" placeholder="e.g. 28.3N, 89.6W" class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400" style="color: #0f172a !important; background-color: #ffffff !important;" />
                 </div>
               </div>
 
               <div class="grid grid-cols-3 gap-2">
                 <div>
-                  <label class="block text-[10px] uppercase font-bold tracking-wider text-slate-400 mb-1">{{ 'workflow.contracts.cc_code' | translate }}</label>
-                  <input type="text" [(ngModel)]="formModel.costCenterCode" placeholder="CC-PROJ-XXX" class="w-full bg-white border border-slate-200 rounded px-2.5 py-1.5 text-slate-800 focus:outline-none" />
+                  <label class="block text-[10px] uppercase font-bold tracking-wider text-slate-700 mb-1">{{ 'workflow.contracts.cc_code' | translate }}</label>
+                  <input type="text" [(ngModel)]="formModel.costCenterCode" placeholder="CC-PROJ-XXX" class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400" style="color: #0f172a !important; background-color: #ffffff !important;" />
                 </div>
                 <div>
-                  <label class="block text-[10px] uppercase font-bold tracking-wider text-slate-400 mb-1">{{ 'workflow.contracts.cc_name' | translate }}</label>
-                  <input type="text" [(ngModel)]="formModel.costCenterName" placeholder="Rig Alpha CC" class="w-full bg-white border border-slate-200 rounded px-2.5 py-1.5 text-slate-800 focus:outline-none" />
+                  <label class="block text-[10px] uppercase font-bold tracking-wider text-slate-700 mb-1">{{ 'workflow.contracts.cc_name' | translate }}</label>
+                  <input type="text" [(ngModel)]="formModel.costCenterName" placeholder="Rig Alpha CC" class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400" style="color: #0f172a !important; background-color: #ffffff !important;" />
                 </div>
                 <div>
-                  <label class="block text-[10px] uppercase font-bold tracking-wider text-slate-400 mb-1">{{ 'workflow.contracts.parent_cc' | translate }}</label>
-                  <input type="text" [(ngModel)]="formModel.parentCostCenter" class="w-full bg-white border border-slate-200 rounded px-2.5 py-1.5 text-slate-800 focus:outline-none" />
+                  <label class="block text-[10px] uppercase font-bold tracking-wider text-slate-700 mb-1">{{ 'workflow.contracts.parent_cc' | translate }}</label>
+                  <input type="text" [(ngModel)]="formModel.parentCostCenter" class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400" style="color: #0f172a !important; background-color: #ffffff !important;" />
                 </div>
               </div>
 
               <div class="grid grid-cols-2 gap-2">
                 <div>
-                  <label class="block text-[10px] uppercase font-bold tracking-wider text-slate-400 mb-1">{{ 'workflow.contracts.pref_wh' | translate }}</label>
-                  <select [(ngModel)]="formModel.preferredWarehouse" class="w-full bg-white border border-slate-200 rounded px-2.5 py-1.5 text-slate-800 focus:outline-none">
-                    <option value="Warehouse A">{{ 'workflow.contracts.wh_a' | translate }}</option>
-                    <option value="Warehouse B">{{ 'workflow.contracts.wh_b' | translate }}</option>
-                    <option value="Pipe Yard 1">{{ 'workflow.contracts.wh_pipe_yard' | translate }}</option>
+                  <label class="block text-[10px] uppercase font-bold tracking-wider text-slate-700 mb-1">{{ 'workflow.contracts.pref_wh' | translate }}</label>
+                  <select [(ngModel)]="formModel.preferredWarehouse" class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400" style="color: #0f172a !important; background-color: #ffffff !important;">
+                    <option value="Warehouse A" style="color: #0f172a !important;">{{ 'workflow.contracts.wh_a' | translate }}</option>
+                    <option value="Warehouse B" style="color: #0f172a !important;">{{ 'workflow.contracts.wh_b' | translate }}</option>
+                    <option value="Pipe Yard 1" style="color: #0f172a !important;">{{ 'workflow.contracts.wh_pipe_yard' | translate }}</option>
                   </select>
                 </div>
                 <div>
-                  <label class="block text-[10px] uppercase font-bold tracking-wider text-slate-400 mb-1">{{ 'workflow.contracts.near_wh' | translate }}</label>
-                  <input type="text" [(ngModel)]="formModel.nearestWarehouse" class="w-full bg-white border border-slate-200 rounded px-2.5 py-1.5 text-slate-800 focus:outline-none" />
+                  <label class="block text-[10px] uppercase font-bold tracking-wider text-slate-700 mb-1">{{ 'workflow.contracts.near_wh' | translate }}</label>
+                  <input type="text" [(ngModel)]="formModel.nearestWarehouse" class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400" style="color: #0f172a !important; background-color: #ffffff !important;" />
                 </div>
               </div>
 
               <div class="grid grid-cols-2 gap-2">
                 <div>
-                  <label class="block text-[10px] uppercase font-bold tracking-wider text-slate-400 mb-1">{{ 'workflow.contracts.dist_site' | translate }}</label>
-                  <input type="number" [(ngModel)]="formModel.distanceKm" class="w-full bg-white border border-slate-200 rounded px-2.5 py-1.5 text-slate-800 focus:outline-none" />
+                  <label class="block text-[10px] uppercase font-bold tracking-wider text-slate-700 mb-1">{{ 'workflow.contracts.dist_site' | translate }}</label>
+                  <input type="number" [(ngModel)]="formModel.distanceKm" class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400" style="color: #0f172a !important; background-color: #ffffff !important;" />
                 </div>
                 <div>
-                  <label class="block text-[10px] uppercase font-bold tracking-wider text-slate-400 mb-1">{{ 'workflow.contracts.est_trans_cost' | translate }}</label>
-                  <input type="number" [(ngModel)]="formModel.estimatedTransportationCost" class="w-full bg-white border border-slate-200 rounded px-2.5 py-1.5 text-slate-800 focus:outline-none" />
+                  <label class="block text-[10px] uppercase font-bold tracking-wider text-slate-700 mb-1">{{ 'workflow.contracts.est_trans_cost' | translate }}</label>
+                  <input type="number" [(ngModel)]="formModel.estimatedTransportationCost" class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400" style="color: #0f172a !important; background-color: #ffffff !important;" />
                 </div>
               </div>
             </div>
@@ -587,9 +591,9 @@
             <div class="space-y-2">
               @for (rate of formModel.rateSheet; track $index) {
                 <div class="flex items-center space-x-2 bg-slate-50 p-2.5 rounded-lg border border-slate-200/60">
-                  <input type="text" [(ngModel)]="rate.description" [placeholder]="'workflow.contracts.placeholder_desc' | translate" class="flex-1 bg-white border border-slate-200 rounded px-2 py-1 text-slate-850 focus:outline-none" />
-                  <input type="text" [(ngModel)]="rate.unit" [placeholder]="'workflow.contracts.placeholder_unit' | translate" class="w-16 bg-white border border-slate-200 rounded px-2 py-1 text-slate-850 text-center focus:outline-none" />
-                  <input type="number" [(ngModel)]="rate.rate" [placeholder]="'workflow.contracts.placeholder_rate' | translate" class="w-20 bg-white border border-slate-200 rounded px-2 py-1 text-slate-850 text-right focus:outline-none" />
+                  <input type="text" [(ngModel)]="rate.description" [placeholder]="'workflow.contracts.placeholder_desc' | translate" class="flex-1 bg-white border border-slate-300 rounded px-2 py-1 text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400" style="color: #0f172a !important; background-color: #ffffff !important;" />
+                  <input type="text" [(ngModel)]="rate.unit" [placeholder]="'workflow.contracts.placeholder_unit' | translate" class="w-16 bg-white border border-slate-300 rounded px-2 py-1 text-slate-900 font-bold text-center focus:outline-none focus:ring-2 focus:ring-indigo-400" style="color: #0f172a !important; background-color: #ffffff !important;" />
+                  <input type="number" [(ngModel)]="rate.rate" [placeholder]="'workflow.contracts.placeholder_rate' | translate" class="w-20 bg-white border border-slate-300 rounded px-2 py-1 text-slate-900 font-bold text-right focus:outline-none focus:ring-2 focus:ring-indigo-400" style="color: #0f172a !important; background-color: #ffffff !important;" />
                   <button (click)="removeRateSheetRow($index)" class="text-red-500 hover:text-red-650 p-1 shrink-0">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -610,9 +614,9 @@
             <div class="space-y-2">
               @for (m of formModel.milestones; track $index) {
                 <div class="flex items-center space-x-2 bg-slate-50 p-2.5 rounded-lg border border-slate-200/60">
-                  <input type="text" [(ngModel)]="m.title" [placeholder]="'workflow.contracts.placeholder_milestone_title' | translate" class="flex-1 bg-white border border-slate-200 rounded px-2 py-1 text-slate-850 focus:outline-none" />
-                  <input type="date" [(ngModel)]="m.dueDate" class="w-32 bg-white border border-slate-200 rounded px-2 py-1 text-slate-850 text-center focus:outline-none" />
-                  <input type="number" [(ngModel)]="m.amount" [placeholder]="'workflow.contracts.placeholder_amount' | translate" class="w-24 bg-white border border-slate-200 rounded px-2 py-1 text-slate-850 text-right focus:outline-none" />
+                  <input type="text" [(ngModel)]="m.title" [placeholder]="'workflow.contracts.placeholder_milestone_title' | translate" class="flex-1 bg-white border border-slate-300 rounded px-2 py-1 text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400" style="color: #0f172a !important; background-color: #ffffff !important;" />
+                  <input type="date" [(ngModel)]="m.dueDate" class="w-32 bg-white border border-slate-300 rounded px-2 py-1 text-slate-900 font-bold text-center focus:outline-none focus:ring-2 focus:ring-indigo-400" style="color: #0f172a !important; background-color: #ffffff !important;" />
+                  <input type="number" [(ngModel)]="m.amount" [placeholder]="'workflow.contracts.placeholder_amount' | translate" class="w-24 bg-white border border-slate-300 rounded px-2 py-1 text-slate-900 font-bold text-right focus:outline-none focus:ring-2 focus:ring-indigo-400" style="color: #0f172a !important; background-color: #ffffff !important;" />
                   <button (click)="removeMilestoneRow($index)" class="text-red-500 hover:text-red-650 p-1 shrink-0">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />

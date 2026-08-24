@@ -8,6 +8,7 @@ import { FinanceCoreService } from '../../../core/services/finance-core.service'
 import { BreadcrumbService } from '../../../core/services/breadcrumb.service';
 import { NotificationService } from '../../../core/services/notification.service';
 import { LanguageService } from '../../../core/services/language.service';
+import { JournalEntry } from '../../../shared/interfaces/finance.interface';
 
 export interface ChecklistItem {
   key: string;
@@ -89,7 +90,7 @@ export class PeriodCloseComponent implements OnInit {
       const now = new Date();
       const isCurrentOrPast = year < now.getFullYear() || (year === now.getFullYear() && m <= now.getMonth() + 1);
 
-      const jCount = entries.filter(e => e.date.startsWith(id) && e.status === 'Posted').length;
+      const jCount = entries.filter((e: JournalEntry) => e.date.startsWith(id) && e.status === 'Posted').length;
 
       periods.push({
         id, year, month: m,
@@ -112,13 +113,13 @@ export class PeriodCloseComponent implements OnInit {
   // ─── COMPUTED ─────────────────────────────────────────────────────────
   readonly filteredPeriods = computed(() => {
     const year = this.selectedYear();
-    const entries = this.financeService.journalEntries();
+    const entries: JournalEntry[] = this.financeService.journalEntries();
 
     return this.periods()
       .filter(p => p.year === year)
       .map(p => ({
         ...p,
-        journalCount: entries.filter(e => e.date.startsWith(p.id) && e.status === 'Posted').length,
+        journalCount: entries.filter((e: JournalEntry) => e.date.startsWith(p.id) && e.status === 'Posted').length,
         checklistDone: p.checklist.filter(c => c.checked).length,
         checklistTotal: p.checklist.length,
         canClose: p.checklist.every(c => c.checked) && p.status === 'Open',

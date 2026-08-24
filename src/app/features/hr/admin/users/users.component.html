@@ -1,0 +1,597 @@
+<div class="admin-users-page">
+
+  <!-- ══════════ PAGE HEADER ══════════ -->
+  <div class="page-header">
+    <div class="page-header__left">
+      <h1 class="page-title">إدارة المستخدمين</h1>
+      <p class="page-subtitle">إضافة المستخدمين وتعيين أدوارهم وإدارة صلاحياتهم</p>
+    </div>
+    @if (canManageUsers()) {
+      <button class="btn-primary" (click)="openCreate()">
+        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+        </svg>
+        إضافة مستخدم
+      </button>
+    }
+  </div>
+
+  <!-- ══════════ KPI CARDS ══════════ -->
+  <div class="kpi-grid">
+    <div class="kpi-card kpi-total">
+      <div class="kpi-card__icon kpi-icon--blue">
+        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0"/>
+        </svg>
+      </div>
+      <div>
+        <span class="kpi-card__label">إجمالي المستخدمين</span>
+        <span class="kpi-card__value">{{ totalCount() }}</span>
+      </div>
+    </div>
+    <div class="kpi-card kpi-active">
+      <div class="kpi-card__icon kpi-icon--green">
+        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+      </div>
+      <div>
+        <span class="kpi-card__label">المستخدمون النشطون</span>
+        <span class="kpi-card__value kpi-value--green">{{ activeCount() }}</span>
+      </div>
+    </div>
+    <div class="kpi-card kpi-inactive">
+      <div class="kpi-card__icon kpi-icon--red">
+        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636"/>
+        </svg>
+      </div>
+      <div>
+        <span class="kpi-card__label">غير نشطين / موقوفون</span>
+        <span class="kpi-card__value kpi-value--red">{{ inactiveCount() }}</span>
+      </div>
+    </div>
+    <div class="kpi-card kpi-roles">
+      <div class="kpi-card__icon kpi-icon--purple">
+        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/>
+        </svg>
+      </div>
+      <div>
+        <span class="kpi-card__label">الأدوار المتاحة</span>
+        <span class="kpi-card__value kpi-value--purple">10</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════ FILTERS ══════════ -->
+  <div class="filters-card">
+    <!-- Search -->
+    <div class="search-box">
+      <svg class="search-icon" width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+      </svg>
+      <input
+        type="text"
+        placeholder="بحث بالاسم أو البريد أو اسم المستخدم..."
+        [ngModel]="filter().search"
+        (ngModelChange)="onSearch($event)"
+        class="search-input"
+      />
+    </div>
+
+    <!-- Filters -->
+    <div class="filter-group">
+      <select [ngModel]="filter().role" (ngModelChange)="onRoleFilter($event)" class="filter-select">
+        <option value="">جميع الأدوار</option>
+        @for (role of ALL_ROLES; track role) {
+          <option [value]="role">{{ role }}</option>
+        }
+      </select>
+
+      <select [ngModel]="filter().departmentId" (ngModelChange)="onDeptFilter($event)" class="filter-select">
+        <option value="">جميع الأقسام</option>
+        @for (dept of departments(); track dept.id) {
+          <option [value]="dept.id">{{ dept.nameAr }}</option>
+        }
+      </select>
+
+      <select [ngModel]="filter().status" (ngModelChange)="onStatusFilter($event)" class="filter-select">
+        <option value="">جميع الحالات</option>
+        @for (s of ALL_STATUSES; track s) {
+          <option [value]="s">{{ getStatusLabel(s) }}</option>
+        }
+      </select>
+
+      @if (filter().search || filter().role || filter().departmentId || filter().status) {
+        <button class="btn-clear" (click)="clearFilters()">
+          <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+          مسح الفلاتر
+        </button>
+      }
+    </div>
+
+    <span class="results-count">{{ filteredUsers().length }} مستخدم</span>
+  </div>
+
+  <!-- ══════════ TABLE ══════════ -->
+  <div class="table-card">
+    @if (isLoading()) {
+      <!-- Skeleton -->
+      <div class="skeleton-rows">
+        @for (i of [1,2,3,4,5]; track i) {
+          <div class="skeleton-row">
+            <div class="skeleton-cell skeleton-avatar"></div>
+            <div class="skeleton-cell skeleton-text-lg"></div>
+            <div class="skeleton-cell skeleton-text-sm"></div>
+            <div class="skeleton-cell skeleton-badge"></div>
+            <div class="skeleton-cell skeleton-badge"></div>
+          </div>
+        }
+      </div>
+    } @else if (filteredUsers().length === 0) {
+      <app-empty-state
+        icon="👤"
+        title="لا يوجد مستخدمون"
+        description="لا توجد نتائج تطابق فلاتر البحث الحالية."
+        [showAction]="canManageUsers()"
+        actionText="إضافة مستخدم"
+        (actionClick)="openCreate()"
+      />
+    } @else {
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>المستخدم</th>
+            <th>الدور</th>
+            <th>القسم</th>
+            <th>آخر دخول</th>
+            <th>الحالة</th>
+            <th class="col-actions">الإجراءات</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (user of filteredUsers(); track user.id; let i = $index) {
+            <tr class="table-row" [class.row-inactive]="user.status !== 'Active'">
+              <!-- User Cell -->
+              <td class="user-cell">
+                <div class="user-avatar" [attr.data-role]="user.role">
+                  {{ user.avatar }}
+                </div>
+                <div class="user-info">
+                  <span class="user-name">{{ user.fullName }}</span>
+                  <span class="user-username">&#64;{{ user.username }}</span>
+                  <span class="user-email">{{ user.email }}</span>
+                </div>
+              </td>
+
+              <!-- Role -->
+              <td>
+                <span class="role-badge" [ngClass]="getRoleClass(user.role)">
+                  {{ user.roleName || user.role }}
+                </span>
+              </td>
+
+              <!-- Department -->
+              <td class="dept-cell">
+                @if (user.department) {
+                  <span class="dept-name">{{ user.department.nameAr }}</span>
+                  <span class="dept-code">{{ user.department.code }}</span>
+                } @else {
+                  <span class="text-muted">—</span>
+                }
+              </td>
+
+              <!-- Last Login -->
+              <td class="date-cell">{{ formatDate(user.lastLogin) }}</td>
+
+              <!-- Status -->
+              <td>
+                <span class="status-badge" [ngClass]="getStatusClass(user.status)">
+                  <span class="status-dot"></span>
+                  {{ getStatusLabel(user.status) }}
+                </span>
+              </td>
+
+              <!-- Actions -->
+              <td class="actions-cell">
+                <div class="action-buttons">
+                  <button class="icon-btn icon-btn--view" title="عرض التفاصيل" (click)="openDetails(user)">
+                    <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                    </svg>
+                  </button>
+                  @if (canManageUsers()) {
+                    <button class="icon-btn icon-btn--edit" title="تعديل" (click)="openEdit(user)">
+                      <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                      </svg>
+                    </button>
+                    <button class="icon-btn icon-btn--status" title="تغيير الحالة" (click)="openStatus(user)">
+                      <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l4-4 4 4m0 6l-4 4-4-4"/>
+                      </svg>
+                    </button>
+                    <button class="icon-btn icon-btn--reset" title="إعادة تعيين كلمة المرور" (click)="openReset(user)">
+                      <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/>
+                      </svg>
+                    </button>
+                    <button class="icon-btn icon-btn--delete" title="حذف" (click)="openDelete(user)">
+                      <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                      </svg>
+                    </button>
+                  }
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════
+     MODAL BACKDROP
+═══════════════════════════════════════════════════════════════ -->
+@if (modalMode() !== null) {
+  <div class="modal-backdrop" (click)="closeModal()"></div>
+}
+
+<!-- ══════════ CREATE USER MODAL ══════════ -->
+@if (modalMode() === 'create') {
+  <div class="modal modal--lg">
+    <div class="modal__header">
+      <h2 class="modal__title">إضافة مستخدم جديد</h2>
+      <button class="modal__close" (click)="closeModal()">✕</button>
+    </div>
+    <div class="modal__body">
+      <form [formGroup]="createForm" (ngSubmit)="submitCreate()" novalidate>
+        <div class="form-grid form-grid--2">
+          <div class="form-group">
+            <label class="form-label form-label--required">الاسم الكامل</label>
+            <input formControlName="fullName" type="text" class="form-input" placeholder="أحمد محمد علي"/>
+            @if (createForm.get('fullName')?.invalid && createForm.get('fullName')?.touched) {
+              <span class="form-error">الاسم مطلوب (2 أحرف على الأقل)</span>
+            }
+          </div>
+          <div class="form-group">
+            <label class="form-label">الاسم بالعربي</label>
+            <input formControlName="fullNameAr" type="text" class="form-input" placeholder="أحمد محمد علي"/>
+          </div>
+          <div class="form-group">
+            <label class="form-label form-label--required">اسم المستخدم</label>
+            <input formControlName="username" type="text" class="form-input" dir="ltr" placeholder="ahmed.ali"/>
+            @if (createForm.get('username')?.errors?.['pattern'] && createForm.get('username')?.touched) {
+              <span class="form-error">أحرف صغيرة وأرقام والنقطة فقط</span>
+            }
+          </div>
+          <div class="form-group">
+            <label class="form-label form-label--required">البريد الإلكتروني</label>
+            <input formControlName="email" type="email" class="form-input" dir="ltr" placeholder="ahmed@petroflow.com"/>
+            @if (createForm.get('email')?.invalid && createForm.get('email')?.touched) {
+              <span class="form-error">بريد إلكتروني غير صالح</span>
+            }
+          </div>
+          <div class="form-group">
+            <label class="form-label form-label--required">الدور</label>
+            <select formControlName="role" class="form-select">
+              <option value="">اختر الدور...</option>
+              @for (role of ALL_ROLES; track role) {
+                <option [value]="role">{{ role }}</option>
+              }
+            </select>
+            @if (createForm.get('role')?.invalid && createForm.get('role')?.touched) {
+              <span class="form-error">الدور مطلوب</span>
+            }
+          </div>
+          <div class="form-group">
+            <label class="form-label">القسم</label>
+            <select formControlName="departmentId" class="form-select">
+              <option value="">بدون قسم</option>
+              @for (dept of departments(); track dept.id) {
+                <option [value]="dept.id">{{ dept.nameAr }}</option>
+              }
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">رقم الموظف</label>
+            <input formControlName="employeeId" type="text" class="form-input" dir="ltr" placeholder="EMP-2026-001"/>
+          </div>
+          <div class="form-group">
+            <label class="form-label">اللغة المفضلة</label>
+            <select formControlName="preferredLanguage" class="form-select">
+              <option value="ar">العربية</option>
+              <option value="en">English</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label form-label--required">كلمة المرور المؤقتة</label>
+            <input formControlName="temporaryPassword" type="password" class="form-input" dir="ltr"/>
+            @if (createForm.get('temporaryPassword')?.errors?.['minlength'] && createForm.get('temporaryPassword')?.touched) {
+              <span class="form-error">8 أحرف على الأقل</span>
+            }
+          </div>
+          <div class="form-group">
+            <label class="form-label form-label--required">تأكيد كلمة المرور</label>
+            <input formControlName="confirmPassword" type="password" class="form-input" dir="ltr"/>
+            @if (createForm.get('confirmPassword')?.errors?.['mismatch'] && createForm.get('confirmPassword')?.touched) {
+              <span class="form-error">كلمتا المرور غير متطابقتين</span>
+            }
+          </div>
+        </div>
+        <div class="form-check-row">
+          <label class="form-check">
+            <input formControlName="sendWelcomeEmail" type="checkbox" class="form-checkbox"/>
+            <span>إرسال بريد الترحيب مع بيانات الدخول</span>
+          </label>
+        </div>
+        <div class="modal__footer">
+          <button type="button" class="btn-secondary" (click)="closeModal()">إلغاء</button>
+          <button type="submit" class="btn-primary" [disabled]="isSubmitting()">
+            @if (isSubmitting()) { <span class="spinner"></span> } إنشاء المستخدم
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}
+
+<!-- ══════════ EDIT USER MODAL ══════════ -->
+@if (modalMode() === 'edit' && selectedUser()) {
+  <div class="modal modal--lg">
+    <div class="modal__header">
+      <h2 class="modal__title">تعديل: {{ selectedUser()!.fullName }}</h2>
+      <button class="modal__close" (click)="closeModal()">✕</button>
+    </div>
+    <div class="modal__body">
+      <form [formGroup]="editForm" (ngSubmit)="submitEdit()" novalidate>
+        <div class="form-grid form-grid--2">
+          <div class="form-group">
+            <label class="form-label form-label--required">الاسم الكامل</label>
+            <input formControlName="fullName" type="text" class="form-input"/>
+          </div>
+          <div class="form-group">
+            <label class="form-label">الاسم بالعربي</label>
+            <input formControlName="fullNameAr" type="text" class="form-input"/>
+          </div>
+          <div class="form-group">
+            <label class="form-label form-label--required">البريد الإلكتروني</label>
+            <input formControlName="email" type="email" class="form-input" dir="ltr"/>
+          </div>
+          <div class="form-group">
+            <label class="form-label form-label--required">الدور</label>
+            <select formControlName="role" class="form-select">
+              @for (role of ALL_ROLES; track role) {
+                <option [value]="role">{{ role }}</option>
+              }
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">القسم</label>
+            <select formControlName="departmentId" class="form-select">
+              <option value="">بدون قسم</option>
+              @for (dept of departments(); track dept.id) {
+                <option [value]="dept.id">{{ dept.nameAr }}</option>
+              }
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">رقم الموظف</label>
+            <input formControlName="employeeId" type="text" class="form-input" dir="ltr"/>
+          </div>
+        </div>
+        <div class="form-check-row">
+          <label class="form-check">
+            <input formControlName="emailNotifications" type="checkbox" class="form-checkbox"/>
+            <span>تفعيل إشعارات البريد الإلكتروني</span>
+          </label>
+        </div>
+        <div class="modal__footer">
+          <button type="button" class="btn-secondary" (click)="closeModal()">إلغاء</button>
+          <button type="submit" class="btn-primary" [disabled]="isSubmitting()">
+            @if (isSubmitting()) { <span class="spinner"></span> } حفظ التغييرات
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}
+
+<!-- ══════════ DETAILS MODAL ══════════ -->
+@if (modalMode() === 'details' && selectedUser()) {
+  <div class="modal modal--lg">
+    <div class="modal__header">
+      <h2 class="modal__title">تفاصيل المستخدم</h2>
+      <button class="modal__close" (click)="closeModal()">✕</button>
+    </div>
+    <div class="modal__body">
+      <div class="user-details-header">
+        <div class="user-avatar user-avatar--lg" [attr.data-role]="selectedUser()!.role">
+          {{ selectedUser()!.avatar }}
+        </div>
+        <div>
+          <h3 class="user-details-name">{{ selectedUser()!.fullName }}</h3>
+          @if (selectedUser()!.fullNameAr) {
+            <p class="user-details-name-ar">{{ selectedUser()!.fullNameAr }}</p>
+          }
+          <span class="role-badge" [ngClass]="getRoleClass(selectedUser()!.role)">
+            {{ selectedUser()!.roleName || selectedUser()!.role }}
+          </span>
+        </div>
+        <span class="status-badge status-badge--lg" [ngClass]="getStatusClass(selectedUser()!.status)">
+          <span class="status-dot"></span>
+          {{ getStatusLabel(selectedUser()!.status) }}
+        </span>
+      </div>
+
+      <div class="details-grid">
+        <div class="detail-item">
+          <span class="detail-label">اسم المستخدم</span>
+          <span class="detail-value" dir="ltr">&#64;{{ selectedUser()!.username }}</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">البريد الإلكتروني</span>
+          <span class="detail-value" dir="ltr">{{ selectedUser()!.email }}</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">القسم</span>
+          <span class="detail-value">{{ selectedUser()!.department?.nameAr || '—' }}</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">رقم الموظف</span>
+          <span class="detail-value" dir="ltr">{{ selectedUser()!.employeeId || '—' }}</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">آخر تسجيل دخول</span>
+          <span class="detail-value">{{ formatDate(selectedUser()!.lastLogin) }}</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">تاريخ الإنشاء</span>
+          <span class="detail-value">{{ formatDate(selectedUser()!.createdAt) }}</span>
+        </div>
+      </div>
+
+      @if (selectedUser()!.permissions && selectedUser()!.permissions!.length > 0) {
+        <div class="permissions-section">
+          <h4 class="section-label">الصلاحيات ({{ selectedUser()!.permissions!.length }})</h4>
+          <div class="permissions-grid">
+            @for (perm of selectedUser()!.permissions; track perm) {
+              <span class="perm-tag">{{ perm }}</span>
+            }
+          </div>
+        </div>
+      }
+    </div>
+    <div class="modal__footer">
+      @if (canManageUsers()) {
+        <button class="btn-secondary" (click)="openEdit(selectedUser()!); ">تعديل</button>
+      }
+      <button class="btn-primary" (click)="closeModal()">إغلاق</button>
+    </div>
+  </div>
+}
+
+<!-- ══════════ CHANGE STATUS MODAL ══════════ -->
+@if (modalMode() === 'status' && selectedUser()) {
+  <div class="modal modal--sm">
+    <div class="modal__header">
+      <h2 class="modal__title">تغيير حالة المستخدم</h2>
+      <button class="modal__close" (click)="closeModal()">✕</button>
+    </div>
+    <div class="modal__body">
+      <p class="modal-user-name">{{ selectedUser()!.fullName }}</p>
+      <form [formGroup]="statusForm" (ngSubmit)="submitStatus()" novalidate>
+        <div class="form-group">
+          <label class="form-label form-label--required">الحالة الجديدة</label>
+          <select formControlName="status" class="form-select">
+            @for (s of ALL_STATUSES; track s) {
+              <option [value]="s">{{ getStatusLabel(s) }}</option>
+            }
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label form-label--required">سبب التغيير</label>
+          <textarea formControlName="reason" class="form-textarea" rows="3" placeholder="اكتب سبب التغيير..."></textarea>
+          @if (statusForm.get('reason')?.invalid && statusForm.get('reason')?.touched) {
+            <span class="form-error">السبب مطلوب</span>
+          }
+        </div>
+        @if (statusForm.get('status')?.value === 'Suspended') {
+          <div class="form-group">
+            <label class="form-label">موقوف حتى تاريخ</label>
+            <input formControlName="suspendUntil" type="date" class="form-input"/>
+          </div>
+        }
+        <div class="modal__footer">
+          <button type="button" class="btn-secondary" (click)="closeModal()">إلغاء</button>
+          <button type="submit" class="btn-warning" [disabled]="isSubmitting()">
+            @if (isSubmitting()) { <span class="spinner"></span> } تأكيد التغيير
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}
+
+<!-- ══════════ RESET PASSWORD MODAL ══════════ -->
+@if (modalMode() === 'reset-password' && selectedUser()) {
+  <div class="modal modal--sm">
+    <div class="modal__header">
+      <h2 class="modal__title">إعادة تعيين كلمة المرور</h2>
+      <button class="modal__close" (click)="closeModal()">✕</button>
+    </div>
+    <div class="modal__body">
+      <p class="modal-user-name">{{ selectedUser()!.fullName }}</p>
+      <form [formGroup]="resetForm" (ngSubmit)="submitReset()" novalidate>
+        <div class="form-group">
+          <label class="form-label form-label--required">كلمة المرور الجديدة</label>
+          <input formControlName="newPassword" type="password" class="form-input" dir="ltr"/>
+          @if (resetForm.get('newPassword')?.errors?.['minlength'] && resetForm.get('newPassword')?.touched) {
+            <span class="form-error">8 أحرف على الأقل</span>
+          }
+        </div>
+        <div class="form-group">
+          <label class="form-label form-label--required">تأكيد كلمة المرور</label>
+          <input formControlName="confirmPassword" type="password" class="form-input" dir="ltr"/>
+          @if (resetForm.get('confirmPassword')?.errors?.['mismatch'] && resetForm.get('confirmPassword')?.touched) {
+            <span class="form-error">كلمتا المرور غير متطابقتين</span>
+          }
+        </div>
+        <div class="form-check-row">
+          <label class="form-check">
+            <input formControlName="mustChangeOnLogin" type="checkbox" class="form-checkbox"/>
+            <span>إجبار المستخدم على تغيير كلمة المرور عند أول دخول</span>
+          </label>
+        </div>
+        <div class="modal__footer">
+          <button type="button" class="btn-secondary" (click)="closeModal()">إلغاء</button>
+          <button type="submit" class="btn-danger" [disabled]="isSubmitting()">
+            @if (isSubmitting()) { <span class="spinner"></span> } إعادة التعيين
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}
+
+<!-- ══════════ DELETE CONFIRMATION MODAL ══════════ -->
+@if (modalMode() === 'delete' && selectedUser()) {
+  <div class="modal modal--sm">
+    <div class="modal__header modal__header--danger">
+      <h2 class="modal__title">تأكيد الحذف</h2>
+      <button class="modal__close" (click)="closeModal()">✕</button>
+    </div>
+    <div class="modal__body">
+      <div class="delete-warning">
+        <div class="delete-warning__icon">⚠️</div>
+        <p class="delete-warning__text">
+          هذا الإجراء <strong>لا يمكن التراجع عنه</strong>. سيتم حذف المستخدم
+          <strong>{{ selectedUser()!.fullName }}</strong> وجميع بياناته نهائياً.
+        </p>
+      </div>
+      <div class="form-group">
+        <label class="form-label">اكتب اسم المستخدم للتأكيد: <strong dir="ltr">{{ selectedUser()!.username }}</strong></label>
+        <input type="text" class="form-input" dir="ltr"
+          [ngModel]="deleteConfirmText()"
+          (ngModelChange)="deleteConfirmText.set($event)"
+          [placeholder]="selectedUser()!.username"
+        />
+      </div>
+      <div class="modal__footer">
+        <button class="btn-secondary" (click)="closeModal()">إلغاء</button>
+        <button class="btn-danger"
+          [disabled]="deleteConfirmText() !== selectedUser()!.username || isSubmitting()"
+          (click)="confirmDelete()"
+        >
+          @if (isSubmitting()) { <span class="spinner"></span> } حذف نهائي
+        </button>
+      </div>
+    </div>
+  </div>
+}

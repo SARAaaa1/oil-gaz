@@ -1,0 +1,487 @@
+<!-- ═══════════════════════════════════════════════════════════════
+     PetroFlow HR — Public Job Application Form
+     Route: /apply  (No auth required — share link in job ads)
+════════════════════════════════════════════════════════════════ -->
+<div class="min-h-screen" style="background: linear-gradient(135deg, #0F172A 0%, #1E3A5F 50%, #0F172A 100%); direction: rtl;">
+
+  <!-- ── Background pattern ────────────────────────────────────── -->
+  <div class="absolute inset-0 opacity-5 pointer-events-none"
+    style="background-image: radial-gradient(circle at 2px 2px, white 1px, transparent 0); background-size: 40px 40px;"></div>
+
+  <!-- ── Page wrapper ───────────────────────────────────────────── -->
+  <div class="relative z-10 max-w-3xl mx-auto px-4 py-10">
+
+    <!-- ── Logo / Header ──────────────────────────────────────────── -->
+    <div class="text-center mb-8">
+      <div class="inline-flex items-center gap-3 mb-4">
+        <div class="w-14 h-14 rounded-2xl flex items-center justify-center shadow-2xl"
+          style="background: linear-gradient(135deg, #009FE3, #005CB9);">
+          <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+          </svg>
+        </div>
+        <div class="text-right">
+          <h1 class="text-2xl font-black text-white tracking-tight">PetroFlow</h1>
+          <p class="text-xs font-semibold" style="color: #009FE3;">Gas Service Company</p>
+        </div>
+      </div>
+      <h2 class="text-3xl font-black text-white mb-2">تقديم طلب توظيف</h2>
+      <p class="text-slate-400 text-sm">أهلاً بك! يُرجى تعبئة النموذج بدقة لضمان النظر في طلبك</p>
+    </div>
+
+    <!-- ══════════════════════ SUCCESS STATE ══════════════════════ -->
+    @if (submitted()) {
+      <div class="bg-white rounded-3xl shadow-2xl p-10 text-center">
+        <div class="w-20 h-20 rounded-full mx-auto mb-5 flex items-center justify-center"
+          style="background: linear-gradient(135deg,#009FE3,#005CB9);">
+          <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+          </svg>
+        </div>
+        <h3 class="text-2xl font-black text-slate-800 mb-2">تم استلام طلبك بنجاح! 🎉</h3>
+        <p class="text-slate-500 text-sm mb-1">شكراً <strong class="text-slate-700">{{ fullName }}</strong></p>
+        <p class="text-slate-500 text-sm mb-6">
+          سيتم مراجعة طلبك والتواصل معك على
+          <strong class="text-slate-700">{{ form().email }}</strong> خلال 7 أيام عمل.
+        </p>
+        <div class="bg-slate-50 rounded-2xl p-4 text-right inline-block w-full max-w-sm mx-auto">
+          <p class="text-[11px] font-bold text-slate-400 uppercase mb-2">تفاصيل التقديم</p>
+          <p class="text-sm text-slate-700"><span class="font-bold">الوظيفة:</span> {{ form().jobTitle }}</p>
+          <p class="text-sm text-slate-700"><span class="font-bold">القسم:</span> {{ form().department }}</p>
+          <p class="text-sm text-slate-700"><span class="font-bold">الخبرة:</span> {{ form().experience }}</p>
+        </div>
+      </div>
+    }
+
+    <!-- ══════════════════════ FORM STATE ════════════════════════ -->
+    @if (!submitted()) {
+
+      <!-- ── Step Indicator ─────────────────────────────────────── -->
+      <div class="flex items-center gap-0 mb-8">
+        @for (s of [1,2,3]; track s) {
+          <div class="flex items-center flex-1">
+            <div class="flex flex-col items-center flex-1">
+              <div class="w-9 h-9 rounded-full flex items-center justify-center text-sm font-black transition-all duration-300 border-2"
+                [class]="step() > s ? 'text-white border-transparent' :
+                         step() === s ? 'text-white border-transparent' :
+                         'text-slate-400 border-slate-600'"
+                [style.background]="step() > s ? 'var(--primary)' :
+                                    step() === s ? 'linear-gradient(135deg,#009FE3,#005CB9)' : 'transparent'">
+                @if (step() > s) {
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
+                  </svg>
+                } @else {
+                  {{ s }}
+                }
+              </div>
+              <p class="text-[10px] font-bold mt-1.5"
+                [class]="step() >= s ? 'text-white' : 'text-slate-500'">
+                {{ s === 1 ? 'البيانات الشخصية' : s === 2 ? 'تفاصيل الوظيفة' : 'السيرة الذاتية' }}
+              </p>
+            </div>
+            @if (s < 3) {
+              <div class="h-0.5 flex-1 mb-5 mx-1 rounded-full transition-all duration-500"
+                [style.background]="step() > s ? 'var(--primary)' : 'rgba(255,255,255,0.15)'"></div>
+            }
+          </div>
+        }
+      </div>
+
+      <!-- ── Form Card ──────────────────────────────────────────── -->
+      <div class="bg-white rounded-3xl shadow-2xl overflow-hidden">
+
+        <!-- ══════════ STEP 1 — Personal Info ══════════ -->
+        @if (step() === 1) {
+          <div class="p-8">
+            <div class="flex items-center gap-3 mb-6">
+              <div class="w-10 h-10 rounded-xl flex items-center justify-center text-white"
+                style="background: linear-gradient(135deg,#009FE3,#005CB9);">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                </svg>
+              </div>
+              <div>
+                <h3 class="text-base font-black text-slate-800">البيانات الشخصية</h3>
+                <p class="text-[11px] text-slate-400">يُرجى إدخال الاسم الرباعي كما في الهوية الوطنية</p>
+              </div>
+            </div>
+
+            <!-- Full Name (4 parts) -->
+            <div class="mb-5">
+              <label class="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">
+                الاسم الرباعي <span class="text-red-500">*</span>
+              </label>
+              <div class="grid grid-cols-2 gap-3">
+                <!-- First name -->
+                <div>
+                  <label class="block text-[10px] text-slate-400 mb-1">الاسم الأول</label>
+                  <input type="text" [value]="form().firstName"
+                    (input)="set('firstName', $any($event.target).value)"
+                    placeholder="محمد"
+                    class="w-full rounded-xl px-4 py-3 text-sm border transition-all focus:outline-none focus:ring-2"
+                    [class]="errors()['firstName'] ? 'border-red-300 bg-red-50' : 'border-slate-200 bg-slate-50 focus:border-primary'">
+                  @if (errors()['firstName']) {
+                    <p class="text-red-500 text-[10px] mt-1">{{ errors()['firstName'] }}</p>
+                  }
+                </div>
+                <!-- Father name -->
+                <div>
+                  <label class="block text-[10px] text-slate-400 mb-1">اسم الأب</label>
+                  <input type="text" [value]="form().fatherName"
+                    (input)="set('fatherName', $any($event.target).value)"
+                    placeholder="عبدالله"
+                    class="w-full rounded-xl px-4 py-3 text-sm border transition-all focus:outline-none focus:ring-2"
+                    [class]="errors()['fatherName'] ? 'border-red-300 bg-red-50' : 'border-slate-200 bg-slate-50 focus:border-primary'">
+                  @if (errors()['fatherName']) {
+                    <p class="text-red-500 text-[10px] mt-1">{{ errors()['fatherName'] }}</p>
+                  }
+                </div>
+                <!-- Grandfather name -->
+                <div>
+                  <label class="block text-[10px] text-slate-400 mb-1">اسم الجد</label>
+                  <input type="text" [value]="form().grandName"
+                    (input)="set('grandName', $any($event.target).value)"
+                    placeholder="سالم"
+                    class="w-full rounded-xl px-4 py-3 text-sm border transition-all focus:outline-none focus:ring-2"
+                    [class]="errors()['grandName'] ? 'border-red-300 bg-red-50' : 'border-slate-200 bg-slate-50 focus:border-primary'">
+                  @if (errors()['grandName']) {
+                    <p class="text-red-500 text-[10px] mt-1">{{ errors()['grandName'] }}</p>
+                  }
+                </div>
+                <!-- Last name (Family) -->
+                <div>
+                  <label class="block text-[10px] text-slate-400 mb-1">اسم العائلة</label>
+                  <input type="text" [value]="form().lastName"
+                    (input)="set('lastName', $any($event.target).value)"
+                    placeholder="الغامدي"
+                    class="w-full rounded-xl px-4 py-3 text-sm border transition-all focus:outline-none focus:ring-2"
+                    [class]="errors()['lastName'] ? 'border-red-300 bg-red-50' : 'border-slate-200 bg-slate-50 focus:border-primary'">
+                  @if (errors()['lastName']) {
+                    <p class="text-red-500 text-[10px] mt-1">{{ errors()['lastName'] }}</p>
+                  }
+                </div>
+              </div>
+              <!-- Full name preview -->
+              @if (fullName) {
+                <div class="mt-3 px-4 py-2 rounded-xl text-sm font-bold text-center"
+                  style="background: rgba(0,159,227,0.08); color: #009FE3; border: 1px solid rgba(0,159,227,0.2);">
+                  {{ fullName }}
+                </div>
+              }
+            </div>
+
+            <!-- Email + Phone -->
+            <div class="grid grid-cols-2 gap-3 mb-4">
+              <div>
+                <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wide mb-1.5">
+                  البريد الإلكتروني <span class="text-red-500">*</span>
+                </label>
+                <input type="email" [value]="form().email"
+                  (input)="set('email', $any($event.target).value)"
+                  placeholder="example@email.com"
+                  class="w-full rounded-xl px-4 py-3 text-sm border transition-all focus:outline-none focus:ring-2"
+                  [class]="errors()['email'] ? 'border-red-300 bg-red-50' : 'border-slate-200 bg-slate-50 focus:border-primary'">
+                @if (errors()['email']) {
+                  <p class="text-red-500 text-[10px] mt-1">{{ errors()['email'] }}</p>
+                }
+              </div>
+              <div>
+                <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wide mb-1.5">
+                  رقم الجوال <span class="text-red-500">*</span>
+                </label>
+                <input type="tel" [value]="form().phone"
+                  (input)="set('phone', $any($event.target).value)"
+                  placeholder="05xxxxxxxx"
+                  class="w-full rounded-xl px-4 py-3 text-sm border transition-all focus:outline-none focus:ring-2 font-mono"
+                  [class]="errors()['phone'] ? 'border-red-300 bg-red-50' : 'border-slate-200 bg-slate-50 focus:border-primary'">
+                @if (errors()['phone']) {
+                  <p class="text-red-500 text-[10px] mt-1">{{ errors()['phone'] }}</p>
+                }
+              </div>
+            </div>
+
+            <!-- Nationality -->
+            <div class="mb-4">
+              <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wide mb-1.5">
+                الجنسية <span class="text-red-500">*</span>
+              </label>
+              <select (change)="set('nationality', $any($event.target).value)"
+                class="w-full rounded-xl px-4 py-3 text-sm border transition-all focus:outline-none focus:ring-2"
+                [class]="errors()['nationality'] ? 'border-red-300 bg-red-50' : 'border-slate-200 bg-slate-50 focus:border-primary'">
+                <option value="">— اختر الجنسية —</option>
+                @for (n of nationalities; track n) {
+                  <option [value]="n">{{ n }}</option>
+                }
+              </select>
+              @if (errors()['nationality']) {
+                <p class="text-red-500 text-[10px] mt-1">{{ errors()['nationality'] }}</p>
+              }
+            </div>
+          </div>
+        }
+
+        <!-- ══════════ STEP 2 — Job Details ══════════ -->
+        @if (step() === 2) {
+          <div class="p-8">
+            <div class="flex items-center gap-3 mb-6">
+              <div class="w-10 h-10 rounded-xl flex items-center justify-center text-white"
+                style="background: linear-gradient(135deg,#009FE3,#005CB9);">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                </svg>
+              </div>
+              <div>
+                <h3 class="text-base font-black text-slate-800">تفاصيل التقديم الوظيفي</h3>
+                <p class="text-[11px] text-slate-400">اختر الوظيفة التي تتقدم لها ومؤهلاتك</p>
+              </div>
+            </div>
+
+            <!-- Job Title -->
+            <div class="mb-4">
+              <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wide mb-1.5">
+                الوظيفة المطلوبة <span class="text-red-500">*</span>
+              </label>
+              <select (change)="set('jobTitle', $any($event.target).value)"
+                class="w-full rounded-xl px-4 py-3 text-sm border transition-all focus:outline-none focus:ring-2"
+                [class]="errors()['jobTitle'] ? 'border-red-300 bg-red-50' : 'border-slate-200 bg-slate-50 focus:border-primary'">
+                <option value="">— اختر الوظيفة —</option>
+                @for (p of positions; track p) {
+                  <option [value]="p">{{ p }}</option>
+                }
+              </select>
+              @if (errors()['jobTitle']) {
+                <p class="text-red-500 text-[10px] mt-1">{{ errors()['jobTitle'] }}</p>
+              }
+            </div>
+
+            <!-- Department + Experience -->
+            <div class="grid grid-cols-2 gap-3 mb-4">
+              <div>
+                <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wide mb-1.5">
+                  القسم المرغوب <span class="text-red-500">*</span>
+                </label>
+                <select (change)="set('department', $any($event.target).value)"
+                  class="w-full rounded-xl px-4 py-3 text-sm border transition-all focus:outline-none focus:ring-2"
+                  [class]="errors()['department'] ? 'border-red-300 bg-red-50' : 'border-slate-200 bg-slate-50 focus:border-primary'">
+                  <option value="">— اختر القسم —</option>
+                  @for (d of departments; track d) {
+                    <option [value]="d">{{ d }}</option>
+                  }
+                </select>
+                @if (errors()['department']) {
+                  <p class="text-red-500 text-[10px] mt-1">{{ errors()['department'] }}</p>
+                }
+              </div>
+              <div>
+                <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wide mb-1.5">
+                  سنوات الخبرة <span class="text-red-500">*</span>
+                </label>
+                <select (change)="set('experience', $any($event.target).value)"
+                  class="w-full rounded-xl px-4 py-3 text-sm border transition-all focus:outline-none focus:ring-2"
+                  [class]="errors()['experience'] ? 'border-red-300 bg-red-50' : 'border-slate-200 bg-slate-50 focus:border-primary'">
+                  <option value="">— اختر —</option>
+                  @for (e of experienceOptions; track e) {
+                    <option [value]="e">{{ e }}</option>
+                  }
+                </select>
+                @if (errors()['experience']) {
+                  <p class="text-red-500 text-[10px] mt-1">{{ errors()['experience'] }}</p>
+                }
+              </div>
+            </div>
+
+            <!-- Education + University -->
+            <div class="grid grid-cols-2 gap-3 mb-4">
+              <div>
+                <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wide mb-1.5">
+                  المؤهل العلمي <span class="text-red-500">*</span>
+                </label>
+                <select (change)="set('education', $any($event.target).value)"
+                  class="w-full rounded-xl px-4 py-3 text-sm border transition-all focus:outline-none focus:ring-2"
+                  [class]="errors()['education'] ? 'border-red-300 bg-red-50' : 'border-slate-200 bg-slate-50 focus:border-primary'">
+                  <option value="">— اختر —</option>
+                  @for (e of educationOptions; track e) {
+                    <option [value]="e">{{ e }}</option>
+                  }
+                </select>
+                @if (errors()['education']) {
+                  <p class="text-red-500 text-[10px] mt-1">{{ errors()['education'] }}</p>
+                }
+              </div>
+              <div>
+                <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wide mb-1.5">التخصص</label>
+                <input type="text" [value]="form().major"
+                  (input)="set('major', $any($event.target).value)"
+                  placeholder="هندسة البترول"
+                  class="w-full rounded-xl px-4 py-3 text-sm border border-slate-200 bg-slate-50 focus:outline-none focus:ring-2 transition-all">
+              </div>
+            </div>
+
+            <!-- University -->
+            <div class="mb-4">
+              <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wide mb-1.5">الجامعة / المعهد</label>
+              <input type="text" [value]="form().university"
+                (input)="set('university', $any($event.target).value)"
+                placeholder="جامعة الملك فهد للبترول والمعادن"
+                class="w-full rounded-xl px-4 py-3 text-sm border border-slate-200 bg-slate-50 focus:outline-none focus:ring-2 transition-all">
+            </div>
+
+            <!-- LinkedIn -->
+            <div>
+              <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wide mb-1.5">رابط LinkedIn (اختياري)</label>
+              <input type="url" [value]="form().linkedin"
+                (input)="set('linkedin', $any($event.target).value)"
+                placeholder="https://linkedin.com/in/your-name"
+                class="w-full rounded-xl px-4 py-3 text-sm border border-slate-200 bg-slate-50 focus:outline-none focus:ring-2 transition-all font-mono text-xs"
+                dir="ltr">
+            </div>
+          </div>
+        }
+
+        <!-- ══════════ STEP 3 — CV Upload ══════════ -->
+        @if (step() === 3) {
+          <div class="p-8">
+            <div class="flex items-center gap-3 mb-6">
+              <div class="w-10 h-10 rounded-xl flex items-center justify-center text-white"
+                style="background: linear-gradient(135deg,#009FE3,#005CB9);">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+              </div>
+              <div>
+                <h3 class="text-base font-black text-slate-800">رفع السيرة الذاتية</h3>
+                <p class="text-[11px] text-slate-400">PDF أو Word — حجم أقصى 5MB</p>
+              </div>
+            </div>
+
+            <!-- Drop Zone -->
+            @if (!form().cvFile) {
+              <div
+                (dragover)="$event.preventDefault(); dragOver.set(true)"
+                (dragleave)="dragOver.set(false)"
+                (drop)="onDrop($event)"
+                (click)="fileInput.click()"
+                class="border-2 border-dashed rounded-2xl p-12 text-center cursor-pointer transition-all duration-200"
+                [style.border-color]="dragOver() ? 'var(--primary)' : '#CBD5E1'"
+                [style.background]="dragOver() ? 'rgba(0,159,227,0.05)' : '#F8FAFC'">
+                <svg class="w-14 h-14 mx-auto mb-4 transition-colors"
+                  [style.color]="dragOver() ? 'var(--primary)' : '#CBD5E1'"
+                  fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                    d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                </svg>
+                <p class="text-sm font-bold text-slate-600 mb-1">اسحب وأفلت ملف السيرة الذاتية هنا</p>
+                <p class="text-xs text-slate-400">أو <span style="color:var(--primary)" class="font-bold">اضغط للاختيار</span></p>
+                <p class="text-[10px] text-slate-300 mt-3">PDF, DOC, DOCX • أقصى حجم 5MB</p>
+                <input #fileInput type="file" accept=".pdf,.doc,.docx" class="hidden" (change)="onFileSelect($event)">
+              </div>
+            } @else {
+              <!-- File preview -->
+              <div class="rounded-2xl p-4 flex items-center gap-4"
+                style="background: rgba(0,159,227,0.06); border: 1.5px solid rgba(0,159,227,0.2);">
+                <div class="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 text-white"
+                  style="background: linear-gradient(135deg,#009FE3,#005CB9);">
+                  <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                  </svg>
+                </div>
+                <div class="flex-1 min-w-0">
+                  <p class="text-sm font-bold text-slate-800 truncate">{{ form().cvFileName }}</p>
+                  <p class="text-xs text-slate-400">{{ (form().cvFile!.size / 1024).toFixed(0) }} KB</p>
+                </div>
+                <button (click)="removeFile()"
+                  class="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:bg-red-50 hover:text-red-500 transition-all">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                  </svg>
+                </button>
+              </div>
+            }
+            @if (errors()['cvFile']) {
+              <p class="text-red-500 text-xs mt-2 flex items-center gap-1">
+                <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+                {{ errors()['cvFile'] }}
+              </p>
+            }
+
+            <!-- Cover Letter -->
+            <div class="mt-5">
+              <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wide mb-1.5">
+                خطاب التقديم (اختياري)
+              </label>
+              <textarea rows="5" [value]="form().coverLetter"
+                (input)="set('coverLetter', $any($event.target).value)"
+                placeholder="اكتب مختصراً عن نفسك وسبب اهتمامك بهذه الوظيفة وأبرز إنجازاتك..."
+                class="w-full rounded-xl px-4 py-3 text-sm border border-slate-200 bg-slate-50 focus:outline-none focus:ring-2 transition-all resize-none"></textarea>
+            </div>
+
+            <!-- Summary before submit -->
+            <div class="mt-5 bg-slate-50 rounded-2xl p-4 border border-slate-100">
+              <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">مراجعة الطلب</p>
+              <div class="grid grid-cols-2 gap-2 text-xs text-slate-600">
+                <div><span class="font-bold text-slate-800">الاسم:</span> {{ fullName }}</div>
+                <div><span class="font-bold text-slate-800">الجوال:</span> {{ form().phone }}</div>
+                <div><span class="font-bold text-slate-800">البريد:</span> {{ form().email }}</div>
+                <div><span class="font-bold text-slate-800">الجنسية:</span> {{ form().nationality }}</div>
+                <div><span class="font-bold text-slate-800">الوظيفة:</span> {{ form().jobTitle }}</div>
+                <div><span class="font-bold text-slate-800">الخبرة:</span> {{ form().experience }}</div>
+              </div>
+            </div>
+          </div>
+        }
+
+        <!-- ── Footer Buttons ─────────────────────────────────────── -->
+        <div class="px-8 pb-8 flex items-center justify-between">
+          @if (step() > 1) {
+            <button (click)="prevStep()"
+              class="flex items-center gap-2 px-5 py-2.5 rounded-xl border border-slate-200 text-slate-600 text-sm font-bold hover:bg-slate-50 transition-all">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+              </svg>
+              السابق
+            </button>
+          } @else {
+            <div></div>
+          }
+
+          @if (step() < 3) {
+            <button (click)="nextStep()"
+              class="btn-primary flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold transition-all shadow-lg">
+              التالي
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+              </svg>
+            </button>
+          } @else {
+            <button (click)="submit()" [disabled]="submitting()"
+              class="btn-primary flex items-center gap-2 px-7 py-2.5 rounded-xl text-sm font-bold transition-all shadow-lg disabled:opacity-60">
+              @if (submitting()) {
+                <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                </svg>
+                جارٍ الإرسال...
+              } @else {
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                </svg>
+                إرسال الطلب
+              }
+            </button>
+          }
+        </div>
+      </div>
+    }
+
+    <!-- ── Footer ─────────────────────────────────────────────────── -->
+    <p class="text-center text-slate-500 text-[11px] mt-6">
+      © {{ currentYear }} PetroFlow Gas Service Company — جميع الحقوق محفوظة
+    </p>
+  </div>
+</div>

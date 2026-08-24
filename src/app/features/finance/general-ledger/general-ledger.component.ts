@@ -57,8 +57,8 @@ export class GeneralLedgerComponent implements OnInit {
 
   // Leaf accounts for line-item selection (prevents posting to summary nodes)
   readonly leafAccounts = computed(() => {
-    const list = this.financeService.accounts();
-    return list.filter(acc => !list.some(other => other.parentCode === acc.code));
+    const list: ChartOfAccount[] = this.financeService.accounts();
+    return list.filter((acc: ChartOfAccount) => !list.some((other: ChartOfAccount) => other.parentCode === acc.code));
   });
 
   // Calculate totals and balance variance of the current posting form
@@ -78,27 +78,27 @@ export class GeneralLedgerComponent implements OnInit {
 
   // Filtered Journals List
   readonly filteredEntries = computed(() => {
-    const list = this.financeService.journalEntries();
+    const list: JournalEntry[] = this.financeService.journalEntries();
     const query = this.searchQuery().trim().toLowerCase();
     const status = this.statusFilter();
 
     let filtered = list;
 
     if (query) {
-      filtered = filtered.filter(entry => 
+      filtered = filtered.filter((entry: JournalEntry) => 
         entry.journalNumber.toLowerCase().includes(query) ||
-        entry.reference.toLowerCase().includes(query) ||
+        (entry.reference && entry.reference.toLowerCase().includes(query)) ||
         entry.description.toLowerCase().includes(query) ||
-        entry.lines.some(l => l.accountCode.includes(query) || l.accountName.toLowerCase().includes(query))
+        entry.lines.some((l: JournalLine) => l.accountCode.includes(query) || l.accountName.toLowerCase().includes(query))
       );
     }
 
     if (status !== 'All') {
-      filtered = filtered.filter(entry => entry.status === status);
+      filtered = filtered.filter((entry: JournalEntry) => entry.status === status);
     }
 
     // Sort chronologically (most recent first)
-    return filtered.sort((a, b) => b.date.localeCompare(a.date) || b.journalNumber.localeCompare(a.journalNumber));
+    return filtered.sort((a: JournalEntry, b: JournalEntry) => b.date.localeCompare(a.date) || b.journalNumber.localeCompare(a.journalNumber));
   });
 
   ngOnInit() {
@@ -188,7 +188,7 @@ export class GeneralLedgerComponent implements OnInit {
     }
 
     const lines: JournalLine[] = this.formLines().map((l, i) => {
-      const accName = this.financeService.accounts().find(a => a.code === l.accountCode)?.name || 'Unknown';
+      const accName = this.financeService.accounts().find((a: ChartOfAccount) => a.code === l.accountCode)?.name || 'Unknown';
       return {
         id: `jel_man_${i}_${Math.random().toString(36).substr(2, 5)}`,
         accountCode: l.accountCode,

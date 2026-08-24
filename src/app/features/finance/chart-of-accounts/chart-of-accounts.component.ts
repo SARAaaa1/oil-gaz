@@ -10,6 +10,8 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { RoleDirective } from '../../../shared/directives/role.directive';
 import { ChartOfAccount, AccountType } from '../../../shared/interfaces/finance.interface';
 
+import { FinanceApiService } from '../../../core/services/finance-api.service';
+
 @Component({
   selector: 'app-chart-of-accounts',
   standalone: true,
@@ -19,6 +21,7 @@ import { ChartOfAccount, AccountType } from '../../../shared/interfaces/finance.
 })
 export class ChartOfAccountsComponent implements OnInit {
   readonly financeService = inject(FinanceCoreService);
+  private readonly financeApi = inject(FinanceApiService);
   private readonly notificationService = inject(NotificationService);
   readonly authService = inject(AuthService);
   private readonly breadcrumbService = inject(BreadcrumbService);
@@ -231,5 +234,17 @@ export class ChartOfAccountsComponent implements OnInit {
         this.notificationService.danger('finance.chart_of_accounts.title', error.message || 'Error deleting account.');
       }
     }
+  }
+
+  seedDefaultAccounts() {
+    this.financeApi.seedCoa().subscribe({
+      next: (res) => {
+        this.notificationService.success('finance.chart_of_accounts.title', res.message || 'Default accounts seeded successfully');
+        this.financeService.fetchFromBackend();
+      },
+      error: (err) => {
+        this.notificationService.danger('finance.chart_of_accounts.title', err?.error?.message || 'Failed to seed default accounts');
+      }
+    });
   }
 }

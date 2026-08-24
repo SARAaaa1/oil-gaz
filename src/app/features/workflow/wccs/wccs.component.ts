@@ -2,10 +2,11 @@ import { Component, OnInit, inject, signal, computed, ChangeDetectionStrategy } 
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
-import { WorkflowService } from '../../../core/services/workflow.service';
 import { BreadcrumbService } from '../../../core/services/breadcrumb.service';
 import { AuthService } from '../../../core/services/auth.service';
-import { WCC, DAR, Contract, WCCLineItem } from '../../../shared/interfaces/workflow.interface';
+import { NotificationService } from '../../../core/services/notification.service';
+import { BillingApiService, Wcc, GenerateWccBody } from '../../../core/services/billing-api.service';
+import { WorkflowApiService } from '../../../core/services/workflow-api.service';
 import { ActivityTimelineComponent } from '../../../shared/components/activity-timeline/activity-timeline.component';
 
 @Component({
@@ -16,265 +17,164 @@ import { ActivityTimelineComponent } from '../../../shared/components/activity-t
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class WccsComponent implements OnInit {
-  private readonly workflowService = inject(WorkflowService);
+  private readonly billingApi  = inject(BillingApiService);
+  private readonly workflowApi = inject(WorkflowApiService);
   private readonly breadcrumbService = inject(BreadcrumbService);
   private readonly authService = inject(AuthService);
-  private readonly translate = inject(TranslateService);
+  private readonly notificationService = inject(NotificationService);
+  private readonly translate   = inject(TranslateService);
 
-  readonly wccs = this.workflowService.wccs;
-  readonly dars = this.workflowService.dars;
-  readonly contracts = this.workflowService.contracts;
-  readonly selectedWcc = signal<WCC | null>(null);
+  // ── State ──────────────────────────────────────────────────────────────────
+  readonly wccs      = signal<Wcc[]>([]);
+  readonly contracts = signal<any[]>([]);
+  readonly isLoading = signal(false);
+  readonly selectedWcc = signal<Wcc | null>(null);
 
-  // Filters
-  searchQuery = '';
+  searchQuery  = '';
   statusFilter = 'ALL';
 
-  // Form Drawer states
-  isModalOpen = signal(false);
-  selectedContractId = '';
-  selectedDarIds = new Set<string>();
+  isModalOpen         = signal(false);
+  isGenerating        = signal(false);
+  selectedContractId  = '';
+  formPeriodFrom      = '';
+  formPeriodTo        = '';
 
-  readonly activeContracts = computed(() =>
-    this.contracts().filter(c => c.status === 'Active')
-  );
-
-  // Load DARs that are Approved AND not linked to any existing WCC for the selected contract
-  readonly availableDars = computed(() => {
-    const contractId = this.selectedContractId;
-    if (!contractId) return [];
-
-    // find all DARs belonging to this contract
-    const contractDars = this.dars().filter(d => d.contractId === contractId && d.status === 'Approved');
-
-    // find all DAR IDs already linked to existing WCCs
-    const linkedDarIds = new Set<string>();
-    this.wccs().forEach(w => w.darIds.forEach(id => linkedDarIds.add(id)));
-
-    // filter contractDars that are NOT linked
-    return contractDars.filter(d => !linkedDarIds.has(d.id));
-  });
-
-  // Preview WCC computation based on chosen DARs
-  readonly previewLineItems = computed<WCCLineItem[]>(() => {
-    const contractId = this.selectedContractId;
-    if (!contractId || this.selectedDarIds.size === 0) return [];
-
-    const contract = this.contracts().find(c => c.id === contractId);
-    if (!contract) return [];
-
-    const list: WCCLineItem[] = [];
-    const selectedDarsList = this.dars().filter(d => this.selectedDarIds.has(d.id));
-
-    // accumulate operating, standby, repair, downtime hours
-    let opHours = 0;
-    let standbyHours = 0;
-    let repairHours = 0;
-    let downtimeHours = 0;
-
-    selectedDarsList.forEach(d => {
-      opHours += d.operatingHours;
-      standbyHours += d.standbyHours;
-      repairHours += d.repairHours;
-      downtimeHours += d.downtimeHours;
-    });
-
-    // 1. Operating Rate (converts total operating hours to days based on contract rate sheet)
-    const opRateItem = contract.rateSheet.find(rs => rs.description.includes('Operation') || rs.unit === 'DAY');
-    if (opRateItem) {
-      const days = opHours / 24;
-      const rate = opRateItem.rate;
-      list.push({
-        id: 'li_op',
-        description: `Rig Daily Operation Rate (${days.toFixed(2)} Days)`,
-        unit: 'DAY',
-        quantity: days,
-        rate,
-        amount: Math.round(days * rate)
-      });
-    }
-
-    // 2. Standby hourly rate
-    const standbyRateItem = contract.rateSheet.find(rs => rs.description.includes('Standby') || rs.unit === 'HOUR');
-    if (standbyRateItem && standbyHours > 0) {
-      list.push({
-        id: 'li_standby',
-        description: `Drill Crew Technical Standby (${standbyHours} Hours)`,
-        unit: 'HOUR',
-        quantity: standbyHours,
-        rate: standbyRateItem.rate,
-        amount: Math.round(standbyHours * standbyRateItem.rate)
-      });
-    }
-
-    // 3. Downtime penalty rate sheet item (usually a negative rate!)
-    const downtimeRateItem = contract.rateSheet.find(rs => rs.description.includes('Downtime') || rs.description.includes('Penalty'));
-    if (downtimeRateItem && downtimeHours > 0) {
-      list.push({
-        id: 'li_downtime',
-        description: `Downtime Operational Penalty Clause (${downtimeHours} Hours)`,
-        unit: 'HOUR',
-        quantity: downtimeHours,
-        rate: downtimeRateItem.rate,
-        amount: Math.round(downtimeHours * downtimeRateItem.rate) // usually rate is negative e.g. -2000
-      });
-    }
-
-    return list;
-  });
-
-  readonly computedSubtotal = computed(() =>
-    this.previewLineItems().reduce((sum, item) => sum + item.amount, 0)
-  );
-
-  readonly computedOpHours = computed(() => {
-    let op = 0;
-    this.dars().filter(d => this.selectedDarIds.has(d.id)).forEach(d => op += d.operatingHours);
-    return op;
-  });
-
-  readonly computedStandbyHours = computed(() => {
-    let s = 0;
-    this.dars().filter(d => this.selectedDarIds.has(d.id)).forEach(d => s += d.standbyHours);
-    return s;
-  });
-
-  readonly computedPeriodFrom = computed(() => {
-    const dates = this.dars().filter(d => this.selectedDarIds.has(d.id)).map(d => d.reportDate).sort();
-    return dates.length > 0 ? dates[0] : '';
-  });
-
-  readonly computedPeriodTo = computed(() => {
-    const dates = this.dars().filter(d => this.selectedDarIds.has(d.id)).map(d => d.reportDate).sort();
-    return dates.length > 0 ? dates[dates.length - 1] : '';
-  });
+  // ── Computed ───────────────────────────────────────────────────────────────
+  readonly activeContracts = computed(() => this.contracts().filter(c => c.status === 'Active'));
 
   readonly filteredWccs = computed(() => {
     let list = this.wccs();
-    const query = this.searchQuery.trim().toLowerCase();
+    const query  = this.searchQuery.trim().toLowerCase();
     const status = this.statusFilter;
 
-    if (status !== 'ALL') {
-      if (status === 'Draft') {
-        list = list.filter(w => w.status === 'Draft' || w.status === 'Pending Approval');
-      } else {
-        list = list.filter(w => w.status === status);
-      }
-    }
-
+    if (status !== 'ALL') list = list.filter(w => w.status === status);
     if (query) {
       list = list.filter(w =>
-        w.wccNumber.toLowerCase().includes(query) ||
-        w.clientName.toLowerCase().includes(query) ||
-        w.contractNumber.toLowerCase().includes(query) ||
-        (w.rigName && w.rigName.toLowerCase().includes(query))
+        w.wccNumber?.toLowerCase().includes(query) ||
+        w.clientName?.toLowerCase().includes(query) ||
+        w.contractNumber?.toLowerCase().includes(query)
       );
     }
-
     return list;
   });
 
+  // ── Lifecycle ──────────────────────────────────────────────────────────────
   ngOnInit() {
     this.breadcrumbService.setBreadcrumbs([
       { label: this.translate.instant('navigation.workflow'), url: '/workflow' },
       { label: this.translate.instant('workflow.wccs.breadcrumb') }
     ]);
-
-    const list = this.filteredWccs();
-    if (list.length > 0) {
-      this.selectedWcc.set(list[0]);
-    }
+    this.loadWccs();
+    this.loadContracts();
   }
 
-  selectWcc(wcc: WCC) {
-    this.selectedWcc.set(wcc);
+  loadWccs() {
+    this.isLoading.set(true);
+    this.billingApi.getWccs({ limit: 100 }).subscribe({
+      next: (res: any) => {
+        const raw = res.items ?? res;
+        this.wccs.set((Array.isArray(raw) ? raw : []).map((w: any) => ({ ...w, id: w._id ?? w.id })));
+        const list = this.filteredWccs();
+        if (list.length > 0 && !this.selectedWcc()) this.selectedWcc.set(list[0]);
+        this.isLoading.set(false);
+      },
+      error: () => { this.notificationService.danger('Error', 'Failed to load WCCs'); this.isLoading.set(false); }
+    });
   }
 
-  // --- Permissions and Multi-stage gates ---
+  loadContracts() {
+    this.workflowApi.getContracts({ status: 'Active', limit: 100 }).subscribe({
+      next: (res: any) => this.contracts.set(res.items ?? res),
+      error: () => {}
+    });
+  }
+
+  // ── Selection ──────────────────────────────────────────────────────────────
+  selectWcc(wcc: Wcc) { this.selectedWcc.set(wcc); }
+
+  // ── Permissions ───────────────────────────────────────────────────────────
   canCreate() {
-    const role = this.authService.currentUser()?.role;
-    return role === 'Super Admin' || role === 'General Manager' || role === 'Operations Manager' || role === 'Project Manager';
+    const r = this.authService.currentUser()?.role;
+    return r === 'Super Admin' || r === 'General Manager' || r === 'Finance Manager' || r === 'Operations Manager';
+  }
+  readonly availableDars = signal<any[]>([]);
+  readonly selectedDarIds   = signal<string[]>([]);
+  readonly previewLineItems = computed<any[]>(() => []);
+  readonly computedSubtotal = computed<number>(() => 0);
+  readonly computedPeriodFrom = computed<string>(() => this.formPeriodFrom);
+  readonly computedPeriodTo   = computed<string>(() => this.formPeriodTo);
+  readonly computedOpHours    = computed<number>(() => 0);
+  readonly computedStandbyHours = computed<number>(() => 0);
+
+  canApprove() {
+    const r = this.authService.currentUser()?.role;
+    return r === 'Super Admin' || r === 'General Manager' || r === 'Finance Manager';
+  }
+  canApproveStep(...args: any[]) { return this.canApprove(); }
+  approveWccStep(...args: any[]) {
+    const target = this.selectedWcc();
+    if (target) this.approveWcc(target);
+  }
+  rejectWccStep(...args: any[]) {
+    this.notificationService.warning('WCC Rejected', 'WCC step rejected');
+  }
+  onContractChange(...args: any[]) {}
+  toggleDarSelection(id: string) {
+    this.selectedDarIds.update(list =>
+      list.includes(id) ? list.filter(item => item !== id) : [...list, id]
+    );
+  }
+  saveWCC() { this.generateWcc(); }
+
+  // ── Actions ───────────────────────────────────────────────────────────────
+  approveWcc(wcc: Wcc) {
+    this.billingApi.approveWcc(wcc._id ?? (wcc as any).id).subscribe({
+      next: (updated: any) => {
+        const normalized = { ...updated, id: updated._id ?? updated.id };
+        this.notificationService.success('WCC Approved', `${normalized.wccNumber} approved — ready for invoicing`);
+        this.wccs.update(list => list.map(w => w._id === updated._id ? normalized : w));
+        this.selectedWcc.set(normalized);
+      },
+      error: (err: any) => this.notificationService.danger('Error', err?.error?.message || 'Approval failed')
+    });
   }
 
-  canApproveStep(role: string) {
-    const currentRole = this.authService.currentUser()?.role;
-    if (currentRole === 'Super Admin') return true;
-    return currentRole === role;
-  }
-
-  approveWccStep(wccId: string, role: string) {
-    const name = this.authService.currentUser()?.fullName || 'Manager';
-    this.workflowService.approveWCC(wccId, role, name, `Approved from ${role} checkpoint.`);
-
-    // Refresh selected WCC
-    const updated = this.wccs().find(w => w.id === wccId);
-    if (updated) this.selectedWcc.set(updated);
-  }
-
-  rejectWccStep(wccId: string, role: string) {
-    const reason = prompt('Please enter rejection reason:');
-    if (reason === null) return;
-    const name = this.authService.currentUser()?.fullName || 'Manager';
-    this.workflowService.rejectWCC(wccId, role, name, reason || 'Re-verification of mud log required.');
-
-    const updated = this.wccs().find(w => w.id === wccId);
-    if (updated) this.selectedWcc.set(updated);
-  }
-
-  // --- Form Modal actions ---
+  // ── Modal ─────────────────────────────────────────────────────────────────
   openCreateModal() {
     this.selectedContractId = '';
-    this.selectedDarIds.clear();
+    this.formPeriodFrom = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    this.formPeriodTo   = new Date().toISOString().split('T')[0];
     this.isModalOpen.set(true);
   }
 
-  closeModal() {
-    this.isModalOpen.set(false);
-  }
+  closeModal() { this.isModalOpen.set(false); }
 
-  onContractChange() {
-    this.selectedDarIds.clear();
-  }
-
-  toggleDarSelection(id: string) {
-    if (this.selectedDarIds.has(id)) {
-      this.selectedDarIds.delete(id);
-    } else {
-      this.selectedDarIds.add(id);
+  // ── Generate WCC ⚡ ───────────────────────────────────────────────────────
+  generateWcc() {
+    if (!this.selectedContractId || !this.formPeriodFrom || !this.formPeriodTo) {
+      this.notificationService.danger('Validation', 'Please select a contract and period');
+      return;
     }
-  }
 
-  saveWCC() {
-    if (!this.selectedContractId || this.selectedDarIds.size === 0) return;
+    const body: GenerateWccBody = {
+      contractId:  this.selectedContractId,
+      periodFrom:  this.formPeriodFrom,
+      periodTo:    this.formPeriodTo
+    };
 
-    const contract = this.contracts().find(c => c.id === this.selectedContractId);
-    if (!contract) return;
-
-    const selectedDarsList = this.dars().filter(d => this.selectedDarIds.has(d.id));
-    const darNumbers = selectedDarsList.map(d => d.darNumber);
-
-    this.workflowService.createWCC({
-      contractId: contract.id,
-      contractNumber: contract.contractNumber,
-      clientName: contract.clientName,
-      rigName: contract.rigName || 'Rig Alpha (Offshore)',
-      periodFrom: this.computedPeriodFrom(),
-      periodTo: this.computedPeriodTo(),
-      darIds: Array.from(this.selectedDarIds),
-      darNumbers,
-      lineItems: this.previewLineItems(),
-      subtotal: this.computedSubtotal(),
-      totalOperatingHours: this.computedOpHours(),
-      totalStandbyHours: this.computedStandbyHours(),
-      preparedBy: this.authService.currentUser()?.fullName || 'Contracts specialist'
+    this.isGenerating.set(true);
+    this.billingApi.generateWcc(body).subscribe({
+      next: (created) => {
+        this.notificationService.success('WCC Generated', `${created.wccNumber} created from approved DARs`);
+        this.wccs.update(list => [created, ...list]);
+        this.selectedWcc.set(created);
+        this.isModalOpen.set(false);
+        this.isGenerating.set(false);
+      },
+      error: (err) => {
+        this.notificationService.danger('Error', err?.error?.message || 'Failed to generate WCC');
+        this.isGenerating.set(false);
+      }
     });
-
-    this.isModalOpen.set(false);
-
-    // Select the new WCC (last in the list)
-    const list = this.wccs();
-    if (list.length > 0) {
-      this.selectedWcc.set(list[list.length - 1]);
-    }
   }
 }

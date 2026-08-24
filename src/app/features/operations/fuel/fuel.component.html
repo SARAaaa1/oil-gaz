@@ -296,7 +296,7 @@
           </div>
         </div>
         <div class="p-3 bg-indigo-50 rounded-lg text-center">
-          <p class="text-[10px] font-bold text-indigo-600">{{ 'fuel.total_cost' | translate }}: <span class="text-base font-black">${{ receiptForm.quantityLiters * receiptForm.unitCost | number:'1.2-2' }}</span></p>
+          <p class="text-[10px] font-bold text-indigo-600">{{ 'fuel.total_cost' | translate }}: <span class="text-base font-black">${{ ((receiptForm.quantityLiters || 0) * (receiptForm.unitCost || 0)) | number:'1.2-2' }}</span></p>
         </div>
       </div>
       <div class="p-4 bg-slate-50 border-t border-slate-100 flex justify-end space-x-2 rtl:space-x-reverse">

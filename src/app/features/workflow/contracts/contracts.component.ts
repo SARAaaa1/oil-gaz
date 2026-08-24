@@ -3,12 +3,19 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
-import { WorkflowService } from '../../../core/services/workflow.service';
 import { BreadcrumbService } from '../../../core/services/breadcrumb.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { NotificationService } from '../../../core/services/notification.service';
 import { ExchangeRateService } from '../../../core/services/exchange-rate.service';
-import { Contract, ContractAttachment } from '../../../shared/interfaces/workflow.interface';
+import { AssetsApiService } from '../../../core/services/assets-api.service';
+import { OperationsApiService } from '../../../core/services/operations-api.service';
+import {
+  WorkflowApiService,
+  Contract,
+  ContractStatus,
+  CreateContractBody,
+  PaginatedResponse
+} from '../../../core/services/workflow-api.service';
 import { ActivityTimelineComponent } from '../../../shared/components/activity-timeline/activity-timeline.component';
 
 @Component({
@@ -19,106 +26,134 @@ import { ActivityTimelineComponent } from '../../../shared/components/activity-t
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ContractsComponent implements OnInit {
-  private readonly workflowService = inject(WorkflowService);
+  private readonly workflowApi   = inject(WorkflowApiService);
+  private readonly assetsApi     = inject(AssetsApiService);
+  private readonly opsApi        = inject(OperationsApiService);
   private readonly breadcrumbService = inject(BreadcrumbService);
-  private readonly authService = inject(AuthService);
+  private readonly authService   = inject(AuthService);
   private readonly notificationService = inject(NotificationService);
-  private readonly router = inject(Router);
-  private readonly translate = inject(TranslateService);
-  readonly exchangeRateService = inject(ExchangeRateService);
+  private readonly router        = inject(Router);
+  private readonly translate     = inject(TranslateService);
+  readonly exchangeRateService   = inject(ExchangeRateService);
 
-  readonly contracts = this.workflowService.contracts;
+  // ── State ──────────────────────────────────────────────────────────────────
+  readonly contracts      = signal<Contract[]>([]);
+  readonly rigs           = signal<any[]>([]);
+  readonly isLoading      = signal(false);
   readonly selectedContract = signal<Contract | null>(null);
 
-  // Filter state
-  searchQuery = '';
-  statusFilter = 'ALL';
-  typeFilter = 'ALL';
+  searchQuery   = '';
+  statusFilter  = 'ALL';
+  typeFilter    = 'ALL';
 
-  // Modal state
-  isModalOpen = signal(false);
-  isEditMode = signal(false);
-  editingContractId = '';
-
-  // File upload state
-  readonly pendingAttachments = signal<ContractAttachment[]>([]);
-  readonly isDragOver = signal(false);
+  isModalOpen        = signal(false);
+  isEditMode         = signal(false);
+  editingContractId  = '';
 
   // Exchange rate state
-  readonly liveRate = signal<number | null>(null);
-  readonly rateDate = signal<string>('');
-  readonly rateSource = signal<string>('');
+  readonly liveRate      = signal<number | null>(null);
+  readonly rateDate      = signal<string>('');
+  readonly rateSource    = signal<string>('');
   readonly isFetchingRate = signal<boolean>(false);
-  readonly rateError = signal<boolean>(false);
+  readonly rateError     = signal<boolean>(false);
 
   formModel: any = this.emptyForm();
 
   readonly filteredContracts = computed(() => {
     let list = this.contracts();
-    const query = this.searchQuery.trim().toLowerCase();
+    const query  = this.searchQuery.trim().toLowerCase();
     const status = this.statusFilter;
-    const type = this.typeFilter;
+    const type   = this.typeFilter;
 
     if (status !== 'ALL') list = list.filter(c => c.status === status);
-    if (type !== 'ALL') list = list.filter(c => c.type === type);
+    if (type   !== 'ALL') list = list.filter(c => c.type === type);
     if (query) {
       list = list.filter(c =>
-        c.contractNumber.toLowerCase().includes(query) ||
-        c.title.toLowerCase().includes(query) ||
-        c.clientName.toLowerCase().includes(query) ||
-        (c.rigName && c.rigName.toLowerCase().includes(query)) ||
-        c.projectManager.toLowerCase().includes(query)
+        c.contractNumber?.toLowerCase().includes(query) ||
+        c.title?.toLowerCase().includes(query) ||
+        c.clientName?.toLowerCase().includes(query) ||
+        (c.rigName && c.rigName.toLowerCase().includes(query))
       );
     }
     return list;
   });
 
-  // Computed EGP value from form model
   readonly egpValuePreview = computed(() => {
-    const rate = this.liveRate();
+    const rate  = this.liveRate();
     const value = this.formModel?.value ?? 0;
     if (!rate || !value) return null;
     return value * rate;
   });
 
+  // ── Lifecycle ──────────────────────────────────────────────────────────────
   ngOnInit() {
     this.breadcrumbService.setBreadcrumbs([
       { label: this.translate.instant('navigation.workflow'), url: '/workflow' },
       { label: this.translate.instant('workflow.contracts.breadcrumb') }
     ]);
-    const list = this.filteredContracts();
-    if (list.length > 0) this.selectedContract.set(list[0]);
+    this.loadContracts();
+    this.loadRigs();
   }
 
-  private emptyForm() {
-    return {
-      title: '', clientName: '', clientContact: '', clientEmail: '',
-      type: 'Daily Rate', startDate: '', endDate: '', value: 0,
-      currency: 'USD', scope: '', rigId: '', rigName: '',
-      projectManager: '', retentionPercent: 10, paymentTerms: 'Net 30',
-      rateSheet: [], milestones: [], attachments: [],
-      projectName: '', country: 'USA', region: 'Gulf of Mexico',
-      siteName: '', gpsCoordinates: '', costCenterCode: '',
-      costCenterName: '', parentCostCenter: 'CC-DRILL-01',
-      preferredWarehouse: 'Warehouse A', nearestWarehouse: 'Warehouse A',
-      distanceKm: 0, estimatedTransportationCost: 0,
-      exchangeRateUSDtoEGP: null, contractValueEGP: null, rateSnapshotDate: null
-    };
+  loadContracts() {
+    this.isLoading.set(true);
+    this.workflowApi.getContracts({ limit: 100 }).subscribe({
+      next: (res: PaginatedResponse<Contract>) => {
+        const list = res.items ?? (res as any);
+        this.contracts.set((Array.isArray(list) ? list : []).map(c => ({ ...c, id: c._id ?? c.id })));
+        const filtered = this.filteredContracts();
+        if (filtered.length > 0 && !this.selectedContract()) {
+          this.selectedContract.set(filtered[0]);
+        }
+        this.isLoading.set(false);
+      },
+      error: () => {
+        this.notificationService.danger('Error', 'Failed to load contracts');
+        this.isLoading.set(false);
+      }
+    });
   }
 
+  loadRigs() {
+    this.assetsApi.getEquipment({ limit: 100 }).subscribe({
+      next: (res: any) => {
+        const rawList = res.items ?? res.data ?? (Array.isArray(res) ? res : []);
+        if (rawList && rawList.length > 0) {
+          this.rigs.set(rawList.map((r: any) => ({ ...r, id: r._id ?? r.id })));
+        } else {
+          this.opsApi.getRigs().subscribe({
+            next: (rigList: any) => {
+              const items = rigList.data ?? (Array.isArray(rigList) ? rigList : []);
+              this.rigs.set(items.map((r: any) => ({ ...r, id: r._id ?? r.id })));
+            },
+            error: () => {}
+          });
+        }
+      },
+      error: () => {
+        this.opsApi.getRigs().subscribe({
+          next: (rigList: any) => {
+            const items = rigList.data ?? (Array.isArray(rigList) ? rigList : []);
+            this.rigs.set(items.map((r: any) => ({ ...r, id: r._id ?? r.id })));
+          },
+          error: () => {}
+        });
+      }
+    });
+  }
+
+  // ── Selection ──────────────────────────────────────────────────────────────
   selectContract(contract: Contract) { this.selectedContract.set(contract); }
 
+  // ── Permissions ───────────────────────────────────────────────────────────
   canCreate() {
-    const r = this.authService.currentUser()?.role;
-    return r === 'Super Admin' || r === 'General Manager' || r === 'Procurement Manager' || r === 'Project Manager';
-  }
-  canEdit() { return this.canCreate(); }
-  canApprove() {
     const r = this.authService.currentUser()?.role;
     return r === 'Super Admin' || r === 'General Manager';
   }
+  canEdit()    { return this.canCreate(); }
+  canApprove() { return this.canCreate(); }
 
-  // ─── EXCHANGE RATE ──────────────────────────────────────────────
+  // ── Exchange Rate ─────────────────────────────────────────────────────────
   async fetchExchangeRate() {
     this.isFetchingRate.set(true);
     this.rateError.set(false);
@@ -130,10 +165,7 @@ export class ContractsComponent implements OnInit {
       this.formModel.exchangeRateUSDtoEGP = snap.rate;
       this.formModel.rateSnapshotDate = snap.fetchedAt;
       this.recalcEGP();
-      this.notificationService.success(
-        'Exchange Rate Updated',
-        `1 USD = ${snap.rate.toFixed(4)} EGP  (${snap.source})`
-      );
+      this.notificationService.success('Exchange Rate Updated', `1 USD = ${snap.rate.toFixed(4)} EGP (${snap.source})`);
     } catch {
       this.rateError.set(true);
     } finally {
@@ -142,180 +174,210 @@ export class ContractsComponent implements OnInit {
   }
 
   recalcEGP() {
-    const rate = this.formModel.exchangeRateUSDtoEGP;
+    const rate  = this.formModel.exchangeRateUSDtoEGP;
     const value = this.formModel.value ?? 0;
-    if (rate && value) {
-      this.formModel.contractValueEGP = parseFloat((value * rate).toFixed(2));
+    if (rate && value) this.formModel.contractValueEGP = parseFloat((value * rate).toFixed(2));
+  }
+
+  // ── Drag & Drop & Attachments ─────────────────────────────────────────────
+  readonly isDragOver = signal(false);
+  readonly pendingAttachments = signal<any[]>([]);
+
+  onDragOver(e?: DragEvent)  { if (e) e.preventDefault(); this.isDragOver.set(true); }
+  onDragLeave(e?: DragEvent) { if (e) e.preventDefault(); this.isDragOver.set(false); }
+  onFileDrop(e?: DragEvent)  { if (e) e.preventDefault(); this.isDragOver.set(false); }
+  onFileInputChange(event?: Event) {}
+
+  formatFileSize(bytes: number): string {
+    if (!bytes) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+  }
+
+  removeAttachment(id?: string) {
+    if (this.formModel?.attachments) {
+      this.formModel.attachments = this.formModel.attachments.filter((a: any) => a.id !== id);
     }
   }
 
-  // ─── APPROVE / REJECT ───────────────────────────────────────────
-  approveContract(id: string) {
-    this.workflowService.approveContract(id, 'Approved by assigned authority');
-    const updated = this.contracts().find(c => c.id === id);
-    if (updated) this.selectedContract.set(updated);
-
-    const contract = this.contracts().find(c => c.id === id);
-    const projectCode = contract?.projectCode;
-    if (projectCode) {
-      this.notificationService.success('Project Created', `Project ${projectCode} created. Navigating...`);
-      setTimeout(() => this.router.navigate(['/operations/projects'], { queryParams: { project: projectCode } }), 1200);
-    } else {
-      this.notificationService.success('Contract Approved', 'Contract activated and project auto-generated.');
-    }
+  // ── Approve / Reject ──────────────────────────────────────────────────────
+  approveContract(contractOrId?: Contract | string) {
+    if (!contractOrId) return;
+    const id = typeof contractOrId === 'string' ? contractOrId : contractOrId._id;
+    this.workflowApi.updateContractStatus(id, 'Active').subscribe({
+      next: (res) => {
+        this.notificationService.success(
+          'Contract Activated',
+          `Project ${res.projectCode ?? ''} created successfully`
+        );
+        this.loadContracts();
+        if (res.projectCode) {
+          setTimeout(() =>
+            this.router.navigate(['/operations/projects'], { queryParams: { project: res.projectCode } })
+          , 1200);
+        }
+      },
+      error: (err) => {
+        const msg = err?.error?.message || 'Failed to activate contract';
+        this.notificationService.danger('Error', msg);
+      }
+    });
   }
 
-  rejectContract(id: string) {
-    this.workflowService.rejectContract(id, 'Suspended by administrative decision');
-    const updated = this.contracts().find(c => c.id === id);
-    if (updated) this.selectedContract.set(updated);
+  rejectContract(contractOrId?: Contract | string) {
+    if (!contractOrId) return;
+    const id = typeof contractOrId === 'string' ? contractOrId : contractOrId._id;
+    this.workflowApi.updateContractStatus(id, 'Suspended').subscribe({
+      next: () => {
+        this.notificationService.success('Contract Suspended', 'Contract has been suspended');
+        this.loadContracts();
+      },
+      error: (err) => {
+        this.notificationService.danger('Error', err?.error?.message || 'Failed to update contract');
+      }
+    });
   }
 
   navigateToProject(projectCode: string) {
     this.router.navigate(['/operations/projects'], { queryParams: { project: projectCode } });
   }
 
-  // ─── MODAL ──────────────────────────────────────────────────────
+  // ── Modal ─────────────────────────────────────────────────────────────────
   async openCreateModal() {
     this.isEditMode.set(false);
     this.editingContractId = '';
-    this.pendingAttachments.set([]);
     this.formModel = {
       ...this.emptyForm(),
       startDate: new Date().toISOString().split('T')[0],
-      endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      value: 100000,
-      projectManager: this.authService.currentUser()?.fullName || 'Project Manager',
-      rateSheet: [{ id: 'new_1', description: 'Daily Rate Spud Operation', unit: 'DAY', rate: 25000, currency: 'USD' }],
-      milestones: [{ id: 'mnew_1', title: 'Phase 1 Completion Spud', dueDate: new Date().toISOString().split('T')[0], amount: 25000, status: 'Pending' }],
-      distanceKm: 120, estimatedTransportationCost: 25000
+      endDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      value: 1000000,
+      rateSheet: [
+        { id: 'rs_1', description: 'Operating Day Rate', unit: 'Day', rate: 45000, currency: 'USD' },
+        { id: 'rs_2', description: 'Standby Day Rate',   unit: 'Day', rate: 22500, currency: 'USD' }
+      ],
+      milestones: [
+        { id: 'ms_1', title: 'Mobilization', dueDate: new Date().toISOString().split('T')[0], amount: 250000, status: 'Pending' }
+      ]
     };
     this.isModalOpen.set(true);
-    // Auto-fetch live rate when modal opens
     await this.fetchExchangeRate();
   }
 
   openEditModal(contract: Contract) {
     this.isEditMode.set(true);
-    this.editingContractId = contract.id;
-    this.formModel = JSON.parse(JSON.stringify(contract));
-    if (!this.formModel.attachments) this.formModel.attachments = [];
-    this.pendingAttachments.set([...this.formModel.attachments]);
-
-    // Restore cached rate or fetch fresh
-    if (contract.exchangeRateUSDtoEGP) {
-      this.liveRate.set(contract.exchangeRateUSDtoEGP);
-      this.rateDate.set(contract.rateSnapshotDate || '');
-      this.rateSource.set('saved snapshot');
-    } else {
-      this.fetchExchangeRate();
-    }
+    this.editingContractId = contract._id;
+    this.formModel = JSON.parse(JSON.stringify({
+      ...contract,
+      rigId:   contract.rigId   ?? '',
+      rigName: contract.rigName ?? ''
+    }));
     this.isModalOpen.set(true);
+    if (!(this.formModel as any).exchangeRateUSDtoEGP) this.fetchExchangeRate();
+    else {
+      this.liveRate.set((this.formModel as any).exchangeRateUSDtoEGP);
+      this.rateSource.set('saved snapshot');
+    }
   }
 
-  closeModal() {
-    this.isModalOpen.set(false);
-    this.pendingAttachments.set([]);
-  }
+  closeModal() { this.isModalOpen.set(false); }
 
   onRigChange() {
-    const id = this.formModel.rigId;
-    if (id === 'rig1') this.formModel.rigName = 'Rig Alpha (Offshore)';
-    else if (id === 'rig2') this.formModel.rigName = 'Rig Beta (Land)';
-    else if (id === 'rig3') this.formModel.rigName = 'Rig Gamma (Deepwater)';
-    else this.formModel.rigName = '';
+    const selectedId = this.formModel.rigId;
+    const rig = this.rigs().find(r => r._id === selectedId || r.id === selectedId);
+    this.formModel.rigName = rig ? (rig.rigName || rig.equipmentName || rig.equipmentCode || '') : '';
   }
 
-  addRateSheetRow() {
-    this.formModel.rateSheet.push({ id: `new_${Date.now()}`, description: '', unit: 'DAY', rate: 0, currency: 'USD' });
-  }
-  removeRateSheetRow(index: number) { this.formModel.rateSheet.splice(index, 1); }
+  addRateSheetRow()     { this.formModel.rateSheet.push({ id: `rs_${Date.now()}`, description: '', unit: 'Day', rate: 0, currency: 'USD' }); }
+  removeRateSheetRow(i: number) { this.formModel.rateSheet.splice(i, 1); }
+  addMilestoneRow()     { this.formModel.milestones.push({ id: `ms_${Date.now()}`, title: '', dueDate: new Date().toISOString().split('T')[0], amount: 0, status: 'Pending' }); }
+  removeMilestoneRow(i: number) { this.formModel.milestones.splice(i, 1); }
 
-  addMilestoneRow() {
-    this.formModel.milestones.push({ id: `mnew_${Date.now()}`, title: '', dueDate: new Date().toISOString().split('T')[0], amount: 0, status: 'Pending' });
-  }
-  removeMilestoneRow(index: number) { this.formModel.milestones.splice(index, 1); }
+  // ── Save ──────────────────────────────────────────────────────────────────
+  saveContract() {
+    if (!this.formModel.title || !this.formModel.clientName || !this.formModel.startDate) {
+      this.notificationService.danger('Validation', 'Please fill all required fields');
+      return;
+    }
+    this.recalcEGP();
 
-  // ─── FILE UPLOAD ────────────────────────────────────────────────
-  onFileDrop(event: DragEvent) {
-    event.preventDefault();
-    this.isDragOver.set(false);
-    const files = event.dataTransfer?.files;
-    if (files) this.processFiles(Array.from(files));
-  }
-  onDragOver(event: DragEvent) { event.preventDefault(); this.isDragOver.set(true); }
-  onDragLeave() { this.isDragOver.set(false); }
-  onFileInputChange(event: Event) {
-    const input = event.target as HTMLInputElement;
-    if (input.files) { this.processFiles(Array.from(input.files)); input.value = ''; }
-  }
+    const body: CreateContractBody = {
+      title:              this.formModel.title,
+      clientName:         this.formModel.clientName,
+      clientContact:      this.formModel.clientContact,
+      clientEmail:        this.formModel.clientEmail,
+      type:               this.formModel.type,
+      startDate:          this.formModel.startDate,
+      endDate:            this.formModel.endDate,
+      value:              Number(this.formModel.value),
+      currency:           this.formModel.currency || 'USD',
+      contractValueEGP:   Number(this.formModel.contractValueEGP) || (Number(this.formModel.value) * (this.liveRate() || 50)),
+      // exchangeRateUSDtoEGP: Number(this.formModel.exchangeRateUSDtoEGP) || (this.liveRate() || 50),
+      rateSnapshotDate:   this.formModel.rateSnapshotDate || this.rateDate() || new Date().toISOString(),
+      scope:              this.formModel.scope,
+      rigId:              this.formModel.rigId || undefined,
+      rigName:            this.formModel.rigName || undefined,
+      projectManager:     this.formModel.projectManager,
+      retentionPercent:   Number(this.formModel.retentionPercent) || 10,
+      vatRate:            Number(this.formModel.vatRate) || 15,
+      withholdingRate:    Number(this.formModel.withholdingRate) || 5,
+      paymentTerms:       this.formModel.paymentTerms || 'Net 30',
+      country:            this.formModel.country,
+      region:             this.formModel.region,
+      siteName:           this.formModel.siteName,
+      gpsCoordinates:     this.formModel.gpsCoordinates,
+      costCenterCode:     this.formModel.costCenterCode,
+      costCenterName:     this.formModel.costCenterName,
+      parentCostCenter:   this.formModel.parentCostCenter,
+      preferredWarehouse: this.formModel.preferredWarehouse,
+      nearestWarehouse:   this.formModel.nearestWarehouse,
+      distanceKm:         Number(this.formModel.distanceKm) || 0,
+      estimatedTransportationCost: Number(this.formModel.estimatedTransportationCost) || 0,
+      rateSheet:          this.formModel.rateSheet || [],
+      milestones:         this.formModel.milestones || []
+    };
 
-  private processFiles(files: File[]) {
-    const allowedTypes = ['application/pdf', 'application/msword',
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      'application/vnd.ms-excel',
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      'image/jpeg', 'image/png', 'image/webp'];
-    const maxSizeMB = 10;
-
-    for (const file of files) {
-      if (!allowedTypes.includes(file.type)) {
-        this.notificationService.danger('Invalid File', `${file.name} is not a supported type.`); continue;
-      }
-      if (file.size > maxSizeMB * 1024 * 1024) {
-        this.notificationService.danger('File Too Large', `${file.name} exceeds ${maxSizeMB}MB.`); continue;
-      }
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const attachment: ContractAttachment = {
-          id: `att_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
-          fileName: file.name, fileSize: file.size, fileType: file.type,
-          uploadedAt: new Date().toISOString(),
-          uploadedBy: this.authService.currentUser()?.fullName || 'Unknown',
-          dataUrl: e.target?.result as string
-        };
-        this.pendingAttachments.update(list => [...list, attachment]);
-      };
-      reader.readAsDataURL(file);
+    if (this.isEditMode()) {
+      this.workflowApi.updateContract(this.editingContractId, body).subscribe({
+        next: () => {
+          this.notificationService.success('Saved', 'Contract updated successfully');
+          this.isModalOpen.set(false);
+          this.loadContracts();
+        },
+        error: (err) => this.notificationService.danger('Error', err?.error?.message || 'Update failed')
+      });
+    } else {
+      this.workflowApi.createContract(body).subscribe({
+        next: (created) => {
+          this.notificationService.success('Created', `Contract ${created.contractNumber} created`);
+          this.isModalOpen.set(false);
+          this.loadContracts();
+          this.selectedContract.set(created);
+        },
+        error: (err) => this.notificationService.danger('Error', err?.error?.message || 'Create failed')
+      });
     }
   }
 
-  removeAttachment(id: string) { this.pendingAttachments.update(list => list.filter(a => a.id !== id)); }
+  // ── Helpers ───────────────────────────────────────────────────────────────
+  private emptyForm() {
+    return {
+      title: '', clientName: '', clientContact: '', clientEmail: '',
+      type: 'Daily Rate', startDate: '', endDate: '', value: 0,
+      currency: 'USD', scope: '', rigId: '', rigName: '',
+      projectManager: '', retentionPercent: 10, vatRate: 15, withholdingRate: 5,
+      paymentTerms: 'Net 30', country: '', region: '', siteName: '',
+      rateSheet: [], milestones: [],
+      exchangeRateUSDtoEGP: null, contractValueEGP: null, rateSnapshotDate: null
+    };
+  }
 
   getFileIcon(fileType: string): string {
     if (fileType === 'application/pdf') return '📄';
-    if (fileType.includes('word')) return '📝';
+    if (fileType.includes('word'))       return '📝';
     if (fileType.includes('excel') || fileType.includes('spreadsheet')) return '📊';
-    if (fileType.startsWith('image/')) return '🖼️';
+    if (fileType.startsWith('image/'))   return '🖼️';
     return '📎';
-  }
-
-  formatFileSize(bytes: number): string {
-    if (bytes < 1024) return `${bytes} B`;
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-  }
-
-  // ─── SAVE ───────────────────────────────────────────────────────
-  saveContract() {
-    if (!this.formModel.title || !this.formModel.clientName) {
-      alert(this.translate.instant('workflow.contracts.alert_required'));
-      return;
-    }
-
-    // Ensure EGP is recalculated before saving
-    this.recalcEGP();
-    this.formModel.attachments = this.pendingAttachments();
-
-    if (this.isEditMode()) {
-      this.workflowService.updateContract(this.editingContractId, this.formModel);
-      const updated = this.contracts().find(c => c.id === this.editingContractId);
-      if (updated) this.selectedContract.set(updated);
-    } else {
-      const created = this.workflowService.createContract({ ...this.formModel, status: 'Draft' });
-      this.selectedContract.set(created);
-    }
-    this.isModalOpen.set(false);
-    this.pendingAttachments.set([]);
   }
 }

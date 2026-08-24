@@ -1,12 +1,61 @@
-import { Component, OnInit, inject, signal, computed, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnInit, inject, signal, computed, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { MockDataService } from '../../../core/services/mock-data.service';
 import { BreadcrumbService } from '../../../core/services/breadcrumb.service';
 import { NotificationService } from '../../../core/services/notification.service';
 import { TranslateModule } from '@ngx-translate/core';
 import { InspectionRequest, InspectionRequestItem, NCR } from '../../../shared/interfaces/inspection.interface';
-import { PurchaseOrder } from '../../../shared/interfaces/purchase-order.interface';
+import { ProcurementService } from '../../../core/services/procurement.service';
+import { finalize } from 'rxjs/operators';
+
+// ─── Mappers ─────────────────────────────────────────────────────────────────
+
+function mapApiInspection(raw: any): InspectionRequest {
+  return {
+    id:             raw._id ?? raw.id,
+    requestNumber:  raw.requestNumber ?? raw.documentNumber ?? raw._id ?? raw.id ?? '',
+    poId:           raw.poId ?? '',
+    poNumber:       raw.poNumber ?? '',
+    vendorId:       raw.vendorId ?? '',
+    vendorName:     raw.vendorName ?? raw.supplierName ?? '',
+    requestDate:    raw.requestDate ?? raw.createdAt ?? '',
+    inspectorName:  raw.inspectorName ?? '',
+    inspectionDate: raw.inspectionDate ?? '',
+    notes:          raw.notes ?? '',
+    status:         raw.status ?? 'Pending',
+    items:          (raw.items ?? []).map((i: any): InspectionRequestItem => ({
+      itemCode:         i.itemCode ?? '',
+      itemName:         i.itemName ?? '',
+      uom:              i.uom ?? 'PCS',
+      quantityOrdered:  i.quantityOrdered ?? 0,
+      quantityReceived: i.quantityReceived ?? i.quantityOrdered ?? 0,
+      quantityAccepted: i.quantityAccepted ?? i.quantityReceived ?? 0,
+      quantityRejected: i.quantityRejected ?? 0,
+      status:           i.status ?? 'Pending',
+    })),
+    ncrId: raw.ncrId,
+  };
+}
+
+function mapApiNCR(raw: any): NCR {
+  return {
+    id:                   raw._id ?? raw.id,
+    ncrNumber:            raw.ncrNumber ?? '',
+    inspectionRequestId:  raw.inspectionRequestId ?? raw.poId ?? '',
+    poNumber:             raw.poNumber ?? '',
+    vendorName:           raw.vendorName ?? '',
+    issueDate:            raw.issueDate ?? raw.createdAt ?? '',
+    severity:             raw.severity ?? 'Medium',
+    description:          raw.description ?? '',
+    rootCause:            raw.rootCause ?? '',
+    correctiveAction:     raw.correctiveAction ?? '',
+    status:               raw.status ?? 'Open',
+    resolvedDate:         raw.resolvedDate,
+    resolvedBy:           raw.resolvedBy,
+  };
+}
+
+// ─── Component ────────────────────────────────────────────────────────────────
 
 @Component({
   selector: 'app-inspection',
@@ -16,57 +65,92 @@ import { PurchaseOrder } from '../../../shared/interfaces/purchase-order.interfa
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class InspectionComponent implements OnInit {
-  private readonly mockDataService = inject(MockDataService);
-  private readonly breadcrumbService = inject(BreadcrumbService);
+  private readonly procurementService  = inject(ProcurementService);
+  private readonly breadcrumbService   = inject(BreadcrumbService);
   private readonly notificationService = inject(NotificationService);
+  private readonly cdr                 = inject(ChangeDetectorRef);
 
-  readonly inspectionRequests = this.mockDataService.inspectionRequests;
-  readonly ncrs = this.mockDataService.ncrs;
-  readonly purchaseOrders = this.mockDataService.purchaseOrders;
+  // ── State ─────────────────────────────────────────────────────────────────
+  readonly inspectionRequests = signal<InspectionRequest[]>([]);
+  readonly ncrs               = signal<NCR[]>([]);
+  readonly isLoading          = signal<boolean>(false);
 
-  // UI State
-  readonly activeTab = signal<'pending' | 'history' | 'ncrs'>('pending');
+  readonly activeTab       = signal<'pending' | 'history' | 'ncrs'>('pending');
   readonly selectedRequest = signal<InspectionRequest | null>(null);
 
-  // Form Modals
   readonly showInspectionForm = signal<boolean>(false);
-  readonly showNcrModal = signal<boolean>(false);
+  readonly showNcrModal       = signal<boolean>(false);
 
-  // Inspection Form State
-  inspectorName = 'John Doe';
-  inspectionNotes = '';
+  // Inspection form state
+  inspectorName    = '';
+  inspectionNotes  = '';
   inspectionStatus: 'Accepted' | 'Rejected' | 'Conditional' = 'Accepted';
   itemsToInspect: InspectionRequestItem[] = [];
 
-  // NCR Form State
+  // NCR form state
   ncrSeverity: 'Low' | 'Medium' | 'High' = 'Medium';
-  ncrDescription = '';
-  ncrRootCause = '';
+  ncrDescription     = '';
+  ncrRootCause       = '';
   ncrCorrectiveAction = '';
+
+  // ── Computed ──────────────────────────────────────────────────────────────
+
+  readonly pendingRequests = computed(() =>
+    this.inspectionRequests().filter(r => r.status === 'Pending')
+  );
+
+  readonly historyRequests = computed(() =>
+    this.inspectionRequests().filter(r => r.status !== 'Pending')
+  );
+
+  // ── Init ──────────────────────────────────────────────────────────────────
 
   ngOnInit() {
     this.breadcrumbService.setBreadcrumbs([
       { label: 'navigation.procurement' },
       { label: 'navigation.receiving_inspection' }
     ]);
+    this.loadInspections();
+    this.loadNCRs();
   }
 
-  // Filtered requests
-  readonly pendingRequests = computed(() => 
-    this.inspectionRequests().filter(r => r.status === 'Pending')
-  );
+  // ── Data Loading ──────────────────────────────────────────────────────────
 
-  readonly historyRequests = computed(() => 
-    this.inspectionRequests().filter(r => r.status !== 'Pending')
-  );
+  private loadInspections() {
+    this.isLoading.set(true);
+    this.procurementService.getInspections(1, 100)
+      .pipe(finalize(() => { this.isLoading.set(false); this.cdr.markForCheck(); }))
+      .subscribe({
+        next: res => {
+          const raw = res?.items ?? (Array.isArray(res) ? res : []);
+          this.inspectionRequests.set(raw.map(mapApiInspection));
+        },
+        error: err => {
+          console.error('Failed to load inspections:', err);
+          this.notificationService.danger('Error', 'Failed to load inspections.');
+        }
+      });
+  }
+
+  private loadNCRs() {
+    this.procurementService.getNCRs(1, 100).subscribe({
+      next: res => {
+        const raw = res?.items ?? (Array.isArray(res) ? res : []);
+        this.ncrs.set(raw.map(mapApiNCR));
+        this.cdr.markForCheck();
+      },
+      error: err => console.error('Failed to load NCRs:', err)
+    });
+  }
+
+  // ── Inspection Actions ─────────────────────────────────────────────────────
 
   startInspection(req: InspectionRequest) {
     this.selectedRequest.set(req);
-    this.inspectorName = 'John Doe';
+    this.inspectorName   = '';
     this.inspectionNotes = '';
     this.inspectionStatus = 'Accepted';
-    // Clone items
-    this.itemsToInspect = req.items.map(item => ({ ...item }));
+    this.itemsToInspect  = req.items.map(item => ({ ...item }));
     this.showInspectionForm.set(true);
   }
 
@@ -79,21 +163,14 @@ export class InspectionComponent implements OnInit {
       this.itemsToInspect[index].quantityAccepted = this.itemsToInspect[index].quantityReceived;
       this.itemsToInspect[index].quantityRejected = 0;
     }
-
-    // Auto calculate overall inspection status based on item failures
-    const hasFailures = this.itemsToInspect.some(item => item.status === 'Failed');
+    const hasFailures = this.itemsToInspect.some(i => i.status === 'Failed');
     this.inspectionStatus = hasFailures ? 'Rejected' : 'Accepted';
   }
 
   onQtyReceivedChange(index: number) {
     const item = this.itemsToInspect[index];
-    if (item.quantityReceived > item.quantityOrdered) {
-      item.quantityReceived = item.quantityOrdered;
-    }
-    if (item.quantityReceived < 0) {
-      item.quantityReceived = 0;
-    }
-
+    if (item.quantityReceived > item.quantityOrdered) item.quantityReceived = item.quantityOrdered;
+    if (item.quantityReceived < 0)                    item.quantityReceived = 0;
     if (item.status === 'Failed') {
       item.quantityRejected = item.quantityReceived;
       item.quantityAccepted = 0;
@@ -105,179 +182,124 @@ export class InspectionComponent implements OnInit {
 
   onQtyAcceptedChange(index: number) {
     const item = this.itemsToInspect[index];
-    if (item.quantityAccepted > item.quantityReceived) {
-      item.quantityAccepted = item.quantityReceived;
-    }
-    if (item.quantityAccepted < 0) {
-      item.quantityAccepted = 0;
-    }
+    if (item.quantityAccepted > item.quantityReceived) item.quantityAccepted = item.quantityReceived;
+    if (item.quantityAccepted < 0)                     item.quantityAccepted = 0;
     item.quantityRejected = item.quantityReceived - item.quantityAccepted;
-    item.status = item.quantityAccepted === item.quantityReceived ? 'Passed' : item.quantityAccepted === 0 ? 'Failed' : 'Passed';
+    item.status = item.quantityAccepted === item.quantityReceived ? 'Passed' : 'Failed';
   }
 
   onQtyRejectedChange(index: number) {
     const item = this.itemsToInspect[index];
-    if (item.quantityRejected > item.quantityReceived) {
-      item.quantityRejected = item.quantityReceived;
-    }
-    if (item.quantityRejected < 0) {
-      item.quantityRejected = 0;
-    }
+    if (item.quantityRejected > item.quantityReceived) item.quantityRejected = item.quantityReceived;
+    if (item.quantityRejected < 0)                     item.quantityRejected = 0;
     item.quantityAccepted = item.quantityReceived - item.quantityRejected;
-    item.status = item.quantityAccepted === item.quantityReceived ? 'Passed' : item.quantityAccepted === 0 ? 'Failed' : 'Passed';
+    item.status = item.quantityAccepted === item.quantityReceived ? 'Passed' : 'Failed';
   }
 
   submitInspection() {
     const req = this.selectedRequest();
     if (!req) return;
 
-    const updatedRequest: InspectionRequest = {
-      ...req,
-      inspectorName: this.inspectorName,
+    const payload = {
+      inspectorName:  this.inspectorName,
       inspectionDate: new Date().toISOString().split('T')[0],
-      notes: this.inspectionNotes,
-      status: this.inspectionStatus,
-      items: this.itemsToInspect
+      status:         this.inspectionStatus,
+      notes:          this.inspectionNotes,
+      items:          this.itemsToInspect,
     };
 
-    if (this.inspectionStatus === 'Rejected') {
-      // Prompt NCR Creation
-      this.showInspectionForm.set(false);
-      this.showNcrModal.set(true);
-      this.ncrDescription = `Material defect logged on inspection of PO ${req.poNumber} from ${req.vendorName}.`;
-      this.ncrRootCause = '';
-      this.ncrCorrectiveAction = '';
-    } else {
-      // If Accepted or Conditional, we automatically unlock creating an MRV
-      this.createMRVFromInspection(updatedRequest);
-      this.mockDataService.inspectionRequests.update(list => 
-        list.map(r => r.id === req.id ? updatedRequest : r)
-      );
-      this.showInspectionForm.set(false);
-      this.notificationService.success('procurement.inspection.inspected_title', 'procurement.inspection.inspected_desc');
-    }
+    this.isLoading.set(true);
+    this.procurementService.submitInspection(req.poId || req.id, payload)
+      .pipe(finalize(() => { this.isLoading.set(false); this.cdr.markForCheck(); }))
+      .subscribe({
+        next: updated => {
+          const mappedReq = mapApiInspection(updated ?? { ...req, ...payload });
+
+          this.inspectionRequests.update(list =>
+            list.map(r => r.id === req.id ? mappedReq : r)
+          );
+
+          if (this.inspectionStatus === 'Rejected') {
+            this.showInspectionForm.set(false);
+            this.showNcrModal.set(true);
+            this.ncrDescription     = `Material defect logged on inspection of PO ${req.poNumber} from ${req.vendorName}.`;
+            this.ncrRootCause       = '';
+            this.ncrCorrectiveAction = '';
+          } else {
+            this.showInspectionForm.set(false);
+            this.notificationService.success(
+              'procurement.inspection.inspected_title',
+              'procurement.inspection.inspected_desc'
+            );
+          }
+        },
+        error: err => {
+          const msg = err?.error?.message ?? 'Failed to submit inspection.';
+          this.notificationService.danger('Error', msg);
+        }
+      });
   }
+
+  // ── NCR Actions ───────────────────────────────────────────────────────────
 
   submitNcr() {
     const req = this.selectedRequest();
     if (!req) return;
 
-    const ncrNum = `NCR-2026-0${this.ncrs().length + 1}`;
-    const newNcr: NCR = {
-      id: `ncr-${Date.now()}`,
-      ncrNumber: ncrNum,
-      inspectionRequestId: req.id,
-      poNumber: req.poNumber,
-      vendorName: req.vendorName,
-      issueDate: new Date().toISOString().split('T')[0],
-      severity: this.ncrSeverity,
-      description: this.ncrDescription,
-      rootCause: this.ncrRootCause,
+    const payload = {
+      severity:         this.ncrSeverity,
+      description:      this.ncrDescription,
+      rootCause:        this.ncrRootCause,
       correctiveAction: this.ncrCorrectiveAction,
-      status: 'Open'
     };
 
-    this.mockDataService.ncrs.update(list => [...list, newNcr]);
+    this.isLoading.set(true);
+    this.procurementService.createNCR(req.poId || req.id, payload)
+      .pipe(finalize(() => { this.isLoading.set(false); this.cdr.markForCheck(); }))
+      .subscribe({
+        next: newNcr => {
+          const mappedNcr = mapApiNCR(newNcr);
+          this.ncrs.update(list => [...list, mappedNcr]);
 
-    // Save the inspection request as Rejected with NCR link
-    const updatedRequest: InspectionRequest = {
-      ...req,
-      inspectorName: this.inspectorName,
-      inspectionDate: new Date().toISOString().split('T')[0],
-      notes: this.inspectionNotes,
-      status: 'Rejected',
-      items: this.itemsToInspect,
-      ncrId: newNcr.id
-    };
+          // تحديث الـ inspection request محلياً
+          this.inspectionRequests.update(list =>
+            list.map(r => r.id === req.id ? { ...r, status: 'Rejected', ncrId: mappedNcr.id } : r)
+          );
 
-    this.mockDataService.inspectionRequests.update(list => 
-      list.map(r => r.id === req.id ? updatedRequest : r)
-    );
-
-    this.showNcrModal.set(false);
-    this.notificationService.warning('procurement.inspection.ncr_raised_title', 'procurement.inspection.ncr_raised_desc');
+          this.showNcrModal.set(false);
+          this.notificationService.warning(
+            'procurement.inspection.ncr_raised_title',
+            'procurement.inspection.ncr_raised_desc'
+          );
+        },
+        error: err => {
+          const msg = err?.error?.message ?? 'Failed to create NCR.';
+          this.notificationService.danger('Error', msg);
+        }
+      });
   }
 
   resolveNcr(ncr: NCR) {
-    this.mockDataService.ncrs.update(list => 
-      list.map(n => n.id === ncr.id ? { 
-        ...n, 
-        status: 'Closed' as const, 
-        resolvedDate: new Date().toISOString().split('T')[0], 
-        resolvedBy: 'John Doe' 
-      } : n)
-    );
-    this.notificationService.success('procurement.inspection.ncr_resolved_title', 'procurement.inspection.ncr_resolved_desc');
-  }
-
-  private createMRVFromInspection(req: InspectionRequest) {
-    const po = this.purchaseOrders().find(p => p.id === req.poId || p.poNumber === req.poNumber);
-
-    // Auto-create MRV inside inventory
-    const mrvList = this.mockDataService.mrvs();
-    const mrvNum = `MRV-2026-0${mrvList.length + 1}`;
-    
-    const mrvItems = req.items.map(item => {
-      const poItem = po?.items.find(pi => pi.itemCode === item.itemCode);
-      const price = poItem?.unitPrice ?? 100;
-      return {
-        itemCode: item.itemCode,
-        itemName: item.itemName,
-        quantityOrdered: item.quantityOrdered,
-        quantityReceived: item.quantityAccepted,
-        unitPrice: price,
-        totalPrice: item.quantityAccepted * price,
-        uom: item.uom || 'PCS'
-      };
+    this.procurementService.resolveNCR(ncr.id, { resolvedBy: 'Current User' }).subscribe({
+      next: () => {
+        this.ncrs.update(list =>
+          list.map(n => n.id === ncr.id ? {
+            ...n,
+            status:      'Closed' as const,
+            resolvedDate: new Date().toISOString().split('T')[0],
+            resolvedBy:  'Current User'
+          } : n)
+        );
+        this.cdr.markForCheck();
+        this.notificationService.success(
+          'procurement.inspection.ncr_resolved_title',
+          'procurement.inspection.ncr_resolved_desc'
+        );
+      },
+      error: err => {
+        const msg = err?.error?.message ?? 'Failed to resolve NCR.';
+        this.notificationService.danger('Error', msg);
+      }
     });
-
-    const subtotal = mrvItems.reduce((acc, item) => acc + item.totalPrice, 0);
-    const taxPercent = po ? po.taxPercent : 15;
-    const taxAmount = Math.round(subtotal * (taxPercent / 100));
-    const whtPercent = po ? po.withholdingTaxPercent : 2;
-    const whtAmount = Math.round(subtotal * (whtPercent / 100));
-    const totalAmount = subtotal + taxAmount - whtAmount;
-
-    const newMRV = {
-      id: `mrv-${Date.now()}`,
-      voucherNumber: mrvNum,
-      poId: req.poId,
-      poNumber: req.poNumber,
-      warehouseId: 'wh1',
-      receivedDate: new Date().toISOString().split('T')[0],
-      receivedBy: req.inspectorName || 'John Doe',
-      supplierName: req.vendorName,
-      status: 'Pending Approval' as const,
-      items: mrvItems,
-      totalAmount: subtotal + taxAmount,
-      chargeType: po?.chargeType,
-      projectId: po?.projectId,
-      projectName: po?.projectName,
-      assetId: po?.assetId,
-      assetName: po?.assetName,
-      costCenter: po?.costCenter
-    };
-
-    this.mockDataService.mrvs.update(val => [...val, newMRV]);
-
-    if (po) {
-      // Log only the Goods Received event in the vendor timeline at this stage
-      const timelineEvents = [
-        {
-          id: `ev-mrv-${Date.now()}`,
-          vendorId: po.vendorId,
-          date: newMRV.receivedDate,
-          eventType: 'Goods Received' as const,
-          title: 'Goods Received (MRV)',
-          description: `Items received and pending warehouse manager approval under voucher ${newMRV.voucherNumber}. (Accepted ${subtotal} value)`,
-          referenceNumber: newMRV.voucherNumber,
-          performedBy: req.inspectorName || 'John Doe'
-        }
-      ];
-
-      timelineEvents.forEach(ev => {
-        this.mockDataService.vendorTimeline.update(list => [...list, ev]);
-      });
-    }
   }
 }

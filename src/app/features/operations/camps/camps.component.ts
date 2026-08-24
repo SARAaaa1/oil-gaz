@@ -1,12 +1,16 @@
 import { Component, OnInit, signal, computed, inject, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { TranslateModule, TranslateService } from '@ngx-translate/core';
-import { MockDataService } from '../../../core/services/mock-data.service';
+import { TranslateModule } from '@ngx-translate/core';
 import { BreadcrumbService } from '../../../core/services/breadcrumb.service';
 import { NotificationService } from '../../../core/services/notification.service';
 import { AuditService } from '../../../core/services/audit.service';
-import { Camp, Caravan, CampAllocation } from '../../../shared/interfaces/assets.interface';
+import {
+  OperationsApiService,
+  Camp,
+  CreateCampBody,
+  CampAllocationBody
+} from '../../../core/services/operations-api.service';
 
 @Component({
   selector: 'app-camps',
@@ -16,229 +20,211 @@ import { Camp, Caravan, CampAllocation } from '../../../shared/interfaces/assets
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class CampsComponent implements OnInit {
-  private readonly mockDataService = inject(MockDataService);
+  private readonly opsApi      = inject(OperationsApiService);
   private readonly breadcrumbService = inject(BreadcrumbService);
   private readonly notificationService = inject(NotificationService);
   private readonly auditService = inject(AuditService);
-  private readonly translate = inject(TranslateService);
 
-  // Core signals from central store
-  readonly camps = this.mockDataService.camps;
-  readonly caravans = this.mockDataService.caravans;
+  // ── State ──────────────────────────────────────────────────────────────────
+  readonly camps       = signal<Camp[]>([]);
+  readonly allocations = signal<any[]>([]);
+  readonly isLoading   = signal(false);
+  readonly isSaving    = signal(false);
 
-  // View States
-  readonly activeTab = signal<'list' | 'allocations'>('list');
+  readonly activeTab    = signal<'list' | 'allocations'>('list');
   readonly selectedCamp = signal<Camp | null>(null);
-  readonly searchQuery = signal<string>('');
+  readonly searchQuery  = signal<string>('');
 
-  // Modal States
-  readonly isCampModalOpen = signal<boolean>(false);
-  readonly isAllocationModalOpen = signal<boolean>(false);
+  readonly isCampModalOpen       = signal(false);
+  readonly isAllocationModalOpen = signal(false);
 
-  // Form states
-  campForm = {
-    campCode: '',
-    campName: '',
-    location: '',
-    totalBeds: 50,
-    status: 'Active' as 'Active' | 'Maintenance' | 'Closed'
-  };
+  campForm: Partial<CreateCampBody> = this.emptyCampForm();
+  allocationForm: any = this.emptyAllocationForm();
 
-  allocations = signal<CampAllocation[]>([
-    { id: 'al1', campId: 'c1', caravanId: 'car1', allocatedToUser: 'Drilling Team A Lead', allocationDate: '2026-06-01' },
-    { id: 'al2', campId: 'c1', caravanId: 'car2', allocatedToUser: 'Sven Larson', allocationDate: '2026-06-05' },
-    { id: 'al3', campId: 'c2', caravanId: 'car3', allocatedToUser: 'Drilling Crew Beta', allocationDate: '2026-06-08' }
-  ]);
-
-  allocationForm = {
-    campId: '',
-    caravanId: '',
-    allocatedToUser: '',
-    allocationDate: new Date().toISOString().split('T')[0]
-  };
-
-  // Computed properties
+  // ── Computed ───────────────────────────────────────────────────────────────
   readonly filteredCamps = computed(() => {
     let list = this.camps();
-    const query = this.searchQuery().trim().toLowerCase();
-    if (query) {
-      list = list.filter(c =>
-        c.campCode.toLowerCase().includes(query) ||
-        c.campName.toLowerCase().includes(query) ||
-        c.location.toLowerCase().includes(query)
-      );
-    }
+    const q  = this.searchQuery().trim().toLowerCase();
+    if (q) list = list.filter(c =>
+      c.campCode?.toLowerCase().includes(q) ||
+      c.name?.toLowerCase().includes(q) ||
+      c.location?.toLowerCase().includes(q)
+    );
     return list;
   });
 
-  readonly filteredCaravans = computed(() => {
-    const selected = this.selectedCamp();
-    if (!selected) return [];
-    return this.caravans().filter(c => c.assignedCampId === selected.id);
+  readonly selectedCampAllocations = computed(() => {
+    const sel = this.selectedCamp();
+    if (!sel) return this.allocations();
+    return this.allocations().filter(a => a.campId === sel._id);
   });
 
-  readonly totalBeds = computed(() =>
-    this.camps().reduce((sum, c) => sum + c.totalBeds, 0)
-  );
+  readonly totalBeds     = computed(() => this.camps().reduce((s, c) => s + (c.totalBeds ?? 0), 0));
+  readonly totalOccupied = computed(() => this.camps().reduce((s, c) => s + (c.occupiedBeds ?? 0), 0));
+  readonly totalAvailable = computed(() => this.camps().reduce((s, c) => s + (c.availableBeds ?? 0), 0));
 
-  readonly occupiedBeds = computed(() =>
-    this.camps().reduce((sum, c) => sum + c.occupiedBeds, 0)
-  );
+  readonly occupancyRate = computed(() => {
+    const total = this.totalBeds();
+    return total > 0 ? Math.round((this.totalOccupied() / total) * 100) : 0;
+  });
 
+  // ── Compat: old template selects via camp.id — alias to _id ─────────────
+  readonly caravans = signal<any[]>([]); // not used by new API — kept for template
+
+  readonly filteredCaravans = computed(() => {
+    const sel = this.selectedCamp();
+    if (!sel) return [];
+    return this.caravans().filter((c: any) => c.assignedCampId === sel._id);
+  });
+
+  closeCampDetails() { this.selectedCamp.set(null); }
+  openAddAllocation() { this.openAllocationModal(); }
+
+  getCampName(campId: string): string {
+    return this.camps().find(c => c._id === campId)?.name ?? campId;
+  }
+  getCaravanNumber(caravanId: string): string { return caravanId; }
+
+  /** Overload for template passing full alloc object */
+  releaseAllocationObj(alloc: any) {
+    this.releaseAllocation(alloc._id ?? alloc.id, alloc.occupantName ?? alloc.allocatedToUser ?? '');
+  }
+
+  // ── Lifecycle ──────────────────────────────────────────────────────────────
   ngOnInit() {
     this.breadcrumbService.setBreadcrumbs([
       { label: 'navigation.operations', url: '/operations' },
       { label: 'navigation.camps' }
     ]);
+    this.loadCamps();
+    this.loadAllocations();
   }
 
-  // --- CAMP ACTIONS ---
-  openAddCamp() {
-    this.campForm = {
-      campCode: '',
-      campName: '',
-      location: '',
-      totalBeds: 50,
-      status: 'Active'
-    };
+  loadCamps() {
+    this.isLoading.set(true);
+    this.opsApi.getCamps().subscribe({
+      next: (data: any) => { this.camps.set(Array.isArray(data) ? data : data.items ?? []); this.isLoading.set(false); },
+      error: () => this.isLoading.set(false)
+    });
+  }
+
+  loadAllocations() {
+    this.opsApi.getAllocations().subscribe({
+      next: (data: any) => this.allocations.set(Array.isArray(data) ? data : data.items ?? []),
+      error: () => {}
+    });
+  }
+
+  // ── Selection ──────────────────────────────────────────────────────────────
+  selectCamp(camp: Camp) {
+    this.selectedCamp.set(camp);
+    this.opsApi.getAllocations({ campId: camp._id }).subscribe({
+      next: (data: any) => this.allocations.set(Array.isArray(data) ? data : data.items ?? []),
+      error: () => {}
+    });
+  }
+
+  // ── Camp CRUD ──────────────────────────────────────────────────────────────
+  openCampModal() {
+    this.campForm = this.emptyCampForm();
     this.isCampModalOpen.set(true);
   }
 
   saveCamp() {
-    if (!this.campForm.campCode || !this.campForm.campName || !this.campForm.location) {
-      this.notificationService.danger('common.err_validation_title', 'Please complete all required fields.');
+    if (!this.campForm.campCode || !this.campForm.name) {
+      this.notificationService.danger('Validation', 'Please fill all required fields');
       return;
     }
-
-    const created = this.mockDataService.addCamp({
-      campCode: this.campForm.campCode,
-      campName: this.campForm.campName,
-      location: this.campForm.location,
-      totalBeds: this.campForm.totalBeds,
-      occupiedBeds: 0,
-      caravansCount: 0,
-      status: this.campForm.status
+    this.isSaving.set(true);
+    this.opsApi.createCamp(this.campForm as CreateCampBody).subscribe({
+      next: (created) => {
+        this.camps.update(list => [created, ...list]);
+        this.isCampModalOpen.set(false);
+        this.notificationService.success('Created', `Camp ${created.name} created successfully`);
+        this.isSaving.set(false);
+      },
+      error: (err) => {
+        this.notificationService.danger('Error', err?.error?.message || 'Failed to create camp');
+        this.isSaving.set(false);
+      }
     });
-
-    this.auditService.log({
-      user: 'Admin User',
-      role: 'Super Admin',
-      module: 'Operations',
-      entityName: 'Camp',
-      entityId: created.campCode,
-      action: 'Create',
-      oldValue: '',
-      newValue: JSON.stringify(created),
-      details: `Created new Camp: ${created.campName} (${created.campCode})`
-    });
-
-    this.isCampModalOpen.set(false);
-    this.notificationService.success('common.success', 'Camp registered successfully.');
   }
 
-  selectCamp(camp: Camp) {
-    this.selectedCamp.set(camp);
-  }
-
-  closeCampDetails() {
-    this.selectedCamp.set(null);
-  }
-
-  // --- ALLOCATION ACTIONS ---
-  openAddAllocation() {
-    this.allocationForm = {
-      campId: this.selectedCamp()?.id || '',
-      caravanId: '',
-      allocatedToUser: '',
-      allocationDate: new Date().toISOString().split('T')[0]
-    };
+  // ── Allocation ─────────────────────────────────────────────────────────────
+  openAllocationModal() {
+    const camp = this.selectedCamp();
+    if (!camp) { this.notificationService.warning('Select Camp', 'Please select a camp first'); return; }
+    this.allocationForm = { ...this.emptyAllocationForm(), campId: camp._id };
     this.isAllocationModalOpen.set(true);
   }
 
   saveAllocation() {
-    if (!this.allocationForm.campId || !this.allocationForm.caravanId || !this.allocationForm.allocatedToUser) {
-      this.notificationService.danger('common.err_validation_title', 'Please select a camp, caravan, and enter the assignee.');
+    if (!this.allocationForm.occupantName) {
+      this.notificationService.danger('Validation', 'Please enter occupant name');
       return;
     }
-
-    const newAlloc: CampAllocation = {
-      id: `al${this.allocations().length + 1}`,
-      campId: this.allocationForm.campId,
-      caravanId: this.allocationForm.caravanId,
-      allocatedToUser: this.allocationForm.allocatedToUser,
-      allocationDate: this.allocationForm.allocationDate
+    const body: CampAllocationBody = {
+      campId:       this.allocationForm.campId,
+      projectCode:  this.allocationForm.projectCode,
+      occupantName: this.allocationForm.occupantName,
+      role:         this.allocationForm.role,
+      bedNumber:    this.allocationForm.bedNumber,
+      checkInDate:  this.allocationForm.checkInDate
     };
 
-    // Update allocations
-    this.allocations.update(val => [...val, newAlloc]);
-
-    // Update Caravan status and occupied bed counter
-    const caravanId = this.allocationForm.caravanId;
-    const caravan = this.caravans().find(c => c.id === caravanId);
-    if (caravan) {
-      this.mockDataService.caravans.update(list =>
-        list.map(c => c.id === caravanId ? { ...c, status: 'Full' as const } : c)
-      );
-
-      // Increment occupied bed counter in camp
-      const campId = this.allocationForm.campId;
-      this.mockDataService.camps.update(list =>
-        list.map(c => c.id === campId ? { ...c, occupiedBeds: Math.min(c.totalBeds, c.occupiedBeds + caravan.capacityBeds) } : c)
-      );
-    }
-
-    this.auditService.log({
-      user: 'Admin User',
-      role: 'Super Admin',
-      module: 'Operations',
-      entityName: 'CampAllocation',
-      entityId: newAlloc.id,
-      action: 'Create',
-      oldValue: '',
-      newValue: JSON.stringify(newAlloc),
-      details: `Allocated caravan ${caravan?.caravanNumber || caravanId} to ${newAlloc.allocatedToUser}`
+    this.isSaving.set(true);
+    this.opsApi.createAllocation(body).subscribe({
+      next: (created) => {
+        this.allocations.update(list => [created, ...list]);
+        // Update camp bed count locally
+        this.camps.update(list => list.map(c =>
+          c._id === this.allocationForm.campId
+            ? { ...c, occupiedBeds: c.occupiedBeds + 1, availableBeds: c.availableBeds - 1 }
+            : c
+        ));
+        this.isAllocationModalOpen.set(false);
+        this.notificationService.success('Allocated', `Bed allocated to ${body.occupantName}`);
+        this.isSaving.set(false);
+      },
+      error: (err) => {
+        this.notificationService.danger('Error', err?.error?.message || 'Allocation failed');
+        this.isSaving.set(false);
+      }
     });
-
-    this.isAllocationModalOpen.set(false);
-    this.notificationService.success('common.success', 'Caravan allocated successfully.');
   }
 
-  releaseAllocation(alloc: CampAllocation) {
-    // Update occupied beds in camp
-    const caravan = this.caravans().find(c => c.id === alloc.caravanId);
-    if (caravan) {
-      this.mockDataService.caravans.update(list =>
-        list.map(c => c.id === caravan.id ? { ...c, status: 'Available' as const } : c)
-      );
-
-      this.mockDataService.camps.update(list =>
-        list.map(c => c.id === alloc.campId ? { ...c, occupiedBeds: Math.max(0, c.occupiedBeds - caravan.capacityBeds) } : c)
-      );
-    }
-
-    // Remove allocation
-    this.allocations.update(val => val.filter(a => a.id !== alloc.id));
-
-    this.auditService.log({
-      user: 'Admin User',
-      role: 'Super Admin',
-      module: 'Operations',
-      entityName: 'CampAllocation',
-      entityId: alloc.id,
-      action: 'Delete',
-      oldValue: JSON.stringify(alloc),
-      newValue: '',
-      details: `Released caravan allocation for ${alloc.allocatedToUser}`
+  releaseAllocation(allocationId: string, occupantName: string) {
+    this.opsApi.releaseAllocation(allocationId).subscribe({
+      next: () => {
+        this.allocations.update(list => list.filter(a => a._id !== allocationId));
+        const camp = this.selectedCamp();
+        if (camp) {
+          this.camps.update(list => list.map(c =>
+            c._id === camp._id
+              ? { ...c, occupiedBeds: Math.max(0, c.occupiedBeds - 1), availableBeds: c.availableBeds + 1 }
+              : c
+          ));
+        }
+        this.notificationService.success('Released', `${occupantName} checked out`);
+      },
+      error: (err) => this.notificationService.danger('Error', err?.error?.message || 'Release failed')
     });
-
-    this.notificationService.success('common.success', 'Allocation released successfully.');
   }
 
-  getCaravanNumber(id: string): string {
-    return this.caravans().find(c => c.id === id)?.caravanNumber || id;
+  // ── Helpers ───────────────────────────────────────────────────────────────
+  private emptyCampForm(): Partial<CreateCampBody> {
+    return {
+      campCode: '', name: '', projectCode: '',
+      location: '', totalBeds: 50, amenities: [],
+      status: 'Active'
+    };
   }
 
-  getCampName(id: string): string {
-    return this.camps().find(c => c.id === id)?.campName || id;
+  private emptyAllocationForm(): CampAllocationBody & { campId: string } {
+    return {
+      campId: '', projectCode: '', occupantName: '',
+      role: '', bedNumber: '',
+      checkInDate: new Date().toISOString().split('T')[0]
+    };
   }
 }

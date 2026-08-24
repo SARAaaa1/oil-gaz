@@ -1,0 +1,429 @@
+<!-- ═══════════════════════════════════════════════════════════════
+     PetroFlow HR — Applications and Candidates Manager
+     Feature: AI Summarizer & Requirement Smart Filtration
+════════════════════════════════════════════════════════════════ -->
+<div class="space-y-6" style="direction: rtl;">
+
+  <!-- Page Header -->
+  <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-black text-slate-800 tracking-tight">إدارة طلبات التوظيف (Applications)</h1>
+      <p class="text-xs text-slate-500 font-semibold mt-1">تتبع طلبات التوظيف الواردة من الموقع الخارجي ومراجعتها وتلخيصها بالذكاء الاصطناعي</p>
+    </div>
+    <button (click)="openAddModal()"
+      class="btn-primary px-4 py-2.5 rounded-xl text-xs font-bold transition-all shadow-sm flex items-center gap-1.5">
+      <span>➕ إضافة طلب يدوي</span>
+    </button>
+  </div>
+
+  <!-- ── FILTERS PANEL (WITH SMART FILTRATION) ────────────────── -->
+  <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 space-y-4">
+    <div class="flex items-center justify-between border-b border-slate-50 pb-2">
+      <h3 class="text-xs font-black text-slate-700 flex items-center gap-1.5">
+        <svg class="w-4 h-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/>
+        </svg>
+        <span>فلاتر البحث والمطابقة الذكية</span>
+      </h3>
+      <button (click)="resetFilters()" class="text-slate-400 hover:text-primary text-[11px] font-bold transition-colors">
+        🔄 إعادة تعيين الفلاتر
+      </button>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
+      <!-- Search name/phone -->
+      <div>
+        <label class="text-[10px] font-bold text-slate-400 uppercase">البحث العام</label>
+        <input [(ngModel)]="searchQuery" type="text"
+          placeholder="الاسم، الجوال، البريد..."
+          class="w-full mt-1.5 px-3 py-2 border border-slate-200 rounded-xl text-xs focus:ring-1 focus:ring-primary focus:border-primary outline-none bg-slate-50/50">
+      </div>
+
+      <!-- Department -->
+      <div>
+        <label class="text-[10px] font-bold text-slate-400 uppercase">القسم</label>
+        <select [(ngModel)]="deptFilter"
+          class="w-full mt-1.5 px-2.5 py-2 border border-slate-200 rounded-xl text-xs focus:ring-1 focus:ring-primary focus:border-primary outline-none bg-slate-50/50">
+          <option value="ALL">جميع الأقسام</option>
+          <option value="Drilling">Drilling (الحفر)</option>
+          <option value="Production">Production (الإنتاج)</option>
+          <option value="Finance">Finance (المالية)</option>
+          <option value="Maintenance">Maintenance (الصيانة)</option>
+          <option value="HSE">HSE (السلامة)</option>
+        </select>
+      </div>
+
+      <!-- Experience (Smart Filter) -->
+      <div>
+        <label class="text-[10px] font-bold text-slate-400 uppercase">الحد الأدنى للخبرة</label>
+        <select [ngModel]="minExpFilter()" (ngModelChange)="minExpFilter.set(+$event)"
+          class="w-full mt-1.5 px-2.5 py-2 border border-slate-200 rounded-xl text-xs focus:ring-1 focus:ring-primary focus:border-primary outline-none bg-slate-50/50">
+          <option [value]="0">أي خبرة</option>
+          <option [value]="2">سنتين فأكثر</option>
+          <option [value]="5">5 سنوات فأكثر</option>
+          <option [value]="10">10 سنوات فأكثر</option>
+        </select>
+      </div>
+
+      <!-- Education (Smart Filter) -->
+      <div>
+        <label class="text-[10px] font-bold text-slate-400 uppercase">المؤهل الدراسي</label>
+        <select [ngModel]="eduFilter()" (ngModelChange)="eduFilter.set($event)"
+          class="w-full mt-1.5 px-2.5 py-2 border border-slate-200 rounded-xl text-xs focus:ring-1 focus:ring-primary focus:border-primary outline-none bg-slate-50/50">
+          <option value="ALL">جميع المؤهلات</option>
+          <option value="Bachelor">بكالوريوس (Bachelor)</option>
+          <option value="Master">ماجستير (Master)</option>
+          <option value="Diploma">دبلوم (Diploma)</option>
+        </select>
+      </div>
+
+      <!-- Keyword filter -->
+      <div>
+        <label class="text-[10px] font-bold text-slate-400 uppercase">البحث بكلمة دلالية / مهارة</label>
+        <input [ngModel]="keywordFilter()" (ngModelChange)="keywordFilter.set($event)" type="text"
+          placeholder="مثال: SOCPA, Drilling..."
+          class="w-full mt-1.5 px-3 py-2 border border-slate-200 rounded-xl text-xs focus:ring-1 focus:ring-primary focus:border-primary outline-none bg-slate-50/50">
+      </div>
+
+      <!-- Status -->
+      <div>
+        <label class="text-[10px] font-bold text-slate-400 uppercase">حالة الطلب</label>
+        <select [(ngModel)]="statusFilter"
+          class="w-full mt-1.5 px-2.5 py-2 border border-slate-200 rounded-xl text-xs focus:ring-1 focus:ring-primary focus:border-primary outline-none bg-slate-50/50">
+          <option value="ALL">جميع الحالات</option>
+          <option value="New">جديد (New)</option>
+          <option value="Under Review">تحت المراجعة</option>
+          <option value="Shortlisted">مقبول مبدئياً</option>
+          <option value="Rejected">مرفوض</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── MAIN CONTENT (TABLE + DRAWER DETAIL PANEL) ────────── -->
+  <div class="flex flex-col lg:flex-row gap-6">
+
+    <!-- List Table -->
+    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden flex-1">
+      <div class="overflow-x-auto">
+        <table class="w-full text-xs text-right">
+          <thead>
+            <tr class="bg-slate-50 border-b border-slate-100 text-slate-400 font-bold uppercase text-[10px]">
+              <th class="px-4 py-3">الاسم</th>
+              <th class="px-4 py-3">الوظيفة المطلوبة</th>
+              <th class="px-4 py-3">القسم</th>
+              <th class="px-4 py-3">تاريخ التقديم</th>
+              <th class="px-4 py-3 text-center">الخبرة</th>
+              <th class="px-4 py-3">المؤهل</th>
+              <th class="px-4 py-3 text-center">نسبة المطابقة</th>
+              <th class="px-4 py-3 text-center">الحالة</th>
+              <th class="px-4 py-3 text-center w-10">إجراء</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-50 font-semibold text-slate-700">
+            @if (filteredApplications().length > 0) {
+              @for (app of filteredApplications(); track app.id) {
+                <tr (click)="selectCandidate(app)" class="hover:bg-slate-50/50 cursor-pointer transition-colors" [class.bg-sky-100]="isSelectedCandidate(app.id)">
+                  <td class="px-4 py-3">
+                    <p class="font-bold text-slate-800">{{ app.fullName }}</p>
+                    <p class="text-[10px] text-slate-400 font-mono mt-0.5">{{ app.email }}</p>
+                  </td>
+                  <td class="px-4 py-3 text-slate-600">{{ app.position }}</td>
+                  <td class="px-4 py-3 text-slate-500">{{ app.department }}</td>
+                  <td class="px-4 py-3 text-slate-400 font-mono">{{ app.appliedDate }}</td>
+                  <td class="px-4 py-3 text-center text-slate-800">{{ app.experienceYears }} سنة</td>
+                  <td class="px-4 py-3 text-slate-500 max-w-40 truncate">{{ app.education }}</td>
+                  <td class="px-4 py-3 text-center">
+                    <span class="inline-block px-2 py-0.5 rounded-lg font-bold"
+                      [class]="getMatchingScore(app) >= 80 ? 'bg-green-50 text-green-700' :
+                               getMatchingScore(app) >= 60 ? 'bg-amber-50 text-amber-700' :
+                               'bg-red-50 text-red-700'">
+                      {{ getMatchingScore(app) }}%
+                    </span>
+                  </td>
+                  <td class="px-4 py-3 text-center">
+                    <span class="inline-block px-2.5 py-0.5 rounded-full text-[9px] font-extrabold uppercase"
+                      [class]="getStatusClass(app.status)">
+                      {{ app.status }}
+                    </span>
+                  </td>
+                  <td class="px-4 py-3 text-center" (click)="$event.stopPropagation()">
+                    <div class="flex items-center justify-center gap-1.5">
+                      <button (click)="moveCandidate(app.id)" [disabled]="app.status !== 'New'"
+                        class="p-1 rounded bg-green-50 border border-green-100 hover:bg-green-100 text-green-700 transition-all disabled:opacity-40"
+                        title="قبول مبدئي / مراجعة">
+                        ✔️
+                      </button>
+                      <button (click)="rejectCandidate(app.id)" [disabled]="app.status === 'Rejected'"
+                        class="p-1 rounded bg-red-50 border border-red-100 hover:bg-red-100 text-red-700 transition-all disabled:opacity-40"
+                        title="رفض الطلب">
+                        ❌
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              }
+            } @else {
+              <tr>
+                <td colspan="9" class="px-4 py-16 text-center text-slate-400">
+                  <div class="max-w-xs mx-auto">
+                    <svg class="w-12 h-12 mx-auto text-slate-200 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    <p class="text-sm font-bold">لا توجد طلبات توظيف مطابقة للفلاتر الحالية</p>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ── DETAILED DRAWER PANEL (SELECTED CANDIDATE) ────────── -->
+    @if (selectedCandidate()) {
+      <div class="w-full lg:w-96 bg-white rounded-2xl border border-slate-100 shadow-xl overflow-hidden flex flex-col shrink-0">
+        <!-- Header -->
+        <div class="px-5 py-4 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
+          <div>
+            <h3 class="text-sm font-black text-slate-800">تفاصيل المتقدم</h3>
+            <p class="text-[10px] text-slate-400 font-mono mt-0.5">ID: {{ selectedCandidate()!.id }}</p>
+          </div>
+          <button (click)="closeDetails()" class="text-slate-400 hover:text-slate-600 text-lg font-bold">×</button>
+        </div>
+
+        <!-- Body -->
+        <div class="p-5 space-y-5 flex-1 overflow-y-auto max-h-[600px]">
+          <!-- Profile Badge -->
+          <div class="text-center pb-4 border-b border-slate-50">
+            <div class="w-16 h-16 rounded-2xl bg-slate-100 mx-auto mb-3 flex items-center justify-center text-slate-400">
+              <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+              </svg>
+            </div>
+            <h4 class="text-sm font-black text-slate-800">{{ selectedCandidate()!.fullName }}</h4>
+            <p class="text-[11px] text-slate-500 mt-0.5">{{ selectedCandidate()!.position }}</p>
+            <div class="flex justify-center gap-1.5 mt-2">
+              <span class="px-2 py-0.5 rounded text-[10px] font-bold"
+                [class]="getStatusClass(selectedCandidate()!.status)">
+                {{ selectedCandidate()!.status }}
+              </span>
+              <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-600">
+                مطابقة: {{ getMatchingScore(selectedCandidate()!) }}%
+              </span>
+            </div>
+          </div>
+
+          <!-- Contact Details -->
+          <div class="space-y-2">
+            <h5 class="text-[10px] font-black text-slate-400 uppercase tracking-widest">معلومات الاتصال</h5>
+            <div class="text-xs space-y-1.5 text-slate-700">
+              <p><span class="font-bold text-slate-400">البريد:</span> {{ selectedCandidate()!.email }}</p>
+              <p><span class="font-bold text-slate-400">الهاتف:</span> {{ selectedCandidate()!.phone }}</p>
+              @if (selectedCandidate()!.linkedInUrl) {
+                <p>
+                  <span class="font-bold text-slate-400">LinkedIn:</span>
+                  <a [href]="selectedCandidate()!.linkedInUrl" target="_blank" class="text-primary hover:underline font-mono text-[10px]">الملف المهني 🔗</a>
+                </p>
+              }
+            </div>
+          </div>
+
+          <!-- Job Details -->
+          <div class="space-y-2">
+            <h5 class="text-[10px] font-black text-slate-400 uppercase tracking-widest">المؤهلات والخبرات</h5>
+            <div class="text-xs space-y-1.5 text-slate-700">
+              <p><span class="font-bold text-slate-400">القسم المطلوب:</span> {{ selectedCandidate()!.department }}</p>
+              <p><span class="font-bold text-slate-400">المؤهل الدراسي:</span> {{ selectedCandidate()!.education }}</p>
+              <p><span class="font-bold text-slate-400">سنوات الخبرة:</span> {{ selectedCandidate()!.experienceYears }} سنة</p>
+            </div>
+          </div>
+
+          <!-- Resume Attachment Preview -->
+          <div class="space-y-2">
+            <h5 class="text-[10px] font-black text-slate-400 uppercase tracking-widest">الملفات المرفقة (CV)</h5>
+            @if (selectedCandidate()!.attachments && selectedCandidate()!.attachments!.length > 0) {
+              @for (att of selectedCandidate()!.attachments; track att.name) {
+                <div class="rounded-xl p-3 border border-slate-100 flex items-center justify-between bg-slate-50/50">
+                  <div class="min-w-0 flex-1">
+                    <p class="text-xs font-bold text-slate-700 truncate">{{ att.name }}</p>
+                    <p class="text-[10px] text-slate-400">{{ att.size }} • {{ att.type }}</p>
+                  </div>
+                  <a [href]="att.url" class="p-1.5 rounded-lg bg-white border border-slate-100 hover:bg-slate-50 text-slate-600 shadow-sm" title="تحميل السيرة الذاتية">
+                    💾
+                  </a>
+                </div>
+              }
+            } @else {
+              <div class="rounded-xl p-3 border border-slate-100 flex items-center justify-between bg-slate-50/50">
+                <div class="min-w-0 flex-1">
+                  <p class="text-xs font-bold text-slate-700 truncate">Syllabus_CV.pdf</p>
+                  <p class="text-[10px] text-slate-400">320 KB • PDF</p>
+                </div>
+                <button class="p-1.5 rounded-lg bg-white border border-slate-100 hover:bg-slate-50 text-slate-655 shadow-sm" title="تحميل السيرة الذاتية">
+                  💾
+                </button>
+              </div>
+            }
+          </div>
+
+          <!-- Cover letter / Bio -->
+          @if (selectedCandidate()!.bio) {
+            <div class="space-y-2">
+              <h5 class="text-[10px] font-black text-slate-400 uppercase tracking-widest">خطاب التقديم (Cover Letter)</h5>
+              <p class="text-xs text-slate-600 bg-slate-50 rounded-xl p-3 border border-slate-100 leading-relaxed">
+                {{ selectedCandidate()!.bio }}
+              </p>
+            </div>
+          }
+
+          <!-- ─── AI SUMMARIZER BUTTON & CONTAINER ─────────────────── -->
+          <div class="pt-4 border-t border-slate-100 space-y-3">
+            <button (click)="generateAiSummary(selectedCandidate()!)" [disabled]="aiLoading()"
+              class="w-full py-2.5 rounded-xl text-white text-xs font-bold shadow-lg transition-all flex items-center justify-center gap-2"
+              style="background: linear-gradient(135deg, #009FE3, #005CB9);">
+              <svg class="w-4 h-4 text-white" [class.animate-spin]="aiLoading()" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                @if (aiLoading()) {
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                } @else {
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                }
+              </svg>
+              <span>{{ aiLoading() ? 'جارٍ تحليل وتلخيص الـ CV...' : '⚡ توليد ملخص السيرة بالذكاء الاصطناعي' }}</span>
+            </button>
+
+            @if (aiSummary()) {
+              <!-- AI Result Box -->
+              <div class="rounded-xl border border-sky-100 p-4 space-y-3 bg-sky-50/20 relative overflow-hidden">
+                <div class="absolute top-0 right-0 left-0 h-1 bg-gradient-to-r from-sky-400 to-primary"></div>
+                
+                <div class="flex items-center justify-between">
+                  <span class="text-[10px] font-bold text-sky-600 flex items-center gap-1">
+                    <span>🤖 ملخص ذكي بواسطة PetroAI</span>
+                  </span>
+                  <span class="px-2 py-0.5 rounded text-[10px] font-bold"
+                    [class]="aiSummary()!.recommendation === 'مقبول للمقابلة' ? 'bg-green-50 text-green-700' :
+                             aiSummary()!.recommendation === 'للمراجعة اللاحقة' ? 'bg-amber-50 text-amber-700' :
+                             'bg-red-50 text-red-700'">
+                    {{ aiSummary()!.recommendation }}
+                  </span>
+                </div>
+
+                <!-- Match score bar -->
+                <div class="space-y-1">
+                  <div class="flex items-center justify-between text-[11px] font-bold text-slate-700">
+                    <span>درجة مطابقة المؤهلات:</span>
+                    <span>{{ aiSummary()!.suitabilityScore }}%</span>
+                  </div>
+                  <div class="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+                    <div class="h-full rounded-full transition-all duration-500"
+                      [style.width.%]="aiSummary()!.suitabilityScore"
+                      [style.backgroundColor]="aiSummary()!.suitabilityScore >= 80 ? '#10B981' : '#F59E0B'"></div>
+                  </div>
+                </div>
+
+                <!-- AI Experience Summary text -->
+                <p class="text-xs text-slate-600 leading-relaxed text-justify">
+                  {{ aiSummary()!.experienceSummary }}
+                </p>
+
+                <!-- Pros & Cons lists -->
+                <div class="grid grid-cols-1 gap-2 pt-2 border-t border-slate-100">
+                  <div>
+                    <h6 class="text-[10px] font-bold text-green-700 mb-1">نقاط القوة والميزات:</h6>
+                    <ul class="text-[11px] text-slate-655 space-y-1 list-disc list-inside">
+                      @for (pro of aiSummary()!.pros; track pro) {
+                        <li>{{ pro }}</li>
+                      }
+                    </ul>
+                  </div>
+                  @if (aiSummary()!.cons && aiSummary()!.cons.length > 0) {
+                    <div>
+                      <h6 class="text-[10px] font-bold text-amber-700 mb-1">النقاط التي تتطلب توضيحاً:</h6>
+                      <ul class="text-[11px] text-slate-655 space-y-1 list-disc list-inside">
+                        @for (con of aiSummary()!.cons; track con) {
+                          <li>{{ con }}</li>
+                        }
+                      </ul>
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+
+        <!-- Actions Footer -->
+        <div class="px-5 py-4 border-t border-slate-50 bg-slate-50/50 flex gap-2">
+          <button (click)="moveCandidate(selectedCandidate()!.id)" [disabled]="selectedCandidate()!.status !== 'New'"
+            class="flex-1 py-2 text-xs font-bold rounded-xl text-white transition-all disabled:opacity-40"
+            style="background: #10B981;">
+            قبول مبدئي
+          </button>
+          <button (click)="rejectCandidate(selectedCandidate()!.id)" [disabled]="selectedCandidate()!.status === 'Rejected'"
+            class="flex-1 py-2 text-xs font-bold rounded-xl border border-red-100 text-red-500 hover:bg-red-50 transition-all disabled:opacity-40">
+            رفض
+          </button>
+        </div>
+      </div>
+    }
+
+  </div>
+
+  <!-- ─── MANUAL ADD APPLICATION MODAL ───────────────────────── -->
+  @if (showAddModal()) {
+    <div class="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden">
+        <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center">
+          <h3 class="text-sm font-black text-slate-800">إضافة طلب توظيف يدوي</h3>
+          <button (click)="closeAddModal()" class="text-slate-400 hover:text-slate-600 text-lg">×</button>
+        </div>
+
+        <div class="p-6 space-y-4">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+            <div>
+              <label class="font-bold text-slate-500">اسم المتقدم بالكامل *</label>
+              <input [(ngModel)]="form.fullName" type="text" placeholder="مثال: يوسف الحربي" class="w-full mt-1.5 px-3 py-2 border rounded-xl outline-none focus:ring-1 focus:ring-primary">
+            </div>
+            <div>
+              <label class="font-bold text-slate-500">البريد الإلكتروني *</label>
+              <input [(ngModel)]="form.email" type="email" placeholder="example@email.com" class="w-full mt-1.5 px-3 py-2 border rounded-xl outline-none focus:ring-1 focus:ring-primary">
+            </div>
+            <div>
+              <label class="font-bold text-slate-500">رقم الهاتف *</label>
+              <input [(ngModel)]="form.phone" type="text" placeholder="05xxxxxxxx" class="w-full mt-1.5 px-3 py-2 border rounded-xl outline-none focus:ring-1 focus:ring-primary">
+            </div>
+            <div>
+              <label class="font-bold text-slate-500">الوظيفة الشاغرة *</label>
+              <input [(ngModel)]="form.position" type="text" placeholder="مهندس حفر" class="w-full mt-1.5 px-3 py-2 border rounded-xl outline-none focus:ring-1 focus:ring-primary">
+            </div>
+            <div>
+              <label class="font-bold text-slate-500">القسم الموجه له *</label>
+              <select [(ngModel)]="form.department" class="w-full mt-1.5 px-2 py-2 border rounded-xl outline-none focus:ring-1 focus:ring-primary">
+                <option value="Engineering">Engineering</option>
+                <option value="Finance">Finance</option>
+                <option value="HSE">HSE</option>
+                <option value="Operations">Operations</option>
+              </select>
+            </div>
+            <div>
+              <label class="font-bold text-slate-500">سنوات الخبرة</label>
+              <input [(ngModel)]="form.experienceYears" type="number" class="w-full mt-1.5 px-3 py-2 border rounded-xl outline-none focus:ring-1 focus:ring-primary">
+            </div>
+            <div class="sm:col-span-2">
+              <label class="font-bold text-slate-500">المؤهل الأكاديمي والتعليم</label>
+              <input [(ngModel)]="form.education" type="text" placeholder="بكالوريوس هندسة البترول" class="w-full mt-1.5 px-3 py-2 border rounded-xl outline-none focus:ring-1 focus:ring-primary">
+            </div>
+          </div>
+        </div>
+
+        <div class="px-6 py-4 bg-slate-50 flex items-center justify-end gap-2 border-t">
+          <button (click)="closeAddModal()" class="px-4 py-2 border border-slate-200 rounded-xl text-slate-600 hover:bg-slate-100 text-xs font-bold transition-all">إلغاء</button>
+          <button (click)="submit()" class="px-5 py-2 btn-primary text-white text-xs font-bold rounded-xl transition-all shadow-sm">حفظ الطلب</button>
+        </div>
+      </div>
+    </div>
+  }
+
+</div>

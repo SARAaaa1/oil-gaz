@@ -1,0 +1,408 @@
+<!-- ═══════════════════════════════════════════════════════════════
+     PetroFlow HR — Organization Structure
+     Visual Org Chart with Color-Coded Departments & Employee Panel
+════════════════════════════════════════════════════════════════ -->
+<div class="space-y-5" style="direction: rtl;">
+
+  <!-- ── PAGE HEADER ──────────────────────────────────────────── -->
+  <div class="relative overflow-hidden rounded-3xl p-6 text-white"
+    style="background: linear-gradient(135deg, #0F172A 0%, #1E3A5F 50%, #0F172A 100%);">
+    <!-- Grid pattern overlay -->
+    <div class="absolute inset-0 opacity-5"
+      style="background-image: radial-gradient(circle at 2px 2px, white 1px, transparent 0); background-size: 30px 30px;"></div>
+
+    <div class="relative flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div>
+        <div class="flex items-center gap-3 mb-1">
+          <div class="w-10 h-10 rounded-xl flex items-center justify-center text-xl"
+            style="background: rgba(0,159,227,0.3);">🏢</div>
+          <h1 class="text-2xl font-black tracking-tight">الهيكل التنظيمي</h1>
+        </div>
+        <p class="text-slate-400 text-xs font-semibold">PetroFlow Gas Service Company — التوزيع الوظيفي والإداري</p>
+      </div>
+      <div class="flex gap-2 flex-wrap no-print">
+        <button (click)="expandAll()"
+          class="px-3 py-2 rounded-xl text-xs font-bold transition-all"
+          style="background: rgba(255,255,255,0.1); color: white;">
+          ↓ توسيع الكل
+        </button>
+        <button (click)="collapseAll()"
+          class="px-3 py-2 rounded-xl text-xs font-bold transition-all"
+          style="background: rgba(255,255,255,0.1); color: white;">
+          ↑ طي الكل
+        </button>
+        <div class="flex items-center gap-1.5"
+          style="background: rgba(255,255,255,0.1); border-radius: 12px; padding: 6px 12px;">
+          <button (click)="zoomOut()" class="text-white font-black w-5 h-5 flex items-center justify-center">−</button>
+          <span class="text-white text-xs font-bold w-10 text-center">{{ zoom() }}%</span>
+          <button (click)="zoomIn()" class="text-white font-black w-5 h-5 flex items-center justify-center">+</button>
+        </div>
+        <div class="relative">
+          <svg class="w-3.5 h-3.5 absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+          </svg>
+          <input [(ngModel)]="search" type="text" placeholder="بحث عن قسم..."
+            class="pr-8 pl-3 py-2 rounded-xl text-xs font-semibold outline-none w-44"
+            style="background: rgba(255,255,255,0.12); color: white; placeholder-color: #94A3B8; border: 1px solid rgba(255,255,255,0.15);">
+        </div>
+      </div>
+    </div>
+
+    <!-- Stats row inside the header -->
+    <div class="relative grid grid-cols-3 sm:grid-cols-6 gap-3 mt-5 pt-5"
+      style="border-top: 1px solid rgba(255,255,255,0.1);">
+      <div class="text-center">
+        <p class="text-2xl font-black text-white">{{ totalEmployees() }}</p>
+        <p class="text-[10px] font-semibold text-slate-400 mt-0.5">الموظفون</p>
+      </div>
+      <div class="text-center">
+        <p class="text-2xl font-black" style="color:#009FE3">{{ totalDepts() }}</p>
+        <p class="text-[10px] font-semibold text-slate-400 mt-0.5">الأقسام</p>
+      </div>
+      <div class="text-center">
+        <p class="text-2xl font-black text-green-400">{{ activeDepts() }}</p>
+        <p class="text-[10px] font-semibold text-slate-400 mt-0.5">قسم نشط</p>
+      </div>
+      <div class="text-center">
+        <p class="text-2xl font-black text-purple-400">{{ managersCount() }}</p>
+        <p class="text-[10px] font-semibold text-slate-400 mt-0.5">المدراء</p>
+      </div>
+      <div class="text-center">
+        <p class="text-2xl font-black text-amber-400">{{ vacantPositions() }}</p>
+        <p class="text-[10px] font-semibold text-slate-400 mt-0.5">وظائف شاغرة</p>
+      </div>
+      <div class="text-center">
+        <p class="text-2xl font-black text-teal-400">{{ activeLocationsCount() }}</p>
+        <p class="text-[10px] font-semibold text-slate-400 mt-0.5">المواقع</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── MAIN CONTENT: ORG CHART + SIDE PANEL ─────────────────── -->
+  <div class="flex flex-col xl:flex-row gap-5">
+
+    <!-- ── ORG CHART CANVAS ───────────────────────────────────── -->
+    <div class="flex-1 bg-white rounded-3xl border border-slate-100 shadow-sm overflow-auto"
+      style="min-height: 550px;"
+      [style.background]="'radial-gradient(circle at 20% 20%, #F0F9FF 0%, #F8FAFC 40%, white 100%)'">
+
+      <div [style.transform]="'scale(' + zoom()/100 + ')'"
+        style="transform-origin: top center; transition: transform 0.25s ease; padding: 2.5rem 1rem 2rem;">
+
+        <!-- Root Company Node -->
+        <div class="flex flex-col items-center">
+          <div class="relative group">
+            <div class="w-64 rounded-3xl text-white shadow-2xl overflow-hidden transition-all duration-300 hover:-translate-y-1"
+              style="background: linear-gradient(135deg, #009FE3 0%, #005CB9 100%); box-shadow: 0 20px 60px rgba(0,159,227,0.4);">
+              <div class="p-5">
+                <div class="flex items-center gap-3">
+                  <div class="w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center text-2xl shadow-inner">🏢</div>
+                  <div>
+                    <p class="font-black text-base leading-tight">PetroFlow</p>
+                    <p class="text-[11px] font-semibold opacity-80">Gas Service Company</p>
+                  </div>
+                </div>
+                <div class="mt-4 pt-3 border-t border-white/20 grid grid-cols-2 gap-2 text-center">
+                  <div class="bg-white/15 rounded-xl p-2">
+                    <p class="text-xl font-black">{{ totalEmployees() }}</p>
+                    <p class="text-[9px] font-bold opacity-80">الموظفون</p>
+                  </div>
+                  <div class="bg-white/15 rounded-xl p-2">
+                    <p class="text-xl font-black">{{ totalDepts() }}</p>
+                    <p class="text-[9px] font-bold opacity-80">الأقسام</p>
+                  </div>
+                </div>
+              </div>
+              <!-- Animated shimmer -->
+              <div class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+                style="background: linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.08) 50%, transparent 70%); pointer-events: none;"></div>
+            </div>
+          </div>
+
+          <!-- Connector Down -->
+          <div class="w-0.5 h-8 bg-slate-200"></div>
+
+          <!-- Departments Row -->
+          @if (filteredNodes().length > 0) {
+            <!-- Top horizontal bar -->
+            <div class="relative flex items-start justify-center gap-5 flex-wrap px-4">
+              @for (node of filteredNodes(); track node.id; let first = $first; let last = $last) {
+                <div class="flex flex-col items-center">
+                  <!-- Vertical connector to node -->
+                  <div class="w-0.5 h-6" [style.background]="node.color + '60'"></div>
+
+                  <!-- Department Card -->
+                  <div class="relative group/card cursor-pointer transition-all duration-300 hover:-translate-y-1.5"
+                    (click)="selectDept(node)"
+                    [style.opacity]="node.status === 'Inactive' ? '0.55' : '1'">
+
+                    <div class="w-52 rounded-2xl overflow-hidden border-2 shadow-lg transition-all duration-300"
+                      [style.border-color]="selectedDept()?.id === node.id ? node.color : 'transparent'"
+                      [style.box-shadow]="selectedDept()?.id === node.id ? '0 12px 40px ' + node.color + '35' : '0 4px 20px rgba(0,0,0,0.08)'">
+
+                      <!-- Top colored band -->
+                      <div class="h-1.5" [style.background]="node.color"></div>
+
+                      <!-- Card Header -->
+                      <div class="p-4" [style.background]="node.accentColor">
+                        <div class="flex items-center gap-2.5">
+                          <div class="w-10 h-10 rounded-xl flex items-center justify-center text-xl shadow-sm"
+                            [style.background]="node.color + '25'">
+                            {{ node.icon }}
+                          </div>
+                          <div class="flex-1 min-w-0">
+                            <p class="font-black text-slate-800 text-xs leading-tight truncate">{{ node.name }}</p>
+                            <p class="text-[10px] text-slate-500 font-semibold mt-0.5 truncate">{{ node.arabicName }}</p>
+                          </div>
+                          <span class="text-[9px] font-black px-1.5 py-0.5 rounded-lg"
+                            [style.background]="node.color"
+                            [style.color]="'white'">
+                            {{ node.code }}
+                          </span>
+                        </div>
+                      </div>
+
+                      <!-- Card Body -->
+                      <div class="bg-white px-4 py-3 space-y-2">
+                        <!-- Manager -->
+                        <div class="flex items-center gap-2">
+                          <div class="w-5 h-5 rounded-lg flex items-center justify-center text-[10px] text-white font-black"
+                            [style.background]="node.color">
+                            {{ getInitials(node.managerName || '??') }}
+                          </div>
+                          <p class="text-[10px] text-slate-600 font-semibold truncate flex-1">{{ node.managerName || 'غير محدد' }}</p>
+                        </div>
+
+                        <!-- Stats Row -->
+                        <div class="grid grid-cols-3 gap-1">
+                          <div class="text-center p-1.5 rounded-lg" [style.background]="node.accentColor">
+                            <p class="text-sm font-black" [style.color]="node.color">{{ getEmpCount(node.id) }}</p>
+                            <p class="text-[8px] font-bold text-slate-400 leading-tight">موظف</p>
+                          </div>
+                          <div class="text-center p-1.5 rounded-lg bg-slate-50">
+                            <p class="text-sm font-black text-slate-700">{{ getJobCount(node.id) }}</p>
+                            <p class="text-[8px] font-bold text-slate-400 leading-tight">وظيفة</p>
+                          </div>
+                          <div class="text-center p-1.5 rounded-lg bg-slate-50">
+                            @if (node.status === 'Active') {
+                              <p class="text-[8px] font-black text-green-600">●</p>
+                              <p class="text-[8px] font-bold text-slate-400 leading-tight">نشط</p>
+                            } @else {
+                              <p class="text-[8px] font-black text-slate-400">●</p>
+                              <p class="text-[8px] font-bold text-slate-400 leading-tight">غير نشط</p>
+                            }
+                          </div>
+                        </div>
+                      </div>
+
+                      <!-- Sub-dept toggle footer (if has children) -->
+                      @if (node.children.length > 0) {
+                        <button (click)="$event.stopPropagation(); toggleNode(node)"
+                          class="w-full py-2 text-center text-[9px] font-black border-t transition-all"
+                          [style.background]="node.expanded ? node.color + '15' : '#F8FAFC'"
+                          [style.border-color]="node.color + '30'"
+                          [style.color]="node.color">
+                          {{ node.expanded ? '▲' : '▼' }} {{ node.children.length }} أقسام فرعية
+                        </button>
+                      }
+
+                      <!-- Hover Glow -->
+                      <div class="absolute inset-0 rounded-2xl opacity-0 group-hover/card:opacity-100 transition-opacity pointer-events-none"
+                        [style.box-shadow]="'inset 0 0 0 2px ' + node.color + '40'"></div>
+                    </div>
+                  </div>
+
+                  <!-- Sub-departments -->
+                  @if (node.expanded && node.children.length > 0) {
+                    <div class="w-0.5 h-5" [style.background]="node.color + '50'"></div>
+                    <div class="flex gap-3 flex-wrap justify-center">
+                      @for (child of node.children; track child.id) {
+                        <div class="flex flex-col items-center">
+                          <div class="w-0.5 h-5" [style.background]="child.color + '50'"></div>
+                          <div class="w-40 rounded-xl overflow-hidden border-2 shadow-md cursor-pointer transition-all duration-300 hover:-translate-y-1"
+                            [style.border-color]="selectedDept()?.id === child.id ? child.color : 'transparent'"
+                            [style.box-shadow]="selectedDept()?.id === child.id ? '0 8px 24px ' + child.color + '30' : '0 2px 12px rgba(0,0,0,0.06)'"
+                            (click)="selectDept(child)">
+                            <div class="h-1" [style.background]="child.color"></div>
+                            <div class="p-3" [style.background]="child.accentColor">
+                              <div class="flex items-center gap-2">
+                                <span class="text-base">{{ child.icon }}</span>
+                                <div class="flex-1 min-w-0">
+                                  <p class="text-[10px] font-black text-slate-800 truncate leading-tight">{{ child.name }}</p>
+                                  <p class="text-[9px] text-slate-400 font-semibold">{{ child.code }}</p>
+                                </div>
+                              </div>
+                            </div>
+                            <div class="bg-white px-3 py-2 flex items-center justify-between">
+                              <span class="text-[9px] font-semibold text-slate-500 truncate max-w-20">{{ child.managerName || '—' }}</span>
+                              <span class="text-xs font-black" [style.color]="child.color">{{ getEmpCount(child.id) }}</span>
+                            </div>
+                          </div>
+                        </div>
+                      }
+                    </div>
+                  }
+                </div>
+              }
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+
+    <!-- ── DEPARTMENT DETAIL PANEL ─────────────────────────────── -->
+    @if (selectedDept()) {
+      <div class="w-full xl:w-80 bg-white rounded-3xl border border-slate-100 shadow-xl overflow-hidden flex flex-col shrink-0"
+        style="max-height: 85vh; position: sticky; top: 1.5rem;">
+
+        <!-- Panel Header with color -->
+        <div class="relative p-5 text-white overflow-hidden"
+          [style.background]="'linear-gradient(135deg, ' + selectedDept()!.color + ' 0%, ' + selectedDept()!.color + 'CC 100%)'">
+          <div class="absolute top-0 right-0 w-32 h-32 rounded-full opacity-10"
+            style="background: white; transform: translate(40%, -40%); pointer-events: none;"></div>
+          <div class="relative">
+            <div class="flex items-start justify-between">
+              <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center text-2xl shadow-inner">
+                  {{ selectedDept()!.icon }}
+                </div>
+                <div>
+                  <p class="font-black text-sm leading-tight">{{ selectedDept()!.name }}</p>
+                  <p class="text-[11px] opacity-80 font-semibold">{{ selectedDept()!.arabicName }}</p>
+                  <p class="text-[10px] opacity-60 font-bold mt-0.5 font-mono">{{ selectedDept()!.code }}</p>
+                </div>
+              </div>
+              <button (click)="selectedDept.set(null)"
+                class="text-white/60 hover:text-white text-xl font-bold leading-none transition-colors">×</button>
+            </div>
+            <!-- Dept quick stats -->
+            <div class="grid grid-cols-3 gap-2 mt-4">
+              <div class="bg-white/20 rounded-xl p-2.5 text-center">
+                <p class="text-xl font-black">{{ getEmpCount(selectedDept()!.id) }}</p>
+                <p class="text-[9px] font-bold opacity-80">موظف</p>
+              </div>
+              <div class="bg-white/20 rounded-xl p-2.5 text-center">
+                <p class="text-xl font-black">{{ getJobCount(selectedDept()!.id) }}</p>
+                <p class="text-[9px] font-bold opacity-80">وظيفة</p>
+              </div>
+              <div class="bg-white/20 rounded-xl p-2.5 text-center">
+                <p class="text-xl font-black">{{ selectedDept()!.children.length }}</p>
+                <p class="text-[9px] font-bold opacity-80">أقسام فرعية</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Panel Body -->
+        <div class="flex-1 overflow-y-auto p-5 space-y-5">
+          <!-- Dept Info -->
+          <div class="space-y-3">
+            <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest">معلومات القسم</p>
+            <div class="space-y-2">
+              <div class="flex items-center justify-between p-2.5 rounded-xl bg-slate-50">
+                <span class="text-[10px] font-bold text-slate-500">المدير المسؤول</span>
+                <span class="text-[10px] font-black text-slate-800">{{ selectedDept()!.managerName || 'غير محدد' }}</span>
+              </div>
+              <div class="flex items-center justify-between p-2.5 rounded-xl bg-slate-50">
+                <span class="text-[10px] font-bold text-slate-500">الموقع</span>
+                <span class="text-[10px] font-black text-slate-800">{{ selectedDept()!.location || '—' }}</span>
+              </div>
+              <div class="flex items-center justify-between p-2.5 rounded-xl bg-slate-50">
+                <span class="text-[10px] font-bold text-slate-500">الحالة</span>
+                <span class="text-[10px] font-black px-2 py-0.5 rounded-full"
+                  [style.background]="selectedDept()!.status === 'Active' ? '#D1FAE5' : '#F1F5F9'"
+                  [style.color]="selectedDept()!.status === 'Active' ? '#059669' : '#64748B'">
+                  {{ selectedDept()!.status === 'Active' ? '● نشط' : '○ غير نشط' }}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Employees in this dept -->
+          <div class="space-y-3">
+            <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest">
+              موظفو القسم ({{ selectedDeptEmployees().length }})
+            </p>
+            @if (selectedDeptEmployees().length === 0) {
+              <div class="py-8 text-center">
+                <p class="text-2xl mb-2">👥</p>
+                <p class="text-xs text-slate-400 font-semibold">لا يوجد موظفون مسجلون في هذا القسم</p>
+              </div>
+            }
+            <div class="space-y-2">
+              @for (emp of selectedDeptEmployees(); track emp.id) {
+                <div class="flex items-center gap-3 p-3 rounded-2xl border border-slate-100 bg-white hover:shadow-md transition-all">
+                  <div class="w-9 h-9 rounded-xl flex items-center justify-center text-[11px] font-black text-white flex-shrink-0"
+                    [style.background]="selectedDept()!.color">
+                    {{ getInitials(emp.fullName) }}
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <p class="text-[11px] font-black text-slate-800 truncate">{{ emp.fullName }}</p>
+                    <p class="text-[9px] text-slate-400 font-semibold truncate">{{ emp.jobTitle }}</p>
+                  </div>
+                  <span class="text-[9px] font-extrabold px-2 py-0.5 rounded-full shrink-0"
+                    [class]="emp.status === 'Active' ? 'bg-green-50 text-green-700' :
+                             emp.status === 'On Leave' ? 'bg-amber-50 text-amber-700' :
+                             'bg-slate-100 text-slate-500'">
+                    {{ emp.status }}
+                  </span>
+                </div>
+              }
+            </div>
+          </div>
+
+          <!-- Sub-departments (if any) -->
+          @if (selectedDept()!.children.length > 0) {
+            <div class="space-y-3">
+              <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest">الأقسام الفرعية</p>
+              @for (child of selectedDept()!.children; track child.id) {
+                <div class="flex items-center gap-3 p-3 rounded-2xl border border-slate-100 bg-white">
+                  <span class="text-lg">{{ child.icon }}</span>
+                  <div class="flex-1 min-w-0">
+                    <p class="text-[11px] font-black text-slate-800 truncate">{{ child.name }}</p>
+                    <p class="text-[9px] text-slate-400 font-semibold">{{ child.managerName || 'مدير غير محدد' }}</p>
+                  </div>
+                  <span class="text-[10px] font-black" [style.color]="child.color">{{ getEmpCount(child.id) }}</span>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      </div>
+    }
+
+  </div>
+
+  <!-- ── LEGEND ─────────────────────────────────────────────────── -->
+  <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 no-print">
+    <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3">دليل الألوان</p>
+    <div class="flex flex-wrap gap-3">
+      <div class="flex items-center gap-2 text-[10px] font-semibold text-slate-600">
+        <div class="w-4 h-4 rounded-lg" style="background: linear-gradient(135deg,#009FE3,#005CB9)"></div>
+        الشركة الرئيسية
+      </div>
+      <div class="flex items-center gap-2 text-[10px] font-semibold text-slate-600">
+        <div class="w-4 h-4 rounded-lg" style="background:#7C3AED"></div> الموارد البشرية
+      </div>
+      <div class="flex items-center gap-2 text-[10px] font-semibold text-slate-600">
+        <div class="w-4 h-4 rounded-lg" style="background:#0284C7"></div> الهندسة
+      </div>
+      <div class="flex items-center gap-2 text-[10px] font-semibold text-slate-600">
+        <div class="w-4 h-4 rounded-lg" style="background:#D97706"></div> السلامة (HSE)
+      </div>
+      <div class="flex items-center gap-2 text-[10px] font-semibold text-slate-600">
+        <div class="w-4 h-4 rounded-lg" style="background:#059669"></div> المالية
+      </div>
+      <div class="flex items-center gap-2 text-[10px] font-semibold text-slate-600">
+        <div class="w-4 h-4 rounded-lg" style="background:#DC2626"></div> العمليات
+      </div>
+      <div class="flex items-center gap-2 text-[10px] font-semibold text-slate-600">
+        <div class="w-4 h-4 rounded-lg" style="background:#2563EB"></div> تقنية المعلومات
+      </div>
+      <div class="flex items-center gap-2 text-[10px] font-semibold text-slate-600">
+        <div class="w-4 h-4 rounded-lg" style="background:#0891B2"></div> المشتريات
+      </div>
+    </div>
+  </div>
+
+</div>

@@ -1,12 +1,11 @@
 import { Component, OnInit, signal, computed, inject, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { TranslateModule, TranslateService } from '@ngx-translate/core';
-import { MockDataService } from '../../../core/services/mock-data.service';
+import { TranslateModule } from '@ngx-translate/core';
 import { BreadcrumbService } from '../../../core/services/breadcrumb.service';
 import { NotificationService } from '../../../core/services/notification.service';
 import { AuditService } from '../../../core/services/audit.service';
-import { Vehicle, TripLog } from '../../../shared/interfaces/assets.interface';
+import { OperationsApiService } from '../../../core/services/operations-api.service';
 
 @Component({
   selector: 'app-fleet',
@@ -16,205 +15,217 @@ import { Vehicle, TripLog } from '../../../shared/interfaces/assets.interface';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class FleetComponent implements OnInit {
-  private readonly mockDataService = inject(MockDataService);
+  private readonly opsApi      = inject(OperationsApiService);
   private readonly breadcrumbService = inject(BreadcrumbService);
   private readonly notificationService = inject(NotificationService);
   private readonly auditService = inject(AuditService);
-  private readonly translate = inject(TranslateService);
 
-  // Core signals from central store
-  readonly vehicles = this.mockDataService.vehicles;
-  readonly tripLogs = this.mockDataService.tripLogs;
+  // ── State ──────────────────────────────────────────────────────────────────
+  readonly vehicles  = signal<any[]>([]);
+  readonly tripLogs  = signal<any[]>([]);
+  readonly isLoading = signal(false);
+  readonly isSaving  = signal(false);
 
-  // View States
-  readonly activeTab = signal<'vehicles' | 'logs'>('vehicles');
-  readonly selectedVehicle = signal<Vehicle | null>(null);
-  readonly searchQuery = signal<string>('');
+  readonly activeTab       = signal<'vehicles' | 'logs'>('vehicles');
+  readonly selectedVehicle = signal<any | null>(null);
+  readonly searchQuery     = signal<string>('');
 
-  // Modal States
-  readonly isVehicleModalOpen = signal<boolean>(false);
-  readonly isTripModalOpen = signal<boolean>(false);
+  readonly isVehicleModalOpen  = signal(false);
+  readonly isTripModalOpen     = signal(false);
 
-  // Form states
-  vehicleForm = {
-    plateNumber: '',
-    make: '',
-    model: '',
-    year: 2024,
-    assignedTo: '',
-    fuelType: 'Diesel' as 'Diesel' | 'Petrol',
-    status: 'Available' as 'Available' | 'Assigned' | 'Maintenance' | 'Out Of Service',
-    currentOdometer: 0
-  };
+  // vehicleForm uses old field names so HTML binds correctly
+  vehicleForm: any = this.emptyVehicleForm();
 
-  tripForm = {
-    vehicleId: '',
-    driverName: '',
-    purpose: '',
-    startOdometer: 0,
-    endOdometer: 0,
-    fuelAddedLiters: 0,
-    fuelCost: 0,
-    tripDate: new Date().toISOString().split('T')[0]
-  };
+  // tripForm uses old field names so HTML binds correctly
+  tripForm: any = this.emptyTripForm();
 
-  // Computed properties
+  // ── Computed ───────────────────────────────────────────────────────────────
   readonly filteredVehicles = computed(() => {
     let list = this.vehicles();
-    const query = this.searchQuery().trim().toLowerCase();
-    if (query) {
-      list = list.filter(v =>
-        v.plateNumber.toLowerCase().includes(query) ||
-        v.make.toLowerCase().includes(query) ||
-        v.model.toLowerCase().includes(query) ||
-        v.assignedTo.toLowerCase().includes(query)
-      );
-    }
+    const q  = this.searchQuery().trim().toLowerCase();
+    if (q) list = list.filter((v: any) =>
+      v.plateNumber?.toLowerCase().includes(q) ||
+      v.make?.toLowerCase().includes(q) ||
+      (v.model || v.modelName)?.toLowerCase().includes(q) ||
+      (v.assignedTo || v.assignedDriver)?.toLowerCase().includes(q)
+    );
     return list;
   });
 
   readonly filteredTripLogs = computed(() => {
-    const selected = this.selectedVehicle();
-    if (!selected) return this.tripLogs();
-    return this.tripLogs().filter(log => log.vehicleId === selected.id);
+    const sel = this.selectedVehicle();
+    if (!sel) return this.tripLogs();
+    return this.tripLogs().filter((log: any) => log.vehicleId === (sel._id ?? sel.id));
   });
 
-  readonly totalFuelExpenses = computed(() =>
-    this.tripLogs().reduce((sum, log) => sum + (log.fuelCost || 0), 0)
-  );
-
   readonly totalMilesLogged = computed(() =>
-    this.tripLogs().reduce((sum, log) => sum + (log.endOdometer - log.startOdometer), 0)
+    this.tripLogs().reduce((s: number, log: any) =>
+      s + Math.max(0, (log.endOdometer ?? 0) - (log.startOdometer ?? 0)), 0)
   );
 
+  readonly totalFuelExpenses = computed(() =>
+    this.tripLogs().reduce((s: number, log: any) => s + (log.fuelCost ?? 0), 0)
+  );
+
+  // ── Lifecycle ──────────────────────────────────────────────────────────────
   ngOnInit() {
     this.breadcrumbService.setBreadcrumbs([
       { label: 'navigation.operations', url: '/operations' },
       { label: 'navigation.fleet' }
     ]);
+    this.loadVehicles();
+    this.loadTrips();
   }
 
-  // --- VEHICLE ACTIONS ---
+  loadVehicles() {
+    this.isLoading.set(true);
+    this.opsApi.getVehicles().subscribe({
+      next: (data: any) => {
+        const list = Array.isArray(data) ? data : (data.items ?? []);
+        // Normalize field names so HTML works with both old and new API shapes
+        this.vehicles.set(list.map((v: any) => ({
+          ...v,
+          id:         v._id ?? v.id,
+          model:      v.modelName ?? v.model ?? '',
+          assignedTo: v.assignedDriver ?? v.assignedTo ?? '',
+          fuelType:   v.fuelType ?? 'Diesel',
+          status:     this.normalizeVehicleStatus(v.status)
+        })));
+        this.isLoading.set(false);
+      },
+      error: () => this.isLoading.set(false)
+    });
+  }
+
+  loadTrips(vehicleId?: string) {
+    const params = vehicleId ? { vehicleId } : {};
+    this.opsApi.getTrips(params).subscribe({
+      next: (data: any) => {
+        const list = Array.isArray(data) ? data : (data.items ?? []);
+        this.tripLogs.set(list.map((t: any) => ({ ...t, id: t._id ?? t.id })));
+      },
+      error: () => {}
+    });
+  }
+
+  // ── Selection ──────────────────────────────────────────────────────────────
+  selectVehicle(v: any) {
+    this.selectedVehicle.set(v);
+    this.loadTrips(v._id ?? v.id);
+  }
+
+  closeVehicleDetails() { this.selectedVehicle.set(null); }
+
+  // ── Vehicle Modal ──────────────────────────────────────────────────────────
   openAddVehicle() {
-    this.vehicleForm = {
-      plateNumber: '',
-      make: '',
-      model: '',
-      year: 2024,
-      assignedTo: '',
-      fuelType: 'Diesel',
-      status: 'Available',
-      currentOdometer: 0
-    };
+    this.vehicleForm = this.emptyVehicleForm();
     this.isVehicleModalOpen.set(true);
   }
 
   saveVehicle() {
     if (!this.vehicleForm.plateNumber || !this.vehicleForm.make || !this.vehicleForm.model) {
-      this.notificationService.danger('common.err_validation_title', 'Please complete all required fields.');
+      this.notificationService.danger('Validation', 'Please fill all required fields');
       return;
     }
-
-    const created = this.mockDataService.addVehicle({
-      plateNumber: this.vehicleForm.plateNumber,
-      make: this.vehicleForm.make,
-      model: this.vehicleForm.model,
-      year: this.vehicleForm.year,
-      assignedTo: this.vehicleForm.assignedTo,
-      fuelType: this.vehicleForm.fuelType,
-      status: this.vehicleForm.status,
-      currentOdometer: this.vehicleForm.currentOdometer
-    });
-
-    this.auditService.log({
-      user: 'Admin User',
-      role: 'Super Admin',
-      module: 'Operations',
-      entityName: 'Vehicle',
-      entityId: created.plateNumber,
-      action: 'Create',
-      oldValue: '',
-      newValue: JSON.stringify(created),
-      details: `Registered new Vehicle: ${created.make} ${created.model} (${created.plateNumber})`
-    });
-
-    this.isVehicleModalOpen.set(false);
-    this.notificationService.success('common.success', 'Vehicle registered successfully.');
-  }
-
-  selectVehicle(vehicle: Vehicle) {
-    this.selectedVehicle.set(vehicle);
-    this.tripForm.startOdometer = vehicle.currentOdometer;
-  }
-
-  closeVehicleDetails() {
-    this.selectedVehicle.set(null);
-  }
-
-  // --- TRIP LOG ACTIONS ---
-  openAddTrip() {
-    this.tripForm = {
-      vehicleId: this.selectedVehicle()?.id || '',
-      driverName: this.selectedVehicle()?.assignedTo || '',
-      purpose: '',
-      startOdometer: this.selectedVehicle()?.currentOdometer || 0,
-      endOdometer: (this.selectedVehicle()?.currentOdometer || 0) + 50,
-      fuelAddedLiters: 0,
-      fuelCost: 0,
-      tripDate: new Date().toISOString().split('T')[0]
+    this.isSaving.set(true);
+    const body = {
+      vehicleCode:    `VH-${Date.now()}`,
+      plateNumber:    this.vehicleForm.plateNumber,
+      type:           'Pickup',
+      make:           this.vehicleForm.make,
+      modelName:      this.vehicleForm.model,
+      year:           this.vehicleForm.year,
+      color:          this.vehicleForm.color ?? '',
+      currentOdometer: this.vehicleForm.currentOdometer,
+      assignedDriver: this.vehicleForm.assignedTo,
+      status:         this.vehicleForm.status ?? 'Available'
     };
+    this.opsApi.createVehicle(body as any).subscribe({
+      next: (created: any) => {
+        const normalized = { ...created, id: created._id ?? created.id, model: created.modelName ?? created.model, assignedTo: created.assignedDriver ?? created.assignedTo, fuelType: created.fuelType ?? 'Diesel', status: this.normalizeVehicleStatus(created.status) };
+        this.vehicles.update(list => [normalized, ...list]);
+        this.isVehicleModalOpen.set(false);
+        this.notificationService.success('Created', `${normalized.make} ${normalized.model} (${normalized.plateNumber}) added`);
+        this.isSaving.set(false);
+      },
+      error: (err: any) => {
+        this.notificationService.danger('Error', err?.error?.message || 'Failed to add vehicle');
+        this.isSaving.set(false);
+      }
+    });
+  }
+
+  // ── Trip Modal ─────────────────────────────────────────────────────────────
+  openAddTrip() {
+    this.tripForm = this.emptyTripForm();
+    const sel = this.selectedVehicle();
+    if (sel) {
+      this.tripForm.vehicleId     = sel._id ?? sel.id;
+      this.tripForm.startOdometer = sel.currentOdometer ?? 0;
+    }
     this.isTripModalOpen.set(true);
   }
 
   saveTrip() {
-    if (!this.tripForm.vehicleId || !this.tripForm.driverName || this.tripForm.endOdometer <= this.tripForm.startOdometer) {
-      this.notificationService.danger('common.err_validation_title', 'Please select a vehicle, enter driver, and ensure end odometer is greater than start.');
+    if (!this.tripForm.vehicleId || !this.tripForm.driverName) {
+      this.notificationService.danger('Validation', 'Vehicle and Driver are required');
       return;
     }
-
-    const createdLog = this.mockDataService.addTripLog({
-      vehicleId: this.tripForm.vehicleId,
-      driverName: this.tripForm.driverName,
-      purpose: this.tripForm.purpose,
-      startOdometer: this.tripForm.startOdometer,
-      endOdometer: this.tripForm.endOdometer,
-      fuelAddedLiters: this.tripForm.fuelAddedLiters || undefined,
-      fuelCost: this.tripForm.fuelCost || undefined,
-      tripDate: this.tripForm.tripDate
+    this.isSaving.set(true);
+    const body = {
+      vehicleId:      this.tripForm.vehicleId,
+      driverName:     this.tripForm.driverName,
+      startLocation:  '',
+      endLocation:    '',
+      startOdometer:  this.tripForm.startOdometer,
+      endOdometer:    this.tripForm.endOdometer,
+      purpose:        this.tripForm.purpose,
+      startDate:      this.tripForm.tripDate ?? new Date().toISOString().split('T')[0],
+      fuelAddedLiters: this.tripForm.fuelAddedLiters,
+      fuelCost:        this.tripForm.fuelCost
+    };
+    this.opsApi.createTrip(body).subscribe({
+      next: (created: any) => {
+        const normalized = { ...created, id: created._id ?? created.id };
+        this.tripLogs.update(list => [normalized, ...list]);
+        this.isTripModalOpen.set(false);
+        this.notificationService.success('Trip Logged', 'Trip recorded successfully');
+        this.isSaving.set(false);
+      },
+      error: (err: any) => {
+        this.notificationService.danger('Error', err?.error?.message || 'Failed to log trip');
+        this.isSaving.set(false);
+      }
     });
-
-    // Update vehicle's current odometer
-    const vehicleId = this.tripForm.vehicleId;
-    this.mockDataService.vehicles.update(list =>
-      list.map(v => v.id === vehicleId ? { ...v, currentOdometer: createdLog.endOdometer } : v)
-    );
-
-    // Update locally selected vehicle odometer if matched
-    const sel = this.selectedVehicle();
-    if (sel && sel.id === vehicleId) {
-      this.selectedVehicle.set({
-        ...sel,
-        currentOdometer: createdLog.endOdometer
-      });
-    }
-
-    this.auditService.log({
-      user: createdLog.driverName,
-      role: 'Operations Staff',
-      module: 'Operations',
-      entityName: 'TripLog',
-      entityId: createdLog.id,
-      action: 'Create',
-      oldValue: '',
-      newValue: JSON.stringify(createdLog),
-      details: `Logged trip of ${(createdLog.endOdometer - createdLog.startOdometer)} miles. Odometer updated to ${createdLog.endOdometer}`
-    });
-
-    this.isTripModalOpen.set(false);
-    this.notificationService.success('common.success', 'Trip log recorded successfully.');
   }
 
-  getVehiclePlate(id: string): string {
-    return this.vehicles().find(v => v.id === id)?.plateNumber || id;
+  // ── Helpers ───────────────────────────────────────────────────────────────
+  getVehiclePlate(vehicleId: string): string {
+    return this.vehicles().find((v: any) => (v._id ?? v.id) === vehicleId)?.plateNumber ?? vehicleId;
+  }
+
+  /** Map backend status values to values the HTML template expects */
+  private normalizeVehicleStatus(status: string): string {
+    const map: Record<string, string> = {
+      'In Use':         'Assigned',
+      'Decommissioned': 'Out Of Service'
+    };
+    return map[status] ?? status;
+  }
+
+  private emptyVehicleForm() {
+    return {
+      plateNumber: '', make: '', model: '', year: new Date().getFullYear(),
+      fuelType: 'Diesel', assignedTo: '', currentOdometer: 0, status: 'Available', color: ''
+    };
+  }
+
+  private emptyTripForm() {
+    return {
+      vehicleId: '', driverName: '', purpose: '',
+      startOdometer: 0, endOdometer: 0,
+      fuelAddedLiters: 0, fuelCost: 0,
+      tripDate: new Date().toISOString().split('T')[0]
+    };
   }
 }

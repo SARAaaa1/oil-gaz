@@ -6,9 +6,11 @@ import { FormsModule } from '@angular/forms';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { MockDataService } from '../../../core/services/mock-data.service';
 import { FinanceCoreService } from '../../../core/services/finance-core.service';
+import { FinanceApiService } from '../../../core/services/finance-api.service';
 import { BreadcrumbService } from '../../../core/services/breadcrumb.service';
 import { NotificationService } from '../../../core/services/notification.service';
 import { LanguageService } from '../../../core/services/language.service';
+import { ChartOfAccount, JournalEntry, JournalLine } from '../../../shared/interfaces/finance.interface';
 
 interface VatLine {
   ref: string;
@@ -31,6 +33,7 @@ interface VatLine {
 export class VatReportComponent implements OnInit {
   private readonly mockDataService = inject(MockDataService);
   private readonly financeService = inject(FinanceCoreService);
+  private readonly financeApi = inject(FinanceApiService);
   private readonly breadcrumbService = inject(BreadcrumbService);
   private readonly notificationService = inject(NotificationService);
   readonly langService = inject(LanguageService);
@@ -41,139 +44,125 @@ export class VatReportComponent implements OnInit {
   readonly periodEnd   = signal<string>(new Date().toISOString().split('T')[0]);
   readonly activeTab   = signal<'output' | 'input' | 'summary'>('summary');
 
+  // API-fetched data signals
+  readonly apiOutputLines = signal<any[]>([]);
+  readonly apiInputLines  = signal<any[]>([]);
+  readonly apiSummary     = signal<any>(null);
+  readonly isLoading      = signal(false);
+  readonly isSettling     = signal(false);
+  readonly useApiData     = signal(false);
+
   ngOnInit() {
     this.breadcrumbService.setBreadcrumbs([
       { label: 'navigation.finance', url: '/finance' },
       { label: 'navigation.vat_report' }
     ]);
+    this.loadVatReport();
   }
 
-  // ─── OUTPUT VAT (from AR / Customer Invoices) ────────────────────────
-  readonly outputVatLines = computed<VatLine[]>(() => {
+  loadVatReport() {
+    this.isLoading.set(true);
+    this.financeApi.getVatReport(this.periodStart(), this.periodEnd()).subscribe({
+      next: (res: any) => {
+        const data = res.data ?? res;
+        if (data && (data.outputLines || data.inputLines)) {
+          this.apiOutputLines.set(data.outputLines ?? []);
+          this.apiInputLines.set(data.inputLines ?? []);
+          this.apiSummary.set(data.summary ?? null);
+          this.useApiData.set(true);
+        }
+        this.isLoading.set(false);
+      },
+      error: () => {
+        // Fallback to local computation
+        this.useApiData.set(false);
+        this.isLoading.set(false);
+      }
+    });
+  }
+
+  // ─── OUTPUT VAT (from API or local fallback) ──────────────────────────
+  readonly outputVatLines = computed<any[]>(() => {
+    if (this.useApiData()) return this.apiOutputLines();
+
+    // Local fallback: derive from GL journal entries
     const start = this.periodStart();
     const end   = this.periodEnd();
-    const lines: VatLine[] = [];
+    const lines: any[] = [];
 
-    // From supplier-facing AR (workflow invoices if exists)
-    // We pull from supplierInvoices treated as "sales" — in reality AR invoices
-    // Main source: journal entries with Revenue accounts
-    const postedEntries = this.financeService.journalEntries()
-      .filter(e => e.status === 'Posted' && e.date >= start && e.date <= end);
+    const postedEntries: JournalEntry[] = this.financeService.journalEntries()
+      .filter((e: JournalEntry) => e.status === 'Posted' && e.date >= start && e.date <= end);
 
     for (const entry of postedEntries) {
-      const revenueLines = entry.lines.filter(l => {
-        const acc = this.financeService.accounts().find(a => a.code === l.accountCode);
+      const revenueLines = entry.lines.filter((l: JournalLine) => {
+        const acc = this.financeService.accounts().find((a: ChartOfAccount) => a.code === l.accountCode);
         return acc?.type === 'Revenue' && l.credit > 0;
       });
       if (revenueLines.length > 0) {
-        const netAmount = revenueLines.reduce((s, l) => s + l.credit, 0);
+        const netAmount = revenueLines.reduce((s: number, l: JournalLine) => s + l.credit, 0);
         const vatAmount = +(netAmount * 0.15).toFixed(2);
-        lines.push({
-          ref: entry.journalNumber,
-          date: entry.date,
-          party: entry.reference,
-          description: entry.description,
-          netAmount,
-          vatAmount,
-          vatRate: 15,
-          type: 'output'
-        });
+        lines.push({ ref: entry.journalNumber, date: entry.date, party: entry.reference || '', description: entry.description, netAmount, vatAmount, vatRate: 15, type: 'output' });
       }
     }
-
-    // Also pull from collection vouchers (AR)
-    const collections = this.mockDataService.collectionVouchers();
-    for (const cv of collections) {
-      if (cv.collectionDate >= start && cv.collectionDate <= end && cv.status === 'Posted') {
-        const net = +(cv.amount / 1.15).toFixed(2);
-        const vat = +(cv.amount - net).toFixed(2);
-        lines.push({
-          ref: cv.voucherNumber,
-          date: cv.collectionDate,
-          party: cv.customerName,
-          description: `Collection — ${cv.paymentMethod}`,
-          netAmount: net,
-          vatAmount: vat,
-          vatRate: 15,
-          type: 'output'
-        });
-      }
-    }
-
     return lines.sort((a, b) => b.date.localeCompare(a.date));
   });
 
-  // ─── INPUT VAT (from AP / Supplier Invoices) ─────────────────────────
-  readonly inputVatLines = computed<VatLine[]>(() => {
+  // ─── INPUT VAT (from API or local fallback) ─────────────────────────
+  readonly inputVatLines = computed<any[]>(() => {
+    if (this.useApiData()) return this.apiInputLines();
+
+    // Local fallback: derive from AP supplier invoices
     const start = this.periodStart();
     const end   = this.periodEnd();
-    const lines: VatLine[] = [];
-
+    const lines: any[] = [];
     const invoices = this.mockDataService.supplierInvoices();
     for (const inv of invoices) {
       if (inv.invoiceDate >= start && inv.invoiceDate <= end && inv.status !== 'Cancelled') {
         lines.push({
-          ref: inv.invoiceNumber,
-          date: inv.invoiceDate,
-          party: inv.vendorName,
+          ref: inv.invoiceNumber, date: inv.invoiceDate, party: inv.vendorName,
           description: inv.poNumber ? `PO: ${inv.poNumber}` : 'Supplier Invoice',
-          netAmount: inv.subTotal,
-          vatAmount: inv.taxAmount,
+          netAmount: inv.subTotal, vatAmount: inv.taxAmount,
           vatRate: inv.taxAmount > 0 ? +((inv.taxAmount / inv.subTotal) * 100).toFixed(0) : 15,
           type: 'input'
         });
       }
     }
-
-    // Also from purchase orders (committed tax)
-    const pos = this.mockDataService.purchaseOrders();
-    const invoicedPoIds = new Set(invoices.map(i => i.poId).filter(Boolean));
-    for (const po of pos) {
-      if (!invoicedPoIds.has(po.id) && po.date >= start && po.date <= end
-          && (po.status === 'Issued' || po.status === 'Approved' || po.status === 'Completed')) {
-        if (po.taxAmount > 0) {
-          lines.push({
-            ref: po.poNumber,
-            date: po.date,
-            party: po.vendorName,
-            description: `PO — ${po.paymentTerms}`,
-            netAmount: po.subtotal,
-            vatAmount: po.taxAmount,
-            vatRate: po.taxPercent,
-            type: 'input'
-          });
-        }
-      }
-    }
-
     return lines.sort((a, b) => b.date.localeCompare(a.date));
   });
 
   // ─── SUMMARY COMPUTED ────────────────────────────────────────────────
   readonly totalOutputVat = computed(() =>
-    this.outputVatLines().reduce((s, l) => s + l.vatAmount, 0)
+    this.useApiData() && this.apiSummary()
+      ? this.apiSummary().totalOutputVat
+      : this.outputVatLines().reduce((s: number, l: any) => s + l.vatAmount, 0)
   );
   readonly totalOutputNet = computed(() =>
-    this.outputVatLines().reduce((s, l) => s + l.netAmount, 0)
+    this.useApiData() && this.apiSummary()
+      ? this.apiSummary().totalOutputNet
+      : this.outputVatLines().reduce((s: number, l: any) => s + l.netAmount, 0)
   );
-
   readonly totalInputVat = computed(() =>
-    this.inputVatLines().reduce((s, l) => s + l.vatAmount, 0)
+    this.useApiData() && this.apiSummary()
+      ? this.apiSummary().totalInputVat
+      : this.inputVatLines().reduce((s: number, l: any) => s + l.vatAmount, 0)
   );
   readonly totalInputNet = computed(() =>
-    this.inputVatLines().reduce((s, l) => s + l.netAmount, 0)
+    this.useApiData() && this.apiSummary()
+      ? this.apiSummary().totalInputNet
+      : this.inputVatLines().reduce((s: number, l: any) => s + l.netAmount, 0)
   );
-
   readonly netVatPayable = computed(() =>
-    +(this.totalOutputVat() - this.totalInputVat()).toFixed(2)
+    this.useApiData() && this.apiSummary()
+      ? this.apiSummary().netVatPayable
+      : +(this.totalOutputVat() - this.totalInputVat()).toFixed(2)
   );
-
   readonly effectiveOutputRate = computed(() => {
+    if (this.useApiData() && this.apiSummary()) return this.apiSummary().effectiveOutputRate;
     const net = this.totalOutputNet();
     return net > 0 ? +((this.totalOutputVat() / net) * 100).toFixed(1) : 0;
   });
-
   readonly effectiveInputRate = computed(() => {
+    if (this.useApiData() && this.apiSummary()) return this.apiSummary().effectiveInputRate;
     const net = this.totalInputNet();
     return net > 0 ? +((this.totalInputVat() / net) * 100).toFixed(1) : 0;
   });
@@ -189,75 +178,33 @@ export class VatReportComponent implements OnInit {
       return;
     }
 
-    try {
-      if (net > 0) {
-        // VAT payable: Dr. VAT Receivable/Input → Cr. VAT Payable
-        this.financeService.postJournalEntry({
-          date: this.periodEnd(),
-          reference: `VAT-${this.periodEnd().slice(0, 7)}`,
-          description: `VAT Settlement — ${this.periodStart()} to ${this.periodEnd()}`,
-          lines: [
-            {
-              id: `vl_${Date.now()}_1`,
-              accountCode: '214000',
-              accountName: 'VAT Payable',
-              debit: 0,
-              credit: net,
-              description: `Net VAT Payable for period ${this.periodStart()} — ${this.periodEnd()}`
-            },
-            {
-              id: `vl_${Date.now()}_2`,
-              accountCode: '521000',
-              accountName: 'General & Administrative Costs',
-              debit: net,
-              credit: 0,
-              description: 'VAT Settlement Adjustment'
-            }
-          ]
-        });
-      } else {
-        // VAT refundable: Dr. VAT Receivable
-        const abs = Math.abs(net);
-        this.financeService.postJournalEntry({
-          date: this.periodEnd(),
-          reference: `VAT-REFUND-${this.periodEnd().slice(0, 7)}`,
-          description: `VAT Refund Receivable — ${this.periodStart()} to ${this.periodEnd()}`,
-          lines: [
-            {
-              id: `vl_${Date.now()}_1`,
-              accountCode: '121000',
-              accountName: 'Accounts Receivable (A/R)',
-              debit: abs,
-              credit: 0,
-              description: 'VAT Refund Receivable'
-            },
-            {
-              id: `vl_${Date.now()}_2`,
-              accountCode: '214000',
-              accountName: 'VAT Payable',
-              debit: 0,
-              credit: abs,
-              description: 'VAT Refundable from Authority'
-            }
-          ]
-        });
+    this.isSettling.set(true);
+    this.financeApi.postVatSettlement({
+      periodStart: this.periodStart(),
+      periodEnd: this.periodEnd()
+    }).subscribe({
+      next: (res: any) => {
+        this.isSettling.set(false);
+        const d = res.data ?? res;
+        this.notificationService.success(
+          this.translate.instant('finance.vat.posted_title'),
+          this.translate.instant('finance.vat.posted_desc', {
+            amount: Math.abs(d.netVatPayable ?? net).toFixed(2),
+            type: (d.type === 'payable' || net > 0)
+              ? this.translate.instant('finance.vat.payable')
+              : this.translate.instant('finance.vat.refundable')
+          })
+        );
+        this.loadVatReport();
+      },
+      error: (err: any) => {
+        this.isSettling.set(false);
+        this.notificationService.danger(
+          this.translate.instant('common.error'),
+          err?.error?.message || 'Failed to post VAT settlement'
+        );
       }
-
-      this.notificationService.success(
-        this.translate.instant('finance.vat.posted_title'),
-        this.translate.instant('finance.vat.posted_desc', {
-          amount: Math.abs(net).toFixed(2),
-          type: net > 0
-            ? this.translate.instant('finance.vat.payable')
-            : this.translate.instant('finance.vat.refundable')
-        })
-      );
-    } catch (e: any) {
-      this.notificationService.danger(
-        this.translate.instant('common.error'),
-        e.message
-      );
-    }
+    });
   }
 
   printReport() {

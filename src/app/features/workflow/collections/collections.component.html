@@ -174,7 +174,7 @@
               <span class="text-slate-700 font-bold">{{ col.totalCollected | currency:col.currency }} / {{ col.invoiceAmount | currency:col.currency }}</span>
             </div>
             <div class="w-full bg-slate-200 rounded-full h-2 flex overflow-hidden">
-              <div class="bg-success h-full transition-all duration-550" [style.width.%]="(col.totalCollected/col.invoiceAmount)*100"></div>
+              <div class="bg-success h-full transition-all duration-550" [style.width.%]="col.invoiceAmount ? (col.totalCollected / col.invoiceAmount) * 100 : 0"></div>
             </div>
             <div class="pt-2.5 border-t border-slate-200 flex justify-between items-center text-slate-900 font-bold">
               <span class="text-[9px] text-slate-400 uppercase font-bold tracking-wider">{{ 'workflow.collections.balance_due' | translate }}</span>
@@ -202,10 +202,10 @@
           <div>
             <h3 class="text-xs font-black text-slate-750 uppercase tracking-wider mb-2.5 flex items-center justify-between">
               <span>{{ 'workflow.collections.receipts_ledger' | translate }}</span>
-              <span class="px-1.5 py-0.5 bg-slate-100 text-slate-600 rounded text-[9px] font-bold">{{ col.payments.length }} {{ 'workflow.collections.received_label' | translate }}</span>
+              <span class="px-1.5 py-0.5 bg-slate-100 text-slate-600 rounded text-[9px] font-bold">{{ col.payments?.length || 0 }} {{ 'workflow.collections.received_label' | translate }}</span>
             </h3>
             <div class="space-y-2 max-h-40 overflow-y-auto pr-1">
-              @for (p of col.payments; track p.id) {
+              @for (p of col.payments || []; track p.reference || p) {
                 <div class="p-2.5 bg-slate-50 rounded border border-slate-150 text-[11px] font-bold text-slate-700 space-y-1">
                   <div class="flex justify-between items-center">
                     <span class="text-slate-800">{{ 'workflow.collections.wire_ref' | translate }}: {{ p.reference }}</span>

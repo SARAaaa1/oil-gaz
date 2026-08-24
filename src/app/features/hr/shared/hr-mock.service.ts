@@ -281,7 +281,7 @@ export class HrMockService {
     }
   ]);
 
-  readonly candidates = signal<Candidate[]>([
+  private readonly DEFAULT_CANDIDATES: Candidate[] = [
     {
       id: 'cand1',
       fullName: 'Yousef Al-Harbi',
@@ -369,7 +369,18 @@ export class HrMockService {
         { date: '2026-07-02', action: 'Application Created', user: 'System Website' }
       ]
     }
-  ]);
+  ];
+
+  private loadSavedCandidates(): Candidate[] {
+    try {
+      const saved = localStorage.getItem('petroflow_candidates');
+      return saved ? JSON.parse(saved) : this.DEFAULT_CANDIDATES;
+    } catch {
+      return this.DEFAULT_CANDIDATES;
+    }
+  }
+
+  readonly candidates = signal<Candidate[]>(this.loadSavedCandidates());
 
   readonly interviews = signal<Interview[]>([
     {
@@ -521,6 +532,14 @@ export class HrMockService {
 
   // --- Business Logic Methods (Zero Backend, Signal State Mutations) ---
 
+  private saveCandidates(list: Candidate[]) {
+    try {
+      localStorage.setItem('petroflow_candidates', JSON.stringify(list));
+    } catch (e) {
+      console.error('Failed to save candidates to localStorage', e);
+    }
+  }
+
   submitApplication(candidateData: Partial<Candidate>): boolean {
     const email = candidateData.email;
     const position = candidateData.position;
@@ -552,38 +571,46 @@ export class HrMockService {
       availability: candidateData.availability || 'Immediate',
       timeline: [{ date: new Date().toISOString().split('T')[0], action: 'Application Created', user: 'System Website' }],
       notes: [],
-      attachments: []
+      attachments: candidateData.attachments || []
     };
 
-    this.candidates.update(list => [...list, newCand]);
+    this.candidates.update(list => {
+      const next = [...list, newCand];
+      this.saveCandidates(next);
+      return next;
+    });
     this.notify.success('hr.common.msg_app_submitted', 'Application submitted successfully.');
     this.audit.log('Create', 'HR', 'Candidate', newId, 'Draft', 'New', 'Job Application registered');
     return true;
   }
 
   moveToCandidates(candidateId: string) {
-    this.candidates.update(list => 
-      list.map(c => {
+    this.candidates.update(list => {
+      const next: Candidate[] = list.map(c => {
         if (c.id === candidateId) {
           const updatedTimeline = [...(c.timeline || []), { date: new Date().toISOString().split('T')[0], action: 'Candidate Reviewed', user: 'Layla Al-Otaibi' }];
-          return { ...c, status: 'Under Review', timeline: updatedTimeline };
+          return { ...c, status: 'Under Review' as Candidate['status'], timeline: updatedTimeline };
         }
         return c;
-      })
-    );
+      });
+      this.saveCandidates(next);
+      return next;
+    });
     this.notify.info('hr.common.msg_moved_to_candidates', 'Moved candidate to Under Review status.');
   }
 
   rejectCandidate(candidateId: string) {
-    this.candidates.update(list => 
-      list.map(c => {
+    this.candidates.update(list => {
+      const next: Candidate[] = list.map(c => {
         if (c.id === candidateId) {
           const updatedTimeline = [...(c.timeline || []), { date: new Date().toISOString().split('T')[0], action: 'Candidate Rejected', user: 'Layla Al-Otaibi' }];
-          return { ...c, status: 'Rejected', timeline: updatedTimeline };
+          return { ...c, status: 'Rejected' as Candidate['status'], timeline: updatedTimeline };
         }
         return c;
-      })
-    );
+      });
+      this.saveCandidates(next);
+      return next;
+    });
     this.notify.warning('hr.common.msg_candidate_rejected', 'Candidate status updated to Rejected.');
   }
 

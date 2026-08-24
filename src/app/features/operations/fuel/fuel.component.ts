@@ -2,10 +2,14 @@ import { Component, OnInit, signal, computed, inject, ChangeDetectionStrategy } 
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TranslateModule } from '@ngx-translate/core';
-import { MockDataService } from '../../../core/services/mock-data.service';
 import { BreadcrumbService } from '../../../core/services/breadcrumb.service';
 import { NotificationService } from '../../../core/services/notification.service';
-import { FuelTank, FuelReceipt, FuelIssue } from '../../../shared/interfaces/fuel.interface';
+import {
+  OperationsApiService,
+  FuelTank,
+  FuelReceiptBody,
+  FuelIssueBody
+} from '../../../core/services/operations-api.service';
 
 @Component({
   selector: 'app-fuel',
@@ -15,113 +19,134 @@ import { FuelTank, FuelReceipt, FuelIssue } from '../../../shared/interfaces/fue
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class FuelComponent implements OnInit {
-  readonly mockDataService = inject(MockDataService);
+  private readonly opsApi      = inject(OperationsApiService);
   private readonly breadcrumbService = inject(BreadcrumbService);
   private readonly notificationService = inject(NotificationService);
 
-  readonly fuelTanks = this.mockDataService.fuelTanks;
-  readonly fuelReceipts = this.mockDataService.fuelReceipts;
-  readonly fuelIssues = this.mockDataService.fuelIssues;
-  readonly vehicles = this.mockDataService.vehicles;
-  readonly equipment = this.mockDataService.equipment;
-  readonly rigs = this.mockDataService.rigs;
-  readonly camps = this.mockDataService.camps;
+  // ── State ──────────────────────────────────────────────────────────────────
+  readonly fuelTanks    = signal<FuelTank[]>([]);
+  readonly fuelReceipts = signal<any[]>([]);
+  readonly fuelIssues   = signal<any[]>([]);
+  readonly vehicles     = signal<any[]>([]);
+  readonly rigs         = signal<any[]>([]);
+  readonly isLoading    = signal(false);
+  readonly isSaving     = signal(false);
 
-  readonly activeTab = signal<'dashboard' | 'tanks' | 'receipts' | 'issues' | 'consumption'>('dashboard');
+  readonly activeTab        = signal<'dashboard' | 'tanks' | 'receipts' | 'issues' | 'consumption'>('dashboard');
   readonly showReceiptModal = signal(false);
-  readonly showIssueModal = signal(false);
+  readonly showIssueModal   = signal(false);
 
-  receiptForm = {
-    tankId: '', quantityLiters: 0, unitCost: 0.85,
-    supplierName: '', deliveryDate: new Date().toISOString().split('T')[0],
-    receivedBy: 'Jim Halpert', invoiceNumber: ''
-  };
+  receiptForm: FuelReceiptBody = this.emptyReceipt();
+  issueForm: FuelIssueBody & { issuedToName: string } = this.emptyIssue();
 
-  issueForm = {
-    tankId: '', quantityLiters: 0,
-    issuedTo: 'Vehicle' as 'Vehicle' | 'Generator' | 'Rig' | 'Camp',
-    issuedToId: '', issuedToName: '',
-    costCenterCode: 'CC-OPS-001',
-    issueDate: new Date().toISOString().split('T')[0],
-    issuedBy: 'Jim Halpert', odometerReading: 0, runningHours: 0
-  };
-
+  // ── Computed ───────────────────────────────────────────────────────────────
   readonly kpis = computed(() => {
-    const tanks = this.fuelTanks();
+    const tanks    = this.fuelTanks();
     const receipts = this.fuelReceipts();
-    const issues = this.fuelIssues();
-    const totalFuelStockLiters = tanks.reduce((s, t) => s + t.currentLevelLiters, 0);
-    const totalReceiptsThisMonth = receipts.filter(r => r.deliveryDate >= '2026-06-01').reduce((s, r) => s + r.totalCost, 0);
-    const totalIssuesThisMonth = issues.filter(i => i.issueDate >= '2026-06-01').reduce((s, i) => s + i.quantityLiters, 0);
-    const totalFuelCost = issues.filter(i => i.status === 'Posted').reduce((s, i) => s + i.totalCost, 0);
-    return { totalFuelStockLiters, totalReceiptsThisMonth, totalIssuesThisMonth, totalFuelCost };
+    const issues   = this.fuelIssues();
+    const today    = new Date().toISOString().slice(0, 7); // YYYY-MM
+    return {
+      totalFuelStockLiters:   tanks.reduce((s, t) => s + t.currentLevelLiters, 0),
+      totalReceiptsThisMonth: receipts.filter(r => r.deliveryDate?.startsWith(today))
+                                      .reduce((s, r) => s + (r.totalCost ?? 0), 0),
+      totalIssuesThisMonth:   issues.filter(i => i.issueDate?.startsWith(today))
+                                    .reduce((s, i) => s + (i.quantityLiters ?? 0), 0),
+      totalFuelCost:          issues.reduce((s, i) => s + (i.totalCost ?? 0), 0)
+    };
   });
 
   readonly issuesToList = computed(() => {
     switch (this.issueForm.issuedTo) {
-      case 'Vehicle': return this.vehicles().map(v => ({ id: v.id, name: `${v.make} ${v.model} (${v.plateNumber})` }));
-      case 'Generator': return this.equipment().filter((e: any) => (e.category || '').toLowerCase().includes('gen')).map((e: any) => ({ id: e.id, name: e.equipmentName }));
-      case 'Rig': return this.rigs().map(r => ({ id: r.id, name: r.rigName }));
-      case 'Camp': return this.camps().map(c => ({ id: c.id, name: c.campName }));
-      default: return [];
+      case 'Vehicle':   return this.vehicles().map(v => ({ id: v._id, name: `${v.make} ${v.modelName} (${v.plateNumber})` }));
+      case 'Generator': return this.rigs().filter(e => e.category === 'Generator').map(e => ({ id: e._id, name: e.equipmentName }));
+      case 'Rig':       return this.rigs().filter(e => e.category === 'Rig').map(e => ({ id: e._id, name: e.equipmentName }));
+      case 'Camp':      return []; // loaded separately if needed
+      default:          return [];
     }
   });
 
+  // ── Lifecycle ──────────────────────────────────────────────────────────────
   ngOnInit() {
     this.breadcrumbService.setBreadcrumbs([
       { label: 'navigation.operations', url: '/operations' },
       { label: 'navigation.fuel' }
     ]);
+    this.loadTanks();
+    this.loadReceipts();
+    this.loadIssues();
+    this.loadVehicles();
+    this.loadRigs();
   }
 
+  loadTanks() {
+    this.isLoading.set(true);
+    this.opsApi.getTanks().subscribe({
+      next: (data: any) => {
+        const list = Array.isArray(data) ? data : (data.items ?? []);
+        this.fuelTanks.set(list.map((t: any) => ({ ...t, id: t._id ?? t.id, tankName: t.tankName ?? t.name ?? t.tankCode })));
+        this.isLoading.set(false);
+      },
+      error: () => this.isLoading.set(false)
+    });
+  }
+
+  loadReceipts()  { this.opsApi.getFuelReceipts().subscribe({ next: (d: any) => this.fuelReceipts.set(Array.isArray(d) ? d : d.items ?? []), error: () => {} }); }
+  loadIssues()    { this.opsApi.getFuelIssues().subscribe({   next: (d: any) => this.fuelIssues.set(Array.isArray(d)   ? d : d.items ?? []), error: () => {} }); }
+  loadVehicles()  { this.opsApi.getVehicles().subscribe({     next: (d: any) => this.vehicles.set(Array.isArray(d)     ? d : d.items ?? []), error: () => {} }); }
+  loadRigs()      {
+    this.opsApi.getRigs().subscribe({
+      next: (d: any) => this.rigs.set((Array.isArray(d) ? d : d.items ?? []).map((r: any) => ({ ...r, id: r._id ?? r.id, tankName: r.tankName ?? r.name }))),
+      error: () => {}
+    });
+  }
+
+  // ── Helpers ────────────────────────────────────────────────────────────────
   getTankFillPercent(tank: FuelTank): number {
     if (!tank || tank.capacityLiters === 0) return 0;
     return Math.round((tank.currentLevelLiters / tank.capacityLiters) * 100);
   }
 
   getTotalIssuedByType(type: string): number {
-    return this.fuelIssues().filter(i => i.issuedTo === type && i.status === 'Posted').reduce((s, i) => s + i.quantityLiters, 0);
+    return this.fuelIssues().filter(i => i.issuedTo === type).reduce((s, i) => s + (i.quantityLiters ?? 0), 0);
   }
 
+  // ── Receipt ────────────────────────────────────────────────────────────────
   openAddReceipt() {
-    const tanks = this.fuelTanks();
-    this.receiptForm = {
-      tankId: tanks[0]?.id || '', quantityLiters: 0, unitCost: 0.85,
-      supplierName: '', deliveryDate: new Date().toISOString().split('T')[0],
-      receivedBy: 'Jim Halpert', invoiceNumber: ''
-    };
+    this.receiptForm = this.emptyReceipt();
+    if (this.fuelTanks().length > 0) this.receiptForm.tankId = this.fuelTanks()[0]._id;
     this.showReceiptModal.set(true);
   }
 
   saveReceipt() {
-    if (!this.receiptForm.tankId || this.receiptForm.quantityLiters <= 0 || !this.receiptForm.supplierName) {
-      this.notificationService.danger('common.validation_error', 'common.fill_required_fields');
+    if (!this.receiptForm.tankId || !this.receiptForm.quantityLiters || !this.receiptForm.supplierName) {
+      this.notificationService.danger('Validation', 'Please fill all required fields');
       return;
     }
-    const tank = this.fuelTanks().find(t => t.id === this.receiptForm.tankId);
-    if (!tank) return;
-    const totalCost = this.receiptForm.quantityLiters * this.receiptForm.unitCost;
-    const created = this.mockDataService.addFuelReceipt({
-      tankId: this.receiptForm.tankId, tankName: tank.tankName, fuelType: tank.fuelType,
-      quantityLiters: this.receiptForm.quantityLiters, unitCost: this.receiptForm.unitCost,
-      totalCost, supplierName: this.receiptForm.supplierName,
-      deliveryDate: this.receiptForm.deliveryDate, receivedBy: this.receiptForm.receivedBy,
-      invoiceNumber: this.receiptForm.invoiceNumber || undefined
+    this.isSaving.set(true);
+    this.opsApi.addFuelReceipt(this.receiptForm).subscribe({
+      next: (created) => {
+        this.fuelReceipts.update(list => [created, ...list]);
+        // Update tank level locally
+        this.fuelTanks.update(list => list.map(t =>
+          t._id === this.receiptForm.tankId
+            ? { ...t, currentLevelLiters: t.currentLevelLiters + (this.receiptForm.quantityLiters ?? 0) }
+            : t
+        ));
+        this.showReceiptModal.set(false);
+        this.notificationService.success('Receipt Created', `${this.receiptForm.quantityLiters}L received from ${this.receiptForm.supplierName}`);
+        this.isSaving.set(false);
+      },
+      error: (err) => {
+        this.notificationService.danger('Error', err?.error?.message || 'Failed to add receipt');
+        this.isSaving.set(false);
+      }
     });
-    this.mockDataService.postFuelReceipt(created.id);
-    this.showReceiptModal.set(false);
-    this.notificationService.success('fuel.receipt_created_title', 'fuel.receipt_created_desc');
   }
 
+  // ── Issue ──────────────────────────────────────────────────────────────────
   openAddIssue() {
-    const tanks = this.fuelTanks();
-    this.issueForm = {
-      tankId: tanks[0]?.id || '', quantityLiters: 0,
-      issuedTo: 'Vehicle', issuedToId: this.vehicles()[0]?.id || '', issuedToName: '',
-      costCenterCode: 'CC-OPS-001',
-      issueDate: new Date().toISOString().split('T')[0],
-      issuedBy: 'Jim Halpert', odometerReading: 0, runningHours: 0
-    };
+    this.issueForm = this.emptyIssue();
+    if (this.fuelTanks().length > 0) this.issueForm.tankId = this.fuelTanks()[0]._id;
     this.showIssueModal.set(true);
   }
 
@@ -129,33 +154,67 @@ export class FuelComponent implements OnInit {
 
   onIssueToIdChange() {
     const sel = this.issuesToList().find(i => i.id === this.issueForm.issuedToId);
-    this.issueForm.issuedToName = sel?.name || '';
+    this.issueForm.issuedToName = sel?.name ?? '';
   }
 
   saveIssue() {
-    if (!this.issueForm.tankId || this.issueForm.quantityLiters <= 0 || !this.issueForm.issuedToId) {
-      this.notificationService.danger('common.validation_error', 'common.fill_required_fields');
+    if (!this.issueForm.tankId || !this.issueForm.quantityLiters || !this.issueForm.issuedToId) {
+      this.notificationService.danger('Validation', 'Please fill all required fields');
       return;
     }
-    const tank = this.fuelTanks().find(t => t.id === this.issueForm.tankId);
-    if (!tank) return;
-    if (tank.currentLevelLiters < this.issueForm.quantityLiters) {
-      this.notificationService.danger('fuel.insufficient_fuel_title', 'fuel.insufficient_fuel_desc');
+    const tank = this.fuelTanks().find(t => t._id === this.issueForm.tankId);
+    if (tank && tank.currentLevelLiters < (this.issueForm.quantityLiters ?? 0)) {
+      this.notificationService.danger('Insufficient Fuel', `Available: ${tank.currentLevelLiters}L — Requested: ${this.issueForm.quantityLiters}L`);
       return;
     }
-    const unitCost = this.fuelReceipts().filter(r => r.tankId === this.issueForm.tankId && r.status === 'Posted').slice(-1)[0]?.unitCost ?? 0.85;
-    const totalCost = this.issueForm.quantityLiters * unitCost;
-    const created = this.mockDataService.addFuelIssue({
-      tankId: this.issueForm.tankId, tankName: tank.tankName, fuelType: tank.fuelType,
-      quantityLiters: this.issueForm.quantityLiters, unitCost, totalCost,
-      issuedTo: this.issueForm.issuedTo, issuedToId: this.issueForm.issuedToId,
-      issuedToName: this.issueForm.issuedToName, costCenterCode: this.issueForm.costCenterCode,
-      issueDate: this.issueForm.issueDate, issuedBy: this.issueForm.issuedBy,
-      odometerReading: this.issueForm.odometerReading || undefined,
-      runningHours: this.issueForm.runningHours || undefined
+
+    this.isSaving.set(true);
+    const body: FuelIssueBody = {
+      tankId:          this.issueForm.tankId,
+      quantityLiters:  this.issueForm.quantityLiters,
+      issuedTo:        this.issueForm.issuedTo,
+      issuedToId:      this.issueForm.issuedToId,
+      issuedToName:    this.issueForm.issuedToName,
+      costCenterCode:  this.issueForm.costCenterCode,
+      issueDate:       this.issueForm.issueDate,
+      issuedBy:        this.issueForm.issuedBy,
+      runningHours:    this.issueForm.runningHours
+    };
+
+    this.opsApi.addFuelIssue(body).subscribe({
+      next: (created) => {
+        this.fuelIssues.update(list => [created, ...list]);
+        this.fuelTanks.update(list => list.map(t =>
+          t._id === body.tankId
+            ? { ...t, currentLevelLiters: t.currentLevelLiters - (body.quantityLiters ?? 0) }
+            : t
+        ));
+        this.showIssueModal.set(false);
+        this.notificationService.success('Fuel Issued', `${body.quantityLiters}L issued to ${body.issuedToName}`);
+        this.isSaving.set(false);
+      },
+      error: (err) => {
+        this.notificationService.danger('Error', err?.error?.message || 'Failed to issue fuel');
+        this.isSaving.set(false);
+      }
     });
-    this.mockDataService.postFuelIssue(created.id);
-    this.showIssueModal.set(false);
-    this.notificationService.success('fuel.issue_created_title', 'fuel.issue_created_desc');
+  }
+
+  // ── Helpers ───────────────────────────────────────────────────────────────
+  private emptyReceipt(): FuelReceiptBody {
+    return {
+      tankId: '', quantityLiters: 0, unitCost: 0.85,
+      supplierName: '', deliveryDate: new Date().toISOString().split('T')[0],
+      receivedBy: '', invoiceNumber: ''
+    };
+  }
+
+  private emptyIssue(): FuelIssueBody & { issuedToName: string } {
+    return {
+      tankId: '', quantityLiters: 0,
+      issuedTo: 'Vehicle', issuedToId: '', issuedToName: '',
+      costCenterCode: '', issueDate: new Date().toISOString().split('T')[0],
+      issuedBy: '', runningHours: 0
+    };
   }
 }

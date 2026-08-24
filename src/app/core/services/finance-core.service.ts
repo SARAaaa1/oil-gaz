@@ -2,6 +2,7 @@ import { Injectable, signal, computed, inject, Injector } from '@angular/core';
 import { ChartOfAccount, JournalEntry, JournalLine, AccountType, JournalStatus } from '../../shared/interfaces/finance.interface';
 import { AuditService } from './audit.service';
 import { AuthService } from './auth.service';
+import { FinanceApiService } from './finance-api.service';
 
 const ACCOUNTS_KEY = 'petroflow_finance_accounts';
 const ENTRIES_KEY = 'petroflow_finance_journal_entries';
@@ -12,10 +13,12 @@ const ENTRIES_KEY = 'petroflow_finance_journal_entries';
 export class FinanceCoreService {
   private readonly injector = inject(Injector);
   private readonly authService = inject(AuthService);
+  private readonly financeApi = inject(FinanceApiService);
 
   // --- Core State Signals ---
   readonly accounts = signal<ChartOfAccount[]>([]);
   readonly journalEntries = signal<JournalEntry[]>([]);
+  readonly isLoading = signal(false);
 
   // --- Dynamic balance computation ---
   readonly accountsWithBalances = computed(() => {
@@ -28,9 +31,9 @@ export class FinanceCoreService {
         
         // Sum entries for exact account code
         for (const entry of postedEntries) {
-          for (const line of entry.lines) {
+          for (const line of (entry.lines || [])) {
             if (line.accountCode === code) {
-              sum += (line.debit - line.credit);
+              sum += ((line.debit || 0) - (line.credit || 0));
             }
           }
         }
@@ -55,7 +58,7 @@ export class FinanceCoreService {
 
       return {
         ...acc,
-        balance: finalBalance
+        balance: acc.balance || finalBalance
       };
     });
   });
@@ -69,6 +72,7 @@ export class FinanceCoreService {
   }
 
   private loadState() {
+    this.fetchFromBackend();
     const cachedAccounts = localStorage.getItem(ACCOUNTS_KEY);
     const cachedEntries = localStorage.getItem(ENTRIES_KEY);
 
@@ -78,6 +82,48 @@ export class FinanceCoreService {
     } else {
       this.initializeMockData();
     }
+  }
+
+  fetchFromBackend() {
+    this.isLoading.set(true);
+    this.financeApi.getCoa().subscribe({
+      next: (res: any) => {
+        const raw = Array.isArray(res) ? res : res.data ?? [];
+        if (raw.length > 0) {
+          const mapped = raw.map((a: any) => ({
+            ...a,
+            id: a._id ?? a.id ?? a.code,
+            parentCode: a.parentCode ?? null,
+            isActive: a.isActive ?? true,
+            isReconciliation: a.isReconciliation ?? false,
+            costCenterCode: a.costCenterCode ?? null,
+            balance: a.balance ?? 0
+          }));
+          this.accounts.set(mapped);
+        }
+        this.isLoading.set(false);
+      },
+      error: () => this.isLoading.set(false)
+    });
+
+    this.financeApi.getJournalEntries({ limit: 100 }).subscribe({
+      next: (res) => {
+        if (res.data && res.data.length > 0) {
+          const mapped = res.data.map((e: any) => ({
+            ...e,
+            id: e._id ?? e.id ?? e.journalNumber,
+            status: e.status ?? 'Posted',
+            lines: (e.lines || []).map((l: any) => ({
+              ...l,
+              debit: l.type === 'Debit' ? l.amount : (l.debit ?? 0),
+              credit: l.type === 'Credit' ? l.amount : (l.credit ?? 0)
+            }))
+          }));
+          this.journalEntries.set(mapped);
+        }
+      },
+      error: () => {}
+    });
   }
 
   private saveState() {
@@ -101,6 +147,23 @@ export class FinanceCoreService {
 
     this.accounts.update(list => [...list, newAcc]);
     this.saveState();
+
+    this.financeApi.createCoa({
+      code: account.code,
+      name: account.name,
+      type: account.type as any,
+      parentCode: account.parentCode ?? null,
+      description: account.description ?? null,
+      isActive: account.isActive ?? true,
+      isReconciliation: account.isReconciliation ?? false,
+      costCenterCode: account.costCenterCode ?? null
+    }).subscribe({
+      next: (created: any) => {
+        const normalized = { ...created, id: created._id ?? created.id ?? created.code };
+        this.accounts.update(list => list.map(a => a.code === created.code ? normalized : a));
+      },
+      error: () => {}
+    });
 
     const user = this.authService.currentUser();
     this.auditService.log({
@@ -126,6 +189,14 @@ export class FinanceCoreService {
       list.map(a => a.code === code ? { ...a, ...updated } : a)
     );
     this.saveState();
+
+    if (old._id || old.id) {
+      this.financeApi.updateCoa(old._id || old.id!, {
+        name: updated.name,
+        description: updated.description,
+        isActive: updated.isActive
+      }).subscribe({ error: () => {} });
+    }
 
     const user = this.authService.currentUser();
     this.auditService.log({
@@ -159,6 +230,10 @@ export class FinanceCoreService {
 
     this.accounts.update(list => list.filter(a => a.code !== code));
     this.saveState();
+
+    if (old._id || old.id) {
+      this.financeApi.deleteCoa(old._id || old.id!).subscribe({ error: () => {} });
+    }
 
     const user = this.authService.currentUser();
     this.auditService.log({
@@ -211,6 +286,26 @@ export class FinanceCoreService {
     this.journalEntries.update(list => [newEntry, ...list]);
     this.saveState();
 
+    this.financeApi.createJournalEntry({
+      date: (entry as any).entryDate || new Date().toISOString().split('T')[0],
+      reference: entry.reference,
+      description: entry.description,
+      lines: entry.lines.map(l => ({
+        accountCode: l.accountCode,
+        accountName: l.accountName,
+        debit: l.debit || 0,
+        credit: l.credit || 0,
+        description: l.notes,
+        costCenterCode: l.costCenterCode
+      }))
+    }).subscribe({
+      next: (created: any) => {
+        const normalized = { ...created, id: created._id ?? created.id ?? created.journalNumber };
+        this.journalEntries.update(list => list.map(e => e.journalNumber === created.journalNumber ? normalized : e));
+      },
+      error: () => {}
+    });
+
     this.auditService.log({
       user: user?.fullName || 'System',
       role: user?.role || 'Super Admin',
@@ -227,7 +322,7 @@ export class FinanceCoreService {
   }
 
   voidJournalEntry(id: string) {
-    const entry = this.journalEntries().find(e => e.id === id);
+    const entry = this.journalEntries().find(e => e.id === id || (e as any)._id === id);
     if (!entry) return;
 
     if (entry.status === 'Voided') {
@@ -235,9 +330,38 @@ export class FinanceCoreService {
     }
 
     this.journalEntries.update(list =>
-      list.map(e => e.id === id ? { ...e, status: 'Voided' as const } : e)
+      list.map(e => (e.id === id || (e as any)._id === id) ? { ...e, status: 'Voided' as const } : e)
     );
     this.saveState();
+
+    if ((entry as any)._id || entry.id) {
+      this.financeApi.voidJournalEntry((entry as any)._id || entry.id!).subscribe({
+        next: (res) => {
+          if (res.data) {
+            const raw = res.data;
+            const normalized: JournalEntry = {
+              id: raw._id ?? raw.id ?? raw.journalNumber,
+              journalNumber: raw.journalNumber,
+              date: raw.date,
+              reference: raw.reference,
+              description: raw.description,
+              status: raw.status as any,
+              lines: (raw.lines || []).map((l: any) => ({
+                accountCode: l.accountCode,
+                accountName: l.accountName,
+                debit: l.type === 'Debit' ? l.amount : (l.debit ?? 0),
+                credit: l.type === 'Credit' ? l.amount : (l.credit ?? 0),
+                description: l.notes || l.description
+              })),
+              totalDebit: raw.totalDebit,
+              totalCredit: raw.totalCredit
+            };
+            this.journalEntries.update(list => list.map(e => (e.id === normalized.id || (e as any)._id === raw._id) ? normalized : e));
+          }
+        },
+        error: () => {}
+      });
+    }
 
     const user = this.authService.currentUser();
     this.auditService.log({
@@ -298,11 +422,11 @@ export class FinanceCoreService {
       lines[0].debit = params.subTotal;
       lines.push({
         id: `apl_${Date.now()}_3`,
-        accountCode: '214000',
-        accountName: 'VAT Payable',
-        debit: 0,
-        credit: params.taxAmount,
-        description: `VAT 15% on Invoice ${params.invoiceNumber}`
+        accountCode: '215000',
+        accountName: 'VAT Receivable',
+        debit: params.taxAmount,
+        credit: 0,
+        description: `VAT 15% Input on Invoice ${params.invoiceNumber}`
       });
       // Adjust AP credit to total
       lines[1].credit = params.totalAmount - params.taxAmount;
@@ -417,9 +541,12 @@ export class FinanceCoreService {
       { id: 'a6', code: '120000', name: 'Receivables', type: 'Asset', parentCode: '100000', isActive: true, isReconciliation: false },
       { id: 'a7', code: '121000', name: 'Accounts Receivable (A/R)', type: 'Asset', parentCode: '120000', isActive: true, isReconciliation: false },
       { id: 'a8', code: '122000', name: 'Retentions Receivable', type: 'Asset', parentCode: '120000', isActive: true, isReconciliation: false },
+      { id: 'a8b', code: '215000', name: 'VAT Receivable', type: 'Asset', parentCode: '120000', isActive: true, isReconciliation: false },
       { id: 'a9', code: '130000', name: 'Inventory Asset', type: 'Asset', parentCode: '100000', isActive: true, isReconciliation: false },
       { id: 'a10', code: '131000', name: 'Material Warehouse Stock', type: 'Asset', parentCode: '130000', isActive: true, isReconciliation: false },
-
+      { id: 'a11', code: '140000', name: 'Fixed Assets', type: 'Asset', parentCode: '100000', isActive: true, isReconciliation: false },
+      { id: 'a12', code: '141000', name: 'Property, Plant & Equipment', type: 'Asset', parentCode: '140000', isActive: true, isReconciliation: false },
+      { id: 'a13', code: '142000', name: 'Accumulated Depreciation', type: 'Asset', parentCode: '140000', isActive: true, isReconciliation: false },
       // Liabilities
       { id: 'l1', code: '200000', name: 'Liabilities', type: 'Liability', isActive: true, isReconciliation: false },
       { id: 'l2', code: '210000', name: 'Payables & Accruals', type: 'Liability', parentCode: '200000', isActive: true, isReconciliation: false },
@@ -445,6 +572,7 @@ export class FinanceCoreService {
       { id: 'ex4', code: '512000', name: 'Project Labor Cost', type: 'Expense', parentCode: '510000', isActive: true, isReconciliation: false },
       { id: 'ex5', code: '513000', name: 'Rig Mobilization & Transfer Costs', type: 'Expense', parentCode: '510000', isActive: true, isReconciliation: false },
       { id: 'ex6', code: '514000', name: 'Equipment Maintenance Expenses', type: 'Expense', parentCode: '510000', isActive: true, isReconciliation: false },
+      { id: 'ex6b', code: '515000', name: 'Depreciation Expense', type: 'Expense', parentCode: '510000', isActive: true, isReconciliation: false },
       { id: 'ex7', code: '520000', name: 'Indirect & Admin Expenses', type: 'Expense', parentCode: '500000', isActive: true, isReconciliation: false },
       { id: 'ex8', code: '521000', name: 'General & Administrative Costs', type: 'Expense', parentCode: '520000', isActive: true, isReconciliation: false }
     ];

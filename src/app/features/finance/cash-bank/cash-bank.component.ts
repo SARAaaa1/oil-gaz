@@ -5,7 +5,7 @@ import { MockDataService } from '../../../core/services/mock-data.service';
 import { BreadcrumbService } from '../../../core/services/breadcrumb.service';
 import { NotificationService } from '../../../core/services/notification.service';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
-
+import { FinanceApiService } from '../../../core/services/finance-api.service';
 import { BankAccountDetails, CashAccountDetails, BankReconciliation } from '../../../shared/interfaces/finance-extended.interface';
 
 @Component({
@@ -17,14 +17,16 @@ import { BankAccountDetails, CashAccountDetails, BankReconciliation } from '../.
 })
 export class CashBankComponent implements OnInit {
   private readonly mockDataService = inject(MockDataService);
+  private readonly financeApi = inject(FinanceApiService);
   private readonly breadcrumbService = inject(BreadcrumbService);
   private readonly notificationService = inject(NotificationService);
   private readonly translate = inject(TranslateService);
 
-  // Core signals
-  readonly bankAccounts = this.mockDataService.bankAccountsDetails;
-  readonly cashAccounts = this.mockDataService.cashAccountsDetails;
-  readonly reconciliations = this.mockDataService.bankReconciliations;
+  // Core signals — populated from API
+  readonly bankAccounts = signal<any[]>([]);
+  readonly cashAccounts = signal<any[]>([]);
+  readonly reconciliations = signal<any[]>([]);
+  readonly isLoading = signal(false);
 
   // UI States
   readonly activeTab = signal<'banks' | 'cash' | 'reconciliation'>('banks');
@@ -77,6 +79,26 @@ export class CashBankComponent implements OnInit {
       { label: 'navigation.finance' },
       { label: 'navigation.cash_bank' }
     ]);
+    this.loadAll();
+  }
+
+  loadAll() {
+    this.isLoading.set(true);
+    this.financeApi.getBankAccounts().subscribe({
+      next: (res) => {
+        this.bankAccounts.set((res.data || []).map((b: any) => ({ ...b, id: b._id ?? b.id })));
+        this.isLoading.set(false);
+      },
+      error: () => this.isLoading.set(false)
+    });
+    this.financeApi.getCashAccounts().subscribe({
+      next: (res: any) => this.cashAccounts.set((Array.isArray(res) ? res : (res.data ?? [])).map((c: any) => ({ ...c, id: c._id ?? c.id }))),
+      error: () => {}
+    });
+    this.financeApi.getReconciliations().subscribe({
+      next: (res: any) => this.reconciliations.set((Array.isArray(res) ? res : (res.data ?? [])).map((r: any) => ({ ...r, id: r._id ?? r.id }))),
+      error: () => {}
+    });
   }
 
   getBankAccountName(id: string): string {
@@ -95,24 +117,24 @@ export class CashBankComponent implements OnInit {
   }
 
   submitBankAccount() {
-    if (!this.bankName || !this.accountNumber || !this.iban) {
+    if (!this.bankName || !this.accountNumber) {
       this.notificationService.danger('common.validation_error', 'common.fill_required_fields');
       return;
     }
-
-    const newBank: BankAccountDetails = {
-      id: 'ba-' + Math.random().toString(36).substring(2, 9),
+    this.financeApi.createBankAccount({
       bankName: this.bankName,
       accountNumber: this.accountNumber,
-      iban: this.iban,
-      currency: this.bankCurrency,
-      balance: Number(this.bankBalance) || 0,
-      status: 'Active'
-    };
-
-    this.bankAccounts.update(prev => [...prev, newBank]);
-    this.showBankModal.set(false);
-    this.notificationService.success('finance.cash_bank.bank_created_title', 'finance.cash_bank.bank_created_desc');
+      iban: this.iban || undefined,
+      currency: this.bankCurrency as any,
+      balance: Number(this.bankBalance) || 0
+    }).subscribe({
+      next: (created: any) => {
+        this.bankAccounts.update(list => [{ ...created, id: created._id ?? created.id }, ...list]);
+        this.showBankModal.set(false);
+        this.notificationService.success('finance.cash_bank.bank_created_title', 'finance.cash_bank.bank_created_desc');
+      },
+      error: (err: any) => this.notificationService.danger('finance.cash_bank.title', err?.error?.message || 'Failed to create bank account')
+    });
   }
 
   // Add Cash Account
@@ -129,19 +151,19 @@ export class CashBankComponent implements OnInit {
       this.notificationService.danger('common.validation_error', 'common.fill_required_fields');
       return;
     }
-
-    const newCash: CashAccountDetails = {
-      id: 'ca-' + Math.random().toString(36).substring(2, 9),
+    this.financeApi.createCashAccount({
       officeLocation: this.officeLocation,
       custodianName: this.custodianName,
       currency: this.cashCurrency,
-      balance: Number(this.cashBalance) || 0,
-      status: 'Active'
-    };
-
-    this.cashAccounts.update(prev => [...prev, newCash]);
-    this.showCashModal.set(false);
-    this.notificationService.success('finance.cash_bank.cash_created_title', 'finance.cash_bank.cash_created_desc');
+      balance: Number(this.cashBalance) || 0
+    }).subscribe({
+      next: (created: any) => {
+        this.cashAccounts.update(list => [{ ...created, id: created._id ?? created.id }, ...list]);
+        this.showCashModal.set(false);
+        this.notificationService.success('finance.cash_bank.cash_created_title', 'finance.cash_bank.cash_created_desc');
+      },
+      error: (err: any) => this.notificationService.danger('finance.cash_bank.title', err?.error?.message || 'Failed to create cash account')
+    });
   }
 
   // Reconciliation Flow
@@ -171,30 +193,23 @@ export class CashBankComponent implements OnInit {
       this.notificationService.danger('common.validation_error', 'common.fill_required_fields');
       return;
     }
-
-    const diff = this.reconciliationDifference();
-    const status: 'Reconciled' | 'Unreconciled' = Math.abs(diff) < 0.01 ? 'Reconciled' : 'Unreconciled';
-
-    const newRec: BankReconciliation = {
-      id: 'br-' + Math.random().toString(36).substring(2, 9),
+    this.financeApi.createReconciliation({
       bankAccountId: this.reconcileBankAccountId,
       statementPeriod: this.statementPeriod,
       statementEndDate: this.statementEndDate,
-      bookBalance: this.currentBookBalance(),
-      statementBalance: Number(this.statementBalance) || 0,
-      difference: diff,
-      status: status,
-      reconciledDate: status === 'Reconciled' ? new Date().toISOString().split('T')[0] : undefined,
-      reconciledBy: status === 'Reconciled' ? 'Sophia Sterling' : undefined
-    };
-
-    this.reconciliations.update(prev => [newRec, ...prev]);
-    this.showReconcileModal.set(false);
-
-    if (status === 'Reconciled') {
-      this.notificationService.success('finance.cash_bank.reconciled_success_title', 'finance.cash_bank.reconciled_success_desc');
-    } else {
-      this.notificationService.warning('finance.cash_bank.reconciled_warning_title', 'finance.cash_bank.reconciled_warning_desc');
-    }
+      statementBalance: Number(this.statementBalance) || 0
+    }).subscribe({
+      next: (created: any) => {
+        const normalized = { ...created, id: created._id ?? created.id };
+        this.reconciliations.update(list => [normalized, ...list]);
+        this.showReconcileModal.set(false);
+        if (normalized.status === 'Reconciled') {
+          this.notificationService.success('finance.cash_bank.reconciled_success_title', 'finance.cash_bank.reconciled_success_desc');
+        } else {
+          this.notificationService.warning('finance.cash_bank.reconciled_warning_title', 'finance.cash_bank.reconciled_warning_desc');
+        }
+      },
+      error: (err: any) => this.notificationService.danger('finance.cash_bank.title', err?.error?.message || 'Reconciliation failed')
+    });
   }
 }

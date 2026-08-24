@@ -378,6 +378,15 @@
                   Suspend
                 </button>
               </div>
+              <button 
+                (click)="openEditProjectModal(proj)" 
+                class="w-full mt-2.5 px-3 py-2 border border-indigo-300 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold rounded-lg text-[10px] transition-all flex items-center justify-center gap-1.5 shadow-xs"
+              >
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+                <span>Edit Project Details (تعديل تفاصيل المشروع)</span>
+              </button>
             </div>
           </div>
         </div>
@@ -1035,15 +1044,15 @@
 
 <!-- ================= MODALS AND POPUPS ================= -->
 
-<!-- 1. CREATE NEW PROJECT MODAL -->
+<!-- 1. CREATE / EDIT PROJECT MODAL -->
 @if (showCreateProjectModal()) {
   <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 font-semibold text-slate-600 text-xs animate-fade-in">
     <div class="bg-white rounded-xl shadow-2xl border border-slate-200 w-full max-w-2xl overflow-hidden max-h-[90vh] flex flex-col animate-scale-up">
       <!-- Title -->
       <div class="px-5 py-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center select-none">
         <div>
-          <h3 class="text-sm font-black text-slate-800">Launch New Operations Project</h3>
-          <p class="text-[10px] text-slate-400 mt-0.5">Initialize site configurations and cost centers manually</p>
+          <h3 class="text-sm font-black text-slate-800">{{ isEditMode() ? 'Edit Operations Project' : 'Launch New Operations Project' }}</h3>
+          <p class="text-[10px] text-slate-400 mt-0.5">Configure site parameters, budget pool, and cost center details</p>
         </div>
         <button (click)="showCreateProjectModal.set(false)" class="text-slate-400 hover:text-slate-600 focus:outline-none">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1056,70 +1065,70 @@
       <div class="p-6 overflow-y-auto space-y-4 flex-1">
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label class="block mb-1 text-slate-400 uppercase tracking-wide text-[9px] font-bold">Project Code</label>
-            <input type="text" name="code" [(ngModel)]="newProjectForm.code" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-slate-800 focus:outline-none focus:border-indigo-500 font-mono font-bold" required />
+            <label class="block mb-1 text-slate-700 uppercase tracking-wide text-[9px] font-bold">Project Code *</label>
+            <input type="text" name="code" [(ngModel)]="newProjectForm.code" [disabled]="isEditMode()" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 text-slate-900 font-mono font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400 disabled:opacity-60" style="color: #0f172a !important; background-color: #f8fafc !important;" required />
           </div>
           
           <div>
-            <label class="block mb-1 text-slate-400 uppercase tracking-wide text-[9px] font-bold">Project Title / Name</label>
-            <input type="text" name="name" [(ngModel)]="newProjectForm.name" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-slate-800 focus:outline-none focus:border-indigo-500" placeholder="e.g. Basra Rig Rigging Pad C" required />
+            <label class="block mb-1 text-slate-700 uppercase tracking-wide text-[9px] font-bold">Project Title / Name *</label>
+            <input type="text" name="name" [(ngModel)]="newProjectForm.name" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400" style="color: #0f172a !important; background-color: #f8fafc !important;" placeholder="e.g. Basra Rig Rigging Pad C" required />
           </div>
 
           <div>
-            <label class="block mb-1 text-slate-400 uppercase tracking-wide text-[9px] font-bold">Customer Name</label>
-            <input type="text" name="customer" [(ngModel)]="newProjectForm.customer" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-slate-800 focus:outline-none focus:border-indigo-500" placeholder="e.g. Chevron Energy" required />
+            <label class="block mb-1 text-slate-700 uppercase tracking-wide text-[9px] font-bold">Customer Name *</label>
+            <input type="text" name="customer" [(ngModel)]="newProjectForm.customer" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400" style="color: #0f172a !important; background-color: #f8fafc !important;" placeholder="e.g. Chevron Energy" required />
           </div>
 
           <div>
-            <label class="block mb-1 text-slate-400 uppercase tracking-wide text-[9px] font-bold">Contract Value Pool (USD)</label>
-            <input type="number" name="contractValue" [(ngModel)]="newProjectForm.contractValue" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-slate-800 focus:outline-none focus:border-indigo-500 font-mono font-bold" required />
+            <label class="block mb-1 text-slate-700 uppercase tracking-wide text-[9px] font-bold">Contract Value Pool ($ USD) *</label>
+            <input type="number" name="contractValue" [(ngModel)]="newProjectForm.contractValue" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 text-slate-900 font-mono font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400" style="color: #0f172a !important; background-color: #f8fafc !important;" required />
           </div>
 
           <div>
-            <label class="block mb-1 text-slate-400 uppercase tracking-wide text-[9px] font-bold">Execution Start Date</label>
-            <input type="date" name="startDate" [(ngModel)]="newProjectForm.startDate" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-slate-800 focus:outline-none focus:border-indigo-500 font-mono" />
+            <label class="block mb-1 text-slate-700 uppercase tracking-wide text-[9px] font-bold">Execution Start Date *</label>
+            <input type="date" name="startDate" [(ngModel)]="newProjectForm.startDate" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400" style="color: #0f172a !important; background-color: #f8fafc !important;" />
           </div>
 
           <div>
-            <label class="block mb-1 text-slate-400 uppercase tracking-wide text-[9px] font-bold">Expiration End Date</label>
-            <input type="date" name="endDate" [(ngModel)]="newProjectForm.endDate" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-slate-800 focus:outline-none focus:border-indigo-500 font-mono" />
+            <label class="block mb-1 text-slate-700 uppercase tracking-wide text-[9px] font-bold">Expiration End Date *</label>
+            <input type="date" name="endDate" [(ngModel)]="newProjectForm.endDate" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400" style="color: #0f172a !important; background-color: #f8fafc !important;" />
           </div>
         </div>
 
         <div class="border-t border-slate-100 pt-4 space-y-4">
-          <h4 class="text-slate-800 font-bold text-[10px] uppercase tracking-wide border-b border-slate-50 pb-1">Pad Site Location & Coordinates</h4>
+          <h4 class="text-slate-800 font-black text-[10px] uppercase tracking-wide border-b border-slate-100 pb-1">Pad Site Location & Coordinates</h4>
           
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label class="block mb-1 text-slate-400 uppercase tracking-wide text-[9px] font-bold">Country</label>
-              <input type="text" name="country" [(ngModel)]="newProjectForm.country" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-slate-800 focus:outline-none focus:border-indigo-500" />
+              <label class="block mb-1 text-slate-700 uppercase tracking-wide text-[9px] font-bold">Country</label>
+              <input type="text" name="country" [(ngModel)]="newProjectForm.country" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400" style="color: #0f172a !important; background-color: #f8fafc !important;" />
             </div>
             <div>
-              <label class="block mb-1 text-slate-400 uppercase tracking-wide text-[9px] font-bold">Region</label>
-              <input type="text" name="region" [(ngModel)]="newProjectForm.region" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-slate-800 focus:outline-none focus:border-indigo-500" />
+              <label class="block mb-1 text-slate-700 uppercase tracking-wide text-[9px] font-bold">Region</label>
+              <input type="text" name="region" [(ngModel)]="newProjectForm.region" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400" style="color: #0f172a !important; background-color: #f8fafc !important;" />
             </div>
             <div>
-              <label class="block mb-1 text-slate-400 uppercase tracking-wide text-[9px] font-bold">Site / Block Name</label>
-              <input type="text" name="siteName" [(ngModel)]="newProjectForm.siteName" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-slate-800 focus:outline-none focus:border-indigo-500" placeholder="e.g. Block-42A" />
+              <label class="block mb-1 text-slate-700 uppercase tracking-wide text-[9px] font-bold">Site / Block Name</label>
+              <input type="text" name="siteName" [(ngModel)]="newProjectForm.siteName" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400" style="color: #0f172a !important; background-color: #f8fafc !important;" placeholder="e.g. Block-42A" />
             </div>
             <div>
-              <label class="block mb-1 text-slate-400 uppercase tracking-wide text-[9px] font-bold">GPS Coordinate Markers</label>
-              <input type="text" name="gpsCoordinates" [(ngModel)]="newProjectForm.gpsCoordinates" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-slate-800 focus:outline-none focus:border-indigo-500 font-mono" />
+              <label class="block mb-1 text-slate-700 uppercase tracking-wide text-[9px] font-bold">GPS Coordinate Markers</label>
+              <input type="text" name="gpsCoordinates" [(ngModel)]="newProjectForm.gpsCoordinates" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400 font-mono" style="color: #0f172a !important; background-color: #f8fafc !important;" />
             </div>
           </div>
         </div>
 
         <div class="border-t border-slate-100 pt-4 space-y-4">
-          <h4 class="text-slate-800 font-bold text-[10px] uppercase tracking-wide border-b border-slate-50 pb-1">Associated Financial Cost Center</h4>
+          <h4 class="text-slate-800 font-black text-[10px] uppercase tracking-wide border-b border-slate-100 pb-1">Associated Financial Cost Center</h4>
           
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label class="block mb-1 text-slate-400 uppercase tracking-wide text-[9px] font-bold">Cost Center Code</label>
-              <input type="text" name="costCenterCode" [(ngModel)]="newProjectForm.costCenterCode" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-slate-800 focus:outline-none focus:border-indigo-500 font-mono font-bold" placeholder="Auto generated if empty" />
+              <label class="block mb-1 text-slate-700 uppercase tracking-wide text-[9px] font-bold">Cost Center Code</label>
+              <input type="text" name="costCenterCode" [(ngModel)]="newProjectForm.costCenterCode" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 text-slate-900 font-mono font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400" style="color: #0f172a !important; background-color: #f8fafc !important;" placeholder="Auto generated if empty" />
             </div>
             <div>
-              <label class="block mb-1 text-slate-400 uppercase tracking-wide text-[9px] font-bold">Cost Center Name</label>
-              <input type="text" name="costCenterName" [(ngModel)]="newProjectForm.costCenterName" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-slate-800 focus:outline-none focus:border-indigo-500" placeholder="Auto generated if empty" />
+              <label class="block mb-1 text-slate-700 uppercase tracking-wide text-[9px] font-bold">Cost Center Name</label>
+              <input type="text" name="costCenterName" [(ngModel)]="newProjectForm.costCenterName" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400" style="color: #0f172a !important; background-color: #f8fafc !important;" placeholder="Auto generated if empty" />
             </div>
           </div>
         </div>
@@ -1128,7 +1137,7 @@
       <!-- Footer Buttons -->
       <div class="px-5 py-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-3 select-none">
         <button (click)="showCreateProjectModal.set(false)" class="px-4 py-2 border border-slate-300 rounded-lg text-slate-700 font-bold hover:bg-slate-100 transition-all">Cancel</button>
-        <button (click)="saveNewProject()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg transition-all shadow-sm">Initialize Project</button>
+        <button (click)="saveNewProject()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg transition-all shadow-sm">{{ isEditMode() ? 'Save Changes' : 'Initialize Project' }}</button>
       </div>
     </div>
   </div>
@@ -1149,25 +1158,25 @@
 
       <div class="p-5 space-y-4">
         <div>
-          <label class="block mb-1.5 text-slate-400 uppercase tracking-wide text-[9px] font-bold">Select Standby Unit</label>
-          <select name="equipmentId" [(ngModel)]="equipmentForm.equipmentId" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-slate-850 font-bold focus:outline-none focus:border-indigo-500">
-            <option value="">-- Choose Equipment --</option>
+          <label class="block mb-1.5 text-slate-700 uppercase tracking-wide text-[9px] font-bold">Select Standby Unit *</label>
+          <select name="equipmentId" [(ngModel)]="equipmentForm.equipmentId" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400" style="color: #0f172a !important; background-color: #f8fafc !important;">
+            <option value="" style="color: #0f172a;">-- Choose Equipment --</option>
             @for (eq of mockDataService.equipment(); track eq.id) {
               @if (eq.status !== 'Active') {
-                <option [value]="eq.id">{{ eq.equipmentCode }} - {{ eq.equipmentName }} ({{ eq.location }})</option>
+                <option [value]="eq.id" style="color: #0f172a;">{{ eq.equipmentCode }} - {{ eq.equipmentName }} ({{ eq.location }})</option>
               }
             }
           </select>
         </div>
 
         <div>
-          <label class="block mb-1.5 text-slate-400 uppercase tracking-wide text-[9px] font-bold">Site Deployment Location</label>
-          <input type="text" name="siteName" [(ngModel)]="equipmentForm.siteName" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-slate-800 focus:outline-none focus:border-indigo-500" required />
+          <label class="block mb-1.5 text-slate-700 uppercase tracking-wide text-[9px] font-bold">Site Deployment Location *</label>
+          <input type="text" name="siteName" [(ngModel)]="equipmentForm.siteName" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400" style="color: #0f172a !important; background-color: #f8fafc !important;" required />
         </div>
 
         <div>
-          <label class="block mb-1.5 text-slate-400 uppercase tracking-wide text-[9px] font-bold">Deployment Assigned Date</label>
-          <input type="date" name="assignedDate" [(ngModel)]="equipmentForm.assignedDate" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-slate-800 focus:outline-none focus:border-indigo-500 font-mono" required />
+          <label class="block mb-1.5 text-slate-700 uppercase tracking-wide text-[9px] font-bold">Deployment Assigned Date *</label>
+          <input type="date" name="assignedDate" [(ngModel)]="equipmentForm.assignedDate" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400" style="color: #0f172a !important; background-color: #f8fafc !important;" required />
         </div>
       </div>
 
@@ -1194,30 +1203,30 @@
 
       <div class="p-5 space-y-4">
         <div>
-          <label class="block mb-1.5 text-slate-400 uppercase tracking-wide text-[9px] font-bold">Select Asset Tag</label>
-          <select name="assetId" [(ngModel)]="assetForm.assetId" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-slate-850 font-bold focus:outline-none focus:border-indigo-500">
-            <option value="">-- Choose Asset --</option>
+          <label class="block mb-1.5 text-slate-700 uppercase tracking-wide text-[9px] font-bold">Select Asset Tag *</label>
+          <select name="assetId" [(ngModel)]="assetForm.assetId" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400" style="color: #0f172a !important; background-color: #f8fafc !important;">
+            <option value="" style="color: #0f172a;">-- Choose Asset --</option>
             @for (eq of mockDataService.equipment(); track eq.id) {
               @if (eq.category !== 'Rig') {
-                <option [value]="eq.id">{{ eq.assetNumber }} - {{ eq.equipmentName }} ({{ eq.category }})</option>
+                <option [value]="eq.id" style="color: #0f172a;">{{ eq.assetNumber }} - {{ eq.equipmentName }} ({{ eq.category }})</option>
               }
             }
           </select>
         </div>
 
         <div>
-          <label class="block mb-1.5 text-slate-400 uppercase tracking-wide text-[9px] font-bold">Assign to Crew Member</label>
-          <input type="text" name="assignedTo" [(ngModel)]="assetForm.assignedTo" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-slate-800 focus:outline-none focus:border-indigo-500" placeholder="e.g. Robert Vance" required />
+          <label class="block mb-1.5 text-slate-700 uppercase tracking-wide text-[9px] font-bold">Assign to Crew Member *</label>
+          <input type="text" name="assignedTo" [(ngModel)]="assetForm.assignedTo" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400" style="color: #0f172a !important; background-color: #f8fafc !important;" placeholder="e.g. Robert Vance" required />
         </div>
 
         <div>
-          <label class="block mb-1.5 text-slate-400 uppercase tracking-wide text-[9px] font-bold">Assigned Location</label>
-          <input type="text" name="location" [(ngModel)]="assetForm.location" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-slate-800 focus:outline-none focus:border-indigo-500" required />
+          <label class="block mb-1.5 text-slate-700 uppercase tracking-wide text-[9px] font-bold">Assigned Location *</label>
+          <input type="text" name="location" [(ngModel)]="assetForm.location" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400" style="color: #0f172a !important; background-color: #f8fafc !important;" required />
         </div>
 
         <div>
-          <label class="block mb-1.5 text-slate-400 uppercase tracking-wide text-[9px] font-bold">Assigned Date</label>
-          <input type="date" name="assignedDate" [(ngModel)]="assetForm.assignedDate" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-slate-800 focus:outline-none focus:border-indigo-500 font-mono" required />
+          <label class="block mb-1.5 text-slate-700 uppercase tracking-wide text-[9px] font-bold">Assigned Date *</label>
+          <input type="date" name="assignedDate" [(ngModel)]="assetForm.assignedDate" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400" style="color: #0f172a !important; background-color: #f8fafc !important;" required />
         </div>
       </div>
 
@@ -1234,7 +1243,7 @@
   <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 font-semibold text-slate-600 text-xs animate-fade-in">
     <div class="bg-white rounded-xl shadow-2xl border border-slate-200 w-full max-w-md overflow-hidden animate-scale-up">
       <div class="px-5 py-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center select-none">
-        <h3 class="text-sm font-black text-slate-800">Record Chemicals Consumption</h3>
+        <h3 class="text-sm font-black text-slate-800">Record Chemicals & Spare Parts Consumption</h3>
         <button (click)="showRecordMaterialModal.set(false)" class="text-slate-400 hover:text-slate-600 focus:outline-none">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -1244,43 +1253,43 @@
 
       <div class="p-5 space-y-4">
         <div>
-          <label class="block mb-1.5 text-slate-400 uppercase tracking-wide text-[9px] font-bold">Select Material Item</label>
-          <select name="materialCode" [(ngModel)]="materialForm.materialCode" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-slate-850 font-bold focus:outline-none focus:border-indigo-500">
-            <option value="">-- Choose Material --</option>
+          <label class="block mb-1.5 text-slate-700 uppercase tracking-wide text-[9px] font-bold">Select Material Item *</label>
+          <select name="materialCode" [(ngModel)]="materialForm.materialCode" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400" style="color: #0f172a !important; background-color: #f8fafc !important;">
+            <option value="" style="color: #0f172a;">-- Choose Material --</option>
             @for (item of mockDataService.inventoryItems(); track item.id) {
-              <option [value]="item.itemCode">{{ item.itemCode }} - {{ item.itemName }} (Qty: {{ item.quantity }})</option>
+              <option [value]="item.itemCode" style="color: #0f172a;">{{ item.itemCode }} - {{ item.itemName }} (Stock Qty: {{ item.quantity }})</option>
             }
           </select>
         </div>
 
         <div>
-          <label class="block mb-1.5 text-slate-400 uppercase tracking-wide text-[9px] font-bold">Warehouse Origin</label>
-          <select name="warehouse" [(ngModel)]="materialForm.warehouse" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-slate-700 focus:outline-none focus:border-indigo-500">
-            <option value="Warehouse A">Warehouse A</option>
-            <option value="Warehouse B">Warehouse B</option>
-            <option value="Pipe Yard 1">Pipe Yard 1</option>
+          <label class="block mb-1.5 text-slate-700 uppercase tracking-wide text-[9px] font-bold">Warehouse Origin *</label>
+          <select name="warehouse" [(ngModel)]="materialForm.warehouse" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400" style="color: #0f172a !important; background-color: #f8fafc !important;">
+            <option value="Warehouse A" style="color: #0f172a;">Warehouse A</option>
+            <option value="Warehouse B" style="color: #0f172a;">Warehouse B</option>
+            <option value="Pipe Yard 1" style="color: #0f172a;">Pipe Yard 1</option>
           </select>
         </div>
 
         <div class="grid grid-cols-2 gap-4">
           <div>
-            <label class="block mb-1.5 text-slate-400 uppercase tracking-wide text-[9px] font-bold">Qty Issued from Storage</label>
-            <input type="number" name="issuedQuantity" [(ngModel)]="materialForm.issuedQuantity" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-slate-800 focus:outline-none focus:border-indigo-500 font-mono font-bold" required />
+            <label class="block mb-1.5 text-slate-700 uppercase tracking-wide text-[9px] font-bold">Qty Issued from Storage *</label>
+            <input type="number" name="issuedQuantity" [(ngModel)]="materialForm.issuedQuantity" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-slate-900 font-mono font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400" style="color: #0f172a !important; background-color: #f8fafc !important;" required />
           </div>
           <div>
-            <label class="block mb-1.5 text-slate-400 uppercase tracking-wide text-[9px] font-bold">Qty Consumed on Rig</label>
-            <input type="number" name="consumedQuantity" [(ngModel)]="materialForm.consumedQuantity" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-slate-800 focus:outline-none focus:border-indigo-500 font-mono font-bold" required />
+            <label class="block mb-1.5 text-slate-700 uppercase tracking-wide text-[9px] font-bold">Qty Consumed on Rig *</label>
+            <input type="number" name="consumedQuantity" [(ngModel)]="materialForm.consumedQuantity" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-slate-900 font-mono font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400" style="color: #0f172a !important; background-color: #f8fafc !important;" required />
           </div>
         </div>
 
         <div>
-          <label class="block mb-1.5 text-slate-400 uppercase tracking-wide text-[9px] font-bold">Voucher / Doc Reference</label>
-          <input type="text" name="docRef" [(ngModel)]="materialForm.docRef" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-slate-800 focus:outline-none focus:border-indigo-500 font-mono font-bold" required />
+          <label class="block mb-1.5 text-slate-700 uppercase tracking-wide text-[9px] font-bold">Voucher / Doc Reference *</label>
+          <input type="text" name="docRef" [(ngModel)]="materialForm.docRef" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-slate-900 font-mono font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400" style="color: #0f172a !important; background-color: #f8fafc !important;" required />
         </div>
 
         <div>
-          <label class="block mb-1.5 text-slate-400 uppercase tracking-wide text-[9px] font-bold">Issue / Consumption Date</label>
-          <input type="date" name="issueDate" [(ngModel)]="materialForm.issueDate" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-slate-800 focus:outline-none focus:border-indigo-500 font-mono" required />
+          <label class="block mb-1.5 text-slate-700 uppercase tracking-wide text-[9px] font-bold">Issue / Consumption Date *</label>
+          <input type="date" name="issueDate" [(ngModel)]="materialForm.issueDate" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400" style="color: #0f172a !important; background-color: #f8fafc !important;" required />
         </div>
       </div>
 
@@ -1307,40 +1316,40 @@
 
       <div class="p-5 space-y-4">
         <div>
-          <label class="block mb-1.5 text-slate-400 uppercase tracking-wide text-[9px] font-bold">Crew Employee Name</label>
-          <input type="text" name="employeeName" [(ngModel)]="laborForm.employeeName" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-slate-800 focus:outline-none focus:border-indigo-500" placeholder="e.g. Robert Vance" required />
+          <label class="block mb-1.5 text-slate-700 uppercase tracking-wide text-[9px] font-bold">Crew Employee Name *</label>
+          <input type="text" name="employeeName" [(ngModel)]="laborForm.employeeName" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400" style="color: #0f172a !important; background-color: #f8fafc !important;" placeholder="e.g. Robert Vance" required />
         </div>
 
         <div>
-          <label class="block mb-1.5 text-slate-400 uppercase tracking-wide text-[9px] font-bold">Operations Role</label>
-          <input type="text" name="role" [(ngModel)]="laborForm.role" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-slate-800 focus:outline-none focus:border-indigo-500" placeholder="e.g. Mud Engineer / Rig Mechanic" required />
+          <label class="block mb-1.5 text-slate-700 uppercase tracking-wide text-[9px] font-bold">Operations Role *</label>
+          <input type="text" name="role" [(ngModel)]="laborForm.role" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400" style="color: #0f172a !important; background-color: #f8fafc !important;" placeholder="e.g. Mud Engineer / Rig Mechanic" required />
         </div>
 
         <div class="grid grid-cols-2 gap-4">
           <div>
-            <label class="block mb-1.5 text-slate-400 uppercase tracking-wide text-[9px] font-bold">Regular Hours Worked</label>
-            <input type="number" name="regularHours" [(ngModel)]="laborForm.regularHours" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-slate-800 focus:outline-none focus:border-indigo-500 font-mono font-bold" required />
+            <label class="block mb-1.5 text-slate-700 uppercase tracking-wide text-[9px] font-bold">Regular Hours Worked *</label>
+            <input type="number" name="regularHours" [(ngModel)]="laborForm.regularHours" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-slate-900 font-mono font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400" style="color: #0f172a !important; background-color: #f8fafc !important;" required />
           </div>
           <div>
-            <label class="block mb-1.5 text-slate-400 uppercase tracking-wide text-[9px] font-bold">Overtime Hours Worked</label>
-            <input type="number" name="overtimeHours" [(ngModel)]="laborForm.overtimeHours" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-slate-800 focus:outline-none focus:border-indigo-500 font-mono font-bold" required />
+            <label class="block mb-1.5 text-slate-700 uppercase tracking-wide text-[9px] font-bold">Overtime Hours Worked *</label>
+            <input type="number" name="overtimeHours" [(ngModel)]="laborForm.overtimeHours" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-slate-900 font-mono font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400" style="color: #0f172a !important; background-color: #f8fafc !important;" required />
           </div>
         </div>
 
         <div class="grid grid-cols-2 gap-4">
           <div>
-            <label class="block mb-1.5 text-slate-400 uppercase tracking-wide text-[9px] font-bold">Regular Hourly Rate (USD)</label>
-            <input type="number" name="hourlyRate" [(ngModel)]="laborForm.hourlyRate" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-slate-800 focus:outline-none focus:border-indigo-500 font-mono font-bold" required />
+            <label class="block mb-1.5 text-slate-700 uppercase tracking-wide text-[9px] font-bold">Regular Hourly Rate ($ USD) *</label>
+            <input type="number" name="hourlyRate" [(ngModel)]="laborForm.hourlyRate" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-slate-900 font-mono font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400" style="color: #0f172a !important; background-color: #f8fafc !important;" required />
           </div>
           <div>
-            <label class="block mb-1.5 text-slate-400 uppercase tracking-wide text-[9px] font-bold">Overtime Hourly Rate (USD)</label>
-            <input type="number" name="overtimeRate" [(ngModel)]="laborForm.overtimeRate" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-slate-800 focus:outline-none focus:border-indigo-500 font-mono font-bold" required />
+            <label class="block mb-1.5 text-slate-700 uppercase tracking-wide text-[9px] font-bold">Overtime Hourly Rate ($ USD) *</label>
+            <input type="number" name="overtimeRate" [(ngModel)]="laborForm.overtimeRate" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-slate-900 font-mono font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400" style="color: #0f172a !important; background-color: #f8fafc !important;" required />
           </div>
         </div>
 
         <div>
-          <label class="block mb-1.5 text-slate-400 uppercase tracking-wide text-[9px] font-bold">Timesheet Date</label>
-          <input type="date" name="date" [(ngModel)]="laborForm.date" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-slate-800 focus:outline-none focus:border-indigo-500 font-mono" required />
+          <label class="block mb-1.5 text-slate-700 uppercase tracking-wide text-[9px] font-bold">Timesheet Date *</label>
+          <input type="date" name="date" [(ngModel)]="laborForm.date" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400" style="color: #0f172a !important; background-color: #f8fafc !important;" required />
         </div>
       </div>
 
@@ -1367,45 +1376,45 @@
 
       <div class="p-5 space-y-4">
         <div>
-          <label class="block mb-1.5 text-slate-400 uppercase tracking-wide text-[9px] font-bold">Select Equipment Unit</label>
-          <select name="equipmentId" [(ngModel)]="transferForm.equipmentId" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-slate-850 font-bold focus:outline-none focus:border-indigo-500">
-            <option value="">-- Choose Equipment --</option>
+          <label class="block mb-1.5 text-slate-700 uppercase tracking-wide text-[9px] font-bold">Select Equipment Unit *</label>
+          <select name="equipmentId" [(ngModel)]="transferForm.equipmentId" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400" style="color: #0f172a !important; background-color: #f8fafc !important;">
+            <option value="" style="color: #0f172a;">-- Choose Equipment --</option>
             @for (eq of mockDataService.equipment(); track eq.id) {
-              <option [value]="eq.id">{{ eq.equipmentCode }} - {{ eq.equipmentName }} ({{ eq.location }})</option>
+              <option [value]="eq.id" style="color: #0f172a;">{{ eq.equipmentCode }} - {{ eq.equipmentName }} ({{ eq.location }})</option>
             }
           </select>
         </div>
 
         <div class="grid grid-cols-2 gap-4">
           <div>
-            <label class="block mb-1.5 text-slate-400 uppercase tracking-wide text-[9px] font-bold">From Origin Location</label>
-            <input type="text" name="fromLocation" [(ngModel)]="transferForm.fromLocation" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-slate-800 focus:outline-none focus:border-indigo-500" required />
+            <label class="block mb-1.5 text-slate-700 uppercase tracking-wide text-[9px] font-bold">From Origin Location *</label>
+            <input type="text" name="fromLocation" [(ngModel)]="transferForm.fromLocation" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400" style="color: #0f172a !important; background-color: #f8fafc !important;" required />
           </div>
           <div>
-            <label class="block mb-1.5 text-slate-400 uppercase tracking-wide text-[9px] font-bold">To Destination Pad</label>
-            <input type="text" name="toLocation" [(ngModel)]="transferForm.toLocation" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-slate-800 focus:outline-none focus:border-indigo-500" required />
+            <label class="block mb-1.5 text-slate-700 uppercase tracking-wide text-[9px] font-bold">To Destination Pad *</label>
+            <input type="text" name="toLocation" [(ngModel)]="transferForm.toLocation" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400" style="color: #0f172a !important; background-color: #f8fafc !important;" required />
           </div>
         </div>
 
         <div class="grid grid-cols-2 gap-4">
           <div>
-            <label class="block mb-1.5 text-slate-400 uppercase tracking-wide text-[9px] font-bold">Transit Hours</label>
-            <input type="number" name="transportationHours" [(ngModel)]="transferForm.transportationHours" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-slate-800 focus:outline-none focus:border-indigo-500 font-mono font-bold" required />
+            <label class="block mb-1.5 text-slate-700 uppercase tracking-wide text-[9px] font-bold">Transit Hours *</label>
+            <input type="number" name="transportationHours" [(ngModel)]="transferForm.transportationHours" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-slate-900 font-mono font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400" style="color: #0f172a !important; background-color: #f8fafc !important;" required />
           </div>
           <div>
-            <label class="block mb-1.5 text-slate-400 uppercase tracking-wide text-[9px] font-bold">Transit Cost (USD)</label>
-            <input type="number" name="transportationCost" [(ngModel)]="transferForm.transportationCost" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-slate-800 focus:outline-none focus:border-indigo-500 font-mono font-bold" required />
+            <label class="block mb-1.5 text-slate-700 uppercase tracking-wide text-[9px] font-bold">Transit Cost ($ USD) *</label>
+            <input type="number" name="transportationCost" [(ngModel)]="transferForm.transportationCost" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-slate-900 font-mono font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400" style="color: #0f172a !important; background-color: #f8fafc !important;" required />
           </div>
         </div>
 
         <div>
-          <label class="block mb-1.5 text-slate-400 uppercase tracking-wide text-[9px] font-bold">Departure Date</label>
-          <input type="date" name="startDate" [(ngModel)]="transferForm.startDate" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-slate-800 focus:outline-none focus:border-indigo-500 font-mono" required />
+          <label class="block mb-1.5 text-slate-700 uppercase tracking-wide text-[9px] font-bold">Departure Date *</label>
+          <input type="date" name="startDate" [(ngModel)]="transferForm.startDate" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400" style="color: #0f172a !important; background-color: #f8fafc !important;" required />
         </div>
 
         <div>
-          <label class="block mb-1.5 text-slate-400 uppercase tracking-wide text-[9px] font-bold">Transfer Authorization Reason</label>
-          <textarea name="reason" [(ngModel)]="transferForm.reason" rows="2" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-slate-800 focus:outline-none focus:border-indigo-500 resize-none" placeholder="Explain the mobilization operational requirement..."></textarea>
+          <label class="block mb-1.5 text-slate-700 uppercase tracking-wide text-[9px] font-bold">Transfer Authorization Reason</label>
+          <textarea name="reason" [(ngModel)]="transferForm.reason" rows="2" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400 resize-none" style="color: #0f172a !important; background-color: #f8fafc !important;" placeholder="Explain the mobilization operational requirement..."></textarea>
         </div>
       </div>
 

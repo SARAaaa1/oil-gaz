@@ -1,11 +1,18 @@
 import { Component, OnInit, inject, signal, computed, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { MockDataService } from '../../core/services/mock-data.service';
 import { BreadcrumbService } from '../../core/services/breadcrumb.service';
 import { NotificationService } from '../../core/services/notification.service';
+import { AuthService } from '../../core/services/auth.service';
 import { TranslateModule } from '@ngx-translate/core';
-import { Equipment, AssetAssignment, AssetTransfer, AssetDisposal } from '../../shared/interfaces/assets.interface';
+import {
+  AssetsApiService,
+  Equipment,
+  CreateEquipmentBody,
+  AssetCategory,
+  AssetStatus
+} from '../../core/services/assets-api.service';
+import { OperationsApiService } from '../../core/services/operations-api.service';
 
 @Component({
   selector: 'app-assets',
@@ -15,206 +22,350 @@ import { Equipment, AssetAssignment, AssetTransfer, AssetDisposal } from '../../
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class AssetsComponent implements OnInit {
-  private readonly mockDataService = inject(MockDataService);
+  private readonly assetsApi   = inject(AssetsApiService);
+  private readonly opsApi      = inject(OperationsApiService);
   private readonly breadcrumbService = inject(BreadcrumbService);
   private readonly notificationService = inject(NotificationService);
+  private readonly authService = inject(AuthService);
 
-  readonly equipment = this.mockDataService.equipment;
-  readonly assetAssignments = this.mockDataService.assetAssignments;
-  readonly assetTransfers = this.mockDataService.assetTransfers;
-  readonly assetDisposals = this.mockDataService.assetDisposals;
-  readonly rigs = this.mockDataService.rigs;
+  // ── State ──────────────────────────────────────────────────────────────────
+  readonly equipment     = signal<Equipment[]>([]);
+  readonly rigs          = signal<any[]>([]);
+  readonly isLoading     = signal(false);
+  readonly isSaving      = signal(false);
 
-  // UI State
   readonly activeTab = signal<'register' | 'assignments' | 'transfers' | 'disposal'>('register');
 
-  // Modals / Form State
-  readonly showAssignModal = signal<boolean>(false);
-  readonly showTransferModal = signal<boolean>(false);
-  readonly showDisposalModal = signal<boolean>(false);
+  // Filters
+  searchQuery    = '';
+  categoryFilter = 'ALL';
+  statusFilter   = 'ALL';
 
-  // Form inputs
-  selectedAssetId = '';
+  // ── Modals ─────────────────────────────────────────────────────────────────
+  readonly showAddModal       = signal(false);
+  readonly showAssignModal    = signal(false);
+  readonly showTransferModal  = signal(false);
+  readonly showDisposalModal  = signal(false);
+
+  // Add Equipment Form
+  addForm: Partial<CreateEquipmentBody> = this.emptyAddForm();
+
+  // Action Inputs
+  selectedEquipment: Equipment | null = null;
+
+  // Assignment fields
   assignedToType: 'Project' | 'Rig' | 'Camp' | 'Driver' = 'Rig';
-  assignedToId = 'rig1';
-  assignedToName = 'Rig Alpha';
+  assignedToId   = '';
+  assignedToName = '';
   conditionOnAssign: 'New' | 'Good' | 'Fair' | 'Poor' = 'Good';
   assignmentNotes = '';
 
-  transferToLocation = 'Warehouse B';
-  transferNotes = '';
+  // Transfer fields
+  transferToLocation = '';
+  transferNotes      = '';
 
-  disposalMethod: 'Sale' | 'Scrap' | 'Write-off' | 'Donation' = 'Scrap';
-  disposalCost = 0;
-  revenueReceived = 0;
-  disposalReason = '';
+  // Disposal fields
+  disposalMethod:  'Sale' | 'Scrap' | 'Write-off' | 'Donation' = 'Scrap';
+  disposalCost     = 0;
+  revenueReceived  = 0;
+  disposalReason   = '';
 
+  // ── Computed ───────────────────────────────────────────────────────────────
+  // History signals — populated from backend status-change audit trail
+  readonly assetAssignments = signal<any[]>([]);
+  readonly assetTransfers   = signal<any[]>([]);
+  readonly assetDisposals   = signal<any[]>([]);
+
+  readonly filteredEquipment = computed(() => {
+    let list = this.equipment();
+    if (this.statusFilter   !== 'ALL') list = list.filter(e => e.status   === this.statusFilter);
+    if (this.categoryFilter !== 'ALL') list = list.filter(e => e.category === this.categoryFilter);
+    const q = this.searchQuery.trim().toLowerCase();
+    if (q) list = list.filter(e =>
+      e.equipmentName?.toLowerCase().includes(q) ||
+      e.equipmentCode?.toLowerCase().includes(q) ||
+      e.assetNumber?.toLowerCase().includes(q) ||
+      e.location?.toLowerCase().includes(q)
+    );
+    return list;
+  });
+
+  readonly stats = computed(() => {
+    const list = this.equipment();
+    return {
+      total:        list.length,
+      active:       list.filter(e => e.status === 'Active').length,
+      standby:      list.filter(e => e.status === 'Standby').length,
+      maintenance:  list.filter(e => e.status === 'Maintenance').length,
+      outOfService: list.filter(e => e.status === 'Out Of Service').length
+    };
+  });
+
+  readonly categories: AssetCategory[] = [
+    'Rig', 'Generator', 'Crane', 'Truck', 'Pump',
+    'Compressor', 'Heavy Equipment', 'Safety Equipment'
+  ];
+
+  readonly statuses: AssetStatus[] = ['Active', 'Standby', 'Maintenance', 'Out Of Service'];
+
+  // ── Lifecycle ──────────────────────────────────────────────────────────────
   ngOnInit() {
     this.breadcrumbService.setBreadcrumbs([
       { label: 'navigation.assets' },
       { label: 'navigation.asset_register' }
     ]);
+    this.loadEquipment();
+    this.loadRigs();
+    this.loadHistoryRecords();
   }
 
-  getAssetName(assetId: string): string {
-    const matched = this.equipment().find(e => e.id === assetId);
-    return matched ? matched.equipmentName : assetId;
+  loadHistoryRecords() {
+    this.assetsApi.getAssignments().subscribe({
+      next: (res: any) => this.assetAssignments.set(Array.isArray(res) ? res : res.data ?? []),
+      error: () => {}
+    });
+    this.assetsApi.getTransfers().subscribe({
+      next: (res: any) => this.assetTransfers.set(Array.isArray(res) ? res : res.data ?? []),
+      error: () => {}
+    });
+    this.assetsApi.getDisposals().subscribe({
+      next: (res: any) => this.assetDisposals.set(Array.isArray(res) ? res : res.data ?? []),
+      error: () => {}
+    });
   }
 
-  getAssetTag(assetId: string): string {
-    const matched = this.equipment().find(e => e.id === assetId);
-    return matched ? matched.assetNumber : '';
+  loadEquipment() {
+    this.isLoading.set(true);
+    this.assetsApi.getEquipment({ limit: 100 }).subscribe({
+      next: (res: any) => {
+        this.equipment.set(res.items ?? res);
+        this.isLoading.set(false);
+      },
+      error: () => {
+        this.notificationService.danger('Error', 'Failed to load equipment');
+        this.isLoading.set(false);
+      }
+    });
   }
 
-  // Action Handlers
+  loadRigs() {
+    this.opsApi.getRigs().subscribe({
+      next: (data: any) => this.rigs.set(Array.isArray(data) ? data : data.items ?? []),
+      error: () => {}
+    });
+  }
+
+  // ── Helpers ────────────────────────────────────────────────────────────────
+  getAssetName(id: string): string {
+    return this.equipment().find(e => e._id === id)?.equipmentName ?? id;
+  }
+  getAssetTag(id: string): string {
+    return this.equipment().find(e => e._id === id)?.assetNumber ?? '';
+  }
+
+  // ── Add Equipment ──────────────────────────────────────────────────────────
+  openAddModal() {
+    this.addForm = this.emptyAddForm();
+    this.showAddModal.set(true);
+  }
+
+  saveEquipment() {
+    if (!this.addForm.equipmentCode || !this.addForm.equipmentName || !this.addForm.category) {
+      this.notificationService.danger('Validation', 'Please fill all required fields');
+      return;
+    }
+    this.isSaving.set(true);
+    this.assetsApi.createEquipment(this.addForm as CreateEquipmentBody).subscribe({
+      next: (created) => {
+        this.equipment.update(list => [created, ...list]);
+        this.showAddModal.set(false);
+        this.notificationService.success('Created', `${created.equipmentName} registered successfully`);
+        this.isSaving.set(false);
+      },
+      error: (err) => {
+        this.notificationService.danger('Error', err?.error?.message || 'Failed to register equipment');
+        this.isSaving.set(false);
+      }
+    });
+  }
+
+  // ── Assignment ─────────────────────────────────────────────────────────────
   openAssignModal(asset: Equipment) {
-    this.selectedAssetId = asset.id;
-    this.assignedToType = 'Rig';
-    this.assignedToId = this.rigs()[0]?.id || '';
-    this.assignedToName = this.rigs()[0]?.rigName || '';
+    this.selectedEquipment = asset;
+    this.assignedToType  = 'Rig';
+    this.assignedToId    = this.rigs()[0]?._id ?? '';
+    this.assignedToName  = this.rigs()[0]?.equipmentName ?? '';
     this.conditionOnAssign = 'Good';
     this.assignmentNotes = '';
     this.showAssignModal.set(true);
   }
 
+  onRigAssignChange() {
+    const rig = this.rigs().find(r => r._id === this.assignedToId);
+    this.assignedToName = rig?.equipmentName ?? '';
+  }
+
   saveAssignment() {
-    const asset = this.equipment().find(e => e.id === this.selectedAssetId);
-    if (!asset) return;
-
-    // Resolve target name
-    if (this.assignedToType === 'Rig') {
-      const rig = this.rigs().find(r => r.id === this.assignedToId);
-      this.assignedToName = rig ? rig.rigName : '';
-    }
-
-    const newAssignment: AssetAssignment = {
-      id: `asg-${Date.now()}`,
-      assetId: asset.id,
-      assetNumber: asset.assetNumber,
-      equipmentName: asset.equipmentName,
+    if (!this.selectedEquipment) return;
+    this.isSaving.set(true);
+    this.assetsApi.createAssignment({
+      assetId: this.selectedEquipment._id,
       assignedToType: this.assignedToType,
       assignedToId: this.assignedToId,
       assignedToName: this.assignedToName,
       assignmentDate: new Date().toISOString().split('T')[0],
       conditionOnAssign: this.conditionOnAssign,
       notes: this.assignmentNotes
-    };
-
-    this.mockDataService.assetAssignments.update(list => [...list, newAssignment]);
-
-    // Update equipment location & status
-    this.mockDataService.updateEquipment(asset.id, {
-      location: this.assignedToName,
-      status: 'Active'
+    }).subscribe({
+      next: (asgn) => {
+        this.assetAssignments.update(list => [asgn, ...list]);
+        this.loadEquipment();
+        this.showAssignModal.set(false);
+        this.notificationService.success('Assigned', `${this.selectedEquipment?.equipmentName} assigned to ${this.assignedToName}`);
+        this.isSaving.set(false);
+      },
+      error: () => {
+        // Fallback to updateStatus if backend assignments endpoint returns error
+        this.assetsApi.updateStatus(this.selectedEquipment!._id, {
+          status: 'Active',
+          location: this.assignedToName,
+          projectAssignment: this.assignedToId || null
+        }).subscribe({
+          next: (updated) => {
+            this.equipment.update(list => list.map(e => e._id === updated._id ? updated : e));
+            this.showAssignModal.set(false);
+            this.notificationService.success('Assigned', `${updated.equipmentName} assigned to ${this.assignedToName}`);
+            this.isSaving.set(false);
+          },
+          error: (err) => {
+            this.notificationService.danger('Error', err?.error?.message || 'Assignment failed');
+            this.isSaving.set(false);
+          }
+        });
+      }
     });
-
-    // Audit log
-    this.mockDataService.addAssetHistory({
-      assetId: asset.id,
-      equipmentCode: asset.equipmentCode,
-      changeType: 'Project Assignment',
-      oldValue: asset.location,
-      newValue: this.assignedToName,
-      changedBy: 'System Admin',
-      notes: `Assigned to ${this.assignedToType}: ${this.assignedToName}. Condition: ${this.conditionOnAssign}`
-    });
-
-    this.showAssignModal.set(false);
-    this.notificationService.success('assets.assigned_success_title', 'assets.assigned_success_desc');
   }
 
+  // ── Transfer ───────────────────────────────────────────────────────────────
   openTransferModal(asset: Equipment) {
-    this.selectedAssetId = asset.id;
-    this.transferToLocation = 'Warehouse B';
-    this.transferNotes = '';
+    this.selectedEquipment = asset;
+    this.transferToLocation = '';
+    this.transferNotes      = '';
     this.showTransferModal.set(true);
   }
 
   saveTransfer() {
-    const asset = this.equipment().find(e => e.id === this.selectedAssetId);
-    if (!asset) return;
-
-    const newTransfer: AssetTransfer = {
-      id: `xf-${Date.now()}`,
-      assetId: asset.id,
-      assetNumber: asset.assetNumber,
-      equipmentName: asset.equipmentName,
-      fromLocation: asset.location,
+    if (!this.selectedEquipment || !this.transferToLocation) {
+      this.notificationService.danger('Validation', 'Please specify a destination location');
+      return;
+    }
+    this.isSaving.set(true);
+    this.assetsApi.createTransfer({
+      assetId: this.selectedEquipment._id,
       toLocation: this.transferToLocation,
       transferDate: new Date().toISOString().split('T')[0],
-      authorizedBy: 'System Admin',
-      status: 'Completed',
+      authorizedBy: this.authService.currentUser()?.fullName || 'Operations Manager',
       notes: this.transferNotes
-    };
-
-    this.mockDataService.assetTransfers.update(list => [...list, newTransfer]);
-
-    // Update equipment location
-    this.mockDataService.updateEquipment(asset.id, {
-      location: this.transferToLocation
+    }).subscribe({
+      next: (tr) => {
+        this.assetTransfers.update(list => [tr, ...list]);
+        this.loadEquipment();
+        this.showTransferModal.set(false);
+        this.notificationService.success('Transferred', `${this.selectedEquipment?.equipmentName} moved to ${this.transferToLocation}`);
+        this.isSaving.set(false);
+      },
+      error: () => {
+        this.assetsApi.updateStatus(this.selectedEquipment!._id, {
+          status: this.selectedEquipment!.status,
+          location: this.transferToLocation
+        }).subscribe({
+          next: (updated) => {
+            this.equipment.update(list => list.map(e => e._id === updated._id ? updated : e));
+            this.showTransferModal.set(false);
+            this.notificationService.success('Transferred', `${updated.equipmentName} moved to ${this.transferToLocation}`);
+            this.isSaving.set(false);
+          },
+          error: (err) => {
+            this.notificationService.danger('Error', err?.error?.message || 'Transfer failed');
+            this.isSaving.set(false);
+          }
+        });
+      }
     });
-
-    // Audit log
-    this.mockDataService.addAssetHistory({
-      assetId: asset.id,
-      equipmentCode: asset.equipmentCode,
-      changeType: 'Location Change',
-      oldValue: asset.location,
-      newValue: this.transferToLocation,
-      changedBy: 'System Admin',
-      notes: this.transferNotes
-    });
-
-    this.showTransferModal.set(false);
-    this.notificationService.success('assets.transfer_success_title', 'assets.transfer_success_desc');
   }
 
+  // ── Disposal ───────────────────────────────────────────────────────────────
   openDisposalModal(asset: Equipment) {
-    this.selectedAssetId = asset.id;
-    this.disposalMethod = 'Scrap';
-    this.disposalCost = 0;
-    this.revenueReceived = 0;
-    this.disposalReason = '';
+    this.selectedEquipment = asset;
+    this.disposalMethod    = 'Scrap';
+    this.disposalCost      = 0;
+    this.revenueReceived   = 0;
+    this.disposalReason    = '';
     this.showDisposalModal.set(true);
   }
 
   saveDisposal() {
-    const asset = this.equipment().find(e => e.id === this.selectedAssetId);
-    if (!asset) return;
-
-    const newDisposal: AssetDisposal = {
-      id: `disp-${Date.now()}`,
-      assetId: asset.id,
-      assetNumber: asset.assetNumber,
-      equipmentName: asset.equipmentName,
+    if (!this.selectedEquipment || !this.disposalReason) {
+      this.notificationService.danger('Validation', 'Please provide a disposal reason');
+      return;
+    }
+    this.isSaving.set(true);
+    this.assetsApi.createDisposal({
+      assetId: this.selectedEquipment._id,
       disposalDate: new Date().toISOString().split('T')[0],
       disposalMethod: this.disposalMethod,
       disposalCost: this.disposalCost,
       revenueReceived: this.revenueReceived,
       reason: this.disposalReason,
-      authorizedBy: 'System Admin',
-      status: 'Approved'
+      authorizedBy: this.authService.currentUser()?.fullName || 'General Manager'
+    }).subscribe({
+      next: (disp) => {
+        this.assetDisposals.update(list => [disp, ...list]);
+        this.loadEquipment();
+        this.showDisposalModal.set(false);
+        this.notificationService.success('Disposed', `${this.selectedEquipment?.equipmentName} marked as Out Of Service`);
+        this.isSaving.set(false);
+      },
+      error: () => {
+        this.assetsApi.updateStatus(this.selectedEquipment!._id, {
+          status: 'Out Of Service',
+          projectAssignment: null
+        }).subscribe({
+          next: (updated) => {
+            this.equipment.update(list => list.map(e => e._id === updated._id ? updated : e));
+            this.showDisposalModal.set(false);
+            this.notificationService.success('Disposed', `${updated.equipmentName} marked as Out Of Service`);
+            this.isSaving.set(false);
+          },
+          error: (err) => {
+            this.notificationService.danger('Error', err?.error?.message || 'Disposal failed');
+            this.isSaving.set(false);
+          }
+        });
+      }
+    });
+  }
+
+  // ── Helpers ───────────────────────────────────────────────────────────────
+  private emptyAddForm(): Partial<CreateEquipmentBody> {
+    return {
+      assetNumber: '',
+      equipmentCode: '',
+      equipmentName: '',
+      category: 'Rig',
+      manufacturer: '',
+      modelName: '',
+      serialNumber: '',
+      purchaseDate: new Date().toISOString().split('T')[0],
+      purchaseCost: 0,
+      currentValue: 0,
+      depreciationMethod: 'Straight Line',
+      location: '',
+      costCenter: '',
+      department: 'Operations',
+      status: 'Standby',
+      operatingHours: 0,
+      notes: ''
     };
-
-    this.mockDataService.assetDisposals.update(list => [...list, newDisposal]);
-
-    // Set asset status to Out of service / retired
-    this.mockDataService.updateEquipment(asset.id, {
-      status: 'Out Of Service'
-    });
-
-    // Audit log
-    this.mockDataService.addAssetHistory({
-      assetId: asset.id,
-      equipmentCode: asset.equipmentCode,
-      changeType: 'Status Change',
-      oldValue: asset.status,
-      newValue: 'Out Of Service',
-      changedBy: 'System Admin',
-      notes: `Asset Disposed via ${this.disposalMethod}. Reason: ${this.disposalReason}`
-    });
-
-    this.showDisposalModal.set(false);
-    this.notificationService.success('assets.disposal_success_title', 'assets.disposal_success_desc');
   }
 }

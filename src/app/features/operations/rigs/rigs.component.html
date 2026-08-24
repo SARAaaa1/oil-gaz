@@ -1,15 +1,19 @@
 <div class="space-y-6 p-6">
 
   <!-- ══════ HEADER ══════ -->
-  <div class="flex items-center justify-between">
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
     <div>
       <h1 class="text-2xl font-black text-slate-800 tracking-tight">{{ 'operations.rigs.title' | translate }}</h1>
       <p class="text-xs text-slate-500 font-semibold mt-1">{{ 'operations.rigs.subtitle' | translate }}</p>
     </div>
-    <span class="flex items-center gap-1.5 text-xs font-bold text-emerald-700 bg-emerald-50 px-4 py-2 rounded-full border border-emerald-200">
-      <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-      Live Monitoring
-    </span>
+    <div class="flex items-center gap-3">
+      <button (click)="openAddRigModal()"
+        class="px-4 py-2.5 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white text-xs font-extrabold rounded-xl shadow-md hover:shadow-indigo-500/20 active:scale-[0.98] transition-all flex items-center gap-2 cursor-pointer">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
+        <span>إضافة حفارة جديدة</span>
+      </button>
+     
+    </div>
   </div>
 
   <!-- ══════ KPI CARDS ══════ -->
@@ -345,7 +349,7 @@
             @for (rig of filteredRigs(); track rig.id) {
               <tr (click)="selectRig(rig)"
                 class="cursor-pointer transition-all duration-150 hover:bg-slate-50"
-                [class.bg-indigo-50]="selectedRig()?.id === rig.id">
+                [class.bg-indigo-50]="selectedRig() ? selectedRig()!.id === rig.id : false">
                 <td class="px-5 py-4">
                   <div class="flex items-center gap-2.5">
                     <div class="w-2.5 h-2.5 rounded-full shrink-0"
@@ -358,7 +362,7 @@
                 </td>
                 <td class="px-5 py-4 text-slate-500 font-semibold">{{ rig.location }}</td>
                 <td class="px-5 py-4 text-right font-mono font-bold text-slate-700">
-                  @if (rig.drillDepthFt > 0) { {{ rig.drillDepthFt | number }} ft }
+                  @if ((rig.drillDepthFt || 0) > 0) { {{ rig.drillDepthFt | number }} ft }
                   @else { <span class="text-slate-300">—</span> }
                 </td>
                 <td class="px-5 py-4 text-center font-mono font-bold text-slate-700">{{ rig.crewCount }}</td>
@@ -386,13 +390,13 @@
 
     <!-- Detail Panel -->
     <div>
-      @if (selectedRig()) {
+      @if (selectedRig(); as rig) {
         <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 space-y-4">
           <!-- Header -->
           <div class="flex items-start justify-between pb-3 border-b border-slate-100">
             <div>
-              <h3 class="text-sm font-black text-slate-800">{{ selectedRig()?.rigName }}</h3>
-              <p class="text-[10px] text-slate-400 font-semibold mt-0.5">{{ selectedRig()?.managerName }} · {{ selectedRig()?.location }}</p>
+              <h3 class="text-sm font-black text-slate-800">{{ rig.rigName }}</h3>
+              <p class="text-[10px] text-slate-400 font-semibold mt-0.5">{{ rig.managerName }} · {{ rig.location }}</p>
             </div>
             <button (click)="closeRigDetails()" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition-all">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
@@ -401,12 +405,12 @@
 
           <!-- Action Buttons -->
           <div class="flex gap-2">
-            @if (selectedRig()?.status !== 'Active') {
+            @if (rig.status !== 'Active') {
               <button (click)="deployRig()" class="flex-1 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black transition-all shadow-sm">
                 🚀 Deploy
               </button>
             }
-            @if (selectedRig()?.status !== 'Maintenance') {
+            @if (rig.status !== 'Maintenance') {
               <button (click)="decommissionRig()" class="flex-1 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-900 text-white text-xs font-black transition-all shadow-sm">
                 🔧 Decommission
               </button>
@@ -451,6 +455,14 @@
             }
 
             @if (detailsTab() === 'components') {
+              <div class="flex justify-between items-center pb-2 border-b border-slate-100">
+                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Rig Sub-assemblies</span>
+                <button (click)="openAddComponentModal()"
+                  class="px-2.5 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-[10px] font-black rounded-lg transition-colors flex items-center gap-1 cursor-pointer">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
+                  <span>إضافة جزء/مكون</span>
+                </button>
+              </div>
               @for (comp of rigComponents(); track comp.serial) {
                 <div class="p-3 bg-slate-50 rounded-xl border border-slate-100 space-y-1 text-xs">
                   <div class="flex items-center justify-between">
@@ -536,4 +548,169 @@
     </div>
 
   </div>
+
+  <!-- ══════════════════════════════════════════════════════════════════════════
+       MODAL 1: ADD NEW RIG WITH PETROLEUM SPECIFICATIONS
+       ══════════════════════════════════════════════════════════════════════════ -->
+  @if (showAddRigModal()) {
+    <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto animate-fade-in">
+      <div class="bg-white rounded-3xl border border-slate-100 shadow-2xl max-w-2xl w-full p-6 space-y-5 my-8">
+        <!-- Header -->
+        <div class="flex items-center justify-between border-b border-slate-100 pb-4">
+          <div class="flex items-center gap-3">
+            <div class="p-2.5 bg-indigo-100 text-indigo-700 rounded-2xl">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+            </div>
+            <div>
+              <h3 class="text-base font-black text-slate-800">إضافة حفارة جديدة إلى الأسطول</h3>
+              <p class="text-xs text-slate-400 font-semibold">تسجيل بيانات ومواصفات الحفارة الفنية</p>
+            </div>
+          </div>
+          <button (click)="closeAddRigModal()" class="text-slate-400 hover:text-slate-600 p-1">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+        </div>
+
+        <form (submit)="$event.preventDefault(); submitAddRig()" class="space-y-4 text-xs">
+          <!-- Row 1: Rig Name & Code -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="space-y-1">
+              <label class="font-bold text-slate-700">اسم/معرّف الحفارة <span class="text-red-500">*</span></label>
+              <input type="text" [(ngModel)]="newRigForm.rigName" name="rigName" placeholder="مثال: RIG-3001 Desert Star" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-400" required>
+            </div>
+            <div class="space-y-1">
+              <label class="font-bold text-slate-700">كود الحفارة <span class="text-red-500">*</span></label>
+              <input type="text" [(ngModel)]="newRigForm.equipmentCode" name="equipmentCode" placeholder="مثال: RIG-3001" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 font-bold text-slate-800 font-mono focus:outline-none focus:ring-2 focus:ring-indigo-400" required>
+            </div>
+          </div>
+
+          <!-- Row 2: Asset Number & Rig Type -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="space-y-1">
+              <label class="font-bold text-slate-700">رقم الأصل الثابت</label>
+              <input type="text" [(ngModel)]="newRigForm.assetNumber" name="assetNumber" placeholder="مثال: AST-RIG-005" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 font-bold text-slate-800 font-mono focus:outline-none focus:ring-2 focus:ring-indigo-400">
+            </div>
+            <div class="space-y-1">
+              <label class="font-bold text-slate-700">نوع الحفارة</label>
+              <select [(ngModel)]="newRigForm.rigType" name="rigType" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-400">
+                <option value="Land Rig">حفارة برية (Land Rig)</option>
+                <option value="Offshore Jackup">حفارة بحرية (Offshore Jackup)</option>
+                <option value="Trailer Rig">حفارة محمولة (Trailer Rig)</option>
+                <option value="Submersible">حفارة غاطسة (Submersible)</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Row 3: Horsepower & Drill Depth -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="space-y-1">
+              <label class="font-bold text-slate-700">قدرة المحرك (HP)</label>
+              <input type="number" [(ngModel)]="newRigForm.horsepower" name="horsepower" placeholder="2000" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 font-bold text-slate-800 font-mono focus:outline-none focus:ring-2 focus:ring-indigo-400">
+            </div>
+            <div class="space-y-1">
+              <label class="font-bold text-slate-700">أقصى عمق حفر بالقدم (Drill Depth Ft)</label>
+              <input type="number" [(ngModel)]="newRigForm.drillDepthFt" name="drillDepthFt" placeholder="20000" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 font-bold text-slate-800 font-mono focus:outline-none focus:ring-2 focus:ring-indigo-400">
+            </div>
+          </div>
+
+          <!-- Row 4: Location & Rig Manager -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="space-y-1">
+              <label class="font-bold text-slate-700">الموقع الحالي / الحقل</label>
+              <input type="text" [(ngModel)]="newRigForm.location" name="location" placeholder="مثال: حقل الغوار - القطاع 4" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-400">
+            </div>
+            <div class="space-y-1">
+              <label class="font-bold text-slate-700">مدير الحفارة (Rig Superintendent)</label>
+              <input type="text" [(ngModel)]="newRigForm.managerName" name="managerName" placeholder="مثال: م. سالم الحجري" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-400">
+            </div>
+          </div>
+
+          <!-- Row 5: Crew Count & BOP Rating -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="space-y-1">
+              <label class="font-bold text-slate-700">سعة طاقم العمل (Crew Count)</label>
+              <input type="number" [(ngModel)]="newRigForm.crewCount" name="crewCount" placeholder="28" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 font-bold text-slate-800 font-mono focus:outline-none focus:ring-2 focus:ring-indigo-400">
+            </div>
+            <div class="space-y-1">
+              <label class="font-bold text-slate-700">ضغط مانع الانفجار (BOP Rating PSI)</label>
+              <input type="number" [(ngModel)]="newRigForm.bopRatingPsi" name="bopRatingPsi" placeholder="10000" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 font-bold text-slate-800 font-mono focus:outline-none focus:ring-2 focus:ring-indigo-400">
+            </div>
+          </div>
+
+          <!-- Row 6: Top Drive & Mud Pumps -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="space-y-1">
+              <label class="font-bold text-slate-700">نوع/موديل التوب درايف (Top Drive)</label>
+              <input type="text" [(ngModel)]="newRigForm.topDriveModel" name="topDriveModel" placeholder="مثال: TDS-11SA 500 Ton" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-400">
+            </div>
+            <div class="space-y-1">
+              <label class="font-bold text-slate-700">مواصفات مضخات الطين (Mud Pumps)</label>
+              <input type="text" [(ngModel)]="newRigForm.mudPumpSpecs" name="mudPumpSpecs" placeholder="مثال: 3x 1600 HP Triplex" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-400">
+            </div>
+          </div>
+
+          <!-- Actions -->
+          <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
+            <button type="button" (click)="closeAddRigModal()" class="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl font-bold transition-all">إلغاء</button>
+            <button type="submit" [disabled]="isSubmittingRig()" class="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-black shadow-md transition-all flex items-center gap-2">
+              @if (isSubmittingRig()) {
+                <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+              }
+              <span>حفظ الحفارة وإضافتها للأسطول</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+
+  <!-- ══════════════════════════════════════════════════════════════════════════
+       MODAL 2: ADD RIG SUB-COMPONENT / PART
+       ══════════════════════════════════════════════════════════════════════════ -->
+  @if (showAddComponentModal()) {
+    <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
+      <div class="bg-white rounded-3xl border border-slate-100 shadow-2xl max-w-md w-full p-6 space-y-4">
+        <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+          <h3 class="text-sm font-black text-slate-800">إضافة جزء / مكون للحفارة {{ selectedRig()?.rigName }}</h3>
+          <button (click)="closeAddComponentModal()" class="text-slate-400 hover:text-slate-600 p-1">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+        </div>
+
+        <form (submit)="$event.preventDefault(); submitAddComponent()" class="space-y-3 text-xs">
+          <div class="space-y-1">
+            <label class="font-bold text-slate-700">اسم المكون/الجزء <span class="text-red-500">*</span></label>
+            <input type="text" [(ngModel)]="newComponentForm.name" name="name" placeholder="مثال: Mud Pump #2 1600HP" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-400" required>
+          </div>
+
+          <div class="space-y-1">
+            <label class="font-bold text-slate-700">الرقم التسلسلي (Serial Number)</label>
+            <input type="text" [(ngModel)]="newComponentForm.serial" name="serial" placeholder="مثال: MP-99201" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 font-bold text-slate-800 font-mono focus:outline-none focus:ring-2 focus:ring-indigo-400">
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div class="space-y-1">
+              <label class="font-bold text-slate-700">الحالة التشغيلية</label>
+              <select [(ngModel)]="newComponentForm.status" name="status" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-400">
+                <option value="Operational">شغال (Operational)</option>
+                <option value="Under Inspection">تحت الفحص (Under Inspection)</option>
+                <option value="In Maintenance">في الصيانة (In Maintenance)</option>
+              </select>
+            </div>
+
+            <div class="space-y-1">
+              <label class="font-bold text-slate-700">تاريخ الاعتماد/الفحص</label>
+              <input type="date" [(ngModel)]="newComponentForm.certificationDate" name="certificationDate" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-400">
+            </div>
+          </div>
+
+          <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+            <button type="button" (click)="closeAddComponentModal()" class="px-4 py-2 bg-slate-100 text-slate-600 rounded-xl font-bold">إلغاء</button>
+            <button type="submit" class="px-5 py-2 bg-indigo-600 text-white rounded-xl font-black shadow-md">حفظ وإلحاق بالحفارة</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+
 </div>

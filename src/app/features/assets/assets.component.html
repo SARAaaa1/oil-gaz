@@ -67,12 +67,12 @@
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-50 text-slate-700 font-medium">
-            @for (eq of equipment(); track eq.id) {
+            @for (eq of filteredEquipment(); track eq._id) {
               <tr class="hover:bg-slate-50/30 transition-colors">
                 <td class="p-4 font-mono font-bold text-slate-900">{{ eq.assetNumber }}</td>
                 <td class="p-4">
                   <div class="font-bold text-slate-900">{{ eq.equipmentName }}</div>
-                  <div class="text-[10px] text-slate-400 font-semibold">{{ eq.manufacturer }} | {{ eq.model }}</div>
+                  <div class="text-[10px] text-slate-400 font-semibold">{{ eq.manufacturer }} | {{ eq.modelName }}</div>
                 </td>
                 <td class="p-4 font-mono text-slate-500">{{ eq.serialNumber }}</td>
                 <td class="p-4 text-right font-bold text-slate-700 bg-slate-50/10 font-mono">${{ eq.purchaseCost | number }}</td>
@@ -140,7 +140,7 @@
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-50 text-slate-700 font-medium">
-            @for (asg of assetAssignments(); track asg.id) {
+            @for (asg of assetAssignments(); track asg._id) {
               <tr class="hover:bg-slate-50/30 transition-colors">
                 <td class="p-4 font-mono font-bold text-slate-900">{{ asg.assetNumber }}</td>
                 <td class="p-4 font-bold text-slate-800">{{ asg.equipmentName }}</td>
@@ -184,7 +184,7 @@
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-50 text-slate-700 font-medium">
-            @for (xf of assetTransfers(); track xf.id) {
+            @for (xf of assetTransfers(); track xf._id) {
               <tr class="hover:bg-slate-50/30 transition-colors">
                 <td class="p-4 font-mono font-bold text-slate-900">{{ xf.assetNumber }}</td>
                 <td class="p-4 font-bold text-slate-800">{{ xf.equipmentName }}</td>
@@ -227,7 +227,7 @@
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-50 text-slate-700 font-medium">
-            @for (disp of assetDisposals(); track disp.id) {
+            @for (disp of assetDisposals(); track disp._id) {
               <tr class="hover:bg-slate-50/30 transition-colors">
                 <td class="p-4 font-mono font-bold text-slate-900">{{ disp.assetNumber }}</td>
                 <td class="p-4 font-bold text-slate-800">{{ disp.equipmentName }}</td>
@@ -258,9 +258,9 @@
 <!-- Assign Modal -->
 @if (showAssignModal()) {
   <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
-    <div class="bg-white rounded-xl shadow-xl border border-slate-150 w-full max-w-md overflow-hidden animate-scale-in">
+    <div class="bg-white rounded-2xl shadow-2xl border border-slate-100 w-full max-w-md overflow-hidden animate-scale-in">
       <div class="p-4 bg-slate-50 border-b border-slate-100 flex items-center justify-between text-xs font-semibold">
-        <h3 class="font-bold text-slate-800">{{ 'assets.modal_assign_title' | translate }}</h3>
+        <h3 class="font-black text-slate-800">{{ 'assets.modal_assign_title' | translate }}</h3>
         <button (click)="showAssignModal.set(false)" class="text-slate-400 hover:text-slate-600">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -270,42 +270,42 @@
 
       <div class="p-5 space-y-3 text-xs">
         <div>
-          <label class="block text-slate-500 font-bold mb-1">{{ 'assets.assign_type' | translate }}</label>
-          <select [(ngModel)]="assignedToType" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-850">
-            <option value="Rig">Rig Fleet</option>
-            <option value="Project">Operations Project</option>
-            <option value="Camp">Staff Camp Base</option>
+          <label class="block text-slate-700 font-bold mb-1">{{ 'assets.assign_type' | translate }}</label>
+          <select [(ngModel)]="assignedToType" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400" style="color: #0f172a !important; background-color: #f8fafc !important;">
+            <option value="Rig" style="color: #0f172a !important;">Rig Fleet</option>
+            <option value="Project" style="color: #0f172a !important;">Operations Project</option>
+            <option value="Camp" style="color: #0f172a !important;">Staff Camp Base</option>
           </select>
         </div>
 
         <div>
-          <label class="block text-slate-500 font-bold mb-1">{{ 'assets.assign_target' | translate }}</label>
-          <select [(ngModel)]="assignedToId" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-850">
+          <label class="block text-slate-700 font-bold mb-1">{{ 'assets.assign_target' | translate }}</label>
+          <select [(ngModel)]="assignedToId" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400" style="color: #0f172a !important; background-color: #f8fafc !important;">
             @for (r of rigs(); track r.id) {
-              <option [value]="r.id">{{ r.rigName }} ({{ r.location }})</option>
+              <option [value]="r.id" style="color: #0f172a !important;">{{ r.rigName }} ({{ r.location }})</option>
             }
           </select>
         </div>
 
         <div>
-          <label class="block text-slate-500 font-bold mb-1">{{ 'assets.col_condition' | translate }}</label>
-          <select [(ngModel)]="conditionOnAssign" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-850">
-            <option value="New">New</option>
-            <option value="Good">Good</option>
-            <option value="Fair">Fair</option>
-            <option value="Poor">Poor</option>
+          <label class="block text-slate-700 font-bold mb-1">{{ 'assets.col_condition' | translate }}</label>
+          <select [(ngModel)]="conditionOnAssign" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400" style="color: #0f172a !important; background-color: #f8fafc !important;">
+            <option value="New" style="color: #0f172a !important;">New</option>
+            <option value="Good" style="color: #0f172a !important;">Good</option>
+            <option value="Fair" style="color: #0f172a !important;">Fair</option>
+            <option value="Poor" style="color: #0f172a !important;">Poor</option>
           </select>
         </div>
 
         <div>
-          <label class="block text-slate-500 font-bold mb-1">{{ 'assets.col_notes' | translate }}</label>
-          <textarea [(ngModel)]="assignmentNotes" rows="2" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-850"></textarea>
+          <label class="block text-slate-700 font-bold mb-1">{{ 'assets.col_notes' | translate }}</label>
+          <textarea [(ngModel)]="assignmentNotes" rows="2" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400" style="color: #0f172a !important; background-color: #f8fafc !important;"></textarea>
         </div>
       </div>
 
       <div class="p-4 bg-slate-50 border-t border-slate-100 flex justify-end space-x-2 rtl:space-x-reverse text-xs">
-        <button (click)="showAssignModal.set(false)" class="px-4 py-2 bg-white border border-slate-200 rounded-lg text-slate-650 font-bold">{{ 'common.cancel' | translate }}</button>
-        <button (click)="saveAssignment()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg">{{ 'assets.btn_save_assignment' | translate }}</button>
+        <button (click)="showAssignModal.set(false)" class="px-4 py-2 bg-white border border-slate-200 rounded-lg text-slate-700 font-bold hover:bg-slate-100">{{ 'common.cancel' | translate }}</button>
+        <button (click)="saveAssignment()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg shadow-md">{{ 'assets.btn_save_assignment' | translate }}</button>
       </div>
     </div>
   </div>
@@ -314,9 +314,9 @@
 <!-- Transfer Modal -->
 @if (showTransferModal()) {
   <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
-    <div class="bg-white rounded-xl shadow-xl border border-slate-150 w-full max-w-md overflow-hidden animate-scale-in">
+    <div class="bg-white rounded-2xl shadow-2xl border border-slate-100 w-full max-w-md overflow-hidden animate-scale-in">
       <div class="p-4 bg-slate-50 border-b border-slate-100 flex items-center justify-between text-xs font-semibold">
-        <h3 class="font-bold text-slate-800">{{ 'assets.modal_transfer_title' | translate }}</h3>
+        <h3 class="font-black text-slate-800">{{ 'assets.modal_transfer_title' | translate }}</h3>
         <button (click)="showTransferModal.set(false)" class="text-slate-400 hover:text-slate-600">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -326,30 +326,30 @@
 
       <div class="p-5 space-y-3 text-xs">
         <div>
-          <label class="block text-slate-500 font-bold mb-1">{{ 'assets.to_location' | translate }}</label>
-          <input type="text" [(ngModel)]="transferToLocation" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-850">
+          <label class="block text-slate-700 font-bold mb-1">{{ 'assets.to_location' | translate }}</label>
+          <input type="text" [(ngModel)]="transferToLocation" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400" style="color: #0f172a !important; background-color: #f8fafc !important;">
         </div>
 
         <div>
-          <label class="block text-slate-500 font-bold mb-1">{{ 'assets.col_notes' | translate }}</label>
-          <textarea [(ngModel)]="transferNotes" rows="3" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-850"></textarea>
+          <label class="block text-slate-700 font-bold mb-1">{{ 'assets.col_notes' | translate }}</label>
+          <textarea [(ngModel)]="transferNotes" rows="3" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400" style="color: #0f172a !important; background-color: #f8fafc !important;"></textarea>
         </div>
       </div>
 
       <div class="p-4 bg-slate-50 border-t border-slate-100 flex justify-end space-x-2 rtl:space-x-reverse text-xs">
-        <button (click)="showTransferModal.set(false)" class="px-4 py-2 bg-white border border-slate-200 rounded-lg text-slate-650 font-bold">{{ 'common.cancel' | translate }}</button>
-        <button (click)="saveTransfer()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg">{{ 'assets.btn_save_transfer' | translate }}</button>
+        <button (click)="showTransferModal.set(false)" class="px-4 py-2 bg-white border border-slate-200 rounded-lg text-slate-700 font-bold hover:bg-slate-100">{{ 'common.cancel' | translate }}</button>
+        <button (click)="saveTransfer()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg shadow-md">{{ 'assets.btn_save_transfer' | translate }}</button>
       </div>
     </div>
   </div>
 }
 
-<!-- Disposal Modal -->
+<!-- Disposal Modal (استبعاد وتخريد الأصل التشغيلي) -->
 @if (showDisposalModal()) {
   <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
-    <div class="bg-white rounded-xl shadow-xl border border-slate-150 w-full max-w-md overflow-hidden animate-scale-in">
+    <div class="bg-white rounded-2xl shadow-2xl border border-slate-100 w-full max-w-md overflow-hidden animate-scale-in">
       <div class="p-4 bg-slate-50 border-b border-slate-100 flex items-center justify-between text-xs font-semibold">
-        <h3 class="font-bold text-red-650">{{ 'assets.modal_dispose_title' | translate }}</h3>
+        <h3 class="font-black text-red-650">{{ 'assets.modal_dispose_title' | translate }}</h3>
         <button (click)="showDisposalModal.set(false)" class="text-slate-400 hover:text-slate-600">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -360,34 +360,34 @@
       <div class="p-5 space-y-3 text-xs">
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="block text-slate-500 font-bold mb-1">{{ 'assets.disposal_method' | translate }}</label>
-            <select [(ngModel)]="disposalMethod" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-850">
-              <option value="Sale">Sale</option>
-              <option value="Scrap">Scrap</option>
-              <option value="Write-off">Write-off</option>
-              <option value="Donation">Donation</option>
+            <label class="block text-slate-700 font-bold mb-1">{{ 'assets.disposal_method' | translate }}</label>
+            <select [(ngModel)]="disposalMethod" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-red-400" style="color: #0f172a !important; background-color: #f8fafc !important;">
+              <option value="Sale" style="color: #0f172a !important;">Sale (بيع)</option>
+              <option value="Scrap" style="color: #0f172a !important;">Scrap (تخريد)</option>
+              <option value="Write-off" style="color: #0f172a !important;">Write-off (شطب)</option>
+              <option value="Donation" style="color: #0f172a !important;">Donation (تبرع)</option>
             </select>
           </div>
           <div>
-            <label class="block text-slate-500 font-bold mb-1">{{ 'assets.disposal_cost' | translate }} ($)</label>
-            <input type="number" [(ngModel)]="disposalCost" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-850">
+            <label class="block text-slate-700 font-bold mb-1">{{ 'assets.disposal_cost' | translate }} ($)</label>
+            <input type="number" [(ngModel)]="disposalCost" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-red-400" style="color: #0f172a !important; background-color: #f8fafc !important;">
           </div>
         </div>
 
         <div>
-          <label class="block text-slate-500 font-bold mb-1">{{ 'assets.revenue_received' | translate }} ($)</label>
-          <input type="number" [(ngModel)]="revenueReceived" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-850">
+          <label class="block text-slate-700 font-bold mb-1">{{ 'assets.revenue_received' | translate }} ($)</label>
+          <input type="number" [(ngModel)]="revenueReceived" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-red-400" style="color: #0f172a !important; background-color: #f8fafc !important;">
         </div>
 
         <div>
-          <label class="block text-slate-500 font-bold mb-1">{{ 'assets.disposal_reason' | translate }} *</label>
-          <textarea [(ngModel)]="disposalReason" rows="3" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-850"></textarea>
+          <label class="block text-slate-700 font-bold mb-1">{{ 'assets.disposal_reason' | translate }} *</label>
+          <textarea [(ngModel)]="disposalReason" rows="3" placeholder="أدخل سبب وتفاصيل الاستبعاد..." class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-red-400" style="color: #0f172a !important; background-color: #f8fafc !important;"></textarea>
         </div>
       </div>
 
       <div class="p-4 bg-slate-50 border-t border-slate-100 flex justify-end space-x-2 rtl:space-x-reverse text-xs">
-        <button (click)="showDisposalModal.set(false)" class="px-4 py-2 bg-white border border-slate-200 rounded-lg text-slate-650 font-bold">{{ 'common.cancel' | translate }}</button>
-        <button (click)="saveDisposal()" class="px-4 py-2 bg-red-650 hover:bg-red-700 text-white font-bold rounded-lg">{{ 'assets.btn_save_disposal' | translate }}</button>
+        <button (click)="showDisposalModal.set(false)" class="px-4 py-2 bg-white border border-slate-200 rounded-lg text-slate-700 font-bold hover:bg-slate-100">{{ 'common.cancel' | translate }}</button>
+        <button (click)="saveDisposal()" class="px-4 py-2 bg-red-650 hover:bg-red-700 text-white font-bold rounded-lg shadow-md">{{ 'assets.btn_save_disposal' | translate }}</button>
       </div>
     </div>
   </div>

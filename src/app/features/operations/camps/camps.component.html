@@ -6,7 +6,7 @@
       <p class="text-xs text-slate-500 mt-1 font-semibold">Track and allocate rig crew caravans, beds, generators, and assets.</p>
     </div>
     <div class="flex items-center gap-3">
-      <button (click)="openAddCamp()" class="px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all shadow-sm flex items-center gap-1.5">
+      <button (click)="openCampModal()" class="px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all shadow-sm flex items-center gap-1.5">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
         <span>Register Camp</span>
       </button>
@@ -39,8 +39,8 @@
       <div>
         <p class="text-xs font-semibold text-slate-400 uppercase">Bed Occupancy Rate</p>
         <h3 class="text-2xl font-black text-slate-800 mt-1">
-          {{ occupiedBeds() }} / {{ totalBeds() }}
-          <span class="text-xs font-semibold text-slate-400 ml-1">({{ (occupiedBeds() / (totalBeds() || 1) * 100) | number:'1.0-0' }}%)</span>
+           {{ totalOccupied() }} / {{ totalBeds() }}
+          <span class="text-xs font-semibold text-slate-400 ml-1">({{ occupancyRate() }}%)</span>
         </h3>
       </div>
       <div class="w-12 h-12 rounded-xl bg-amber-50 flex items-center justify-center text-amber-600">
@@ -104,14 +104,14 @@
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100 font-semibold text-slate-700">
-              @for (camp of filteredCamps(); track camp.id) {
+              @for (camp of filteredCamps(); track camp._id) {
                 <tr 
                   (click)="selectCamp(camp)" 
                   class="hover:bg-slate-50/50 transition-colors cursor-pointer"
-                  [class.bg-indigo-50]="selectedCamp()?.id === camp.id"
+                  [class.bg-indigo-50]="selectedCamp()?._id === camp._id"
                 >
                   <td class="p-4 py-3 font-mono font-bold text-indigo-600">{{ camp.campCode }}</td>
-                  <td class="p-4 py-3 font-bold text-slate-800">{{ camp.campName }}</td>
+                  <td class="p-4 py-3 font-bold text-slate-800">{{ camp.name }}</td>
                   <td class="p-4 py-3 text-slate-500">{{ camp.location }}</td>
                   <td class="p-4 py-3 text-right font-mono">
                     {{ camp.occupiedBeds }} / {{ camp.totalBeds }}
@@ -153,7 +153,7 @@
           <div class="bg-white p-5 rounded-xl border border-slate-100 shadow-sm space-y-5 animate-fade-in">
             <div class="flex items-center justify-between border-b border-slate-100 pb-3">
               <div>
-                <h3 class="text-sm font-bold text-slate-800">{{ selectedCamp()?.campName }}</h3>
+                <h3 class="text-sm font-bold text-slate-800">{{ selectedCamp()?.name }}</h3>
                 <span class="text-[10px] font-mono text-indigo-600">{{ selectedCamp()?.campCode }}</span>
               </div>
               <button (click)="closeCampDetails()" class="text-slate-400 hover:text-slate-650">
@@ -181,7 +181,7 @@
               </div>
               
               <div class="space-y-2">
-                @for (car of filteredCaravans(); track car.id) {
+                @for (car of filteredCaravans(); track car._id) {
                   <div class="p-3 bg-slate-50 rounded-lg flex flex-col gap-2 border border-slate-100">
                     <div class="flex items-center justify-between text-xs">
                       <span class="font-bold text-slate-850">{{ car.caravanNumber }} <span class="text-[10px] text-slate-400">({{ car.capacityBeds }} Beds)</span></span>
@@ -238,14 +238,14 @@
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-100 font-semibold text-slate-700">
-            @for (alloc of allocations(); track alloc.id) {
+            @for (alloc of allocations(); track alloc._id) {
               <tr>
                 <td class="p-4 py-3 font-bold text-slate-800">{{ getCampName(alloc.campId) }}</td>
-                <td class="p-4 py-3 font-mono text-indigo-600">{{ getCaravanNumber(alloc.caravanId) }}</td>
-                <td class="p-4 py-3 text-slate-600">{{ alloc.allocatedToUser }}</td>
-                <td class="p-4 py-3 font-mono">{{ alloc.allocationDate }}</td>
+                <td class="p-4 py-3 font-mono text-indigo-600">{{ alloc.bedNumber || alloc.caravanId || '-' }}</td>
+                <td class="p-4 py-3 text-slate-600">{{ alloc.occupantName || alloc.allocatedToUser }}</td>
+                <td class="p-4 py-3 font-mono">{{ alloc.checkInDate || alloc.allocationDate }}</td>
                 <td class="p-4 py-3 text-right">
-                  <button (click)="releaseAllocation(alloc)" class="text-red-650 hover:text-red-900 font-bold">Release Assignment</button>
+                  <button (click)="releaseAllocationObj(alloc)" class="text-red-650 hover:text-red-900 font-bold">Release Assignment</button>
                 </td>
               </tr>
             } @empty {
@@ -277,7 +277,7 @@
         </div>
         <div>
           <label class="block text-slate-400 mb-1">Camp Name *</label>
-          <input type="text" [(ngModel)]="campForm.campName" name="campName" placeholder="e.g. Base Camp Alpha" class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2.5 text-slate-800 focus:outline-none">
+          <input type="text" [(ngModel)]="campForm.name" name="campName" placeholder="e.g. Base Camp Alpha" class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2.5 text-slate-800 focus:outline-none">
         </div>
         <div>
           <label class="block text-slate-400 mb-1">Location Site *</label>
@@ -318,7 +318,7 @@
           <label class="block text-slate-400 mb-1">Target Caravan *</label>
           <select [(ngModel)]="allocationForm.caravanId" name="caravanId" class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2.5 text-slate-850 focus:outline-none">
             <option value="">-- Select Caravan --</option>
-            @for (car of caravans(); track car.id) {
+            @for (car of caravans(); track car._id) {
               @if (car.status === 'Available') {
                 <option [value]="car.id">{{ car.caravanNumber }} ({{ car.capacityBeds }} Beds Available)</option>
               }
@@ -327,11 +327,11 @@
         </div>
         <div>
           <label class="block text-slate-400 mb-1">Allocate Crew / User *</label>
-          <input type="text" [(ngModel)]="allocationForm.allocatedToUser" name="allocatedToUser" placeholder="e.g. Drilling Team A Lead" class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2.5 text-slate-800 focus:outline-none">
+          <input type="text" [(ngModel)]="allocationForm.occupantName" name="allocatedToUser" placeholder="e.g. Drilling Team A Lead" class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2.5 text-slate-800 focus:outline-none">
         </div>
         <div>
           <label class="block text-slate-400 mb-1">Allocation Start Date</label>
-          <input type="date" [(ngModel)]="allocationForm.allocationDate" name="allocationDate" class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2.5 text-slate-800 focus:outline-none font-mono">
+          <input type="date" [(ngModel)]="allocationForm.checkInDate" name="allocationDate" class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2.5 text-slate-800 focus:outline-none font-mono">
         </div>
         <button type="submit" class="w-full py-3 bg-slate-900 text-white rounded-lg font-bold hover:bg-slate-800 transition-colors shadow-md mt-6">Submit Allocation</button>
       </form>

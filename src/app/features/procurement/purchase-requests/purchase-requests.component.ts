@@ -1,15 +1,101 @@
-import { Component, OnInit, signal, computed, inject, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnInit, signal, computed, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
-import { MockDataService } from '../../../core/services/mock-data.service';
 import { BreadcrumbService } from '../../../core/services/breadcrumb.service';
 import { NotificationService } from '../../../core/services/notification.service';
 import { PurchaseRequest, PurchaseRequestItem, ChargeType, ItemType } from '../../../shared/interfaces/purchase-request.interface';
 import { AuditService } from '../../../core/services/audit.service';
 import { ApprovalHistoryComponent } from '../../../shared/components/approval-history/approval-history.component';
 import { ProcurementChainComponent } from '../../../shared/components/procurement-chain/procurement-chain.component';
+import { ProcurementService } from '../../../core/services/procurement.service';
+import { InventoryApiService } from '../../../core/services/inventory-api.service';
+import { finalize } from 'rxjs/operators';
+
+// ─── Mapper: API → Frontend interface ────────────────────────────────────────
+
+function mapApiPR(raw: any): PurchaseRequest {
+  return {
+    id:                    raw._id ?? raw.id,
+    requestNumber:         raw.requestNumber ?? raw.prNumber ?? raw.documentNumber ?? '',
+    documentNumber:        raw.documentNumber ?? raw.requestNumber ?? '',
+    procurementChain:      raw.procurementChain ?? '',
+    rootProcurementNumber: raw.rootProcurementNumber ?? '',
+    chainId:               raw.chainId ?? raw._id ?? raw.id,
+    parentDocumentId:      raw.parentDocumentId,
+    parentDocumentNumber:  raw.parentDocumentNumber,
+    department:            raw.department ?? '',
+    costCenter:            raw.costCenter ?? '',
+    chargeType:            mapChargeType(raw.chargeType),
+    projectId:             raw.projectId,
+    projectName:           raw.projectName,
+    assetId:               raw.assetId,
+    assetName:             raw.assetName,
+    requestDate:           raw.requestDate ?? raw.createdAt ?? '',
+    requiredDate:          raw.requiredDate ?? '',
+    status:                raw.status ?? 'Draft',
+    description:           raw.description ?? '',
+    requestedBy:           raw.requestedBy ?? '',
+    items:                 (raw.items ?? []).map(mapApiPRItem),
+    reservationCreated:    raw.reservationCreated,
+  };
+}
+
+function mapApiPRItem(raw: any): PurchaseRequestItem {
+  return {
+    id:                 raw._id ?? raw.id ?? `pri-${Date.now()}`,
+    itemType:           mapItemType(raw.itemType),
+    itemCode:           raw.itemCode ?? '',
+    itemName:           raw.itemName ?? raw.serviceDescription ?? raw.itemDescription ?? '',
+    quantity:           raw.quantity ?? 1,
+    uom:                raw.uom ?? 'PCS',
+    notes:              raw.notes,
+    itemDescription:    raw.itemDescription,
+    category:           raw.category,
+    estimatedUnitCost:  raw.estimatedUnitCost,
+    serviceDescription: raw.serviceDescription,
+    scopeOfWork:        raw.scopeOfWork,
+    estimatedCost:      raw.estimatedCost,
+    currentStock:       raw.currentStock,
+    reservedQty:        raw.reservedQty,
+    availableQty:       raw.availableQty,
+    shortageQty:        raw.shortageQty,
+    allowPartialIssue:  raw.allowPartialIssue ?? true,
+    fulfillFromStock:   raw.fulfillFromStock ?? 0,
+    fulfillByPurchase:  raw.fulfillByPurchase ?? 0,
+  };
+}
+
+/** تحويل chargeType من API إلى نوع الـ frontend */
+function mapChargeType(ct: string): ChargeType {
+  if (ct === 'PROJECT' || ct === 'Project Cost') return 'Project Cost';
+  if (ct === 'CAPEX' || ct === 'Asset Cost')     return 'Asset Cost';
+  return 'General Overhead';
+}
+
+/** تحويل chargeType من الـ frontend إلى قيمة الـ API */
+function mapChargeTypeToApi(ct: ChargeType): string {
+  if (ct === 'Project Cost') return 'PROJECT';
+  if (ct === 'Asset Cost')   return 'CAPEX';
+  return 'OPEX';
+}
+
+/** تحويل itemType من API إلى نوع الـ frontend */
+function mapItemType(it: string): ItemType {
+  if (it === 'material' || it === 'Inventory Item') return 'Inventory Item';
+  if (it === 'service'  || it === 'Service')         return 'Service';
+  return 'New Item';
+}
+
+/** تحويل itemType من الـ frontend إلى قيمة الـ API */
+function mapItemTypeToApi(it: ItemType): string {
+  if (it === 'Inventory Item') return 'material';
+  if (it === 'Service')        return 'service';
+  return 'material';
+}
+
+// ─── Component ────────────────────────────────────────────────────────────────
 
 @Component({
   selector: 'app-purchase-requests',
@@ -20,38 +106,35 @@ import { ProcurementChainComponent } from '../../../shared/components/procuremen
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class PurchaseRequestsComponent implements OnInit {
-  private readonly mockDataService = inject(MockDataService);
-  private readonly breadcrumbService = inject(BreadcrumbService);
+  private readonly procurementService = inject(ProcurementService);
+  private readonly inventoryApiService = inject(InventoryApiService);
+  private readonly breadcrumbService  = inject(BreadcrumbService);
   private readonly notificationService = inject(NotificationService);
   private readonly auditService = inject(AuditService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly translate = inject(TranslateService);
+  private readonly cdr = inject(ChangeDetectorRef);
 
-  // Lists and Stores (Signals)
-  readonly inventory = this.mockDataService.inventoryItems;
-  readonly purchaseRequests = this.mockDataService.purchaseRequests;
+  // ── State ────────────────────────────────────────────────────────────────
+  readonly purchaseRequests = signal<PurchaseRequest[]>([]);
+  readonly inventory        = signal<any[]>([]);
+  readonly isLoading        = signal<boolean>(false);
 
-  // Projects and Assets signals
+  // Projects and Assets
   readonly projects = signal([
     { id: 'PRJ-001', name: 'Permian Overland Drilling' },
     { id: 'PRJ-002', name: 'Midland Basin Support' },
     { id: 'PRJ-003', name: 'Eagle Ford Shale Development' }
   ]);
-
-  readonly assets = computed(() => {
-    return this.mockDataService.equipment().map(e => ({
-      id: e.id,
-      name: e.equipmentName
-    }));
-  });
+  readonly assets = signal<{ id: string; name: string }[]>([]);
 
   // View States
-  readonly isFormView = signal<boolean>(false);
-  readonly selectedPR = signal<PurchaseRequest | null>(null);
+  readonly isFormView  = signal<boolean>(false);
+  readonly selectedPR  = signal<PurchaseRequest | null>(null);
 
   // Search & Filter
-  readonly searchQuery = signal<string>('');
+  readonly searchQuery  = signal<string>('');
   readonly statusFilter = signal<string>('ALL');
 
   // Form State
@@ -60,7 +143,7 @@ export class PurchaseRequestsComponent implements OnInit {
   // Computed filtered list
   readonly filteredPRs = computed(() => {
     let list = this.purchaseRequests();
-    const query = this.searchQuery().trim().toLowerCase();
+    const query  = this.searchQuery().trim().toLowerCase();
     const filter = this.statusFilter();
 
     if (filter !== 'ALL') {
@@ -68,52 +151,33 @@ export class PurchaseRequestsComponent implements OnInit {
     }
 
     if (query) {
-      list = list.filter(pr => 
+      list = list.filter(pr =>
         pr.requestNumber.toLowerCase().includes(query) ||
         pr.department.toLowerCase().includes(query) ||
         pr.description.toLowerCase().includes(query) ||
         pr.costCenter.toLowerCase().includes(query) ||
-        (pr.projectId && pr.projectId.toLowerCase().includes(query)) ||
+        (pr.projectId   && pr.projectId.toLowerCase().includes(query)) ||
         (pr.projectName && pr.projectName.toLowerCase().includes(query)) ||
-        (pr.assetName && pr.assetName.toLowerCase().includes(query))
+        (pr.assetName   && pr.assetName.toLowerCase().includes(query))
       );
     }
 
-    // Sort descending by number
     return [...list].sort((a, b) => b.requestNumber.localeCompare(a.requestNumber));
   });
 
-  // Dynamic Procurement Journey Stepper
-  readonly procurementChain = computed(() => {
-    const pr = this.selectedPR();
-    if (!pr) return null;
+  // Procurement chain — بيانات مجمّعة من الـ API
+  readonly procurementChain = signal<any>(null);
 
-    const chainId = pr.chainId;
-    const rfq = this.mockDataService.rfqs().find(r => r.purchaseRequestId === pr.id || r.chainId === chainId);
-    const quotations = rfq?.quotations || [];
-    const po = this.mockDataService.purchaseOrders().find(p => p.chainId === chainId || (rfq && p.rfqId === rfq.id));
-    const mrv = po ? this.mockDataService.mrvs().find(m => m.poId === po.id || m.poNumber === po.poNumber) : null;
-    const invoice = po ? this.mockDataService.supplierInvoices().find(si => si.poId === po.id || si.poNumber === po.poNumber) : null;
-    const payment = invoice ? this.mockDataService.paymentVouchers().find(pv => pv.invoicesPaid.some(ip => ip.invoiceId === invoice.id)) : null;
-
-    return {
-      pr,
-      rfq,
-      quotations,
-      po,
-      mrv,
-      invoice,
-      payment
-    };
-  });
-
+  // ── Init ──────────────────────────────────────────────────────────────────
   ngOnInit() {
     this.breadcrumbService.setBreadcrumbs([
       { label: 'navigation.procurement', url: '/procurement' },
       { label: 'procurement.purchase_requests.breadcrumb' }
     ]);
 
-    // Check query parameters to open form or select a PR directly
+    this.loadPRs();
+    this.loadInventoryItems();
+
     this.route.queryParams.subscribe(params => {
       if (params['openForm'] === 'true') {
         this.isFormView.set(true);
@@ -122,10 +186,49 @@ export class PurchaseRequestsComponent implements OnInit {
         const pr = this.purchaseRequests().find(p => p.id === params['prId']);
         if (pr) {
           this.selectedPR.set(pr);
+          this.loadProcurementChain(pr);
         }
       }
     });
   }
+
+  // ── Data Loading ──────────────────────────────────────────────────────────
+
+  private loadPRs() {
+    this.isLoading.set(true);
+    this.procurementService.getPRs({ limit: 200, sortOrder: 'DESC' })
+      .pipe(finalize(() => { this.isLoading.set(false); this.cdr.markForCheck(); }))
+      .subscribe({
+        next: res => {
+          const raw = res?.items ?? res ?? [];
+          const mapped = (Array.isArray(raw) ? raw : []).map(mapApiPR);
+          this.purchaseRequests.set(mapped);
+        },
+        error: err => {
+          console.error('Failed to load Purchase Requests:', err);
+          this.notificationService.danger('Error', 'Failed to load Purchase Requests.');
+        }
+      });
+  }
+
+  private loadInventoryItems() {
+    this.inventoryApiService.getItems({ limit: 200 })
+      .subscribe({
+        next: res => {
+          const raw = res?.items ?? res ?? [];
+          this.inventory.set(Array.isArray(raw) ? raw : []);
+          this.cdr.markForCheck();
+        },
+        error: err => console.error('Failed to load inventory items:', err)
+      });
+  }
+
+  private loadProcurementChain(pr: PurchaseRequest) {
+    // يبحث في القائمة المحملة حالياً عن بيانات الـ chain — تُحمَّل عند فتح التفاصيل
+    this.procurementChain.set({ pr, rfq: null, quotations: [], po: null, mrv: null, invoice: null, payment: null });
+  }
+
+  // ── Form Helpers ──────────────────────────────────────────────────────────
 
   getEmptyForm() {
     return {
@@ -136,10 +239,10 @@ export class PurchaseRequestsComponent implements OnInit {
       projectName: '',
       assetId: '',
       assetName: '',
-      requiredDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 14 days out
+      requiredDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
       description: '',
       items: [
-        { 
+        {
           itemType: 'Inventory Item' as ItemType,
           itemCode: '',
           itemName: '',
@@ -172,10 +275,10 @@ export class PurchaseRequestsComponent implements OnInit {
   }
 
   onChargeTypeChange() {
-    this.formPR.projectId = '';
+    this.formPR.projectId  = '';
     this.formPR.projectName = '';
-    this.formPR.assetId = '';
-    this.formPR.assetName = '';
+    this.formPR.assetId    = '';
+    this.formPR.assetName  = '';
   }
 
   onProjectSelect() {
@@ -201,7 +304,7 @@ export class PurchaseRequestsComponent implements OnInit {
     item.scopeOfWork = '';
     item.estimatedCost = undefined;
     item.allowPartialIssue = true;
-    this.updateAvailabilityInfo(index);
+    this.resetAvailability(item);
   }
 
   addItemRow() {
@@ -236,14 +339,15 @@ export class PurchaseRequestsComponent implements OnInit {
 
   onItemSelect(index: number) {
     const row = this.formPR.items[index];
-    if (row.itemType === 'Inventory Item') {
-      const match = this.inventory().find(i => i.itemCode === row.itemCode);
+    if (row.itemType === 'Inventory Item' && row.itemCode) {
+      // ابحث في الـ inventory المحملة
+      const match = this.inventory().find((i: any) => i.itemCode === row.itemCode);
       if (match) {
         row.itemName = match.itemName;
         row.uom = match.uom;
       }
+      this.updateAvailabilityInfo(index);
     }
-    this.updateAvailabilityInfo(index);
   }
 
   onQuantityChange(index: number) {
@@ -257,33 +361,58 @@ export class PurchaseRequestsComponent implements OnInit {
   updateAvailabilityInfo(index: number) {
     const row = this.formPR.items[index];
     if (row.itemType === 'Inventory Item' && row.itemCode) {
-      const avail = this.mockDataService.getInventoryAvailability(row.itemCode);
-      row.currentStock = avail.currentStock;
-      row.reservedQty = avail.reservedQty;
-      row.availableQty = avail.availableQty;
-      row.shortageQty = Math.max(0, row.quantity - avail.availableQty);
-      
-      if (row.allowPartialIssue) {
-        row.fulfillFromStock = Math.min(row.quantity, avail.availableQty);
-        row.fulfillByPurchase = row.shortageQty;
-      } else {
-        if (avail.availableQty >= row.quantity) {
-          row.fulfillFromStock = row.quantity;
-          row.fulfillByPurchase = 0;
-        } else {
-          row.fulfillFromStock = 0;
-          row.fulfillByPurchase = row.quantity;
+      // استخدام الـ API للتحقق من التوافر
+      this.inventoryApiService.getItemAvailability(row.itemCode).subscribe({
+        next: (avail: any) => {
+          row.currentStock  = avail.currentStock  ?? 0;
+          row.reservedQty   = avail.reservedQty   ?? 0;
+          row.availableQty  = avail.availableQty  ?? 0;
+          row.shortageQty   = Math.max(0, row.quantity - row.availableQty);
+
+          if (row.allowPartialIssue) {
+            row.fulfillFromStock  = Math.min(row.quantity, row.availableQty);
+            row.fulfillByPurchase = row.shortageQty;
+          } else {
+            if (row.availableQty >= row.quantity) {
+              row.fulfillFromStock  = row.quantity;
+              row.fulfillByPurchase = 0;
+            } else {
+              row.fulfillFromStock  = 0;
+              row.fulfillByPurchase = row.quantity;
+            }
+          }
+          this.cdr.markForCheck();
+        },
+        error: () => {
+          // Fallback من الـ inventory المحملة
+          const match = this.inventory().find((i: any) => i.itemCode === row.itemCode);
+          if (match) {
+            const available = match.quantity ?? 0;
+            row.currentStock  = available;
+            row.reservedQty   = 0;
+            row.availableQty  = available;
+            row.shortageQty   = Math.max(0, row.quantity - available);
+            row.fulfillFromStock  = Math.min(row.quantity, available);
+            row.fulfillByPurchase = row.shortageQty;
+          }
+          this.cdr.markForCheck();
         }
-      }
+      });
     } else {
-      row.currentStock = 0;
-      row.reservedQty = 0;
-      row.availableQty = 0;
-      row.shortageQty = 0;
-      row.fulfillFromStock = 0;
-      row.fulfillByPurchase = 0;
+      this.resetAvailability(row);
     }
   }
+
+  private resetAvailability(row: any) {
+    row.currentStock  = 0;
+    row.reservedQty   = 0;
+    row.availableQty  = 0;
+    row.shortageQty   = 0;
+    row.fulfillFromStock  = 0;
+    row.fulfillByPurchase = 0;
+  }
+
+  // ── Submit PR ─────────────────────────────────────────────────────────────
 
   submitPR(event: Event) {
     event.preventDefault();
@@ -316,198 +445,134 @@ export class PurchaseRequestsComponent implements OnInit {
       return;
     }
 
-    // Format items
-    const formattedItems: PurchaseRequestItem[] = this.formPR.items.map((item, idx) => {
-      const formatted: PurchaseRequestItem = {
-        id: `pri-${Date.now()}-${idx}`,
-        itemType: item.itemType,
-        itemCode: item.itemCode,
-        itemName: item.itemType === 'Inventory Item' ? item.itemName : (item.itemType === 'New Item' ? item.itemDescription : item.serviceDescription),
-        quantity: item.itemType === 'Service' ? 1 : item.quantity,
-        uom: item.itemType === 'Service' ? 'SRV' : item.uom,
-        notes: item.notes,
-        itemDescription: item.itemDescription,
-        category: item.category,
-        estimatedUnitCost: item.itemType === 'New Item' ? item.estimatedUnitCost : undefined,
-        serviceDescription: item.serviceDescription,
-        scopeOfWork: item.scopeOfWork,
-        estimatedCost: item.itemType === 'Service' ? item.estimatedCost : undefined,
-        allowPartialIssue: item.allowPartialIssue,
-        currentStock: item.currentStock,
-        reservedQty: item.reservedQty,
-        availableQty: item.availableQty,
-        shortageQty: item.shortageQty,
-        fulfillFromStock: item.fulfillFromStock,
-        fulfillByPurchase: item.fulfillByPurchase
-      };
-      return formatted;
-    });
+    // بناء الـ payload للـ API
+    const apiItems = this.formPR.items.map(item => ({
+      itemType:          mapItemTypeToApi(item.itemType),
+      itemCode:          item.itemCode      || undefined,
+      itemName:          item.itemType !== 'Service' ? item.itemName : undefined,
+      quantity:          item.itemType === 'Service' ? 1 : item.quantity,
+      uom:               item.itemType === 'Service' ? 'SRV' : item.uom,
+      itemDescription:   item.itemDescription || undefined,
+      category:          item.category       || undefined,
+      estimatedUnitCost: item.estimatedUnitCost || undefined,
+      serviceDescription: item.serviceDescription || undefined,
+      scopeOfWork:       item.scopeOfWork    || undefined,
+      estimatedCost:     item.estimatedCost  || undefined,
+      allowPartialIssue: item.allowPartialIssue,
+      currentStock:      item.currentStock   ?? 0,
+      availableQty:      item.availableQty   ?? 0,
+      shortageQty:       item.shortageQty    ?? 0,
+      fulfillFromStock:  item.fulfillFromStock  ?? 0,
+      fulfillByPurchase: item.fulfillByPurchase ?? 0,
+    }));
 
-    // Check if any items are issued from stock
-    const mivItems = formattedItems
-      .filter(item => item.itemType === 'Inventory Item' && (item.fulfillFromStock ?? 0) > 0)
-      .map(item => ({
-        itemCode: item.itemCode,
-        itemName: item.itemName,
-        quantityRequested: item.quantity,
-        quantityIssued: item.fulfillFromStock!,
-        unitPrice: this.inventory().find(inv => inv.itemCode === item.itemCode)?.unitPrice ?? 0,
-        totalPrice: (this.inventory().find(inv => inv.itemCode === item.itemCode)?.unitPrice ?? 0) * item.fulfillFromStock!,
-        uom: item.uom,
-        inventoryCreditAcc: '1201-01',
-        consumptionDebitAcc: '5102-04'
-      }));
+    const payload = {
+      department:   this.formPR.department,
+      costCenter:   this.formPR.costCenter,
+      chargeType:   mapChargeTypeToApi(this.formPR.chargeType),
+      projectId:    this.formPR.projectId    || undefined,
+      projectName:  this.formPR.projectName  || undefined,
+      assetId:      this.formPR.assetId      || undefined,
+      assetName:    this.formPR.assetName    || undefined,
+      requiredDate: this.formPR.requiredDate,
+      description:  this.formPR.description,
+      requestedBy:  'Current User',
+      items:        apiItems,
+    };
 
-    let createdMIVId: string | null = null;
-    if (mivItems.length > 0) {
-      const list = this.mockDataService.mivs();
-      const num = `MIV-2026-0${list.length + 1}`;
-      const mivId = `miv-${Date.now()}`;
-      const totalMIVAmount = mivItems.reduce((sum, item) => sum + item.totalPrice, 0);
-      
-      const newMIV = {
-        id: mivId,
-        voucherNumber: num,
-        issueTo: this.formPR.chargeType === 'Project Cost' ? 'Project' as const : 'Cost Center' as const,
-        destinationId: this.formPR.projectId || this.formPR.projectName || this.formPR.costCenter,
-        referenceNumber: `PR-DIRECT-${Date.now()}`,
-        requestedBy: this.auditService.logs().length > 0 ? this.auditService.logs()[0].user : 'Admin User',
-        approvedBy: 'Auto System',
-        issueDate: new Date().toISOString().split('T')[0],
-        status: 'Posted' as const,
-        items: mivItems,
-        totalAmount: totalMIVAmount
-      };
+    this.isLoading.set(true);
+    this.procurementService.createPR(payload)
+      .pipe(finalize(() => { this.isLoading.set(false); this.cdr.markForCheck(); }))
+      .subscribe({
+        next: (created: any) => {
+          const newPR = mapApiPR(created);
 
-      // Save MIV
-      this.mockDataService.mivs.update(val => [...val, newMIV]);
-      createdMIVId = mivId;
+          // أضف الـ PR الجديد للقائمة مباشرة
+          this.purchaseRequests.update(list => [newPR, ...list]);
 
-      // Deduct warehouse stock immediately
-      mivItems.forEach(vitem => {
-        const matched = this.inventory().find(inv => inv.itemCode === vitem.itemCode);
-        if (matched) {
-          const newQty = Math.max(0, matched.quantity - vitem.quantityIssued);
-          this.mockDataService.updateInventoryItem(matched.id, {
-            quantity: newQty,
-            status: newQty === 0 ? 'Out of Stock' : newQty <= matched.minQuantity ? 'Low Stock' : 'In Stock'
-          });
+          this.auditService.log(
+            'Create', 'Procurement', 'PurchaseRequest',
+            newPR.id, 'N/A', `PR Number: ${newPR.requestNumber}`,
+            this.translate.instant('procurement.purchase_requests.audit_created', {
+              dept: newPR.department,
+              date: newPR.requiredDate,
+              desc: newPR.description
+            })
+          );
+
+          this.notificationService.success(
+            this.translate.instant('procurement.purchase_requests.notif_created_title'),
+            this.translate.instant('procurement.purchase_requests.notif_created_desc', { pr: newPR.requestNumber })
+          );
+
+          this.isFormView.set(false);
+          this.formPR = this.getEmptyForm();
+
+          // إذا كان هناك صرف من المخزون (MIV) — الـ Backend يُنشئه تلقائياً
+          const hasMIV = apiItems.some(i => (i.fulfillFromStock ?? 0) > 0);
+          if (hasMIV) {
+            this.router.navigate(['/inventory'], { queryParams: { tab: 'miv' } });
+          }
+        },
+        error: err => {
+          const msg = err?.error?.message ?? 'Failed to create Purchase Request.';
+          this.notificationService.danger('Error', msg);
         }
       });
-
-      this.notificationService.success(
-        'Store Issue Created',
-        `Material Issue Voucher ${num} generated immediately for in-stock items.`
-      );
-    }
-
-    // Filter items that actually need to be purchased
-    const purchaseItems = formattedItems.filter(item => {
-      if (item.itemType === 'Inventory Item') {
-        return (item.fulfillByPurchase ?? 0) > 0;
-      }
-      return true; // New items & services always require purchase
-    });
-
-    if (purchaseItems.length > 0) {
-      const adjustedPRItems = purchaseItems.map(item => {
-        if (item.itemType === 'Inventory Item') {
-          return {
-            ...item,
-            quantity: item.fulfillByPurchase!,
-            fulfillFromStock: 0,
-            fulfillByPurchase: item.fulfillByPurchase!,
-            availableQty: 0,
-            shortageQty: item.fulfillByPurchase!
-          };
-        }
-        return item;
-      });
-
-      // Save PR
-      const newPr = this.mockDataService.addPurchaseRequest({
-        department: this.formPR.department,
-        costCenter: this.formPR.costCenter,
-        chargeType: this.formPR.chargeType,
-        projectId: this.formPR.projectId,
-        projectName: this.formPR.projectName,
-        assetId: this.formPR.assetId,
-        assetName: this.formPR.assetName,
-        requiredDate: this.formPR.requiredDate,
-        description: this.formPR.description,
-        requestedBy: this.auditService.logs().length > 0 ? this.auditService.logs()[0].user : 'Admin User',
-        items: adjustedPRItems
-      });
-
-      // Audit Log Dispatch
-      this.auditService.log(
-        'Create',
-        'Procurement',
-        'PurchaseRequest',
-        newPr.id,
-        'N/A',
-        `PR Number: ${newPr.requestNumber}`,
-        this.translate.instant('procurement.purchase_requests.audit_created', {
-          dept: newPr.department,
-          date: newPr.requiredDate,
-          desc: newPr.description
-        })
-      );
-
-      this.notificationService.success(
-        this.translate.instant('procurement.purchase_requests.notif_created_title'),
-        this.translate.instant('procurement.purchase_requests.notif_created_desc', { pr: newPr.requestNumber })
-      );
-    }
-
-    // Reset and toggle view
-    this.isFormView.set(false);
-    this.formPR = this.getEmptyForm();
-
-    if (createdMIVId) {
-      this.router.navigate(['/inventory'], { queryParams: { tab: 'miv', mivId: createdMIVId } });
-    }
   }
+
+  // ── View / Details ────────────────────────────────────────────────────────
 
   viewDetails(pr: PurchaseRequest) {
     this.selectedPR.set(pr);
+    this.loadProcurementChain(pr);
   }
 
   closeDetails() {
     this.selectedPR.set(null);
+    this.procurementChain.set(null);
   }
+
+  // ── Approve / Status ──────────────────────────────────────────────────────
 
   approveRequisition(id: string) {
-    this.mockDataService.updatePRStatus(id, 'Approved');
-    const pr = this.purchaseRequests().find(p => p.id === id);
-    
-    if (pr) {
-      this.auditService.log(
-        'Approve',
-        'Procurement',
-        'PurchaseRequest',
-        pr.id,
-        'Status: PR Logged',
-        'Status: Approved',
-        this.translate.instant('procurement.purchase_requests.audit_approved', { pr: pr.requestNumber })
-      );
-    }
-
-    this.notificationService.success(
-      this.translate.instant('procurement.purchase_requests.notif_approved_title'),
-      this.translate.instant('procurement.purchase_requests.notif_approved_desc_detailed', { pr: pr?.requestNumber })
-    );
-  }
-
-  createRFQForPR(pr: PurchaseRequest) {
-    this.closeDetails();
-    // Redirect to RFQs page with query param to trigger creation automatically
-    this.router.navigate(['/procurement/rfqs'], { 
-      queryParams: { createForPR: pr.id } 
+    this.procurementService.updatePRStatus(id, {
+      status:     'Approved',
+      approvedBy: 'Current User',
+      comments:   'Approved via ERP'
+    }).subscribe({
+      next: (updated: any) => {
+        this.purchaseRequests.update(list =>
+          list.map(pr => pr.id === id ? { ...pr, status: 'Approved' } : pr)
+        );
+        const pr = this.purchaseRequests().find(p => p.id === id);
+        this.auditService.log(
+          'Approve', 'Procurement', 'PurchaseRequest',
+          id, 'Status: Pending Approval', 'Status: Approved',
+          this.translate.instant('procurement.purchase_requests.audit_approved', { pr: pr?.requestNumber })
+        );
+        this.notificationService.success(
+          this.translate.instant('procurement.purchase_requests.notif_approved_title'),
+          this.translate.instant('procurement.purchase_requests.notif_approved_desc_detailed', { pr: pr?.requestNumber })
+        );
+        this.cdr.markForCheck();
+      },
+      error: err => {
+        const msg = err?.error?.message ?? 'Failed to approve PR.';
+        this.notificationService.danger('Error', msg);
+      }
     });
   }
 
-  // Dynamic Stepper Navigation
+  // ── Navigation ────────────────────────────────────────────────────────────
+
+  createRFQForPR(pr: PurchaseRequest) {
+    this.closeDetails();
+    this.router.navigate(['/procurement/rfqs'], {
+      queryParams: { createForPR: pr.id }
+    });
+  }
+
   navigateToDocument(type: string, id: string) {
     this.closeDetails();
     if (type === 'PR') {

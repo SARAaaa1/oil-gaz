@@ -11,6 +11,8 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { ARAgingEntry, CollectionVoucher, BankAccountDetails, CashAccountDetails } from '../../../shared/interfaces/finance-extended.interface';
 import { Invoice } from '../../../shared/interfaces/workflow.interface';
 
+import { FinanceApiService } from '../../../core/services/finance-api.service';
+
 @Component({
   selector: 'app-accounts-receivable',
   standalone: true,
@@ -22,16 +24,18 @@ export class AccountsReceivableComponent implements OnInit {
   private readonly mockDataService = inject(MockDataService);
   private readonly workflowService = inject(WorkflowService);
   private readonly financeService = inject(FinanceCoreService);
+  private readonly financeApi = inject(FinanceApiService);
   private readonly breadcrumbService = inject(BreadcrumbService);
   private readonly notificationService = inject(NotificationService);
   private readonly translate = inject(TranslateService);
 
-  // Signals
-  readonly clientInvoices = this.workflowService.invoices; // Customer/Contract Invoices
-  readonly aging = this.mockDataService.arAging;
-  readonly vouchers = this.mockDataService.collectionVouchers;
-  readonly bankAccounts = this.mockDataService.bankAccountsDetails;
-  readonly cashAccounts = this.mockDataService.cashAccountsDetails;
+  // Core signals — populated from API
+  readonly clientInvoices = signal<any[]>([]);
+  readonly aging = signal<any[]>([]);
+  readonly vouchers = signal<any[]>([]);
+  readonly bankAccounts = signal<any[]>([]);
+  readonly cashAccounts = signal<any[]>([]);
+  readonly isLoading = signal(false);
 
   // UI States
   readonly activeTab = signal<'invoices' | 'aging' | 'vouchers'>('invoices');
@@ -132,6 +136,33 @@ export class AccountsReceivableComponent implements OnInit {
       { label: 'navigation.finance' },
       { label: 'navigation.ar_ledger' }
     ]);
+    this.loadAll();
+  }
+
+  loadAll() {
+    this.isLoading.set(true);
+    this.financeApi.getArInvoices({ limit: 200 }).subscribe({
+      next: (res) => {
+        this.clientInvoices.set((res.data || []).map((i: any) => ({ ...i, id: i._id ?? i.id })));
+        this.isLoading.set(false);
+      },
+      error: () => this.isLoading.set(false)
+    });
+    this.financeApi.getArAging().subscribe({
+      next: (res: any) => this.aging.set(Array.isArray(res) ? res : (res.data ?? [])),
+      error: () => {}
+    });
+    this.financeApi.getArVouchers().subscribe({
+      next: (res: any) => this.vouchers.set((Array.isArray(res) ? res : (res.data ?? [])).map((v: any) => ({ ...v, id: v._id ?? v.id }))),
+      error: () => {}
+    });
+    this.financeApi.getBankAccounts().subscribe({
+      next: (res) => {
+        this.bankAccounts.set((res.data || []).map((b: any) => ({ ...b, id: b._id ?? b.id })));
+        this.cashAccounts.set([]);
+      },
+      error: () => {}
+    });
   }
 
   // Client Selection Change
@@ -219,106 +250,29 @@ export class AccountsReceivableComponent implements OnInit {
       return;
     }
 
-    let accountName = '';
-
-    // Deposit to bank/cash account
-    if (this.selectedAccountType() === 'bank') {
-      const bank = this.bankAccounts().find(b => b.id === this.selectedAccountId);
-      if (bank) {
-        accountName = bank.bankName + ' (' + bank.accountNumber + ')';
-        // Add to bank balance
-        this.bankAccounts.update(accounts => 
-          accounts.map(a => a.id === bank.id ? { ...a, balance: a.balance + this.collectedAmount } : a)
-        );
-      }
-    } else {
-      const cash = this.cashAccounts().find(c => c.id === this.selectedAccountId);
-      if (cash) {
-        accountName = cash.officeLocation + ' Custodian: ' + cash.custodianName;
-        // Add to cash balance
-        this.cashAccounts.update(accounts => 
-          accounts.map(a => a.id === cash.id ? { ...a, balance: a.balance + this.collectedAmount } : a)
-        );
-      }
-    }
-
-    const voucherNum = 'CV-2026-' + Math.floor(100 + Math.random() * 900);
-    const newVoucher: CollectionVoucher = {
-      id: 'cv-' + Math.random().toString(36).substring(2, 9),
-      voucherNumber: voucherNum,
+    this.financeApi.createArVoucher({
       collectionDate: this.collectionDate,
       customerName: clientName,
       bankAccountId: this.selectedAccountId,
-      bankAccountName: accountName,
       paymentMethod: this.paymentMethod,
-      referenceNumber: this.referenceNumber,
-      amount: this.collectedAmount,
-      status: 'Posted',
+      referenceNumber: this.referenceNumber || undefined,
       invoicesCollected: selectedInvoices.map(si => ({
         invoiceId: si.invoiceId,
         invoiceNumber: si.invoiceNumber,
         amountCollected: si.amountCollected
       }))
-    };
-
-    // Update collection vouchers list
-    this.vouchers.update(prev => [newVoucher, ...prev]);
-
-    // ── AUTO-POST to General Ledger ──────────────────────────────────
-    this.financeService.autoPostARCollection({
-      voucherNumber: newVoucher.voucherNumber,
-      customerName: newVoucher.customerName,
-      date: newVoucher.collectionDate,
-      amount: newVoucher.amount,
-      paymentMethod: newVoucher.paymentMethod
+    }).subscribe({
+      next: (created: any) => {
+        const normalized = { ...created, id: created._id ?? created.id };
+        this.vouchers.update(list => [normalized, ...list]);
+        this.showCollectionModal.set(false);
+        this.notificationService.success('finance.ar.collection_posted_title', 'finance.ar.collection_posted_desc');
+        this.loadAll();
+      },
+      error: (err: any) => {
+        this.notificationService.danger('finance.ar.title', err?.error?.message || 'Failed to create collection voucher');
+      }
     });
-
-    // Update status and paid amounts of the client invoices
-    this.clientInvoices.update(invoicesList => 
-      invoicesList.map(inv => {
-        const collDetails = selectedInvoices.find(si => si.invoiceId === inv.id);
-        if (collDetails) {
-          const newlyPaid = collDetails.amountCollected;
-          const prevPaid = inv.paidAmount || 0;
-          const totalPaid = prevPaid + newlyPaid;
-          const balance = Math.max(0, inv.netPayable - totalPaid);
-
-          let newStatus = inv.status;
-          if (balance <= 0) {
-            newStatus = 'Paid';
-          } else if (totalPaid > 0) {
-            newStatus = 'Partially Paid';
-          }
-
-          return {
-            ...inv,
-            paidAmount: totalPaid,
-            balanceDue: balance,
-            status: newStatus
-          };
-        }
-        return inv;
-      })
-    );
-
-    // Update arAging entry
-    this.aging.update(entries => 
-      entries.map(entry => {
-        if (entry.customerName === clientName) {
-          const newTotal = Math.max(0, entry.totalDue - this.collectedAmount);
-          const newCurrent = Math.max(0, entry.current - this.collectedAmount);
-          return {
-            ...entry,
-            totalDue: newTotal,
-            current: newCurrent
-          };
-        }
-        return entry;
-      })
-    );
-
-    this.showCollectionModal.set(false);
-    this.notificationService.success('finance.ar.collection_posted_title', 'finance.ar.collection_posted_desc');
   }
 
   viewInvoiceDetails(invoice: Invoice) {

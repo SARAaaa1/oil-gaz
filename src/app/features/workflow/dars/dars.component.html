@@ -62,13 +62,13 @@
 
       <!-- Cards list -->
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        @for (dar of filteredDars(); track dar.id) {
+        @for (dar of filteredDars(); track dar._id) {
           <div 
             (click)="selectDar(dar)"
             class="bg-white p-5 rounded-xl border transition-all cursor-pointer shadow-sm hover:border-slate-350 relative group"
-            [class.border-indigo-500]="selectedDar()?.id === dar.id"
-            [class.border-slate-100]="selectedDar()?.id !== dar.id"
-            [class.bg-indigo-50]="selectedDar()?.id === dar.id"
+            [class.border-indigo-500]="selectedDar()?._id === dar._id"
+            [class.border-slate-100]="selectedDar()?._id !== dar._id"
+            [class.bg-indigo-50]="selectedDar()?._id === dar._id"
           >
             <div class="flex justify-between items-start">
               <div>
@@ -120,7 +120,7 @@
               </div>
               <div>
                 <span class="block uppercase tracking-wider text-[8px] text-slate-350">{{ 'workflow.dars.materials_used' | translate }}</span>
-                <span class="text-slate-700 font-bold block mt-0.5">{{ dar.materialsUsed.length }} {{ 'workflow.dars.items' | translate }}</span>
+                <span class="text-slate-700 font-bold block mt-0.5">{{ (dar.materialsUsed.length || 0) }} {{ 'workflow.dars.items' | translate }}</span>
               </div>
             </div>
           </div>
@@ -143,12 +143,12 @@
               <span class="font-mono text-[10px] font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded">{{ dar.darNumber }}</span>
               <div class="flex items-center space-x-1.5">
                 @if (dar.status === 'Draft') {
-                  <button (click)="submitDAR(dar.id)" class="px-2 py-1 bg-blue-50 hover:bg-blue-100 text-blue-600 text-[10px] font-bold rounded uppercase tracking-wider transition-colors border border-blue-200">{{ 'common.submit' | translate }}</button>
+                  <button (click)="submitDAR(dar._id)" class="px-2 py-1 bg-blue-50 hover:bg-blue-100 text-blue-600 text-[10px] font-bold rounded uppercase tracking-wider transition-colors border border-blue-200">{{ 'common.submit' | translate }}</button>
                   <button (click)="openEditModal(dar)" class="px-2 py-1 bg-slate-50 hover:bg-slate-100 text-slate-650 text-[10px] font-bold rounded uppercase tracking-wider transition-colors border border-slate-200">{{ 'common.edit' | translate }}</button>
                 }
                 @if (dar.status === 'Submitted' && canApprove()) {
-                  <button (click)="approveDAR(dar.id)" class="px-2 py-1 bg-green-50 hover:bg-green-100 text-success text-[10px] font-bold rounded uppercase tracking-wider transition-colors border border-green-200">{{ 'workflow.dars.approve' | translate }}</button>
-                  <button (click)="rejectDAR(dar.id)" class="px-2 py-1 bg-red-50 hover:bg-red-100 text-danger text-[10px] font-bold rounded uppercase tracking-wider transition-colors border border-red-200">{{ 'workflow.dars.reject' | translate }}</button>
+                  <button (click)="approveDAR(dar._id)" class="px-2 py-1 bg-green-50 hover:bg-green-100 text-success text-[10px] font-bold rounded uppercase tracking-wider transition-colors border border-green-200">{{ 'workflow.dars.approve' | translate }}</button>
+                  <button (click)="rejectDAR(dar._id)" class="px-2 py-1 bg-red-50 hover:bg-red-100 text-danger text-[10px] font-bold rounded uppercase tracking-wider transition-colors border border-red-200">{{ 'workflow.dars.reject' | translate }}</button>
                 }
               </div>
             </div>
@@ -208,11 +208,11 @@
           </div>
 
           <!-- Materials Spares consumed -->
-          @if (dar.materialsUsed.length > 0) {
+          @if ((dar.materialsUsed.length || 0) > 0) {
             <div>
               <h3 class="text-xs font-black text-slate-750 uppercase tracking-wider mb-2">{{ 'workflow.dars.materials' | translate }}</h3>
               <div class="space-y-1.5 max-h-36 overflow-y-auto pr-1">
-                @for (m of dar.materialsUsed; track m.id) {
+                @for (m of dar.materialsUsed || []; track m.itemName) {
                   <div class="flex justify-between items-center p-2 bg-slate-50 rounded border border-slate-100 text-[11px] font-bold text-slate-700">
                     <span>{{ m.itemName }}</span>
                     <span class="text-slate-900 shrink-0 font-mono">{{ m.quantity }} {{ m.uom }}</span>
@@ -232,7 +232,7 @@
           </div>
 
           <!-- Workflow Approver Steps -->
-          @if (dar.approvalWorkflow[0].approverName) {
+          @if (dar.approvalWorkflow && dar.approvalWorkflow.length > 0 && dar.approvalWorkflow[0]?.approverName) {
             <div class="pt-4 border-t border-slate-100">
               <h3 class="text-xs font-black text-slate-750 uppercase tracking-wider mb-2">{{ 'workflow.dars.approval_signoff' | translate }}</h3>
               <div class="p-3 bg-slate-50 rounded-lg border border-slate-100 text-[10px]">

@@ -1,0 +1,183 @@
+<div class="roles-page">
+
+  <!-- ══════════ PAGE HEADER ══════════ -->
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">إدارة الأدوار والصلاحيات</h1>
+      <p class="page-subtitle">مراجعة أدوار النظام وصلاحيات كل دور</p>
+    </div>
+    <div class="header-badge">
+      <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+      </svg>
+      أدوار النظام — للقراءة فقط
+    </div>
+  </div>
+
+  <!-- ══════════ MAIN SPLIT LAYOUT ══════════ -->
+  <div class="roles-layout">
+
+    <!-- LEFT: Roles List Sidebar -->
+    <aside class="roles-sidebar">
+      <div class="sidebar-header">
+        <span class="sidebar-title">الأدوار ({{ allRoles().length }})</span>
+      </div>
+      <div class="roles-list">
+        @for (role of allRoles(); track role.id) {
+          <button
+            class="role-item"
+            [class.role-item--active]="selectedRole()?.id === role.id"
+            (click)="selectRole(role)"
+          >
+            <div class="role-item__icon" [ngClass]="getRoleColorClass(role.name)">
+              {{ getRoleIcon(role.name) }}
+            </div>
+            <div class="role-item__info">
+              <span class="role-item__name">{{ role.nameAr }}</span>
+              <span class="role-item__name-en">{{ role.name }}</span>
+              <span class="role-item__meta">
+                {{ role.permissions.length }} صلاحية &bull;
+                {{ getUserCountForRole(role) }} مستخدم
+              </span>
+            </div>
+            <svg class="role-item__arrow" width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+            </svg>
+          </button>
+        }
+      </div>
+    </aside>
+
+    <!-- RIGHT: Role Details Panel -->
+    <main class="role-detail">
+      @if (selectedRole()) {
+
+        <!-- Role Detail Header -->
+        <div class="role-detail__header">
+          <div class="role-detail__icon" [ngClass]="getRoleColorClass(selectedRole()!.name)">
+            {{ getRoleIcon(selectedRole()!.name) }}
+          </div>
+          <div>
+            <h2 class="role-detail__title">{{ selectedRole()!.nameAr }}</h2>
+            <p class="role-detail__subtitle">{{ selectedRole()!.name }}</p>
+            <p class="role-detail__desc">{{ selectedRole()!.description }}</p>
+          </div>
+          <div class="role-detail__meta">
+            <div class="meta-badge">
+              <span class="meta-badge__label">الصلاحيات</span>
+              <span class="meta-badge__value meta-badge__value--blue">{{ selectedRole()!.permissions.length }}</span>
+            </div>
+            <div class="meta-badge">
+              <span class="meta-badge__label">المستخدمون</span>
+              <span class="meta-badge__value meta-badge__value--green">{{ getUserCountForRole(selectedRole()!) }}</span>
+            </div>
+            @if (selectedRole()!.isSystem) {
+              <span class="system-badge">
+                <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                </svg>
+                دور النظام
+              </span>
+            }
+          </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="tabs">
+          <button class="tab" [class.tab--active]="activeTab() === 'permissions'" (click)="activeTab.set('permissions')">
+            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+            </svg>
+            الصلاحيات ({{ selectedRole()!.permissions.length }})
+          </button>
+          <button class="tab" [class.tab--active]="activeTab() === 'users'" (click)="onUsersTabClick()">
+            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0"/>
+            </svg>
+            المستخدمون ({{ getUserCountForRole(selectedRole()!) }})
+          </button>
+        </div>
+
+        <!-- Tab: Permissions -->
+        @if (activeTab() === 'permissions') {
+          <div class="permissions-panel">
+            @for (group of permGroups; track group.module) {
+              <div class="perm-group">
+                <div class="perm-group__header">
+                  <h4 class="perm-group__title">{{ group.moduleAr }}</h4>
+                  <span class="perm-group__count">
+                    {{ getPermGroupCount(getPermGroupKeys(group)) }} / {{ group.permissions.length }}
+                  </span>
+                </div>
+                <div class="perm-items">
+                  @for (perm of group.permissions; track perm.key) {
+                    <div class="perm-item" [class.perm-item--granted]="hasPermission(perm.key)" [class.perm-item--denied]="!hasPermission(perm.key)">
+                      @if (hasPermission(perm.key)) {
+                        <svg class="perm-item__icon perm-item__icon--ok" width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+                        </svg>
+                      } @else {
+                        <svg class="perm-item__icon perm-item__icon--no" width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                      }
+                      <div class="perm-item__text">
+                        <span class="perm-item__label">{{ perm.labelAr }}</span>
+                        <span class="perm-item__key" dir="ltr">{{ perm.key }}</span>
+                      </div>
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+        }
+
+        <!-- Tab: Users -->
+        @if (activeTab() === 'users') {
+          <div class="users-panel">
+            @if (isLoadingUsers()) {
+              <!-- Loading State -->
+              <div style="display:flex;align-items:center;justify-content:center;padding:3rem;gap:.75rem;color:#94a3b8">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="animation:spin 1s linear infinite">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                </svg>
+                <span>جارٍ تحميل المستخدمين...</span>
+              </div>
+            } @else if (roleUsers().length === 0) {
+              <app-empty-state
+                icon="👤"
+                title="لا يوجد مستخدمون"
+                description="لا يوجد مستخدمون مُعيّنون لهذا الدور حالياً."
+              />
+            } @else {
+              <div class="users-list">
+                @for (user of roleUsers(); track user._id) {
+                  <div class="user-row">
+                    <div class="user-avatar">{{ user.avatar || user.fullName.charAt(0) }}</div>
+                    <div class="user-info">
+                      <span class="user-name">{{ user.fullName }}</span>
+                      <span class="user-meta">&#64;{{ user.username }} &bull; {{ user.email }}</span>
+                    </div>
+                    <div class="user-row__right">
+                      <span class="dept-tag">{{ user.departmentId?.nameAr || '—' }}</span>
+                      <span class="status-dot-sm" [class.status-dot-sm--active]="user.status === 'Active'" [class.status-dot-sm--inactive]="user.status !== 'Active'"></span>
+                    </div>
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        }
+
+      } @else {
+        <div class="no-selection">
+          <svg width="48" height="48" fill="none" stroke="#cbd5e1" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/>
+          </svg>
+          <p>اختر دوراً من القائمة لعرض تفاصيله</p>
+        </div>
+      }
+    </main>
+  </div>
+</div>

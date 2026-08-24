@@ -1,0 +1,430 @@
+<!-- ═══════════════════════════════════════════════════════════════
+     PetroFlow HR — Recruitment Pipeline / Candidates Dossier
+     Shows ONLY approved/shortlisted candidates (not New/Rejected)
+════════════════════════════════════════════════════════════════ -->
+<div class="space-y-6" style="direction: rtl;">
+
+  <!-- ── PAGE HEADER ─────────────────────────────────────────── -->
+  <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-black text-slate-800 tracking-tight">المرشحون للتوظيف</h1>
+      <p class="text-xs text-slate-500 font-semibold mt-1">
+        عرض المتقدمين المقبولين مبدئياً وتتبع مراحل التوظيف حتى التعيين الرسمي
+      </p>
+    </div>
+    <!-- Search -->
+    <div class="relative">
+      <svg class="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+      </svg>
+      <input [(ngModel)]="searchQuery" type="text"
+        placeholder="البحث بالاسم، الوظيفة، القسم..."
+        class="pr-9 pl-4 py-2 border border-slate-200 rounded-xl text-xs outline-none focus:ring-2 focus:border-primary bg-white shadow-sm w-64">
+    </div>
+  </div>
+
+  <!-- ── PIPELINE SUMMARY CARDS ─────────────────────────────── -->
+  <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+    @for (stage of stages; track stage.id) {
+      <button (click)="activeStageFilter.set(activeStageFilter() === stage.id ? 'ALL' : stage.id)"
+        class="rounded-2xl p-4 border-2 text-right transition-all duration-200 shadow-sm hover:shadow-md"
+        [style.background]="activeStageFilter() === stage.id ? stage.bg : 'white'"
+        [style.border-color]="activeStageFilter() === stage.id ? stage.border : '#F1F5F9'">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xl">{{ stage.icon }}</span>
+          <span class="text-2xl font-black"
+            [style.color]="stage.color">
+            {{ candidatesByStage()[stage.id].length }}
+          </span>
+        </div>
+        <p class="text-[11px] font-black text-slate-700">{{ stage.labelAr }}</p>
+        <p class="text-[10px] text-slate-400 font-semibold">{{ stage.label }}</p>
+      </button>
+    }
+  </div>
+
+  <!-- ── ACTIVE FILTER CHIP ─────────────────────────────────── -->
+  @if (activeStageFilter() !== 'ALL') {
+    <div class="flex items-center gap-2">
+      <span class="text-xs text-slate-500">تصفية بحسب:</span>
+      <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border"
+        [style.color]="getStage(activeStageFilter())?.color"
+        [style.background]="getStage(activeStageFilter())?.bg"
+        [style.border-color]="getStage(activeStageFilter())?.border">
+        {{ getStage(activeStageFilter())?.icon }} {{ getStage(activeStageFilter())?.labelAr }}
+        <button (click)="activeStageFilter.set('ALL')" class="mr-1 opacity-60 hover:opacity-100">✕</button>
+      </span>
+    </div>
+  }
+
+  <!-- ── MAIN CONTENT (LIST + DETAIL PANEL) ─────────────────── -->
+  <div class="flex flex-col lg:flex-row gap-5">
+
+    <!-- Candidates Cards List -->
+    <div class="flex-1 space-y-3 min-w-0">
+      @if (filteredCandidates().length === 0) {
+        <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-16 text-center">
+          <div class="w-16 h-16 rounded-full bg-slate-50 flex items-center justify-center mx-auto mb-4">
+            <svg class="w-8 h-8 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+            </svg>
+          </div>
+          <p class="text-sm font-black text-slate-500">لا يوجد مرشحون في هذه المرحلة</p>
+          <p class="text-xs text-slate-400 mt-1">يمكنك قبول المتقدمين الجدد من صفحة طلبات التوظيف</p>
+        </div>
+      }
+
+      @for (cand of filteredCandidates(); track cand.id) {
+        <div (click)="selectCandidate(cand)"
+          class="bg-white rounded-2xl border-2 shadow-sm p-5 cursor-pointer transition-all duration-200 hover:shadow-md"
+          [style.border-color]="selectedCand()?.id === cand.id ? '#009FE3' : '#F1F5F9'"
+          [style.background]="selectedCand()?.id === cand.id ? 'rgba(0,159,227,0.02)' : 'white'">
+          <div class="flex items-start gap-4">
+            <!-- Avatar -->
+            <div class="w-12 h-12 rounded-2xl flex-shrink-0 flex items-center justify-center text-sm font-black text-white shadow-sm"
+              [style.background]="getStatusStyle(cand.status).color">
+              {{ getInitials(cand.fullName) }}
+            </div>
+
+            <!-- Info -->
+            <div class="flex-1 min-w-0">
+              <div class="flex items-start justify-between gap-2 flex-wrap">
+                <div>
+                  <h3 class="text-sm font-black text-slate-800 truncate">{{ cand.fullName }}</h3>
+                  <p class="text-[11px] text-slate-500 font-semibold mt-0.5">{{ cand.position }}</p>
+                </div>
+                <!-- Status badge -->
+                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase shrink-0 border"
+                  [style.color]="getStatusStyle(cand.status).color"
+                  [style.background]="getStatusStyle(cand.status).bg"
+                  [style.border-color]="getStatusStyle(cand.status).border">
+                  {{ getStageIcon(cand.status) }} {{ cand.status }}
+                </span>
+              </div>
+
+              <!-- Meta row -->
+              <div class="flex items-center flex-wrap gap-3 mt-3 text-[10px] text-slate-400 font-semibold">
+                <span class="flex items-center gap-1">
+                  <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5"/>
+                  </svg>
+                  {{ cand.department }}
+                </span>
+                <span class="flex items-center gap-1">
+                  <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                  </svg>
+                  {{ cand.experienceYears }} سنوات خبرة
+                </span>
+                <span class="flex items-center gap-1">
+                  <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                  </svg>
+                  {{ cand.appliedDate }}
+                </span>
+                <span class="flex items-center gap-1 font-bold" style="color:#009FE3">
+                  <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                  </svg>
+                  {{ cand.expectedSalary | number }} SAR
+                </span>
+              </div>
+
+              <!-- Skills chips (max 3) -->
+              @if (cand.skills && cand.skills.length > 0) {
+                <div class="flex flex-wrap gap-1.5 mt-3">
+                  @for (skill of cand.skills.slice(0, 3); track skill) {
+                    <span class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-slate-100 text-slate-600">{{ skill }}</span>
+                  }
+                  @if (cand.skills.length > 3) {
+                    <span class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-slate-100 text-slate-400">+{{ cand.skills.length - 3 }}</span>
+                  }
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+      }
+    </div>
+
+    <!-- ── DETAIL PANEL ───────────────────────────────────────── -->
+    @if (selectedCand()) {
+      <div class="w-full lg:w-[400px] bg-white rounded-2xl border border-slate-100 shadow-xl flex flex-col overflow-hidden shrink-0"
+        style="max-height: 85vh; position: sticky; top: 1.5rem;">
+
+        <!-- Panel Header -->
+        <div class="relative p-5 border-b border-slate-100"
+          [style.background]="'linear-gradient(135deg, ' + getStatusStyle(selectedCand()!.status).bg + ', white)'">
+          <div class="absolute top-0 right-0 left-0 h-0.5"
+            [style.background]="getStatusStyle(selectedCand()!.status).color"></div>
+
+          <div class="flex items-start gap-3">
+            <!-- Avatar large -->
+            <div class="w-14 h-14 rounded-2xl flex-shrink-0 flex items-center justify-center text-lg font-black text-white shadow-md"
+              [style.background]="getStatusStyle(selectedCand()!.status).color">
+              {{ getInitials(selectedCand()!.fullName) }}
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-start justify-between">
+                <div>
+                  <h3 class="text-sm font-black text-slate-800 leading-tight">{{ selectedCand()!.fullName }}</h3>
+                  <p class="text-[11px] text-slate-500 mt-0.5">{{ selectedCand()!.position }}</p>
+                </div>
+                <button (click)="closeDetail()" class="text-slate-300 hover:text-slate-500 transition-colors text-xl font-bold leading-none">×</button>
+              </div>
+              <div class="flex items-center gap-2 mt-2 flex-wrap">
+                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase border"
+                  [style.color]="getStatusStyle(selectedCand()!.status).color"
+                  [style.background]="getStatusStyle(selectedCand()!.status).bg"
+                  [style.border-color]="getStatusStyle(selectedCand()!.status).border">
+                  {{ getStageIcon(selectedCand()!.status) }} {{ selectedCand()!.status }}
+                </span>
+                <span class="text-[10px] text-slate-400 font-mono">{{ selectedCand()!.appliedDate }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Pipeline Progress -->
+          <div class="mt-4">
+            <div class="flex items-center gap-0">
+              @for (stage of stages; track stage.id; let last = $last) {
+                <div class="flex-1 flex flex-col items-center">
+                  <div class="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black border-2 transition-all"
+                    [style.background]="selectedCand()!.status === stage.id ? stage.color : stages.indexOf(stage) < stages.indexOf(getStage(selectedCand()!.status || 'Under Review')!) ? stage.color : 'white'"
+                    [style.border-color]="stages.indexOf(stage) <= stages.indexOf(getStage(selectedCand()!.status || 'Under Review')!) ? stage.color : '#E2E8F0'"
+                    [style.color]="stages.indexOf(stage) <= stages.indexOf(getStage(selectedCand()!.status || 'Under Review')!) ? 'white' : '#CBD5E1'">
+                    {{ $index + 1 }}
+                  </div>
+                  <p class="text-[7px] text-slate-400 font-bold mt-1 text-center leading-tight max-w-12">{{ stage.labelAr }}</p>
+                </div>
+                @if (!last) {
+                  <div class="flex-1 h-0.5 mb-4"
+                    [style.background]="stages.indexOf(stage) < stages.indexOf(getStage(selectedCand()!.status || 'Under Review')!) ? stage.color : '#E2E8F0'"></div>
+                }
+              }
+            </div>
+          </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="flex overflow-x-auto border-b border-slate-100 px-3 gap-0 shrink-0" style="scrollbar-width:none">
+          @for (tab of tabs; track tab.id) {
+            <button (click)="activeTab.set(tab.id)"
+              class="px-3 py-3 text-[10px] font-bold whitespace-nowrap border-b-2 transition-all"
+              [style.border-color]="activeTab() === tab.id ? '#009FE3' : 'transparent'"
+              [style.color]="activeTab() === tab.id ? '#009FE3' : '#94A3B8'">
+              {{ tab.label }}
+            </button>
+          }
+        </div>
+
+        <!-- Tab Content -->
+        <div class="flex-1 overflow-y-auto p-5 space-y-4 text-xs text-slate-700">
+
+          <!-- Personal -->
+          @if (activeTab() === 'personal') {
+            <div class="grid grid-cols-2 gap-3">
+              <div class="col-span-2 p-3 rounded-xl bg-slate-50 border border-slate-100">
+                <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">البريد الإلكتروني</p>
+                <p class="font-bold text-slate-800 text-[11px]">{{ selectedCand()!.email }}</p>
+              </div>
+              <div class="p-3 rounded-xl bg-slate-50 border border-slate-100">
+                <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">رقم الجوال</p>
+                <p class="font-bold text-slate-800 text-[11px] font-mono">{{ selectedCand()!.phone }}</p>
+              </div>
+              <div class="p-3 rounded-xl bg-slate-50 border border-slate-100">
+                <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">سنوات الخبرة</p>
+                <p class="font-bold text-slate-800 text-[11px]">{{ selectedCand()!.experienceYears }} سنة</p>
+              </div>
+              <div class="p-3 rounded-xl bg-slate-50 border border-slate-100">
+                <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">الراتب المتوقع</p>
+                <p class="font-bold text-[11px]" style="color:#009FE3">{{ selectedCand()!.expectedSalary | number }} SAR</p>
+              </div>
+              <div class="p-3 rounded-xl bg-slate-50 border border-slate-100">
+                <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">الجاهزية للعمل</p>
+                <p class="font-bold text-slate-800 text-[11px]">{{ selectedCand()!.availability }}</p>
+              </div>
+              @if (selectedCand()!.linkedInUrl) {
+                <div class="col-span-2 p-3 rounded-xl bg-slate-50 border border-slate-100">
+                  <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">LinkedIn</p>
+                  <a [href]="selectedCand()!.linkedInUrl" target="_blank"
+                    class="text-[11px] font-bold hover:underline" style="color:#009FE3">
+                    عرض الملف المهني 🔗
+                  </a>
+                </div>
+              }
+              @if (selectedCand()!.bio) {
+                <div class="col-span-2 p-3 rounded-xl bg-slate-50 border border-slate-100">
+                  <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5">نبذة / خطاب التقديم</p>
+                  <p class="text-[11px] text-slate-600 leading-relaxed">{{ selectedCand()!.bio }}</p>
+                </div>
+              }
+            </div>
+          }
+
+          <!-- Qualifications -->
+          @if (activeTab() === 'qualifications') {
+            <div class="space-y-4">
+              <div>
+                <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">المؤهل الأكاديمي</p>
+                <div class="p-3 rounded-xl bg-slate-50 border border-slate-100">
+                  <p class="font-bold text-slate-800 text-[11px]">{{ selectedCand()!.education || '—' }}</p>
+                </div>
+              </div>
+              @if (selectedCand()!.skills && selectedCand()!.skills.length > 0) {
+                <div>
+                  <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">المهارات التقنية</p>
+                  <div class="flex flex-wrap gap-1.5">
+                    @for (skill of selectedCand()!.skills; track skill) {
+                      <span class="px-3 py-1 rounded-full text-[10px] font-bold border"
+                        style="background:#EFF6FF; color:#009FE3; border-color:#BFDBFE">{{ skill }}</span>
+                    }
+                  </div>
+                </div>
+              }
+              @if (selectedCand()!.languages && selectedCand()!.languages!.length > 0) {
+                <div>
+                  <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">اللغات</p>
+                  <div class="space-y-2">
+                    @for (lang of selectedCand()!.languages; track lang.language) {
+                      <div class="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 border border-slate-100">
+                        <span class="font-bold text-slate-800 text-[11px]">{{ lang.language }}</span>
+                        <span class="text-[9px] font-extrabold px-2 py-0.5 rounded-full bg-teal-50 text-teal-700 border border-teal-100">{{ lang.proficiency }}</span>
+                      </div>
+                    }
+                  </div>
+                </div>
+              }
+              @if (selectedCand()!.certificates && selectedCand()!.certificates!.length > 0) {
+                <div>
+                  <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">الشهادات المهنية</p>
+                  <div class="space-y-2">
+                    @for (cert of selectedCand()!.certificates; track cert.name) {
+                      <div class="flex items-start gap-3 p-3 rounded-xl bg-amber-50 border border-amber-100">
+                        <span>🏅</span>
+                        <div>
+                          <p class="font-bold text-slate-800 text-[11px]">{{ cert.name }}</p>
+                          <p class="text-[9px] text-slate-500 font-semibold mt-0.5">{{ cert.issuer }} · {{ cert.date }}</p>
+                        </div>
+                      </div>
+                    }
+                  </div>
+                </div>
+              }
+            </div>
+          }
+
+          <!-- CV -->
+          @if (activeTab() === 'cv') {
+            <div class="space-y-3">
+              <!-- Mock CV Preview -->
+              <div class="rounded-xl border-2 border-dashed border-slate-200 p-5 bg-slate-50">
+                <div class="flex items-center gap-2 mb-4 border-b border-slate-200 pb-3">
+                  <div class="w-10 h-10 rounded-xl flex items-center justify-center font-black text-sm text-white"
+                    [style.background]="getStatusStyle(selectedCand()!.status).color">
+                    {{ getInitials(selectedCand()!.fullName) }}
+                  </div>
+                  <div>
+                    <p class="font-black text-slate-800 text-xs">{{ selectedCand()!.fullName }}</p>
+                    <p class="text-[10px] text-slate-500">{{ selectedCand()!.position }}</p>
+                  </div>
+                </div>
+                <div class="space-y-2">
+                  <p class="text-[10px] text-slate-600"><strong class="text-slate-700">الوظيفة:</strong> {{ selectedCand()!.position }}</p>
+                  <p class="text-[10px] text-slate-600"><strong class="text-slate-700">الخبرة:</strong> {{ selectedCand()!.experienceYears }} سنوات</p>
+                  <p class="text-[10px] text-slate-600"><strong class="text-slate-700">التعليم:</strong> {{ selectedCand()!.education }}</p>
+                  <div class="mt-3 space-y-1.5">
+                    <div class="h-1.5 w-full bg-slate-200 rounded"></div>
+                    <div class="h-1.5 w-4/5 bg-slate-200 rounded"></div>
+                    <div class="h-1.5 w-3/5 bg-slate-200 rounded"></div>
+                  </div>
+                </div>
+                <p class="text-center text-[9px] text-slate-300 font-bold uppercase tracking-widest mt-4">CV Simulation Preview</p>
+              </div>
+
+              <!-- Attachments -->
+              @if (selectedCand()!.attachments && selectedCand()!.attachments!.length > 0) {
+                @for (att of selectedCand()!.attachments; track att.name) {
+                  <div class="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-100">
+                    <div class="flex items-center gap-2.5">
+                      <div class="w-8 h-8 rounded-lg flex items-center justify-center text-white text-[10px] font-black"
+                        style="background: linear-gradient(135deg,#009FE3,#005CB9)">PDF</div>
+                      <div>
+                        <p class="font-bold text-slate-800 text-[11px]">{{ att.name }}</p>
+                        <p class="text-[9px] text-slate-400">{{ att.size }} · {{ att.type }}</p>
+                      </div>
+                    </div>
+                    <a [href]="att.url" class="text-[10px] font-bold hover:underline" style="color:#009FE3">تحميل 💾</a>
+                  </div>
+                }
+              }
+            </div>
+          }
+
+          <!-- Timeline -->
+          @if (activeTab() === 'timeline') {
+            <div>
+              <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-4">السجل الوظيفي الزمني</p>
+              @if (selectedCand()!.timeline && selectedCand()!.timeline!.length > 0) {
+                <div class="relative pr-4 border-r-2 border-slate-100 space-y-4">
+                  @for (evt of selectedCand()!.timeline; track evt.date; let i = $index) {
+                    <div class="relative">
+                      <span class="absolute -right-[21px] top-1.5 w-3 h-3 rounded-full border-2 border-white shadow"
+                        [style.background]="i === 0 ? '#009FE3' : '#94A3B8'"></span>
+                      <p class="font-bold text-slate-800 text-[11px]">{{ evt.action }}</p>
+                      <p class="text-[9px] text-slate-400 font-semibold mt-0.5 font-mono">{{ evt.date }} · {{ evt.user }}</p>
+                    </div>
+                  }
+                </div>
+              } @else {
+                <p class="text-slate-400 text-xs">لا يوجد سجل وظيفي بعد.</p>
+              }
+            </div>
+          }
+
+          <!-- Notes -->
+          @if (activeTab() === 'notes') {
+            <div class="space-y-3">
+              <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest">ملاحظات مسؤول التوظيف</p>
+              @if (selectedCand()!.notes && selectedCand()!.notes!.length > 0) {
+                @for (note of selectedCand()!.notes; track note) {
+                  <div class="p-3 rounded-xl bg-amber-50 border border-amber-100 text-[11px] text-slate-700 leading-relaxed">
+                    💬 {{ note }}
+                  </div>
+                }
+              } @else {
+                <p class="text-slate-400 text-[11px]">لا توجد ملاحظات مضافة.</p>
+              }
+              <div class="flex gap-2 pt-1">
+                <input [(ngModel)]="newNote" type="text"
+                  placeholder="أضف ملاحظة على هذا المرشح..."
+                  class="flex-1 px-3 py-2 border border-slate-200 rounded-xl text-[11px] outline-none focus:ring-2 focus:border-primary bg-slate-50">
+                <button class="px-3 py-2 rounded-xl text-[11px] font-bold text-white shrink-0"
+                  style="background: #009FE3;">
+                  إضافة
+                </button>
+              </div>
+            </div>
+          }
+        </div>
+
+        <!-- Panel Actions Footer -->
+        <div class="px-5 py-4 border-t border-slate-100 bg-slate-50/50 space-y-2 shrink-0">
+          @if (selectedCand()!.status !== 'Hired') {
+            <button (click)="overrideHiring()"
+              class="w-full py-2.5 rounded-xl text-white text-xs font-bold shadow transition-all hover:shadow-md"
+              style="background: linear-gradient(135deg,#009FE3,#005CB9);">
+              🚀 تعيين مباشر (Hiring Override)
+            </button>
+          } @else {
+            <div class="py-2 text-center text-xs font-bold text-green-700 bg-green-50 rounded-xl border border-green-100">
+              🎉 تم تعيين هذا المرشح بنجاح
+            </div>
+          }
+        </div>
+      </div>
+    }
+
+  </div>
+</div>

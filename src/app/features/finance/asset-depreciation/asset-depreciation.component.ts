@@ -6,6 +6,7 @@ import { FormsModule } from '@angular/forms';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { MockDataService } from '../../../core/services/mock-data.service';
 import { FinanceCoreService } from '../../../core/services/finance-core.service';
+import { FinanceApiService } from '../../../core/services/finance-api.service';
 import { BreadcrumbService } from '../../../core/services/breadcrumb.service';
 import { NotificationService } from '../../../core/services/notification.service';
 import { LanguageService } from '../../../core/services/language.service';
@@ -42,6 +43,7 @@ interface ScheduleLine {
 export class AssetDepreciationComponent implements OnInit {
   private readonly mockDataService = inject(MockDataService);
   private readonly financeService  = inject(FinanceCoreService);
+  private readonly financeApi      = inject(FinanceApiService);
   private readonly breadcrumbService = inject(BreadcrumbService);
   private readonly notificationService = inject(NotificationService);
   readonly langService = inject(LanguageService);
@@ -52,29 +54,61 @@ export class AssetDepreciationComponent implements OnInit {
   readonly selectedAssetId   = signal<string | null>(null);
   readonly showScheduleModal = signal(false);
   readonly asOfDate          = signal(new Date().toISOString().split('T')[0]);
-  readonly postingMonth      = signal(new Date().toISOString().slice(0, 7)); // YYYY-MM
+  readonly postingMonth      = signal(new Date().toISOString().slice(0, 7));
   readonly showPostModal     = signal(false);
+
+  // API signals
+  readonly apiDepreciationData   = signal<any[]>([]);
+  readonly apiDepreciationTotals = signal<any>(null);
+  readonly apiScheduleData       = signal<any[]>([]);
+  readonly isLoading             = signal(false);
+  readonly isPosting             = signal(false);
+  readonly useApiData            = signal(false);
 
   ngOnInit() {
     this.breadcrumbService.setBreadcrumbs([
       { label: 'navigation.finance', url: '/finance' },
       { label: 'navigation.asset_depreciation' }
     ]);
+    this.loadDepreciation();
   }
 
-  // ─── DEPRECIATION ROWS ────────────────────────────────────────────────
-  readonly depreciationRows = computed<DepreciationRow[]>(() => {
-    const assets  = this.mockDataService.equipment();
-    const q       = this.searchQuery().toLowerCase();
-    const cutoff  = this.asOfDate();
+  loadDepreciation() {
+    this.isLoading.set(true);
+    this.financeApi.getDepreciation(this.asOfDate()).subscribe({
+      next: (res) => {
+        if (res.data && res.data.length > 0) {
+          this.apiDepreciationData.set(res.data);
+          this.apiDepreciationTotals.set(res.totals);
+          this.useApiData.set(true);
+        }
+        this.isLoading.set(false);
+      },
+      error: () => {
+        this.useApiData.set(false);
+        this.isLoading.set(false);
+      }
+    });
+  }
 
+  // ─── DEPRECIATION ROWS (API or local fallback) ──────────────────────
+  readonly depreciationRows = computed<any[]>(() => {
+    const q = this.searchQuery().toLowerCase();
+
+    if (this.useApiData()) {
+      const rows = this.apiDepreciationData();
+      return !q ? rows : rows.filter((r: any) =>
+        r.asset.equipmentName.toLowerCase().includes(q) ||
+        r.asset.assetNumber.toLowerCase().includes(q) ||
+        r.asset.category.toLowerCase().includes(q)
+      );
+    }
+
+    // Local fallback from MockDataService
+    const assets  = this.mockDataService.equipment();
+    const cutoff  = this.asOfDate();
     return assets
-      .filter(a =>
-        !q ||
-        a.equipmentName.toLowerCase().includes(q) ||
-        a.assetNumber.toLowerCase().includes(q) ||
-        a.category.toLowerCase().includes(q)
-      )
+      .filter(a => !q || a.equipmentName.toLowerCase().includes(q) || a.assetNumber.toLowerCase().includes(q) || a.category.toLowerCase().includes(q))
       .map(asset => this.buildRow(asset, cutoff))
       .sort((a, b) => b.asset.purchaseCost - a.asset.purchaseCost);
   });
@@ -127,17 +161,18 @@ export class AssetDepreciationComponent implements OnInit {
     return map[asset.category] ?? 10;
   }
 
-  // ─── TOTALS ───────────────────────────────────────────────────────────
+  // ─── TOTALS (API or local fallback) ────────────────────────────────────
   readonly totals = computed(() => {
+    if (this.useApiData() && this.apiDepreciationTotals()) return this.apiDepreciationTotals();
     const rows = this.depreciationRows();
     return {
-      totalCost:             rows.reduce((s, r) => s + r.asset.purchaseCost,          0),
-      totalAccumulated:      rows.reduce((s, r) => s + r.accumulatedDepreciation,     0),
-      totalNBV:              rows.reduce((s, r) => s + r.netBookValue,                0),
-      totalAnnualCharge:     rows.reduce((s, r) => s + (r.fullyDepreciated ? 0 : r.annualDepreciation), 0),
-      totalMonthlyCharge:    rows.reduce((s, r) => s + (r.fullyDepreciated ? 0 : r.monthlyDepreciation), 0),
-      activeAssets:          rows.filter(r => !r.fullyDepreciated).length,
-      fullyDepreciatedCount: rows.filter(r => r.fullyDepreciated).length
+      totalCost:             rows.reduce((s: number, r: any) => s + r.asset.purchaseCost,          0),
+      totalAccumulated:      rows.reduce((s: number, r: any) => s + r.accumulatedDepreciation,     0),
+      totalNBV:              rows.reduce((s: number, r: any) => s + r.netBookValue,                0),
+      totalAnnualCharge:     rows.reduce((s: number, r: any) => s + (r.fullyDepreciated ? 0 : r.annualDepreciation), 0),
+      totalMonthlyCharge:    rows.reduce((s: number, r: any) => s + (r.fullyDepreciated ? 0 : r.monthlyDepreciation), 0),
+      activeAssets:          rows.filter((r: any) => !r.fullyDepreciated).length,
+      fullyDepreciatedCount: rows.filter((r: any) => r.fullyDepreciated).length
     };
   });
 
@@ -147,6 +182,8 @@ export class AssetDepreciationComponent implements OnInit {
   );
 
   readonly depreciationSchedule = computed<ScheduleLine[]>(() => {
+    if (this.useApiData()) return this.apiScheduleData();
+
     const row = this.selectedRow();
     if (!row) return [];
 
@@ -174,10 +211,15 @@ export class AssetDepreciationComponent implements OnInit {
     return lines;
   });
 
-  // ─── ACTIONS ──────────────────────────────────────────────────────────
+  // ─── ACTIONS ──────────────────────────────────────────────────────────────────
   openSchedule(assetId: string) {
     this.selectedAssetId.set(assetId);
     this.showScheduleModal.set(true);
+    // Fetch schedule from API
+    this.financeApi.getDepreciationSchedule(assetId).subscribe({
+      next: (res: any) => this.apiScheduleData.set(res.schedule ?? res.data ?? []),
+      error: () => this.apiScheduleData.set([])
+    });
   }
 
   closeSchedule() {
@@ -185,83 +227,40 @@ export class AssetDepreciationComponent implements OnInit {
     this.selectedAssetId.set(null);
   }
 
-  // Post monthly depreciation GL entry for all active assets
+  // Post monthly depreciation — calls real API (DR 515000 / CR 142000 auto-posted by backend)
   postMonthlyDepreciation() {
     const month = this.postingMonth();
-    const rows  = this.depreciationRows().filter(r => !r.fullyDepreciated);
-
-    if (rows.length === 0) {
-      this.notificationService.warning(
-        this.translate.instant('finance.depreciation.no_assets_title'),
-        this.translate.instant('finance.depreciation.no_assets_desc')
-      );
-      this.showPostModal.set(false);
-      return;
-    }
-
-    const totalCharge = +rows.reduce((s, r) => s + r.monthlyDepreciation, 0).toFixed(2);
-
-    // Check if already posted for this month
-    const alreadyPosted = this.financeService.journalEntries().some(
-      e => e.reference === `DEPR-${month}` && e.status === 'Posted'
-    );
-
-    if (alreadyPosted) {
-      this.notificationService.warning(
-        this.translate.instant('finance.depreciation.already_posted_title'),
-        this.translate.instant('finance.depreciation.already_posted_desc', { month })
-      );
-      this.showPostModal.set(false);
-      return;
-    }
-
-    try {
-      // Build lines: one debit line (Depreciation Expense) + one credit per cost center grouping
-      // For simplicity: Dr. Equipment Maintenance Expenses (514000), Cr. Accumulated Depreciation (new sub-account under assets)
-      // We use 130000 as proxy for Fixed Asset (already exists) — in real system we'd have a contra account
-      this.financeService.postJournalEntry({
-        date: `${month}-01`,
-        reference: `DEPR-${month}`,
-        description: this.translate.instant('finance.depreciation.gl_description', {
-          month,
-          count: rows.length
-        }),
-        lines: [
-          {
-            id: `dep_dr_${Date.now()}`,
-            accountCode: '514000',
-            accountName: 'Equipment Maintenance Expenses',
-            debit: totalCharge,
-            credit: 0,
-            description: `Monthly depreciation charge — ${rows.length} assets — ${month}`
-          },
-          {
-            id: `dep_cr_${Date.now()}`,
-            accountCode: '130000',
-            accountName: 'Inventory Asset',  // Proxy for Fixed Assets — represents value reduction
-            debit: 0,
-            credit: totalCharge,
-            description: `Accumulated depreciation — ${month}`
-          }
-        ]
-      });
-
-      this.notificationService.success(
-        this.translate.instant('finance.depreciation.posted_title'),
-        this.translate.instant('finance.depreciation.posted_desc', {
-          amount: totalCharge.toFixed(2),
-          month,
-          count: rows.length
-        })
-      );
-    } catch (e: any) {
-      this.notificationService.danger(
-        this.translate.instant('common.error'),
-        e.message
-      );
-    }
-
-    this.showPostModal.set(false);
+    this.isPosting.set(true);
+    this.financeApi.postMonthlyDepreciation(month).subscribe({
+      next: (res: any) => {
+        this.isPosting.set(false);
+        this.showPostModal.set(false);
+        const d = res.data ?? res;
+        this.notificationService.success(
+          this.translate.instant('finance.depreciation.posted_title'),
+          this.translate.instant('finance.depreciation.posted_desc', {
+            amount: (d.totalCharge ?? 0).toFixed(2),
+            month,
+            count: d.assetsCount ?? 0
+          })
+        );
+        this.loadDepreciation();
+      },
+      error: (err: any) => {
+        this.isPosting.set(false);
+        this.showPostModal.set(false);
+        const msg = err?.error?.message || 'Failed to post depreciation';
+        // Handle already-posted gracefully
+        if (msg.includes('already posted') || msg.includes('already')) {
+          this.notificationService.warning(
+            this.translate.instant('finance.depreciation.already_posted_title'),
+            this.translate.instant('finance.depreciation.already_posted_desc', { month })
+          );
+        } else {
+          this.notificationService.danger(this.translate.instant('common.error'), msg);
+        }
+      }
+    });
   }
 
   formatCurrency(val: number): string {

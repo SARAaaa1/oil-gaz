@@ -9,12 +9,14 @@ import { AuthService } from '../../core/services/auth.service';
 import { AuditService } from '../../core/services/audit.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { BreadcrumbService } from '../../core/services/breadcrumb.service';
+import { WorkflowApiService } from '../../core/services/workflow-api.service';
+import { RoleDirective } from '../../shared/directives/role.directive';
 import { Project, EquipmentAssignment, AssetAssignment, MaterialConsumption, EquipmentTransfer, LaborRecord } from '../../shared/interfaces/project.interface';
 
 @Component({
   selector: 'app-projects',
   standalone: true,
-  imports: [CommonModule, FormsModule, TranslateModule],
+  imports: [CommonModule, FormsModule, TranslateModule, RoleDirective],
   templateUrl: './projects.component.html',
   styleUrls: [],
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -23,6 +25,7 @@ export class ProjectsComponent implements OnInit {
   private readonly breadcrumbService = inject(BreadcrumbService);
   private readonly translateService = inject(TranslateService);
   private readonly route = inject(ActivatedRoute);
+  private readonly workflowApi = inject(WorkflowApiService);
   readonly workflowService = inject(WorkflowService);
   readonly mockDataService = inject(MockDataService);
   readonly authService = inject(AuthService);
@@ -30,6 +33,18 @@ export class ProjectsComponent implements OnInit {
   readonly notificationService = inject(NotificationService);
 
   // --- STATE SIGNALS ---
+  readonly projectsList = signal<any[]>([]);
+  readonly isLoading = signal<boolean>(false);
+  readonly isEditMode = signal<boolean>(false);
+  readonly editingProjectCode = signal<string>('');
+
+  // --- BACKEND SUB-RESOURCE SIGNALS PER PROJECT ---
+  readonly backendEquipment = signal<any[]>([]);
+  readonly backendMaterials = signal<any[]>([]);
+  readonly backendLabor = signal<any[]>([]);
+  readonly backendTransfers = signal<any[]>([]);
+  readonly backendCostSummary = signal<any>(null);
+
   readonly searchQuery = signal<string>('');
   readonly statusFilter = signal<string>('All');
   readonly customerFilter = signal<string>('All');
@@ -112,23 +127,141 @@ export class ProjectsComponent implements OnInit {
       { label: 'navigation.projects' }
     ]);
 
-    // Auto-select project from query param (e.g. navigated from contract approval)
-    this.route.queryParams.subscribe(params => {
-      const projectCode = params['project'];
-      if (projectCode) {
-        // Wait for data to be loaded then select
-        const match = this.workflowService.projects().find(p => p.code === projectCode);
-        if (match) {
-          this.selectedProjectCode.set(match.code);
-          this.activeTab.set('overview');
+    this.loadProjects();
+  }
+
+  loadProjects() {
+    this.isLoading.set(true);
+    this.workflowApi.getProjects({ limit: 100 }).subscribe({
+      next: (res: any) => {
+        const rawList = res.items ?? res.data ?? (Array.isArray(res) ? res : []);
+        const apiProjects = rawList.map((p: any) => ({
+          ...p,
+          code: p.code ?? p.projectCode ?? p._id,
+          name: p.name ?? p.projectName ?? p.title ?? 'Project',
+          customer: p.customer ?? p.clientName ?? 'Client',
+          contractValue: Number(p.contractValue ?? p.value ?? 0),
+          consumedValue: Number(p.consumedValue ?? 0),
+          remainingValue: Number(p.remainingValue ?? p.contractValue ?? p.value ?? 0),
+          progressPercent: Number(p.progressPercent ?? 0),
+          status: p.status ?? 'Active'
+        }));
+
+        // Merge with local workflowService projects if needed
+        const localProjects = this.workflowService.projects();
+        const mergedMap = new Map<string, any>();
+        localProjects.forEach(p => mergedMap.set(p.code, p));
+        apiProjects.forEach((p: any) => mergedMap.set(p.code, p));
+        const combined = Array.from(mergedMap.values());
+
+        this.projectsList.set(combined);
+
+        // Auto-select project from query param or default
+        const queryCode = this.route.snapshot.queryParams['project'];
+        const selectedCode = queryCode && combined.some((p: any) => p.code === queryCode)
+          ? queryCode
+          : (this.selectedProjectCode() || combined[0]?.code || null);
+
+        if (selectedCode) {
+          this.selectedProjectCode.set(selectedCode);
+          this.loadProjectSubResources(selectedCode);
         }
-      } else if (!this.selectedProjectCode()) {
-        // Default: select first project
-        const list = this.workflowService.projects();
-        if (list.length > 0) {
-          this.selectedProjectCode.set(list[0].code);
-        }
+        this.isLoading.set(false);
+      },
+      error: () => {
+        this.projectsList.set(this.workflowService.projects());
+        this.isLoading.set(false);
       }
+    });
+  }
+
+  loadProjectSubResources(code: string) {
+    if (!code) return;
+
+    this.workflowApi.getProjectEquipment(code).subscribe({
+      next: (res: any) => {
+        const list = Array.isArray(res) ? res : res.data ?? [];
+        this.backendEquipment.set(list.map((e: any) => ({
+          id: e._id ?? e.id ?? e.equipmentId,
+          equipmentId: e.equipmentId ?? e._id,
+          equipmentName: e.equipmentName ?? e.name ?? 'Equipment',
+          serialNumber: e.serialNumber ?? 'SN-UNKNOWN',
+          projectCode: code,
+          siteName: e.siteName ?? 'Site',
+          assignedDate: e.assignedDate ? new Date(e.assignedDate).toISOString().split('T')[0] : '',
+          status: e.status ?? 'Assigned',
+          hoursUsed: e.hoursUsed ?? 0,
+          daysUsed: e.daysUsed ?? 1,
+          costCenterCode: e.costCenterCode
+        })));
+      },
+      error: () => this.backendEquipment.set([])
+    });
+
+    this.workflowApi.getProjectMaterials(code).subscribe({
+      next: (res: any) => {
+        const list = Array.isArray(res) ? res : res.data ?? [];
+        this.backendMaterials.set(list.map((m: any) => ({
+          id: m._id ?? m.id,
+          projectCode: code,
+          materialCode: m.materialCode,
+          materialName: m.materialName,
+          warehouse: m.warehouse,
+          issuedQuantity: m.issuedQuantity ?? 0,
+          consumedQuantity: m.consumedQuantity ?? 0,
+          remainingQuantity: (m.issuedQuantity ?? 0) - (m.consumedQuantity ?? 0),
+          costCenterCode: m.costCenterCode,
+          issueDate: m.issueDate ? new Date(m.issueDate).toISOString().split('T')[0] : '',
+          docRef: m.docRef,
+          unitPrice: m.unitPrice ?? 0
+        })));
+      },
+      error: () => this.backendMaterials.set([])
+    });
+
+    this.workflowApi.getProjectLabor(code).subscribe({
+      next: (res: any) => {
+        const list = Array.isArray(res) ? res : res.data ?? [];
+        this.backendLabor.set(list.map((l: any) => ({
+          id: l._id ?? l.id,
+          projectCode: code,
+          employeeName: l.employeeName,
+          role: l.role,
+          regularHours: l.regularHours ?? 0,
+          overtimeHours: l.overtimeHours ?? 0,
+          hourlyRate: l.hourlyRate ?? 0,
+          overtimeRate: l.overtimeRate ?? 0,
+          totalCost: l.totalCost ?? ((l.regularHours ?? 0) * (l.hourlyRate ?? 0) + (l.overtimeHours ?? 0) * (l.overtimeRate ?? 0)),
+          date: l.date ? new Date(l.date).toISOString().split('T')[0] : ''
+        })));
+      },
+      error: () => this.backendLabor.set([])
+    });
+
+    this.workflowApi.getProjectTransfers(code).subscribe({
+      next: (res: any) => {
+        const list = Array.isArray(res) ? res : res.data ?? [];
+        this.backendTransfers.set(list.map((t: any) => ({
+          transferNumber: t.transferNumber ?? t._id,
+          equipmentId: t.equipmentId,
+          equipmentName: t.equipmentName,
+          fromLocation: t.fromLocation,
+          toLocation: t.toLocation,
+          projectCode: code,
+          costCenterCode: t.costCenterCode,
+          startDate: t.startDate ? new Date(t.startDate).toISOString().split('T')[0] : '',
+          transportationHours: t.transportationHours ?? 0,
+          transportationCost: t.transportationCost ?? 0,
+          reason: t.reason ?? '',
+          status: t.status ?? 'Requested'
+        })));
+      },
+      error: () => this.backendTransfers.set([])
+    });
+
+    this.workflowApi.getProjectCostSummary(code).subscribe({
+      next: (res: any) => this.backendCostSummary.set(res.data ?? res),
+      error: () => this.backendCostSummary.set(null)
     });
   }
 
@@ -137,13 +270,13 @@ export class ProjectsComponent implements OnInit {
     const query = this.searchQuery().toLowerCase().trim();
     const status = this.statusFilter();
     const customer = this.customerFilter();
-    const list = this.workflowService.projects();
+    const list = this.projectsList();
 
     return list.filter(p => {
       const matchesQuery = !query || 
-                           p.code.toLowerCase().includes(query) ||
-                           p.name.toLowerCase().includes(query) ||
-                           p.customer.toLowerCase().includes(query) ||
+                           (p.code && p.code.toLowerCase().includes(query)) ||
+                           (p.name && p.name.toLowerCase().includes(query)) ||
+                           (p.customer && p.customer.toLowerCase().includes(query)) ||
                            (p.costCenterCode && p.costCenterCode.toLowerCase().includes(query));
       const matchesStatus = status === 'All' || p.status === status;
       const matchesCustomer = customer === 'All' || p.customer === customer;
@@ -152,52 +285,77 @@ export class ProjectsComponent implements OnInit {
   });
 
   readonly uniqueCustomers = computed(() => {
-    const list = this.workflowService.projects();
-    return Array.from(new Set(list.map(p => p.customer)));
+    const list = this.projectsList();
+    return Array.from(new Set(list.map(p => p.customer).filter(Boolean)));
   });
 
   readonly selectedProject = computed(() => {
     const code = this.selectedProjectCode();
     if (!code) return null;
-    return this.workflowService.projects().find(p => p.code === code) || null;
+    return this.projectsList().find(p => p.code === code) || null;
   });
 
   // --- KPI CALCULATIONS ---
-  readonly totalProjectsCount = computed(() => this.workflowService.projects().length);
-  readonly activeProjectsCount = computed(() => this.workflowService.projects().filter(p => p.status === 'Active').length);
-  readonly totalBudgetSum = computed(() => this.workflowService.projects().reduce((sum, p) => sum + p.contractValue, 0));
-  readonly totalConsumedSum = computed(() => this.workflowService.projects().reduce((sum, p) => sum + (p.consumedValue || 0), 0));
+  readonly totalProjectsCount = computed(() => this.projectsList().length);
+  readonly activeProjectsCount = computed(() => this.projectsList().filter(p => p.status === 'Active').length);
+  readonly totalBudgetSum = computed(() => this.projectsList().reduce((sum, p) => sum + (p.contractValue || 0), 0));
+  readonly totalConsumedSum = computed(() => this.projectsList().reduce((sum, p) => sum + (p.consumedValue || 0), 0));
   readonly avgProgress = computed(() => {
-    const list = this.workflowService.projects();
+    const list = this.projectsList();
     if (list.length === 0) return 0;
     const totalProgress = list.reduce((sum, p) => sum + (p.progressPercent || 0), 0);
     return Math.round(totalProgress / list.length);
   });
 
-  // --- TAB SUB-RESOURCES (FILTERED BY SELECTED PROJECT) ---
+  // --- TAB SUB-RESOURCES (STRICTLY SCOPED TO SELECTED PROJECT) ---
   readonly projectEquipmentAssignments = computed(() => {
     const code = this.selectedProjectCode();
-    return this.workflowService.equipmentAssignments().filter(a => a.projectCode === code);
+    if (!code) return [];
+    const backend = this.backendEquipment();
+    const local = this.workflowService.equipmentAssignments().filter(a => a.projectCode === code);
+    const map = new Map<string, any>();
+    local.forEach(item => map.set(item.id, item));
+    backend.forEach(item => map.set(item.id, item));
+    return Array.from(map.values());
   });
 
   readonly projectAssetAssignments = computed(() => {
     const code = this.selectedProjectCode();
+    if (!code) return [];
     return this.workflowService.assetAssignments().filter(a => a.projectCode === code);
   });
 
   readonly projectMaterialConsumptions = computed(() => {
     const code = this.selectedProjectCode();
-    return this.workflowService.materialConsumptions().filter(m => m.projectCode === code);
+    if (!code) return [];
+    const backend = this.backendMaterials();
+    const local = this.workflowService.materialConsumptions().filter(m => m.projectCode === code);
+    const map = new Map<string, any>();
+    local.forEach(item => map.set(item.materialCode + item.issueDate, item));
+    backend.forEach(item => map.set(item.materialCode + item.issueDate, item));
+    return Array.from(map.values());
   });
 
   readonly projectTransfers = computed(() => {
     const code = this.selectedProjectCode();
-    return this.workflowService.equipmentTransfers().filter(t => t.projectCode === code);
+    if (!code) return [];
+    const backend = this.backendTransfers();
+    const local = this.workflowService.equipmentTransfers().filter(t => t.projectCode === code);
+    const map = new Map<string, any>();
+    local.forEach(item => map.set(item.transferNumber, item));
+    backend.forEach(item => map.set(item.transferNumber, item));
+    return Array.from(map.values());
   });
 
   readonly projectLaborRecords = computed(() => {
     const code = this.selectedProjectCode();
-    return this.workflowService.laborRecords().filter(l => l.projectCode === code);
+    if (!code) return [];
+    const backend = this.backendLabor();
+    const local = this.workflowService.laborRecords().filter(l => l.projectCode === code);
+    const map = new Map<string, any>();
+    local.forEach(item => map.set(item.employeeName + item.date, item));
+    backend.forEach(item => map.set(item.employeeName + item.date, item));
+    return Array.from(map.values());
   });
 
   readonly projectAuditHistory = computed(() => {
@@ -214,25 +372,29 @@ export class ProjectsComponent implements OnInit {
     const p = this.selectedProject();
     if (!p) return null;
 
-    // 1. Equipment Cost: hours used * daily rate / 24, or standard assignment cost
-    // Let's estimate equipment cost: sum (daysUsed * 500)
-    const eqCost = this.projectEquipmentAssignments().reduce((sum, a) => sum + (a.daysUsed * 300), 0);
+    const summary = this.backendCostSummary();
+    if (summary) {
+      return {
+        eqCost: summary.consumedValue ? Math.round(summary.consumedValue * 0.4) : 0,
+        assetCost: summary.consumedValue ? Math.round(summary.consumedValue * 0.1) : 0,
+        matCost: summary.consumedValue ? Math.round(summary.consumedValue * 0.3) : 0,
+        laborCost: summary.consumedValue ? Math.round(summary.consumedValue * 0.15) : 0,
+        transCost: summary.consumedValue ? Math.round(summary.consumedValue * 0.05) : 0,
+        totalActual: summary.consumedValue ?? 0,
+        remaining: summary.remainingValue ?? ((p.contractValue || 0) - (summary.consumedValue || 0)),
+        progress: summary.progressPercent ?? p.progressPercent ?? 0
+      };
+    }
 
-    // 2. Asset Cost: fixed simulation
+    const eqCost = this.projectEquipmentAssignments().reduce((sum, a) => sum + ((a.daysUsed || 1) * 300), 0);
     const assetCost = this.projectAssetAssignments().length * 1500;
-
-    // 3. Material Cost: consumed Qty * unit price
-    const matCost = this.projectMaterialConsumptions().reduce((sum, mc) => sum + (mc.consumedQuantity * mc.unitPrice), 0);
-
-    // 4. Labor Cost: labor record sum totalCost
+    const matCost = this.projectMaterialConsumptions().reduce((sum, mc) => sum + ((mc.consumedQuantity || 0) * (mc.unitPrice || 0)), 0);
     const laborCost = this.projectLaborRecords().reduce((sum, l) => sum + (l.totalCost || 0), 0);
-
-    // 5. Transfer transportation costs
     const transCost = this.projectTransfers().reduce((sum, t) => sum + (t.transportationCost || 0), 0) + (p.estimatedTransportationCost || 0);
 
     const totalActual = eqCost + assetCost + matCost + laborCost + transCost;
-    const remaining = p.contractValue - totalActual;
-    const progress = p.contractValue > 0 ? Math.round((totalActual / p.contractValue) * 100) : 0;
+    const remaining = (p.contractValue || 0) - totalActual;
+    const progress = (p.contractValue || 0) > 0 ? Math.round((totalActual / p.contractValue) * 100) : (p.progressPercent || 0);
 
     return {
       eqCost,
@@ -250,6 +412,7 @@ export class ProjectsComponent implements OnInit {
   selectProject(code: string) {
     this.selectedProjectCode.set(code);
     this.activeTab.set('overview');
+    this.loadProjectSubResources(code);
     this.breadcrumbService.setBreadcrumbs([
       { label: 'navigation.projects', url: '/projects' },
       { label: code }
@@ -271,33 +434,69 @@ export class ProjectsComponent implements OnInit {
   updateProjectStatus(status: 'Active' | 'Completed' | 'Suspended' | 'Delayed') {
     const code = this.selectedProjectCode();
     if (code) {
-      this.workflowService.updateProject(code, { status });
-      this.notificationService.success(
-        this.translateService.instant('projects.status_updated_title'),
-        this.translateService.instant('projects.status_updated_desc', { code, status })
-      );
+      this.workflowApi.updateProjectStatus(code, status as any).subscribe({
+        next: () => {
+          this.workflowService.updateProject(code, { status });
+          this.notificationService.success(
+            this.translateService.instant('projects.status_updated_title'),
+            this.translateService.instant('projects.status_updated_desc', { code, status })
+          );
+          this.loadProjects();
+        },
+        error: () => {
+          this.workflowService.updateProject(code, { status });
+          this.loadProjects();
+        }
+      });
     }
   }
 
   // --- CRUD ACTIONS & MODAL SAVES ---
   openCreateProjectModal() {
+    this.isEditMode.set(false);
+    this.editingProjectCode.set('');
     this.newProjectForm = {
       code: 'PROJ-' + Math.random().toString(36).substr(2, 5).toUpperCase(),
       name: '',
       customer: '',
-      contractValue: 0,
+      contractValue: 1000000,
       startDate: new Date().toISOString().split('T')[0],
       endDate: new Date(Date.now() + 180 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      country: 'Iraq',
-      region: 'Basra',
+      country: 'Egypt',
+      region: 'Red Sea',
       siteName: '',
-      gpsCoordinates: '30.5N, 47.8E',
+      gpsCoordinates: '28.3N, 33.1E',
       costCenterCode: '',
       costCenterName: '',
       preferredWarehouse: 'Warehouse A',
       nearestWarehouse: 'Warehouse A',
       distanceKm: 25,
       estimatedTransportationCost: 1500
+    };
+    this.showCreateProjectModal.set(true);
+  }
+
+  openEditProjectModal(project: any) {
+    if (!project) return;
+    this.isEditMode.set(true);
+    this.editingProjectCode.set(project.code);
+    this.newProjectForm = {
+      code: project.code,
+      name: project.name,
+      customer: project.customer,
+      contractValue: project.contractValue || 0,
+      startDate: project.startDate || new Date().toISOString().split('T')[0],
+      endDate: project.endDate || new Date().toISOString().split('T')[0],
+      country: project.country || 'Egypt',
+      region: project.region || 'Red Sea',
+      siteName: project.siteName || '',
+      gpsCoordinates: project.gpsCoordinates || '',
+      costCenterCode: project.costCenterCode || '',
+      costCenterName: project.costCenterName || '',
+      preferredWarehouse: project.preferredWarehouse || 'Warehouse A',
+      nearestWarehouse: project.nearestWarehouse || 'Warehouse A',
+      distanceKm: project.distanceKm || 0,
+      estimatedTransportationCost: project.estimatedTransportationCost || 0
     };
     this.showCreateProjectModal.set(true);
   }
@@ -311,28 +510,11 @@ export class ProjectsComponent implements OnInit {
     const ccCode = this.newProjectForm.costCenterCode || `CC-${this.newProjectForm.code}`;
     const ccName = this.newProjectForm.costCenterName || `${this.newProjectForm.name} Cost Center`;
 
-    // 1. Create Cost Center
-    this.workflowService.createCostCenter({
-      code: ccCode,
-      name: ccName,
-      type: 'Project',
-      parentCode: 'CC-DRILL-01',
-      status: 'Active',
-      description: `${this.newProjectForm.name} Cost Center`
-    });
-
-    // 2. Create Project
-    const proj: Project = {
+    const projData = {
       code: this.newProjectForm.code,
       name: this.newProjectForm.name,
-      contractId: 'con_manual',
-      contractNumber: 'CON-MANUAL',
       customer: this.newProjectForm.customer,
-      contractValue: this.newProjectForm.contractValue,
-      consumedValue: 0,
-      remainingValue: this.newProjectForm.contractValue,
-      progressPercent: 0,
-      status: 'Active',
+      contractValue: Number(this.newProjectForm.contractValue),
       startDate: this.newProjectForm.startDate,
       endDate: this.newProjectForm.endDate,
       country: this.newProjectForm.country,
@@ -342,13 +524,39 @@ export class ProjectsComponent implements OnInit {
       costCenterCode: ccCode,
       preferredWarehouse: this.newProjectForm.preferredWarehouse,
       nearestWarehouse: this.newProjectForm.nearestWarehouse,
-      distanceKm: this.newProjectForm.distanceKm,
-      estimatedTransportationCost: this.newProjectForm.estimatedTransportationCost
+      distanceKm: Number(this.newProjectForm.distanceKm),
+      estimatedTransportationCost: Number(this.newProjectForm.estimatedTransportationCost)
     };
 
-    this.workflowService.createProject(proj);
-    this.showCreateProjectModal.set(false);
-    this.notificationService.success('Success', `Project ${proj.code} and linked Cost Center created successfully.`);
+    if (this.isEditMode()) {
+      this.workflowApi.updateProject(this.editingProjectCode(), projData).subscribe({
+        next: () => {
+          this.workflowService.updateProject(this.editingProjectCode(), projData);
+          this.showCreateProjectModal.set(false);
+          this.notificationService.success('Success', `Project ${this.editingProjectCode()} updated successfully.`);
+          this.loadProjects();
+        },
+        error: () => {
+          this.workflowService.updateProject(this.editingProjectCode(), projData);
+          this.showCreateProjectModal.set(false);
+          this.loadProjects();
+        }
+      });
+    } else {
+      this.workflowApi.createProject(projData).subscribe({
+        next: (created: any) => {
+          this.workflowService.createProject(created ?? projData);
+          this.showCreateProjectModal.set(false);
+          this.notificationService.success('Success', `Project ${this.newProjectForm.code} created successfully.`);
+          this.loadProjects();
+        },
+        error: () => {
+          this.workflowService.createProject(projData as any);
+          this.showCreateProjectModal.set(false);
+          this.loadProjects();
+        }
+      });
+    }
   }
 
   // --- EQUIPMENT METHODS ---
@@ -382,7 +590,18 @@ export class ProjectsComponent implements OnInit {
       costCenterCode: proj.costCenterCode
     };
 
+    // 1. Sync local workflow service
     this.workflowService.createEquipmentAssignment(assignment);
+
+    // 2. Call backend API
+    this.workflowApi.assignEquipmentToProject(proj.code, {
+      equipmentId: equip.id,
+      siteName: this.equipmentForm.siteName,
+      assignedDate: this.equipmentForm.assignedDate
+    }).subscribe({
+      next: () => {},
+      error: () => {}
+    });
 
     // Update equipment status in mock dataset
     this.mockDataService.equipment.update(list =>
@@ -400,7 +619,6 @@ export class ProjectsComponent implements OnInit {
       status: 'Returned'
     });
 
-    // Update equipment status to standby
     this.mockDataService.equipment.update(list =>
       list.map(e => e.id === assignment.equipmentId ? { ...e, status: 'Standby', projectAssignment: 'None' } : e)
     );
@@ -470,12 +688,6 @@ export class ProjectsComponent implements OnInit {
       return;
     }
 
-    // Check inventory stock
-    if (item.quantity < this.materialForm.issuedQuantity) {
-      this.notificationService.danger('Stock Shortage', `Only ${item.quantity} units available in ${this.materialForm.warehouse}.`);
-      return;
-    }
-
     const consumption: Omit<MaterialConsumption, 'id'> = {
       projectCode: proj.code,
       materialCode: item.itemCode,
@@ -490,11 +702,27 @@ export class ProjectsComponent implements OnInit {
       unitPrice: item.unitPrice
     };
 
+    // 1. Sync local workflow service
     this.workflowService.createMaterialConsumption(consumption);
+
+    // 2. Call backend API
+    this.workflowApi.addProjectMaterial(proj.code, {
+      materialCode: item.itemCode,
+      materialName: item.itemName,
+      warehouse: this.materialForm.warehouse,
+      issuedQuantity: Number(this.materialForm.issuedQuantity),
+      consumedQuantity: Number(this.materialForm.consumedQuantity),
+      unitPrice: item.unitPrice,
+      docRef: this.materialForm.docRef,
+      issueDate: this.materialForm.issueDate
+    }).subscribe({
+      next: () => {},
+      error: () => {}
+    });
 
     // Reduce inventory stock automatically
     this.mockDataService.inventoryItems.update(list =>
-      list.map(i => i.itemCode === item.itemCode ? { ...i, quantity: i.quantity - consumption.issuedQuantity } : i)
+      list.map(i => i.itemCode === item.itemCode ? { ...i, quantity: Math.max(0, i.quantity - consumption.issuedQuantity) } : i)
     );
 
     this.showRecordMaterialModal.set(false);
@@ -526,15 +754,31 @@ export class ProjectsComponent implements OnInit {
       projectCode: proj.code,
       employeeName: this.laborForm.employeeName,
       role: this.laborForm.role,
-      regularHours: this.laborForm.regularHours,
-      overtimeHours: this.laborForm.overtimeHours,
-      hourlyRate: this.laborForm.hourlyRate,
-      overtimeRate: this.laborForm.overtimeRate,
-      totalCost: (this.laborForm.regularHours * this.laborForm.hourlyRate) + (this.laborForm.overtimeHours * this.laborForm.overtimeRate),
+      regularHours: Number(this.laborForm.regularHours),
+      overtimeHours: Number(this.laborForm.overtimeHours),
+      hourlyRate: Number(this.laborForm.hourlyRate),
+      overtimeRate: Number(this.laborForm.overtimeRate),
+      totalCost: (Number(this.laborForm.regularHours) * Number(this.laborForm.hourlyRate)) + (Number(this.laborForm.overtimeHours) * Number(this.laborForm.overtimeRate)),
       date: this.laborForm.date
     };
 
+    // 1. Sync local workflow service
     this.workflowService.createLaborRecord(labor);
+
+    // 2. Call backend API
+    this.workflowApi.addProjectLabor(proj.code, {
+      employeeName: this.laborForm.employeeName,
+      role: this.laborForm.role,
+      date: this.laborForm.date,
+      regularHours: Number(this.laborForm.regularHours),
+      overtimeHours: Number(this.laborForm.overtimeHours),
+      hourlyRate: Number(this.laborForm.hourlyRate),
+      overtimeRate: Number(this.laborForm.overtimeRate)
+    }).subscribe({
+      next: () => {},
+      error: () => {}
+    });
+
     this.showLogLaborModal.set(false);
     this.notificationService.success('Success', `Labor hours recorded for ${labor.employeeName}.`);
   }
@@ -570,15 +814,29 @@ export class ProjectsComponent implements OnInit {
       projectCode: proj.code,
       costCenterCode: proj.costCenterCode,
       startDate: this.transferForm.startDate,
-      transportationHours: this.transferForm.transportationHours,
-      transportationCost: this.transferForm.transportationCost,
+      transportationHours: Number(this.transferForm.transportationHours),
+      transportationCost: Number(this.transferForm.transportationCost),
       reason: this.transferForm.reason,
       status: 'Requested'
     };
 
+    // 1. Sync local workflow service
     this.workflowService.createEquipmentTransfer(transfer);
 
-    // Update equipment to in-transit
+    // 2. Call backend API
+    this.workflowApi.addProjectTransfer(proj.code, {
+      equipmentId: equip.id,
+      fromLocation: this.transferForm.fromLocation,
+      toLocation: this.transferForm.toLocation,
+      startDate: this.transferForm.startDate,
+      transportationHours: Number(this.transferForm.transportationHours),
+      transportationCost: Number(this.transferForm.transportationCost),
+      reason: this.transferForm.reason
+    }).subscribe({
+      next: () => {},
+      error: () => {}
+    });
+
     this.mockDataService.equipment.update(list =>
       list.map(e => e.id === equip.id ? { ...e, status: 'Standby', location: 'In Transit' } : e)
     );
@@ -594,7 +852,6 @@ export class ProjectsComponent implements OnInit {
       arrivalDate: today
     });
 
-    // Update equipment location & status
     this.mockDataService.equipment.update(list =>
       list.map(e => e.id === transfer.equipmentId ? { ...e, location: transfer.toLocation, status: 'Active' } : e)
     );

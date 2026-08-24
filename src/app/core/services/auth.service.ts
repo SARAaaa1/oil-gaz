@@ -1,522 +1,305 @@
-import { Injectable, signal, computed, inject, Injector } from '@angular/core';
+import { Injectable, signal, computed, inject } from '@angular/core';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Router } from '@angular/router';
-import { Observable, of, throwError } from 'rxjs';
-import { delay, tap } from 'rxjs/operators';
+import { Observable, throwError, EMPTY } from 'rxjs';
+import { tap, map, catchError } from 'rxjs/operators';
+
 import { User, UserRole, Permission } from '../../shared/interfaces/auth.interface';
 import { AuditService } from './audit.service';
+import {
+  ApiWrapper,
+  LoginResponseDto,
+  MeResponseDto,
+  RefreshTokenResponseDto,
+  TOKEN_KEYS
+} from '../../shared/interfaces/api-response.interface';
+import { environment } from '../../../environments/environment';
 
-// Mapping roles to their allowed permissions
-const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
-  'Super Admin': [
-    'view:dashboard',
-    'view:procurement',
-    'edit:procurement',
-    'approve:po',
-    'view:inventory',
-    'edit:inventory',
-    'view:vendors',
-    'edit:vendors',
-    'view:rigs',
-    'edit:rigs',
-    'view:timesheets',
-    'edit:timesheets',
-    'view:reports',
-    'view:settings',
-    'edit:settings',
-    'view:projects',
-    'edit:projects',
-    'approve:projects',
-    'view:finance',
-    'edit:finance'
-  ],
-  'General Manager': [
-    'view:dashboard',
-    'view:procurement',
-    'edit:procurement',
-    'approve:po',
-    'view:inventory',
-    'edit:inventory',
-    'view:vendors',
-    'edit:vendors',
-    'view:rigs',
-    'edit:rigs',
-    'view:timesheets',
-    'edit:timesheets',
-    'view:reports',
-    'view:settings',
-    'view:projects',
-    'edit:projects',
-    'approve:projects',
-    'view:finance',
-    'edit:finance'
-  ],
-  'Finance Manager': [
-    'view:dashboard',
-    'view:procurement',
-    'approve:po',
-    'view:reports',
-    'view:settings',
-    'view:projects',
-    'edit:projects',
-    'view:finance',
-    'edit:finance'
-  ],
-  'Procurement Manager': [
-    'view:dashboard',
-    'view:procurement',
-    'edit:procurement',
-    'view:vendors',
-    'edit:vendors',
-    'view:reports'
-  ],
-  'Operations Manager': [
-    'view:dashboard',
-    'view:rigs',
-    'edit:rigs',
-    'view:timesheets',
-    'edit:timesheets',
-    'view:reports',
-    'view:projects',
-    'edit:projects'
-  ],
-  'Store Keeper': [
-    'view:dashboard',
-    'view:inventory',
-    'edit:inventory'
-  ],
-  'Project Manager': [
-    'view:dashboard',
-    'view:rigs',
-    'view:timesheets',
-    'edit:timesheets',
-    'view:projects',
-    'edit:projects'
-  ],
-  'Employee': [
-    'view:dashboard',
-    'view:timesheets'
-  ],
-  'Safety Officer': [
-    'view:dashboard',
-    'view:rigs',
-    'view:timesheets',
-    'view:reports'
-  ],
-  'Vendor': [
-    'view:vendor_portal',
-    'submit:vendor_quotation'
-  ]
-};
+const BASE = environment.apiUrl;
 
-// Simulated mock database of users
-const MOCK_USERS: Record<string, Omit<User, 'token'>> = {
-  admin: {
-    id: 'u-1',
-    username: 'admin',
-    email: 'admin.super@petroflow.com',
-    fullName: 'Alex Davidson',
-    role: 'Super Admin',
-    permissions: ROLE_PERMISSIONS['Super Admin'],
-    lastLogin: '2026-06-03T18:45:00Z',
-    avatar: 'AD',
-    companyName: 'PetroFlow Global Services',
-    preferredLanguage: 'en',
-    timezone: 'UTC-5',
-    emailNotifications: true
-  },
-  gm: {
-    id: 'u-2',
-    username: 'gm',
-    email: 'gm.management@petroflow.com',
-    fullName: 'Marcus Aurelius',
-    role: 'General Manager',
-    permissions: ROLE_PERMISSIONS['General Manager'],
-    lastLogin: '2026-06-03T20:10:00Z',
-    avatar: 'MA',
-    companyName: 'PetroFlow Global Services',
-    preferredLanguage: 'en',
-    timezone: 'UTC-6',
-    emailNotifications: true
-  },
-  finance: {
-    id: 'u-3',
-    username: 'finance',
-    email: 'finance.lead@petroflow.com',
-    fullName: 'Sophia Sterling',
-    role: 'Finance Manager',
-    permissions: ROLE_PERMISSIONS['Finance Manager'],
-    lastLogin: '2026-06-03T15:30:00Z',
-    avatar: 'SS',
-    companyName: 'PetroFlow Global Services',
-    preferredLanguage: 'en',
-    timezone: 'UTC-5',
-    emailNotifications: true
-  },
-  procurement: {
-    id: 'u-4',
-    username: 'procurement',
-    email: 'procurement.manager@petroflow.com',
-    fullName: 'Frank Jones',
-    role: 'Procurement Manager',
-    permissions: ROLE_PERMISSIONS['Procurement Manager'],
-    lastLogin: '2026-06-03T21:12:00Z',
-    avatar: 'FJ',
-    companyName: 'PetroFlow Global Services',
-    preferredLanguage: 'en',
-    timezone: 'UTC-5',
-    emailNotifications: true
-  },
-  operations: {
-    id: 'u-5',
-    username: 'operations',
-    email: 'ops.lead@petroflow.com',
-    fullName: 'Robert Vance',
-    role: 'Operations Manager',
-    permissions: ROLE_PERMISSIONS['Operations Manager'],
-    lastLogin: '2026-06-03T19:20:00Z',
-    avatar: 'RV',
-    companyName: 'PetroFlow Global Services',
-    preferredLanguage: 'en',
-    timezone: 'UTC-6',
-    emailNotifications: false
-  },
-  store: {
-    id: 'u-6',
-    username: 'store',
-    email: 'storekeeper@petroflow.com',
-    fullName: 'Jim Halpert',
-    role: 'Store Keeper',
-    permissions: ROLE_PERMISSIONS['Store Keeper'],
-    lastLogin: '2026-06-02T08:00:00Z',
-    avatar: 'JH',
-    companyName: 'PetroFlow Global Services',
-    preferredLanguage: 'en',
-    timezone: 'UTC-5',
-    emailNotifications: true
-  },
-  project: {
-    id: 'u-7',
-    username: 'project',
-    email: 'pm.rigs@petroflow.com',
-    fullName: 'Sarah Jenkins',
-    role: 'Project Manager',
-    permissions: ROLE_PERMISSIONS['Project Manager'],
-    lastLogin: '2026-06-03T11:00:00Z',
-    avatar: 'SJ',
-    companyName: 'PetroFlow Global Services',
-    preferredLanguage: 'en',
-    timezone: 'UTC-6',
-    emailNotifications: true
-  },
-  employee: {
-    id: 'u-8',
-    username: 'employee',
-    email: 'crew.member@petroflow.com',
-    fullName: 'Sven Larson',
-    role: 'Employee',
-    permissions: ROLE_PERMISSIONS['Employee'],
-    lastLogin: '2026-06-03T07:15:00Z',
-    avatar: 'SL',
-    companyName: 'PetroFlow Global Services',
-    preferredLanguage: 'en',
-    timezone: 'UTC-6',
-    emailNotifications: false
-  },
-  safety: {
-    id: 'u-9',
-    username: 'safety',
-    email: 'safety.officer@petroflow.com',
-    fullName: 'David Miller',
-    role: 'Safety Officer',
-    permissions: ROLE_PERMISSIONS['Safety Officer'],
-    lastLogin: '2026-06-03T09:30:00Z',
-    avatar: 'DM',
-    companyName: 'PetroFlow Global Services',
-    preferredLanguage: 'en',
-    timezone: 'UTC-5',
-    emailNotifications: true
-  },
-  vendor: {
-    id: 'u-10',
-    username: 'vendor',
-    email: 'j.sterling@apexind.com',
-    fullName: 'Jane Sterling',
-    role: 'Vendor',
-    permissions: ROLE_PERMISSIONS['Vendor'],
-    lastLogin: '2026-06-03T10:15:00Z',
-    avatar: 'JS',
-    companyName: 'APEX Industrial Supplies',
-    preferredLanguage: 'en',
-    timezone: 'UTC-5',
-    emailNotifications: true,
-    vendorId: 'v2'
-  },
-  vendor2: {
-    id: 'u-11',
-    username: 'vendor2',
-    email: 's.connor@hsesafety.com',
-    fullName: 'Sarah Connor',
-    role: 'Vendor',
-    permissions: ROLE_PERMISSIONS['Vendor'],
-    lastLogin: '2026-06-03T14:20:00Z',
-    avatar: 'SC',
-    companyName: 'HSE Safety First Inc',
-    preferredLanguage: 'en',
-    timezone: 'UTC-5',
-    emailNotifications: true,
-    vendorId: 'v4'
-  }
-};
+// ─── Adapter: Backend user → Frontend User ────────────────────────────────────
+function toUser(dto: MeResponseDto | LoginResponseDto['user'], token: string): User {
+  return {
+    id:                  (dto as any)._id ?? (dto as any).id ?? '',
+    username:            dto.username,
+    email:               dto.email,
+    fullName:            dto.fullName,
+    role:                dto.role as UserRole,
+    permissions:         (dto.permissions ?? []) as Permission[],
+    lastLogin:           dto.lastLogin,
+    avatar:              dto.avatar,
+    preferredLanguage:   dto.preferredLanguage,
+    timezone:            dto.timezone,
+    emailNotifications:  (dto as MeResponseDto).emailNotifications,
+    token
+  };
+}
 
-@Injectable({
-  providedIn: 'root'
-})
+@Injectable({ providedIn: 'root' })
 export class AuthService {
-  // --- SIGNALS FOR REACTIVE AUTH STATE ---
-  readonly currentUser = signal<User | null>(null);
-  readonly isAuthenticated = computed(() => this.currentUser() !== null);
-  readonly userRole = computed(() => this.currentUser()?.role || null);
-  readonly userPermissions = computed(() => this.currentUser()?.permissions || []);
+  private readonly http   = inject(HttpClient);
+  private readonly router = inject(Router);
+  private readonly audit  = inject(AuditService);
 
-  private readonly AUTH_TOKEN_KEY = 'petroflow_auth_token';
-  private readonly REMEMBERED_USER_KEY = 'petroflow_remembered_username';
-  private readonly injector = inject(Injector);
+  // ── Reactive State ───────────────────────────────────────────────────────
+  readonly currentUser      = signal<User | null>(null);
+  readonly isAuthenticated  = computed(() => this.currentUser() !== null);
+  readonly userRole         = computed(() => this.currentUser()?.role ?? null);
+  readonly userPermissions  = computed(() => this.currentUser()?.permissions ?? []);
+  /** ✅ TASK 5: mustChangePassword signal — يُستخدم لعرض تنبيه/redirect */
+  readonly mustChangePassword = signal<boolean>(false);
 
-  constructor(private router: Router) {
+  constructor() {
     this.checkSession();
   }
 
-  // --- MOCK AUTHENTICATION ACTION ---
-  login(username: string, password: string, rememberMe: boolean): Observable<User> {
-    const sanitizedUsername = username.trim().toLowerCase();
-    const matchedUser = MOCK_USERS[sanitizedUsername];
-
-    // Standard mock credentials validation (username = role key, password = key + '123' or 'admin123' etc.)
-    const expectedPassword = sanitizedUsername === 'procurement' ? 'procure123' 
-                           : sanitizedUsername === 'operations' ? 'ops123' 
-                           : sanitizedUsername === 'employee' ? 'emp123'
-                           : `${sanitizedUsername}123`;
-
-    // Also check dynamically registered vendor credentials stored from registration
-    const dynamicCreds: Record<string, string> = JSON.parse(localStorage.getItem('pf_vendor_creds') || '{}');
-    const dynamicPassword = dynamicCreds[sanitizedUsername];
-
-    const isValidPassword = password === expectedPassword || (dynamicPassword && password === dynamicPassword);
-
-    if (!matchedUser || !isValidPassword) {
-      return throwError(() => new Error('Invalid username or password. Try: admin/admin123, procurement/procure123, etc.'));
-    }
-
-    // Generate a JWT-like Token (Header.Payload.Signature)
-    const tokenPayload = {
-      sub: matchedUser.id,
-      username: matchedUser.username,
-      role: matchedUser.role,
-      exp: Math.floor(Date.now() / 1000) + 60 * 60 * 24 // 24 hours
-    };
-    
-    // Simulating token encoding
-    const encodedHeader = btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
-    const encodedPayload = btoa(JSON.stringify(tokenPayload));
-    const mockToken = `${encodedHeader}.${encodedPayload}.mock_signature_sec`;
-
-    const userWithToken: User = {
-      ...matchedUser,
-      token: mockToken,
-      lastLogin: new Date().toISOString()
-    };
-
-    return of(userWithToken).pipe(
-      delay(800), // Simulate API Latency
-      tap(user => {
-        this.currentUser.set(user);
-        
-        // Save to appropriate storage
-        if (rememberMe) {
-          localStorage.setItem(this.AUTH_TOKEN_KEY, mockToken);
-          localStorage.setItem(this.REMEMBERED_USER_KEY, user.username);
-        } else {
-          sessionStorage.setItem(this.AUTH_TOKEN_KEY, mockToken);
-          localStorage.removeItem(this.REMEMBERED_USER_KEY);
-        }
-
-        // Log action in audit trail
-        try {
-          this.injector.get(AuditService).log(
-            'Login',
-            'Auth',
-            'Session',
-            user.id,
-            'Logged Out',
-            'Logged In',
-            `User authenticated successfully from workplace IP.`
-          );
-        } catch (e) {
-          console.error(e);
-        }
-      })
-    );
+  // ── 1. LOGIN ─────────────────────────────────────────────────────────────
+  /**
+   * loginRaw — يُرسل بيانات الدخول ويخزّن التوكن ويُعيد كائن User
+   * الـ Response مغلّف: ApiWrapper<LoginResponseDto>
+   *   → res.data.accessToken, res.data.refreshToken, res.data.user
+   */
+  loginRaw(username: string, password: string, rememberMe: boolean): Observable<User> {
+    return this.http
+      .post<ApiWrapper<LoginResponseDto>>(`${BASE}/auth/login`, { username, password, rememberMe })
+      .pipe(
+        tap(wrapper => {
+          const res = wrapper.data; // ← انزع الـ wrapper
+          const user = toUser(res.user, res.accessToken);
+          this.currentUser.set(user);
+          this._storeTokens(res.accessToken, rememberMe, res.refreshToken);
+          // ✅ TASK 5: حفظ mustChangePassword ليُستخدم في التوجيه
+          this.mustChangePassword.set(res.user.mustChangePassword ?? false);
+          this.audit.log('Login', 'Auth', 'Session', user.id, 'Logged Out', 'Logged In', 'Authenticated successfully');
+        }),
+        map(wrapper => toUser(wrapper.data.user, wrapper.data.accessToken)),
+        catchError(this._handleError.bind(this))
+      );
   }
 
-  // --- LOGOUT ACTION ---
+  // Keep old name for backward compatibility
+  login = this.loginRaw.bind(this);
+
+  // ── 2. LOGOUT ────────────────────────────────────────────────────────────
   logout(): void {
+    const refreshToken = localStorage.getItem(TOKEN_KEYS.REFRESH)
+                      || sessionStorage.getItem(TOKEN_KEYS.REFRESH);
     const current = this.currentUser();
-    if (current) {
-      try {
-        this.injector.get(AuditService).log(
-          'Logout',
-          'Auth',
-          'Session',
-          current.id,
-          'Session Active',
-          'Logged Out',
-          `Session terminated securely by user signout.`
-        );
-      } catch (e) {
-        console.error(e);
-      }
+
+    if (refreshToken) {
+      this.http.post(`${BASE}/auth/logout`, { refreshToken }).subscribe({
+        error: () => { /* ignore */ }
+      });
     }
 
+    if (current) {
+      this.audit.log('Logout', 'Auth', 'Session', current.id, 'Session Active', 'Logged Out', 'Session terminated');
+    }
+
+    this._clearTokens();
     this.currentUser.set(null);
-    localStorage.removeItem(this.AUTH_TOKEN_KEY);
-    sessionStorage.removeItem(this.AUTH_TOKEN_KEY);
+    this.mustChangePassword.set(false);
     this.router.navigate(['/login']);
   }
 
-  // --- FORGOT PASSWORD UI ACTION ---
+  // ── 3. FORGOT PASSWORD ───────────────────────────────────────────────────
   forgotPassword(email: string): Observable<boolean> {
-    // Validate if the email exists in mock DB
-    const emailExists = Object.values(MOCK_USERS).some(u => u.email.toLowerCase() === email.trim().toLowerCase());
-    if (!emailExists) {
-      return throwError(() => new Error('This email address is not registered in our system.'));
-    }
-    return of(true).pipe(
-      delay(1000),
-      tap(() => {
-        try {
-          this.injector.get(AuditService).log(
-            'Status Change',
-            'Auth',
-            'Session',
-            'forgot-pass',
-            'Active Password',
-            'Reset Token Dispatched',
-            `Password recovery link triggered for email: ${email}`
-          );
-        } catch (e) {}
+    return this.http
+      .post<ApiWrapper<{ message: string }>>(`${BASE}/auth/forgot-password`, { email })
+      .pipe(
+        map(() => true),
+        catchError(this._handleError.bind(this))
+      );
+  }
+
+  // ── 4. RESET PASSWORD ────────────────────────────────────────────────────
+  // الـ Backend لا يقبل confirmPassword — التحقق يتم في الـ Frontend
+  resetPassword(token: string, newPassword: string): Observable<boolean> {
+    return this.http
+      .post<ApiWrapper<{ message: string }>>(`${BASE}/auth/reset-password`, { token, newPassword })
+      .pipe(
+        map(() => true),
+        catchError(this._handleError.bind(this))
+      );
+  }
+
+  // ── 5. REFRESH TOKEN ─────────────────────────────────────────────────────
+  // ⚠️ المسار: /auth/refresh (ليس /auth/refresh-token)
+  refreshAccessToken(): Observable<string> {
+    const refreshToken = localStorage.getItem(TOKEN_KEYS.REFRESH)
+                      || sessionStorage.getItem(TOKEN_KEYS.REFRESH);
+    if (!refreshToken) return throwError(() => new Error('No refresh token'));
+
+    const rememberMe = !!localStorage.getItem(TOKEN_KEYS.REFRESH);
+
+    return this.http
+      .post<ApiWrapper<RefreshTokenResponseDto>>(`${BASE}/auth/refresh`, { refreshToken })
+      .pipe(
+        tap(wrapper => this._storeTokens(wrapper.data.accessToken, rememberMe, wrapper.data.refreshToken)),
+        map(wrapper => wrapper.data.accessToken),
+        catchError(() => {
+          this.logout();
+          return EMPTY;
+        })
+      );
+  }
+
+  // ── 6. GET CURRENT USER (session restore) ────────────────────────────────
+  fetchMe(): Observable<User> {
+    return this.http
+      .get<ApiWrapper<MeResponseDto>>(`${BASE}/auth/me`)
+      .pipe(
+        map(wrapper => {
+          const dto = wrapper.data; // ← انزع الـ wrapper
+          const token = localStorage.getItem(TOKEN_KEYS.ACCESS)
+                     || sessionStorage.getItem(TOKEN_KEYS.ACCESS)
+                     || '';
+          return toUser(dto, token);
+        }),
+        tap(user => {
+          this.currentUser.set(user);
+        }),
+        catchError((err) => {
+          // Clear session ONLY if server explicitly rejects token with 401 Unauthorized
+          if (err?.status === 401) {
+            this._clearTokens();
+            this.currentUser.set(null);
+          }
+          return EMPTY;
+        })
+      );
+  }
+
+  // ── 7. CHANGE PASSWORD ────────────────────────────────────────────────────
+  // ⚠️ المسار: /auth/me/password (ليس /auth/change-password)
+  changePassword(currentPassword: string, newPassword: string, confirmPassword: string): Observable<boolean> {
+    return this.http
+      .patch<ApiWrapper<{ message: string }>>(`${BASE}/auth/me/password`, {
+        currentPassword,
+        newPassword,
+        confirmPassword
       })
-    );
+      .pipe(
+        map(() => true),
+        tap(() => {
+          // الـ Backend يُلغي كل الـ Refresh Tokens → يجب إعادة الدخول
+          this._clearTokens();
+        }),
+        catchError(this._handleError.bind(this))
+      );
   }
 
-  // --- PROFILE UPDATE ACTION ---
-  updateProfile(updatedFields: Partial<User>): void {
-    const current = this.currentUser();
-    if (current) {
-      const updatedUser = { ...current, ...updatedFields };
-      
-      try {
-        this.injector.get(AuditService).log(
-          'Update',
-          'Settings',
-          'Profile',
-          current.id,
-          JSON.stringify({ fullName: current.fullName, companyName: current.companyName, timezone: current.timezone }),
-          JSON.stringify({ fullName: updatedUser.fullName, companyName: updatedUser.companyName, timezone: updatedUser.timezone }),
-          `Account information updated for user profile.`
-        );
-      } catch (e) {
-        console.error(e);
-      }
-
-      this.currentUser.set(updatedUser);
-      
-      // Update our Mock User DB to persist configuration changes across routing
-      if (MOCK_USERS[current.username]) {
-        MOCK_USERS[current.username] = {
-          ...MOCK_USERS[current.username],
-          ...updatedFields
-        };
-      }
-    }
+  // ── 8. UPDATE PROFILE ────────────────────────────────────────────────────
+  // ⚠️ المسار: /auth/me/profile (ليس /auth/profile)
+  // الـ Response مغلّف: ApiWrapper<MeResponseDto>
+  //   → res.data = updated user object (مباشرة بدون data.data)
+  updateProfile(fields: {
+    fullName?: string;
+    fullNameAr?: string;
+    preferredLanguage?: string;
+    timezone?: string;
+    emailNotifications?: boolean;
+  }): Observable<User> {
+    return this.http
+      .patch<ApiWrapper<MeResponseDto>>(`${BASE}/auth/me/profile`, fields)
+      .pipe(
+        map(wrapper => {
+          const dto = wrapper.data; // ← المستخدم المحدّث مباشرة في data
+          const token = localStorage.getItem(TOKEN_KEYS.ACCESS)
+                     || sessionStorage.getItem(TOKEN_KEYS.ACCESS)
+                     || '';
+          return toUser(dto, token);
+        }),
+        tap(user => {
+          this.currentUser.set(user);
+          this.audit.log('Update', 'Settings', 'Profile', user.id, '', JSON.stringify(fields), 'Profile updated');
+        }),
+        catchError(this._handleError.bind(this))
+      );
   }
 
-  // --- RBAC & PERMISSION CHECKS ---
+  // ── RBAC Helpers ─────────────────────────────────────────────────────────
   hasPermission(permission: Permission): boolean {
-    const permissions = this.userPermissions();
-    return permissions.includes(permission);
+    const user = this.currentUser();
+    if (!user) return false;
+    if (user.role === 'Super Admin' || user.role === 'General Manager') return true;
+    return (user.permissions ?? []).includes(permission);
   }
 
   hasAnyRole(roles: UserRole[]): boolean {
     const role = this.userRole();
-    if (!role) return false;
-    return roles.includes(role);
+    return role ? roles.includes(role) : false;
   }
 
   getRememberedUsername(): string | null {
-    return localStorage.getItem(this.REMEMBERED_USER_KEY);
+    return localStorage.getItem(TOKEN_KEYS.REMEMBER);
   }
 
-  // --- REGISTER VENDOR USER (called from Vendor Registration) ---
-  registerVendorUser(
-    username: string,
-    password: string,
-    companyName: string,
-    fullName: string,
-    email: string,
-    vendorId: string
-  ): void {
-    const newId = `u-v-${Date.now()}`;
-    MOCK_USERS[username] = {
-      id: newId,
-      username,
-      email,
-      fullName,
-      role: 'Vendor',
-      permissions: ROLE_PERMISSIONS['Vendor'],
-      lastLogin: undefined,
-      avatar: fullName.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2),
-      companyName,
-      preferredLanguage: 'en',
-      timezone: 'UTC+3',
-      emailNotifications: true,
-      vendorId
-    };
-
-    // Dynamically patch the password check by storing a credential map in localStorage (mock only)
-    const creds: Record<string, string> = JSON.parse(localStorage.getItem('pf_vendor_creds') || '{}');
-    creds[username] = password;
-    localStorage.setItem('pf_vendor_creds', JSON.stringify(creds));
-  }
-
-  // --- SESSION CHECK ON INITIATION ---
+  // ── Private: Session Restore on App Load ─────────────────────────────────
   private checkSession(): void {
-    const token = localStorage.getItem(this.AUTH_TOKEN_KEY) || sessionStorage.getItem(this.AUTH_TOKEN_KEY);
+    const token = localStorage.getItem(TOKEN_KEYS.ACCESS)
+               || sessionStorage.getItem(TOKEN_KEYS.ACCESS);
     if (!token) return;
 
+    // فحص انتهاء صلاحية الـ JWT بدون network call
     try {
       const parts = token.split('.');
       if (parts.length === 3) {
-        const decodedPayload = JSON.parse(atob(parts[1]));
-        
-        // Expiration check
-        if (decodedPayload.exp && decodedPayload.exp < Math.floor(Date.now() / 1000)) {
-          // Token expired
-          this.logout();
+        const payload = JSON.parse(atob(parts[1]));
+        const isExpired = payload.exp && payload.exp < Math.floor(Date.now() / 1000);
+        if (isExpired) {
+          this._clearTokens();
           return;
         }
 
-        // Fetch user from DB based on token sub (userId)
-        const matchedUser = Object.values(MOCK_USERS).find(u => u.id === decodedPayload.sub);
-        if (matchedUser) {
-          this.currentUser.set({
-            ...matchedUser,
-            token
-          });
-        }
+        // ✅ Synchronously set currentUser from token payload so auth guards pass immediately on load/refresh
+        const initialUser: User = {
+          id:                  payload.sub ?? payload.id ?? '',
+          username:            payload.username ?? 'admin',
+          email:               payload.email ?? '',
+          fullName:            payload.fullName ?? payload.username ?? 'User',
+          role:                (payload.role ?? 'Super Admin') as UserRole,
+          permissions:         (payload.permissions ?? []) as Permission[],
+          token
+        };
+        this.currentUser.set(initialUser);
       }
-    } catch (e) {
-      console.error('Invalid session token format', e);
-      this.logout();
+    } catch { /* invalid token format */ }
+
+    // جلب بيانات المستخدم المحدثة من الـ Backend
+    this.fetchMe().subscribe({ error: () => {} });
+  }
+
+  // ── Private: Token Storage ────────────────────────────────────────────────
+  private _storeTokens(accessToken: string, rememberMe: boolean, refreshToken?: string): void {
+    // Store tokens in BOTH localStorage and sessionStorage so refresh/tabs never lose authentication
+    localStorage.setItem(TOKEN_KEYS.ACCESS, accessToken);
+    sessionStorage.setItem(TOKEN_KEYS.ACCESS, accessToken);
+    if (refreshToken) {
+      localStorage.setItem(TOKEN_KEYS.REFRESH, refreshToken);
+      sessionStorage.setItem(TOKEN_KEYS.REFRESH, refreshToken);
     }
+    if (this.currentUser()) {
+      localStorage.setItem(TOKEN_KEYS.REMEMBER, this.currentUser()!.username);
+    }
+  }
+
+  private _clearTokens(): void {
+    [TOKEN_KEYS.ACCESS, TOKEN_KEYS.REFRESH].forEach(k => {
+      localStorage.removeItem(k);
+      sessionStorage.removeItem(k);
+    });
+  }
+
+  // ── Private: Error Handler ────────────────────────────────────────────────
+  // يستخرج رسالة الخطأ من شكل AllExceptionsFilter: { success: false, statusCode, message }
+  private _handleError(err: HttpErrorResponse): Observable<never> {
+    const message = err.error?.message ?? err.message ?? 'Unknown error';
+    return throwError(() => new Error(message));
+  }
+
+  // ── Vendor registration (kept for compatibility) ──────────────────────────
+  registerVendorUser(_u: string, _p: string, _c: string, _n: string, _e: string, _v: string): void {
+    console.warn('registerVendorUser: not yet integrated with backend');
   }
 }

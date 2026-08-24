@@ -488,56 +488,39 @@
           @if (isAssetsOpen() && !isSidebarCollapsed()) {
             <div class="sidebar-submenu-container transition-all duration-300">
               <a 
-                routerLink="/operations/rigs" 
+                routerLink="/assets/register" 
                 routerLinkActive="active"
-                [routerLinkActiveOptions]="{ exact: true }"
+                class="sidebar-submenu-item group/item"
+              >
+                {{ 'navigation.asset_register' | translate }}
+              </a>
+              <a 
+                routerLink="/assets/rigs" 
+                routerLinkActive="active"
                 class="sidebar-submenu-item group/item"
               >
                 {{ 'navigation.equipment_registry' | translate }}
               </a>
               <a 
-                routerLink="/operations/camps" 
+                routerLink="/assets/camps" 
                 routerLinkActive="active"
                 class="sidebar-submenu-item group/item"
               >
                 {{ 'navigation.camps' | translate }}
               </a>
               <a 
-                routerLink="/operations/fleet" 
+                routerLink="/assets/fleet" 
                 routerLinkActive="active"
                 class="sidebar-submenu-item group/item"
               >
                 {{ 'navigation.fleet' | translate }}
               </a>
               <a
-                routerLink="/operations/fuel"
+                routerLink="/assets/fuel"
                 routerLinkActive="active"
                 class="sidebar-submenu-item group/item"
               >
                 {{ 'navigation.fuel' | translate }}
-              </a>
-              <a 
-                routerLink="/operations/timesheets" 
-                routerLinkActive="active"
-                class="sidebar-submenu-item group/item"
-              >
-                {{ 'navigation.utilization' | translate }}
-              </a>
-              <a 
-                routerLink="/operations/rigs" 
-                [queryParams]="{ tab: 'maintenance' }"
-                routerLinkActive="active"
-                class="sidebar-submenu-item group/item"
-              >
-                {{ 'navigation.maintenance' | translate }}
-              </a>
-              <a 
-                routerLink="/assets" 
-                routerLinkActive="active"
-                [routerLinkActiveOptions]="{ exact: true }"
-                class="sidebar-submenu-item group/item"
-              >
-                {{ 'navigation.asset_register' | translate }}
               </a>
               <a 
                 routerLink="/assets/maintenance" 
@@ -970,23 +953,6 @@
                 ⚙️ {{ 'navigation.settings' | translate }}
               </a>
 
-
-              <!-- ── Administration (sub-section) ── -->
-              <button (click)="toggleHrAdmin()"
-                class="sidebar-submenu-item w-full justify-between font-black text-slate-300 hover:text-white">
-                <span>{{ 'navigation.administration' | translate }}</span>
-                <svg [class.rotate-180]="isHrAdminOpen()" class="w-3 h-3 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-                </svg>
-              </button>
-              @if (isHrAdminOpen()) {
-                <div class="pl-3 border-l border-slate-700 ml-3 space-y-0.5">
-                  <a routerLink="/hr/admin/users" routerLinkActive="active" class="sidebar-submenu-item text-[11px]">{{ 'navigation.users' | translate }}</a>
-                  <a routerLink="/hr/admin/roles" routerLinkActive="active" class="sidebar-submenu-item text-[11px]">{{ 'navigation.roles' | translate }}</a>
-                  <a routerLink="/hr/admin/permissions" routerLinkActive="active" class="sidebar-submenu-item text-[11px]">{{ 'navigation.permissions' | translate }}</a>
-                </div>
-              }
-
             </div>
           }
         </div>
@@ -1060,35 +1026,45 @@
           <!-- Submenu links -->
           @if (isAdminOpen() && !isSidebarCollapsed()) {
             <div class="sidebar-submenu-container transition-all duration-300">
-              <a 
-                routerLink="/settings" 
-                [queryParams]="{ tab: 'users' }"
+              <a
+                routerLink="/hr/admin/users"
                 routerLinkActive="active"
                 class="sidebar-submenu-item group/item"
               >
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0"/>
+                </svg>
                 {{ 'navigation.users' | translate }}
               </a>
-              <a 
-                routerLink="/settings" 
-                [queryParams]="{ tab: 'roles' }"
+              <a
+                routerLink="/hr/admin/roles"
                 routerLinkActive="active"
                 class="sidebar-submenu-item group/item"
               >
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/>
+                </svg>
                 {{ 'navigation.roles' | translate }}
               </a>
-              <a 
-                routerLink="/activity-logs" 
+              <a
+                routerLink="/hr/admin/departments"
                 routerLinkActive="active"
                 class="sidebar-submenu-item group/item"
               >
-                {{ 'navigation.audit_logs' | translate }}
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-2 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                </svg>
+                الأقسام
               </a>
-              <a 
-                routerLink="/audit-trail" 
+              <a
+                routerLink="/activity-logs"
                 routerLinkActive="active"
                 class="sidebar-submenu-item group/item"
               >
-                {{ 'navigation.activity_tracking' | translate }}
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                </svg>
+                {{ 'navigation.audit_logs' | translate }}
               </a>
             </div>
           }
@@ -1139,7 +1115,7 @@
               <li class="inline-flex items-center">
                 <a routerLink="/" class="hover:text-primary transition-colors inline-flex items-center text-slate-400">
                   <svg class="w-3.5 h-3.5 mr-1 rtl:ml-1 rtl:mr-0 text-slate-400" fill="currentColor" viewBox="0 0 20 20"><path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"></path></svg>
-                  {{ 'common.petroflow' | translate }}
+                  {{ 'common.salistech' | translate }}
                 </a>
               </li>
               @for (item of breadcrumbs(); track item.label) {
@@ -1285,6 +1261,10 @@
                   </span>
                 }
               </div>
+              <!-- Profile Link — NEW -->
+              <a routerLink="/profile" (click)="isUserMenuOpen.set(false)" class="block px-4 py-2.5 transition-colors text-left rtl:text-right font-semibold" style="color:var(--text-primary)" onmouseenter="this.style.backgroundColor='var(--bg-secondary)'" onmouseleave="this.style.backgroundColor='transparent'">
+                🙍 الملف الشخصي
+              </a>
               <a routerLink="/settings" (click)="isUserMenuOpen.set(false)" class="block px-4 py-2.5 transition-colors text-left rtl:text-right" style="color:var(--text-primary)" onmouseenter="this.style.backgroundColor='var(--bg-secondary)'" onmouseleave="this.style.backgroundColor='transparent'">{{ 'common.company_profile' | translate }}</a>
               <a routerLink="/settings" (click)="isUserMenuOpen.set(false)" class="block px-4 py-2.5 transition-colors text-left rtl:text-right" style="color:var(--text-primary)" onmouseenter="this.style.backgroundColor='var(--bg-secondary)'" onmouseleave="this.style.backgroundColor='transparent'">{{ 'common.account_settings' | translate }}</a>
               <a routerLink="/activity-logs" (click)="isUserMenuOpen.set(false)" class="block px-4 py-2.5 transition-colors text-left rtl:text-right" style="color:var(--text-primary)" onmouseenter="this.style.backgroundColor='var(--bg-secondary)'" onmouseleave="this.style.backgroundColor='transparent'">{{ 'common.activity_logs' | translate }}</a>
