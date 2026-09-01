@@ -35,9 +35,11 @@ export class FuelComponent implements OnInit {
   readonly activeTab        = signal<'dashboard' | 'tanks' | 'receipts' | 'issues' | 'consumption'>('dashboard');
   readonly showReceiptModal = signal(false);
   readonly showIssueModal   = signal(false);
+  readonly showTankModal    = signal(false);
 
   receiptForm: FuelReceiptBody = this.emptyReceipt();
   issueForm: FuelIssueBody & { issuedToName: string } = this.emptyIssue();
+  tankForm: any = this.emptyTankForm();
 
   // ── Computed ───────────────────────────────────────────────────────────────
   readonly kpis = computed(() => {
@@ -215,6 +217,61 @@ export class FuelComponent implements OnInit {
       issuedTo: 'Vehicle', issuedToId: '', issuedToName: '',
       costCenterCode: '', issueDate: new Date().toISOString().split('T')[0],
       issuedBy: '', runningHours: 0
+    };
+  }
+
+  // ── Create Tank ────────────────────────────────────────────────────────────
+  openAddTank() {
+    this.tankForm = this.emptyTankForm();
+    this.showTankModal.set(true);
+  }
+
+  saveTank() {
+    if (!this.tankForm.name || !this.tankForm.location || !this.tankForm.projectCode) {
+      this.notificationService.danger('Validation', 'Name, Location and Project Code are required');
+      return;
+    }
+    if (!this.tankForm.capacityLiters || this.tankForm.capacityLiters <= 0) {
+      this.notificationService.danger('Validation', 'Capacity must be greater than 0');
+      return;
+    }
+    this.isSaving.set(true);
+    this.opsApi.createTank({
+      tankCode: this.tankForm.tankCode || `TK-${Date.now()}`,
+      name: this.tankForm.name,
+      location: this.tankForm.location,
+      projectCode: this.tankForm.projectCode,
+      fuelType: this.tankForm.fuelType,
+      capacityLiters: Number(this.tankForm.capacityLiters),
+      currentLevelLiters: Number(this.tankForm.currentLevelLiters ?? 0),
+      minimumLevelLiters: Number(this.tankForm.minimumLevelLiters ?? 0),
+      unitCost: Number(this.tankForm.unitCost ?? 0),
+    }).subscribe({
+      next: (created: any) => {
+        const normalized = { ...created, id: created._id ?? created.id };
+        this.fuelTanks.update(list => [normalized, ...list]);
+        this.showTankModal.set(false);
+        this.isSaving.set(false);
+        this.notificationService.success('Tank Created', `Fuel tank "${normalized.name}" created successfully`);
+      },
+      error: (err: any) => {
+        this.isSaving.set(false);
+        this.notificationService.danger('Error', err?.error?.message || 'Failed to create tank');
+      }
+    });
+  }
+
+  private emptyTankForm() {
+    return {
+      tankCode: '',
+      name: '',
+      location: '',
+      projectCode: '',
+      fuelType: 'Diesel' as const,
+      capacityLiters: 0,
+      currentLevelLiters: 0,
+      minimumLevelLiters: 0,
+      unitCost: 0,
     };
   }
 }

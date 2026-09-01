@@ -9,6 +9,7 @@ import { LanguageService } from '../../../core/services/language.service';
 import { FinanceV2MockService } from '../shared/finance-v2-mock.service';
 import { LedgerAccount, LedgerTransaction, BalanceType } from '../shared/finance-v2.interfaces';
 import { BranchService } from '../shared/branch.service';
+import { FinanceApiService } from '../../../core/services/finance-api.service';
 
 @Component({
   selector: 'app-finv2-general-ledger',
@@ -22,6 +23,9 @@ export class FinV2GeneralLedgerComponent implements OnInit {
   readonly langService  = inject(LanguageService);
   readonly mockService  = inject(FinanceV2MockService);
   readonly branchService = inject(BranchService);
+  private readonly financeApi = inject(FinanceApiService);
+
+  readonly apiAccounts = signal<any[]>([]); // Loaded from real API
 
   // ── Filters ───────────────────────────────────────────────────────
   readonly selectedAccountCode = signal<string>('1121');
@@ -121,12 +125,13 @@ export class FinV2GeneralLedgerComponent implements OnInit {
   }
 
   readonly availableAccounts = computed(() => {
+    // Use real API accounts if loaded, otherwise fall back to mock
+    const base = this.apiAccounts().length > 0 ? this.apiAccounts() : this.mockService.ledgerAccounts();
     const branch = this.branchFilter();
-    if (branch === 'All') return this.mockService.ledgerAccounts();
-    // Show accounts from selected branch (prefix 'fz-' for Free Zone)
-    return this.mockService.ledgerAccounts().filter(a =>
-      branch === 'FreeZone' ? a.accountCode.startsWith('FZ.') || a.id?.startsWith('fz-')
-                             : !a.accountCode.startsWith('FZ.') && !a.id?.startsWith('fz-')
+    if (branch === 'All') return base;
+    return base.filter((a: any) =>
+      branch === 'FreeZone' ? (a.accountCode?.startsWith('FZ.') || a.id?.startsWith('fz-'))
+                             : (!a.accountCode?.startsWith('FZ.') && !a.id?.startsWith('fz-'))
     );
   });
 
@@ -141,5 +146,42 @@ export class FinV2GeneralLedgerComponent implements OnInit {
       { label: 'navigation.finance' },
       { label: 'finance_v2.gl.title' }
     ]);
+    // Load real GL accounts from API
+    this.financeApi.getLedgerAccounts().subscribe({
+      next: (res: any) => {
+        const raw = Array.isArray(res) ? res : (res?.data ?? []);
+        if (raw && raw.length > 0) {
+          const mapped = raw.map((a: any) => ({
+            id: a.id ?? a._id,
+            accountCode: a.accountCode ?? a.code ?? '',
+            accountNameEn: a.accountNameEn ?? a.nameEn ?? a.name ?? '',
+            accountNameAr: a.accountNameAr ?? a.nameAr ?? '',
+            accountType: a.accountType ?? a.type ?? 'Asset',
+            openingBalance: a.openingBalance ?? a.balance ?? 0,
+            openingBalanceType: a.openingBalanceType ?? 'Dr',
+            transactions: (a.transactions ?? []).map((t: any) => ({
+              id: t.id ?? t._id ?? 't-' + Math.random(),
+              journalNumber: t.journalNumber ?? t.number ?? '',
+              date: t.date ?? '',
+              sourceModule: t.sourceModule ?? 'Journal',
+              reference: t.reference ?? '',
+              description: t.description ?? '',
+              costCenterCode: t.costCenterCode ?? '',
+              projectCode: t.projectCode ?? '',
+              debit: t.debit ?? 0,
+              credit: t.credit ?? 0,
+              runningBalance: t.runningBalance ?? 0,
+              balanceType: t.balanceType ?? 'Dr',
+              branchId: t.branchId ?? 'HeadOffice'
+            }))
+          }));
+          this.apiAccounts.set(mapped);
+          if (mapped[0]?.accountCode) {
+            this.selectedAccountCode.set(mapped[0].accountCode);
+          }
+        }
+      },
+      error: () => {} // fallback to FinanceV2MockService data
+    });
   }
 }

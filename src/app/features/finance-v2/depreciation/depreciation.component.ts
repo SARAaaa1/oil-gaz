@@ -6,7 +6,7 @@ import { FormsModule } from '@angular/forms';
 import { TranslateModule } from '@ngx-translate/core';
 import { BreadcrumbService } from '../../../core/services/breadcrumb.service';
 import { NotificationService } from '../../../core/services/notification.service';
-import { AssetsMockService } from '../shared/assets-mock.service';
+import { FinanceApiService } from '../../../core/services/finance-api.service';
 import { FixedAsset } from '../shared/assets.interfaces';
 import { BranchService } from '../shared/branch.service';
 
@@ -20,77 +20,59 @@ import { BranchService } from '../shared/branch.service';
 export class FinV2DepreciationComponent implements OnInit {
   private readonly breadcrumb = inject(BreadcrumbService);
   private readonly notify     = inject(NotificationService);
-  readonly assetService       = inject(AssetsMockService);
+  readonly financeApi         = inject(FinanceApiService);
   readonly branchService      = inject(BranchService);
+
+  readonly depreciationEntries = signal<any[]>([]);
+  readonly depreciationTotals = signal<any>(null);
+  readonly isLoading = signal(false);
+  readonly isPosting = signal(false);
+  readonly asOfDate = signal('2025-06-30');
 
   readonly showJournalDlg = signal(false);
   readonly branchFilter   = signal('All');
 
   // Filter Active assets that can be depreciated
   readonly depreciableAssets = computed(() => {
-    const br = this.branchFilter();
-    return this.assetService.assets().filter(a => {
-      const matchStatus = a.status === 'Active' || a.status === 'Under Maintenance';
-      const matchBranch = br === 'All' || (a.branchId || 'HeadOffice') === br;
-      return matchStatus && matchBranch;
-    });
+    return this.depreciationEntries();
   });
 
   // KPIs
   readonly totalMonthlyDep = computed(() => {
-    return this.depreciableAssets().reduce((s, a) => s + this.assetService.calculateMonthlyDepreciation(a), 0);
+    return this.depreciationTotals()?.totalMonthlyCharge ?? 0;
   });
 
   readonly depreciatedCount = computed(() => {
-    return this.depreciableAssets().filter(a => a.lastDepreciationDate === '2025-06-30').length;
+    return this.depreciationTotals()?.depreciatedCount ?? 0;
   });
 
   readonly pendingCount = computed(() => {
-    return this.depreciableAssets().filter(a => a.lastDepreciationDate !== '2025-06-30').length;
+    return this.depreciationTotals()?.pendingCount ?? 0;
   });
 
   // Workflows
   postMonthlyDepreciation() {
-    // Post mock depreciation for all active/maintenance assets
-    const active = this.depreciableAssets();
-    if (active.length === 0) return;
-
-    this.assetService.assets.update(list =>
-      list.map(a => {
-        if (a.status !== 'Active' && a.status !== 'Under Maintenance') return a;
-        const monthly = this.assetService.calculateMonthlyDepreciation(a);
-        const newAcc  = a.accumulatedDepreciation + monthly;
-        const newBook = Math.max(a.residualValue, a.originalCost - newAcc);
-        return {
-          ...a,
-          accumulatedDepreciation: newAcc,
-          currentBookValue: newBook,
-          lastDepreciationDate: '2025-06-30'
-        };
-      })
-    );
-
-    this.notify.success('finance_v2.assets.msg.dep_posted', 'finance_v2.assets.msg.dep_posted_desc');
+    this.isPosting.set(true);
+    this.financeApi.postMonthlyDepreciation(this.asOfDate()).subscribe({
+      next: res => {
+        this.notify.success('finance_v2.assets.msg.dep_posted', res.message);
+        this.isPosting.set(false);
+        this.loadDepreciation();
+      },
+      error: () => this.isPosting.set(false)
+    });
   }
 
   reverseDepreciation() {
-    // Reverse last month's mock depreciation
-    this.assetService.assets.update(list =>
-      list.map(a => {
-        if (a.status !== 'Active' && a.status !== 'Under Maintenance') return a;
-        const monthly = this.assetService.calculateMonthlyDepreciation(a);
-        const newAcc  = Math.max(0, a.accumulatedDepreciation - monthly);
-        const newBook = a.originalCost - newAcc;
-        return {
-          ...a,
-          accumulatedDepreciation: newAcc,
-          currentBookValue: newBook,
-          lastDepreciationDate: '2025-05-31'
-        };
-      })
-    );
+    // API does not support reversing yet
+    this.notify.warning('finance_v2.assets.msg.dep_reversed', 'API does not support reversing yet');
+  }
 
-    this.notify.warning('finance_v2.assets.msg.dep_reversed', 'finance_v2.assets.msg.dep_reversed_desc');
+  /** Computes monthly depreciation from asset fields — replaces removed assetService call */
+  calculateMonthlyDepreciation(a: any): number {
+    const depreciableBase = (a.originalCost ?? 0) - (a.residualValue ?? 0);
+    const usefulLifeMonths = (a.usefulLifeYears ?? a.usefulLife ?? 1) * 12;
+    return usefulLifeMonths > 0 ? depreciableBase / usefulLifeMonths : 0;
   }
 
   // Helpers
@@ -105,5 +87,36 @@ export class FinV2DepreciationComponent implements OnInit {
       { label: 'finance_v2.assets.title' },
       { label: 'finance_v2.assets.depreciation' }
     ]);
+    this.loadDepreciation();
+  }
+
+  loadDepreciation() {
+    this.isLoading.set(true);
+    this.financeApi.getDepreciation(this.asOfDate()).subscribe({
+      next: (res: any) => {
+        const raw = Array.isArray(res) ? res : (res?.data ?? []);
+        if (raw && raw.length > 0) {
+          const mapped = raw.map((d: any) => ({
+            id: d.id ?? d._id,
+            assetCode: d.assetCode ?? d.code ?? '',
+            assetName: d.assetName ?? d.nameEn ?? d.name ?? '',
+            category: d.category ?? 'Equipment',
+            originalCost: d.originalCost ?? d.acquisitionCost ?? 0,
+            residualValue: d.residualValue ?? 0,
+            usefulLifeYears: d.usefulLifeYears ?? d.usefulLife ?? 5,
+            accumulatedDepreciation: d.accumulatedDepreciation ?? 0,
+            monthlyCharge: d.monthlyCharge ?? d.depreciationAmount ?? 0,
+            currentBookValue: d.currentBookValue ?? d.netBookValue ?? 0,
+            status: d.status ?? 'Active'
+          }));
+          this.depreciationEntries.set(mapped);
+        }
+        if (res?.totals) {
+          this.depreciationTotals.set(res.totals);
+        }
+        this.isLoading.set(false);
+      },
+      error: () => this.isLoading.set(false)
+    });
   }
 }

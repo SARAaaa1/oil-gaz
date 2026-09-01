@@ -54,20 +54,57 @@
             </select>
           </div>
 
-          <div>
-            <label class="block mb-1.5" for="cc">{{ 'procurement.purchase_requests.cost_center_allocation' | translate }}</label>
-            <select 
-              id="cc" 
-              name="costCenter" 
-              [(ngModel)]="formPR.costCenter" 
-              class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-slate-800 focus:outline-none focus:border-accent"
-              required
-            >
-              <option value="CC-DRL-001">CC-DRL-001 (Rig Alpha Ops)</option>
-              <option value="CC-MNT-002">CC-MNT-002 (Rig Beta Maint)</option>
-              <option value="CC-HSE-001">CC-HSE-001 (Safety General)</option>
-              <option value="CC-LOG-004">CC-LOG-004 (Supply Logistics)</option>
-            </select>
+          <!-- Cascaded Cost Center Picker -->
+          <div class="col-span-1 md:col-span-2 bg-slate-50 p-3 rounded-lg border border-slate-200 space-y-2">
+            <label class="block font-bold text-xs text-slate-800 flex items-center gap-1">
+              <svg class="w-3.5 h-3.5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+              {{ 'procurement.purchase_requests.cost_center_allocation' | translate }}
+            </label>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div>
+                <label class="block text-[10px] uppercase font-bold text-slate-600 mb-1">Main Root Center <span class="text-red-500">*</span></label>
+                <select 
+                  [ngModel]="prParentCC()" 
+                  (ngModelChange)="onPRParentCCChange($event)"
+                  name="prParentCC"
+                  class="w-full bg-white border border-slate-300 rounded-lg p-2 text-slate-900 font-bold text-xs focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                  style="color:#0f172a !important; background-color:#ffffff !important;"
+                >
+                  <option value="" style="color:#64748b">— اختر المركز الرئيسي —</option>
+                  @for (cc of parentCostCenters(); track cc.code) {
+                    <option [value]="cc.code" style="color:#0f172a !important;">🏢 {{ cc.nameAr || cc.nameEn }}</option>
+                  }
+                </select>
+              </div>
+
+              <div>
+                <label class="block text-[10px] uppercase font-bold text-slate-600 mb-1">Department / Cost Center <span class="text-slate-400 font-semibold normal-case">(اختياري)</span></label>
+                @if (childCostCenters().length > 0) {
+                  <select 
+                    [(ngModel)]="formPR.costCenter" 
+                    name="costCenter"
+                    class="w-full bg-white border border-slate-300 rounded-lg p-2 text-slate-900 font-bold text-xs focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                    style="color:#0f172a !important; background-color:#ffffff !important;"
+                  >
+                    <option value="" style="color:#64748b">— اختر القسم / مركز التكلفة —</option>
+                    @for (cc of childCostCenters(); track cc.code) {
+                      <option [value]="cc.code" style="color:#0f172a !important;">{{ cc.code }} — {{ cc.nameAr || cc.nameEn || cc.name }}</option>
+                    }
+                  </select>
+                } @else if (prParentCC()) {
+                  <div class="w-full bg-amber-50 border border-amber-200 rounded-lg p-2 text-amber-700 font-bold text-[10px]">No sub-departments — using main CC</div>
+                } @else {
+                  <div class="w-full bg-slate-100 border border-slate-200 rounded-lg p-2 text-slate-400 text-[10px]">اختر المركز الرئيسي أولاً</div>
+                }
+              </div>
+            </div>
+
+            @if (prParentCC()) {
+              <div class="flex items-center gap-2 bg-indigo-50 border border-indigo-100 rounded px-2.5 py-1 text-[10px]">
+                <span class="text-indigo-500 font-bold uppercase tracking-wider text-[9px]">Resolved CC:</span>
+                <span class="font-mono font-black text-indigo-700">{{ formPR.costCenter || prParentCC() }}</span>
+              </div>
+            }
           </div>
 
           <div>

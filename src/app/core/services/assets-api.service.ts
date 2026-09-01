@@ -82,6 +82,8 @@ export interface CreateEquipmentBody {
   depreciationMethod?: string;
   location: string;
   costCenter?: string;
+  costCenterCode?: string;
+  parentCostCenter?: string;
   department?: string;
   status?: AssetStatus;
   operatingHours?: number;
@@ -96,7 +98,7 @@ export interface UpdateEquipmentStatusBody {
   projectAssignment?: string | null;
 }
 
-// ─── Service ──────────────────────────────────────────────────────────────────
+
 
 // ─── Asset Assignment Types ───────────────────────────────────────────────────
 
@@ -280,6 +282,22 @@ export class AssetsApiService {
     );
   }
 
+  /** PATCH /assets/equipment/:id */
+  updateEquipment(id: string, body: Partial<CreateEquipmentBody>): Observable<Equipment> {
+    return this.http.patch<any>(`${this.baseUrl}/${id}`, body).pipe(
+      map(res => res.data ?? res),
+      catchError(err => throwError(() => err))
+    );
+  }
+
+  /** DELETE /assets/equipment/:id */
+  deleteEquipment(id: string): Observable<{ message: string }> {
+    return this.http.delete<any>(`${this.baseUrl}/${id}`).pipe(
+      map(res => res.data ?? res),
+      catchError(err => throwError(() => err))
+    );
+  }
+
   /** GET /assets/equipment */
   getEquipment(params: EquipmentListParams = {}): Observable<PaginatedResponse<Equipment>> {
     let p = new HttpParams();
@@ -318,6 +336,8 @@ export class AssetsApiService {
       catchError(err => throwError(() => err))
     );
   }
+
+
 
   // ── Asset Assignments ─────────────────────────────────────────────────────
 

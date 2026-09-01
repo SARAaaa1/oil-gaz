@@ -6,7 +6,7 @@ import { FormsModule } from '@angular/forms';
 import { TranslateModule } from '@ngx-translate/core';
 import { BreadcrumbService } from '../../../../core/services/breadcrumb.service';
 import { NotificationService } from '../../../../core/services/notification.service';
-import { TreasuryMockService } from '../../shared/treasury-mock.service';
+import { FinanceApiService } from '../../../../core/services/finance-api.service';
 import { CashBox, CashBoxStatus, TreasuryMovement } from '../../shared/treasury.interfaces';
 import { BranchService } from '../../shared/branch.service';
 import { ApMockService } from '../../shared/ap-mock.service';
@@ -22,10 +22,16 @@ import { ArMockService } from '../../shared/ar-mock.service';
 export class FinV2CashComponent implements OnInit {
   private readonly breadcrumb = inject(BreadcrumbService);
   private readonly notify     = inject(NotificationService);
-  readonly treasuryService    = inject(TreasuryMockService);
+  readonly financeApi         = inject(FinanceApiService);
   readonly branchService      = inject(BranchService);
   readonly apService          = inject(ApMockService);
   readonly arService          = inject(ArMockService);
+
+  readonly cashAccounts = signal<any[]>([]);
+  readonly isLoading = signal(false);
+  readonly isSaving = signal(false);
+  readonly showCreateModal = signal(false);
+  readonly movements = signal<any[]>([]);
 
   // قوائم المحاسبين
   readonly accountants = [
@@ -50,27 +56,28 @@ export class FinV2CashComponent implements OnInit {
     const q  = this.searchQuery().toLowerCase();
     const st = this.statusFilter();
     const br = this.branchFilter();
-    return this.treasuryService.cashBoxes()
+    return this.cashAccounts()
       .filter(c => {
-        const mq = !q || c.name.toLowerCase().includes(q) ||
-                   c.code.toLowerCase().includes(q) ||
-                   c.responsibleEmployee.toLowerCase().includes(q);
+        const mq = !q || (c.name && c.name.toLowerCase().includes(q)) ||
+                   (c.code && c.code.toLowerCase().includes(q)) ||
+                   (c.custodianName && c.custodianName.toLowerCase().includes(q)) ||
+                   (c.responsibleEmployee && c.responsibleEmployee.toLowerCase().includes(q));
         const ms = st === 'All' || c.status === st;
         const mb = br === 'All' || (c.branchId || 'HeadOffice') === br;
         return mq && ms && mb;
       })
-      .sort((a, b) => b.currentBalance - a.currentBalance);
+      .sort((a, b) => (b.currentBalance || b.balance || 0) - (a.currentBalance || a.balance || 0));
   });
 
   readonly activeBox = computed(() => {
     const id = this.selectedId();
-    return id ? (this.treasuryService.cashBoxes().find(c => c.id === id) ?? null) : null;
+    return id ? (this.cashAccounts().find(c => c.id === id || c._id === id) ?? null) : null;
   });
 
   readonly activeBoxMovements = computed(() => {
     const id = this.selectedId();
     if (!id) return [];
-    return this.treasuryService.movements()
+    return this.movements()
       .filter(m => m.accountType === 'Cash' && m.accountId === id)
       .sort((a, b) => b.date.localeCompare(a.date));
   });
@@ -78,27 +85,27 @@ export class FinV2CashComponent implements OnInit {
   // KPI calculations
   readonly totalCashBalance = computed(() => {
     const br = this.branchFilter();
-    return this.treasuryService.cashBoxes()
+    return this.cashAccounts()
       .filter(c => c.status === 'Open' && (br === 'All' || (c.branchId || 'HeadOffice') === br))
-      .reduce((s, c) => s + (c.currency === 'USD' ? c.currentBalance * 3.75 : c.currentBalance), 0);
+      .reduce((s, c) => s + (c.currency === 'USD' ? (c.currentBalance || c.balance || 0) * 3.75 : (c.currentBalance || c.balance || 0)), 0);
   });
 
   readonly activeCount = computed(() => {
     const br = this.branchFilter();
-    return this.treasuryService.cashBoxes().filter(c => c.status === 'Open' && (br === 'All' || (c.branchId || 'HeadOffice') === br)).length;
+    return this.cashAccounts().filter(c => c.status === 'Open' && (br === 'All' || (c.branchId || 'HeadOffice') === br)).length;
   });
 
   selectBox(box: CashBox) {
     this.selectedId.set(box.id);
   }
 
-  toggleBoxStatus(box: CashBox) {
+  toggleBoxStatus(box: any) {
     const next: CashBoxStatus = box.status === 'Open' ? 'Closed' : 'Open';
-    this.treasuryService.cashBoxes.update(list =>
-      list.map(c => c.id === box.id ? {
+    this.cashAccounts.update(list =>
+      list.map(c => (c.id === box.id || c._id === box.id) ? {
         ...c,
         status: next,
-        openingBalance: next === 'Open' ? c.currentBalance : c.openingBalance
+        openingBalance: next === 'Open' ? (c.currentBalance || c.balance || 0) : (c.openingBalance || 0)
       } : c)
     );
     this.notify.success(
@@ -154,13 +161,14 @@ export class FinV2CashComponent implements OnInit {
     const diff  = isDep ? amt : -amt;
 
     // Update box balance
-    this.treasuryService.cashBoxes.update(list =>
-      list.map(c => c.id === box.id ? {
+    this.cashAccounts.update(list =>
+      list.map(c => (c.id === box.id || c._id === box.id) ? {
         ...c,
-        currentBalance: c.currentBalance + diff,
-        todayReceipts: isDep ? c.todayReceipts + amt : c.todayReceipts,
-        todayPayments: !isDep ? c.todayPayments + amt : c.todayPayments,
-        closingBalance: c.currentBalance + diff
+        currentBalance: (c.currentBalance || c.balance || 0) + diff,
+        balance: (c.balance || 0) + diff,
+        todayReceipts: isDep ? (c.todayReceipts || 0) + amt : (c.todayReceipts || 0),
+        todayPayments: !isDep ? (c.todayPayments || 0) + amt : (c.todayPayments || 0),
+        closingBalance: (c.currentBalance || c.balance || 0) + diff
       } : c)
     );
 
@@ -181,7 +189,7 @@ export class FinV2CashComponent implements OnInit {
       description: this.txReason() || `${voucherLabel}${partnerInfo}${acctInfo}`,
       matched: true
     };
-    this.treasuryService.movements.update(list => [newMovement, ...list]);
+    this.movements.update(list => [newMovement, ...list]);
 
     this.closeTxDialog();
     this.notify.success('finance_v2.treasury.cash.tx_success', 'finance_v2.treasury.cash.tx_success_desc');
@@ -206,8 +214,54 @@ export class FinV2CashComponent implements OnInit {
       { label: 'finance_v2.treasury.title' },
       { label: 'finance_v2.treasury.cash.title' }
     ]);
-    // Auto-select first cash box
-    const first = this.treasuryService.cashBoxes()[0];
-    if (first) this.selectedId.set(first.id);
+    this.loadCash();
+  }
+
+  loadCash() {
+    this.isLoading.set(true);
+    this.financeApi.getCashAccounts().subscribe({
+      next: (res: any) => {
+        const raw = Array.isArray(res) ? res : (res?.data ?? []);
+        if (raw && raw.length > 0) {
+          const mapped = raw.map((c: any) => ({
+            id: c.id ?? c._id,
+            _id: c._id ?? c.id,
+            code: c.code ?? c.accountCode ?? 'CSH-001',
+            name: c.name ?? c.officeLocation ?? 'Main Cash Box',
+            officeLocation: c.officeLocation ?? c.name ?? '',
+            custodianName: c.custodianName ?? c.responsibleEmployee ?? '',
+            responsibleEmployee: c.responsibleEmployee ?? c.custodianName ?? '',
+            currency: c.currency ?? 'SAR',
+            currentBalance: c.currentBalance ?? c.balance ?? 0,
+            maxLimit: c.maxLimit ?? 50000,
+            status: c.status ?? 'Open',
+            branchId: c.branchId ?? 'HeadOffice'
+          }));
+          this.cashAccounts.set(mapped);
+        }
+        this.isLoading.set(false);
+      },
+      error: () => this.isLoading.set(false)
+    });
+  }
+
+  createCashAccount(form: any) {
+    this.isSaving.set(true);
+    this.financeApi.createCashAccount({
+      officeLocation: form.officeLocation,
+      custodianName: form.custodianName,
+      currency: form.currency,
+      balance: form.balance ?? 0
+    }).subscribe({
+      next: created => {
+        this.cashAccounts.update(l => [...l, {...created, id: created._id}]);
+        this.showCreateModal?.set(false);
+        this.notify.success('Cash Account Created', '');
+        this.isSaving.set(false);
+      },
+      error: () => {
+        this.isSaving.set(false);
+      }
+    });
   }
 }

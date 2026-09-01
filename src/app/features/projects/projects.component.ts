@@ -12,6 +12,7 @@ import { BreadcrumbService } from '../../core/services/breadcrumb.service';
 import { WorkflowApiService } from '../../core/services/workflow-api.service';
 import { RoleDirective } from '../../shared/directives/role.directive';
 import { Project, EquipmentAssignment, AssetAssignment, MaterialConsumption, EquipmentTransfer, LaborRecord } from '../../shared/interfaces/project.interface';
+import { CostCenterStoreService } from '../../core/services/cost-center-store.service';
 
 @Component({
   selector: 'app-projects',
@@ -31,6 +32,42 @@ export class ProjectsComponent implements OnInit {
   readonly authService = inject(AuthService);
   readonly auditService = inject(AuditService);
   readonly notificationService = inject(NotificationService);
+  private readonly costCenterStore = inject(CostCenterStoreService);
+
+  // --- COST CENTER HIERARCHY (2 Main Roots: Head Office & Free Zone) ---
+  /** Signal that drives child CC list — updated by onParentCCChange() */
+  readonly selectedParentCCCode = signal<string>('');
+
+  /** The 2 Main Root options (Head Office & Free Zone) */
+  readonly parentCostCenters = computed(() =>
+    this.costCenterStore.mainRoots()
+  );
+
+  /** Cost Centers / Departments under the selected Main Root */
+  readonly childCostCenters = computed(() => {
+    const parentCode = this.selectedParentCCCode();
+    if (!parentCode) return [];
+    return this.costCenterStore.getDepartmentsByRoot(parentCode);
+  });
+
+  /** Called when the parent CC dropdown changes */
+  onParentCCChange() {
+    this.selectedParentCCCode.set(this.newProjectForm.parentCostCenterCode);
+    // Reset child selection when parent changes
+    this.newProjectForm.costCenterCode = '';
+    this.newProjectForm.costCenterName = '';
+  }
+
+  /** Called when the child CC dropdown changes — syncs the name */
+  onChildCCChange() {
+    const selected = this.costCenterStore.costCenters()
+      .find(cc => cc.code === this.newProjectForm.costCenterCode);
+    if (selected) {
+      this.newProjectForm.costCenterName = selected.nameEn || selected.name || selected.code;
+    } else {
+      this.newProjectForm.costCenterName = '';
+    }
+  }
 
   // --- STATE SIGNALS ---
   readonly projectsList = signal<any[]>([]);
@@ -71,7 +108,8 @@ export class ProjectsComponent implements OnInit {
     region: '',
     siteName: '',
     gpsCoordinates: '',
-    costCenterCode: '',
+    parentCostCenterCode: '',   // Level-1 CC (main cost center)
+    costCenterCode: '',          // Level-2+ CC (sub department) — may be empty if using parent
     costCenterName: '',
     preferredWarehouse: 'Warehouse A',
     nearestWarehouse: 'Warehouse A',
@@ -455,6 +493,7 @@ export class ProjectsComponent implements OnInit {
   openCreateProjectModal() {
     this.isEditMode.set(false);
     this.editingProjectCode.set('');
+    this.selectedParentCCCode.set('');
     this.newProjectForm = {
       code: 'PROJ-' + Math.random().toString(36).substr(2, 5).toUpperCase(),
       name: '',
@@ -466,6 +505,7 @@ export class ProjectsComponent implements OnInit {
       region: 'Red Sea',
       siteName: '',
       gpsCoordinates: '28.3N, 33.1E',
+      parentCostCenterCode: '',
       costCenterCode: '',
       costCenterName: '',
       preferredWarehouse: 'Warehouse A',
@@ -480,6 +520,11 @@ export class ProjectsComponent implements OnInit {
     if (!project) return;
     this.isEditMode.set(true);
     this.editingProjectCode.set(project.code);
+    // Restore parent CC from existing costCenterCode
+    const existingCC = this.costCenterStore.costCenters()
+      .find(cc => cc.code === (project.costCenterCode || ''));
+    const parentCode = existingCC?.parentCode ?? project.costCenterCode ?? '';
+    this.selectedParentCCCode.set(parentCode);
     this.newProjectForm = {
       code: project.code,
       name: project.name,
@@ -491,7 +536,8 @@ export class ProjectsComponent implements OnInit {
       region: project.region || 'Red Sea',
       siteName: project.siteName || '',
       gpsCoordinates: project.gpsCoordinates || '',
-      costCenterCode: project.costCenterCode || '',
+      parentCostCenterCode: parentCode,
+      costCenterCode: existingCC?.parentCode ? (project.costCenterCode || '') : '',
       costCenterName: project.costCenterName || '',
       preferredWarehouse: project.preferredWarehouse || 'Warehouse A',
       nearestWarehouse: project.nearestWarehouse || 'Warehouse A',
@@ -506,10 +552,19 @@ export class ProjectsComponent implements OnInit {
       this.notificationService.danger('Validation Error', 'Please complete all required fields.');
       return;
     }
+    if (!this.newProjectForm.parentCostCenterCode && !this.newProjectForm.costCenterCode) {
+      this.notificationService.danger('Validation Error', 'Please select a Cost Center.');
+      return;
+    }
 
-    const ccCode = this.newProjectForm.costCenterCode || `CC-${this.newProjectForm.code}`;
-    const ccName = this.newProjectForm.costCenterName || `${this.newProjectForm.name} Cost Center`;
+    // Resolve final CC: child CC takes priority; if none, use parent CC directly
+    const ccCode = this.newProjectForm.costCenterCode
+      || this.newProjectForm.parentCostCenterCode
+      || `CC-${this.newProjectForm.code}`;
+    const resolvedCC = this.costCenterStore.costCenters().find(cc => cc.code === ccCode);
+    const ccName = resolvedCC?.nameEn || resolvedCC?.name || this.newProjectForm.costCenterName || `${this.newProjectForm.name} Cost Center`;
 
+    const parentCC = this.newProjectForm.parentCostCenterCode || undefined;
     const projData = {
       code: this.newProjectForm.code,
       name: this.newProjectForm.name,
@@ -522,6 +577,9 @@ export class ProjectsComponent implements OnInit {
       siteName: this.newProjectForm.siteName,
       gpsCoordinates: this.newProjectForm.gpsCoordinates,
       costCenterCode: ccCode,
+      costCenterName: ccName,
+      parentCostCenter: parentCC,
+      parentCostCenterCode: parentCC,
       preferredWarehouse: this.newProjectForm.preferredWarehouse,
       nearestWarehouse: this.newProjectForm.nearestWarehouse,
       distanceKm: Number(this.newProjectForm.distanceKm),

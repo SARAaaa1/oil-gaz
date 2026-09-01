@@ -12,6 +12,17 @@ export interface ApiResponse<T> {
   data: T;
 }
 
+export function extractApiArray<T = any>(res: any): T[] {
+  if (!res) return [];
+  if (Array.isArray(res)) return res;
+  if (Array.isArray(res.data)) return res.data;
+  if (Array.isArray(res.items)) return res.items;
+  if (Array.isArray(res.docs)) return res.docs;
+  if (res.data && Array.isArray(res.data.items)) return res.data.items;
+  if (res.data && Array.isArray(res.data.docs)) return res.data.docs;
+  return [];
+}
+
 export interface ItemsListParams {
   page?: number;
   limit?: number;
@@ -185,6 +196,13 @@ export class InventoryApiService {
       map(res => res.data ?? res),
       catchError(err => throwError(() => err))
     );
+  }
+
+  /** DELETE /inventory/warehouses/:id */
+  deleteWarehouse(id: string): Observable<any> {
+    return this.http.delete<any>(
+      `${this.baseUrl}/warehouses/${id}`
+    ).pipe(catchError(err => throwError(() => err)));
   }
 
   // ── MIVs — سندات الصرف ────────────────────────────────────────────────────

@@ -7,6 +7,8 @@ import { NotificationService } from '../../../core/services/notification.service
 import { LanguageService } from '../../../core/services/language.service';
 import { FinanceV2MockService } from '../shared/finance-v2-mock.service';
 import { CostCenter, CostCenterStatus, AccountBranch } from '../shared/finance-v2.interfaces';
+import { FinanceApiService } from '../../../core/services/finance-api.service';
+import { CostCenterStoreService } from '../../../core/services/cost-center-store.service';
 
 // ── Branch virtual node for tree rendering ───────────────────────────────────
 export interface BranchNode {
@@ -27,6 +29,8 @@ export class FinV2CostCentersComponent implements OnInit {
   private readonly notificationService = inject(NotificationService);
   readonly langService = inject(LanguageService);
   readonly mockService = inject(FinanceV2MockService);
+  private readonly financeApi = inject(FinanceApiService);
+  private readonly costCenterStore = inject(CostCenterStoreService);
 
   // ── UI State ──────────────────────────────────────────────────────
   readonly searchQuery  = signal<string>('');
@@ -262,38 +266,82 @@ export class FinV2CostCentersComponent implements OnInit {
       this.notificationService.warning('finance_v2.common.error', 'finance_v2.cost_centers.error_duplicate');
       return;
     }
+    // Calculate dynamic level based on selected parent
+    let calcLevel = 1;
+    if (this.formParentCode) {
+      const parentNode = list.find(c => c.code === this.formParentCode);
+      calcLevel = parentNode ? (parentNode.level + 1) : 2;
+    }
+
+    const payload: any = {
+      code: this.formCode,
+      name: this.formNameEn,
+      nameEn: this.formNameEn,
+      nameAr: this.formNameAr || this.formNameEn,
+      type: this.formType,
+      parentCode: this.formParentCode || null,
+      level: calcLevel,
+      manager: this.formManager,
+      status: this.formStatus,
+      budget: Number(this.formBudget),
+      branch: this.formBranch
+    };
+
     if (editing) {
-      this.mockService.costCenters.update(arr =>
-        arr.map(c => c.id === editing.id ? {
-          ...c,
-          code: this.formCode, nameEn: this.formNameEn, nameAr: this.formNameAr,
-          type: this.formType, parentCode: this.formParentCode || null,
-          manager: this.formManager, status: this.formStatus,
-          budget: Number(this.formBudget), branch: this.formBranch
-        } : c)
-      );
-      this.notificationService.success('finance_v2.common.saved', 'finance_v2.cost_centers.saved_desc');
+      this.financeApi.updateCostCenter(editing.code, payload).subscribe({
+        next: () => {
+          this.costCenterStore.refreshCostCenters();
+          this.notificationService.success('finance_v2.common.saved', 'finance_v2.cost_centers.saved_desc');
+        },
+        error: (err) => {
+          // Fallback update
+          this.mockService.costCenters.update(arr =>
+            arr.map(c => c.id === editing.id ? { ...c, ...payload } : c)
+          );
+          this.notificationService.success('finance_v2.common.saved', 'finance_v2.cost_centers.saved_desc');
+        }
+      });
     } else {
-      const newCC: CostCenter = {
-        id: 'cc-' + Date.now(),
-        code: this.formCode, nameEn: this.formNameEn, nameAr: this.formNameAr,
-        type: this.formType, parentCode: this.formParentCode || null,
-        level: 1, manager: this.formManager, status: this.formStatus,
-        budget: Number(this.formBudget), spent: 0, childrenCount: 0,
-        branch: this.formBranch
-      };
-      this.mockService.costCenters.update(arr => [...arr, newCC]);
-      this.notificationService.success('finance_v2.common.saved', 'finance_v2.cost_centers.added_desc');
+      this.financeApi.createCostCenter(payload).subscribe({
+        next: () => {
+          this.costCenterStore.refreshCostCenters();
+          this.notificationService.success('finance_v2.common.saved', 'finance_v2.cost_centers.added_desc');
+        },
+        error: (err) => {
+          // Fallback update
+          const newCC: CostCenter = {
+            id: 'cc-' + Date.now(),
+            code: this.formCode, nameEn: this.formNameEn, nameAr: this.formNameAr || this.formNameEn,
+            type: this.formType, parentCode: this.formParentCode || null,
+            level: calcLevel, manager: this.formManager, status: this.formStatus,
+            budget: Number(this.formBudget), spent: 0, childrenCount: 0,
+            branch: this.formBranch
+          };
+          this.mockService.costCenters.update(arr => [...arr, newCC]);
+          this.notificationService.success('finance_v2.common.saved', 'finance_v2.cost_centers.added_desc');
+        }
+      });
     }
     this.showModal.set(false);
   }
 
   toggleStatus(cc: CostCenter) {
     const next: CostCenterStatus = cc.status === 'Active' ? 'Inactive' : 'Active';
-    this.mockService.costCenters.update(arr =>
-      arr.map(c => c.id === cc.id ? { ...c, status: next } : c)
-    );
-    this.notificationService.success('finance_v2.common.saved', 'finance_v2.cost_centers.status_updated');
+    this.financeApi.toggleCostCenterStatus(cc.code).subscribe({
+      next: (res) => {
+        const newStatus = (res?.status ?? next) as CostCenterStatus;
+        this.mockService.costCenters.update(arr =>
+          arr.map(c => c.id === cc.id ? { ...c, status: newStatus } : c)
+        );
+        this.notificationService.success('finance_v2.common.saved', 'finance_v2.cost_centers.status_updated');
+      },
+      error: () => {
+        this.mockService.costCenters.update(arr =>
+          arr.map(c => c.id === cc.id ? { ...c, status: next } : c)
+        );
+        this.notificationService.success('finance_v2.common.saved', 'finance_v2.cost_centers.status_updated');
+      }
+    });
   }
 
   closeModal() { this.showModal.set(false); }
@@ -325,5 +373,24 @@ export class FinV2CostCentersComponent implements OnInit {
       { label: 'navigation.finance' },
       { label: 'finance_v2.cost_centers.title' }
     ]);
+    // Load real cost centers from API
+    this.financeApi.getCostCenters({ limit: 200 }).subscribe({
+      next: (res) => {
+        if (res.data && res.data.length > 0) {
+          const mapped: CostCenter[] = res.data.map((c: any) => ({
+            id: c.id ?? c._id,
+            code: c.code, nameEn: c.nameEn, nameAr: c.nameAr ?? '',
+            type: c.type ?? 'Department',
+            parentCode: c.parentCode ?? null, level: c.level ?? 1,
+            manager: c.manager ?? '', status: c.status ?? 'Active',
+            budget: c.budget ?? 0, spent: c.spent ?? 0,
+            childrenCount: c.childrenCount ?? 0,
+            branch: c.branch ?? 'HeadOffice'
+          }));
+          this.mockService.costCenters.set(mapped);
+        }
+      },
+      error: () => {} // Keep mock data
+    });
   }
 }

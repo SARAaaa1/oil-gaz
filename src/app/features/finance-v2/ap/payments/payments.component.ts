@@ -6,7 +6,7 @@ import { FormsModule } from '@angular/forms';
 import { TranslateModule } from '@ngx-translate/core';
 import { BreadcrumbService } from '../../../../core/services/breadcrumb.service';
 import { NotificationService } from '../../../../core/services/notification.service';
-import { ApMockService } from '../../shared/ap-mock.service';
+import { FinanceApiService } from '../../../../core/services/finance-api.service';
 import { ApPayment, ApInvoice, PaymentAllocation, PaymentMethod, PaymentStatus } from '../../shared/ap.interfaces';
 import { BranchService } from '../../shared/branch.service';
 
@@ -20,7 +20,7 @@ import { BranchService } from '../../shared/branch.service';
 export class FinV2ApPaymentsComponent implements OnInit {
   private readonly breadcrumb = inject(BreadcrumbService);
   private readonly notify     = inject(NotificationService);
-  readonly apService          = inject(ApMockService);
+  readonly financeApi         = inject(FinanceApiService);
   readonly branchService      = inject(BranchService);
 
   // ── UI State ──────────────────────────────────────────────────────
@@ -29,6 +29,11 @@ export class FinV2ApPaymentsComponent implements OnInit {
   readonly branchFilter  = signal('All');
   readonly selectedId    = signal<string | null>(null);
   readonly showAddModal  = signal(false);
+
+  readonly payments = signal<any[]>([]);
+  readonly invoices = signal<any[]>([]);
+  readonly bankAccounts = signal<any[]>([]);
+  readonly isLoading = signal(false);
 
   // ── Form State ────────────────────────────────────────────────────
   formDate        = new Date().toISOString().split('T')[0];
@@ -46,10 +51,10 @@ export class FinV2ApPaymentsComponent implements OnInit {
     const q  = this.searchQuery().toLowerCase();
     const st = this.statusFilter();
     const br = this.branchFilter();
-    return this.apService.payments()
+    return this.payments()
       .filter(p => {
         const mq = !q || p.voucherNumber.toLowerCase().includes(q) ||
-                   p.allocations.some(a => a.supplierName.toLowerCase().includes(q));
+                   p.allocations.some((a: any) => a.supplierName.toLowerCase().includes(q));
         const ms = st === 'All' || p.status === st;
         const mb = br === 'All' || (p.branchId || 'HeadOffice') === br;
         return mq && ms && mb;
@@ -59,22 +64,22 @@ export class FinV2ApPaymentsComponent implements OnInit {
 
   readonly activePayment = computed(() => {
     const id = this.selectedId();
-    return id ? (this.apService.payments().find(p => p.id === id) ?? null) : null;
+    return id ? (this.payments().find(p => p.id === id) ?? null) : null;
   });
 
   // ── KPIs ──────────────────────────────────────────────────────────
   readonly totalPosted   = computed(() =>
-    this.apService.payments().filter(p => p.status === 'Posted').reduce((s, p) => s + p.totalAmount, 0));
+    this.payments().filter(p => p.status === 'Posted').reduce((s, p) => s + p.totalAmount, 0));
   readonly countDraft    = computed(() =>
-    this.apService.payments().filter(p => p.status === 'Draft').length);
+    this.payments().filter(p => p.status === 'Draft').length);
   readonly countApproved = computed(() =>
-    this.apService.payments().filter(p => p.status === 'Approved').length);
+    this.payments().filter(p => p.status === 'Approved').length);
   readonly countPosted   = computed(() =>
-    this.apService.payments().filter(p => p.status === 'Posted').length);
+    this.payments().filter(p => p.status === 'Posted').length);
 
   // Invoices available for allocation (Ready For Payment or Approved)
   readonly allocatableInvoices = computed(() =>
-    this.apService.invoices().filter(i =>
+    this.invoices().filter(i =>
       i.status === 'Ready For Payment' || i.status === 'Approved'
     )
   );
@@ -124,7 +129,7 @@ export class FinV2ApPaymentsComponent implements OnInit {
       this.notify.warning('finance_v2.ap.pmt.error_required', 'finance_v2.ap.pmt.error_required_msg');
       return;
     }
-    const payments = this.apService.payments();
+    const payments = this.payments();
     const lastNum  = payments.length > 0
       ? parseInt(payments[0].voucherNumber.split('-')[2]) + 1
       : 16;
@@ -150,13 +155,27 @@ export class FinV2ApPaymentsComponent implements OnInit {
       attachments: []
     };
 
-    this.apService.payments.update(list => [newPayment, ...list]);
-    this.notify.success('finance_v2.common.saved', 'finance_v2.ap.pmt.saved_desc');
-    this.showAddModal.set(false);
+    const vendorName = this.formAllocations.length > 0 ? this.formAllocations[0].supplierName : 'Unknown Vendor';
+    
+    this.financeApi.createApVoucher({
+      paymentDate: this.formDate,
+      vendorName: vendorName,
+      bankAccountId: this.formBank,
+      paymentMethod: this.formMethod as any,
+      referenceNumber: this.formRef,
+      invoicesPaid: this.formAllocations.map(a => ({ invoiceId: a.invoiceId, invoiceNumber: a.invoiceNumber, amountPaid: a.allocatedAmount }))
+    }).subscribe({
+      next: () => {
+        this.loadAll();
+        this.showAddModal.set(false);
+        this.notify.success('تم إنشاء سند الدفع', '');
+      },
+      error: () => {}
+    });
   }
 
   postPayment(pmt: ApPayment) {
-    this.apService.payments.update(list =>
+    this.payments.update(list =>
       list.map(p => p.id === pmt.id
         ? { ...p, status: 'Posted' as PaymentStatus, approvedBy: 'Sara Al-Rasheed', approvalDate: new Date().toISOString().split('T')[0] }
         : p)
@@ -165,7 +184,7 @@ export class FinV2ApPaymentsComponent implements OnInit {
   }
 
   cancelPayment(pmt: ApPayment) {
-    this.apService.payments.update(list =>
+    this.payments.update(list =>
       list.map(p => p.id === pmt.id ? { ...p, status: 'Cancelled' as PaymentStatus } : p)
     );
     this.notify.warning('finance_v2.ap.pmt.cancelled', 'finance_v2.ap.pmt.cancelled_desc');
@@ -209,5 +228,71 @@ export class FinV2ApPaymentsComponent implements OnInit {
       { label: 'finance_v2.ap.title' },
       { label: 'finance_v2.ap.pmt.title' }
     ]);
+    this.loadAll();
+  }
+
+  loadAll() {
+    this.isLoading.set(true);
+    this.financeApi.getApVouchers().subscribe({
+      next: (res: any) => {
+        const raw = Array.isArray(res) ? res : (res?.data ?? []);
+        if (raw && raw.length > 0) {
+          const mapped = raw.map((v: any) => ({
+            id: v.id ?? v._id,
+            voucherNumber: v.voucherNumber ?? v.number ?? '',
+            paymentDate: v.paymentDate ?? v.date ?? '',
+            paymentMethod: v.paymentMethod ?? v.method ?? 'Bank Transfer',
+            bankAccount: v.bankAccount ?? '',
+            chequeNumber: v.chequeNumber ?? '',
+            reference: v.reference ?? '',
+            currency: v.currency ?? 'SAR',
+            totalAmount: v.totalAmount ?? v.amount ?? 0,
+            status: v.status ?? 'Posted',
+            allocations: v.allocations ?? [],
+            remarks: v.remarks ?? '',
+            branchId: v.branchId ?? 'HeadOffice'
+          }));
+          this.payments.set(mapped);
+        }
+      },
+      error: () => {}
+    });
+
+    this.financeApi.getApInvoices({ status: 'Unpaid', limit: 200 }).subscribe({
+      next: (res: any) => {
+        const raw = Array.isArray(res) ? res : (res?.data ?? []);
+        if (raw && raw.length > 0) {
+          const mapped = raw.map((inv: any) => ({
+            id: inv.id ?? inv._id,
+            invoiceNumber: inv.invoiceNumber ?? '',
+            supplierId: inv.supplierId ?? inv.vendorId ?? '',
+            supplierName: inv.supplierName ?? inv.vendorName ?? '',
+            poNumber: inv.poNumber ?? inv.poId ?? '',
+            invoiceDate: inv.invoiceDate ?? '',
+            dueDate: inv.dueDate ?? '',
+            subtotal: inv.subtotal ?? inv.subTotal ?? 0,
+            vatAmount: inv.vatAmount ?? inv.taxAmount ?? 0,
+            totalAmount: inv.totalAmount ?? 0,
+            paidAmount: inv.paidAmount ?? 0,
+            balanceDue: inv.balanceDue ?? 0,
+            status: inv.status ?? 'Draft',
+            branchId: inv.branchId ?? 'HeadOffice'
+          }));
+          this.invoices.set(mapped);
+        }
+      },
+      error: () => {}
+    });
+
+    this.financeApi.getBankAccounts().subscribe({
+      next: (res: any) => {
+        const raw = Array.isArray(res) ? res : (res?.data ?? []);
+        if (raw && raw.length > 0) {
+          this.bankAccounts.set(raw);
+        }
+        this.isLoading.set(false);
+      },
+      error: () => this.isLoading.set(false)
+    });
   }
 }

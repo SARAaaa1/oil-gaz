@@ -11,6 +11,7 @@ import { ApprovalHistoryComponent } from '../../../shared/components/approval-hi
 import { ProcurementChainComponent } from '../../../shared/components/procurement-chain/procurement-chain.component';
 import { ProcurementService } from '../../../core/services/procurement.service';
 import { InventoryApiService } from '../../../core/services/inventory-api.service';
+import { CostCenterStoreService } from '../../../core/services/cost-center-store.service';
 import { finalize } from 'rxjs/operators';
 
 // ─── Mapper: API → Frontend interface ────────────────────────────────────────
@@ -115,6 +116,27 @@ export class PurchaseRequestsComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly translate = inject(TranslateService);
   private readonly cdr = inject(ChangeDetectorRef);
+  private readonly costCenterStore = inject(CostCenterStoreService);
+
+  // ── Cost Center Hierarchy (2 Main Roots: Head Office & Free Zone) ────────────
+  readonly prParentCC = signal<string>('');
+
+  /** The 2 Main Root options (Head Office & Free Zone) */
+  readonly parentCostCenters = computed(() =>
+    this.costCenterStore.mainRoots()
+  );
+
+  /** Cost Centers / Departments under the selected Main Root */
+  readonly childCostCenters = computed(() => {
+    const parent = this.prParentCC();
+    if (!parent) return [];
+    return this.costCenterStore.getDepartmentsByRoot(parent);
+  });
+
+  onPRParentCCChange(parentCode: string) {
+    this.prParentCC.set(parentCode);
+    this.formPR.costCenter = '';
+  }
 
   // ── State ────────────────────────────────────────────────────────────────
   readonly purchaseRequests = signal<PurchaseRequest[]>([]);
@@ -233,7 +255,7 @@ export class PurchaseRequestsComponent implements OnInit {
   getEmptyForm() {
     return {
       department: 'Drilling Operations',
-      costCenter: 'CC-DRL-001',
+      costCenter: '',
       chargeType: 'General Overhead' as ChargeType,
       projectId: '',
       projectName: '',
@@ -270,6 +292,7 @@ export class PurchaseRequestsComponent implements OnInit {
   toggleViewMode() {
     this.isFormView.update(val => !val);
     if (!this.isFormView()) {
+      this.prParentCC.set('');
       this.formPR = this.getEmptyForm();
     }
   }
@@ -466,9 +489,12 @@ export class PurchaseRequestsComponent implements OnInit {
       fulfillByPurchase: item.fulfillByPurchase ?? 0,
     }));
 
+    const finalCC = this.formPR.costCenter || this.prParentCC();
     const payload = {
       department:   this.formPR.department,
-      costCenter:   this.formPR.costCenter,
+      costCenter:   finalCC,
+      costCenterCode: finalCC,
+      parentCostCenter: this.prParentCC() || undefined,
       chargeType:   mapChargeTypeToApi(this.formPR.chargeType),
       projectId:    this.formPR.projectId    || undefined,
       projectName:  this.formPR.projectName  || undefined,

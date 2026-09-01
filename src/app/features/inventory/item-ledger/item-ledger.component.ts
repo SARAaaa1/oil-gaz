@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { MockDataService } from '../../../core/services/mock-data.service';
+import { InventoryApiService, extractApiArray } from '../../../core/services/inventory-api.service';
 import { WorkflowService } from '../../../core/services/workflow.service';
 import { BreadcrumbService } from '../../../core/services/breadcrumb.service';
 import { NotificationService } from '../../../core/services/notification.service';
@@ -335,6 +336,7 @@ export class ItemLedgerComponent implements OnInit {
   private readonly breadcrumbService = inject(BreadcrumbService);
   private readonly notificationService = inject(NotificationService);
   private readonly translateService = inject(TranslateService);
+  private readonly inventoryApi = inject(InventoryApiService);
 
   // Filter Signals
   readonly selectedItemCode = signal<string>('');
@@ -345,9 +347,13 @@ export class ItemLedgerComponent implements OnInit {
   readonly dateFrom = signal<string>('2026-06-01');
   readonly dateTo = signal<string>('2026-06-30');
 
-  // Core Data Stores (Signals)
-  readonly inventory = this.mockDataService.inventoryItems;
-  readonly warehouses = this.mockDataService.warehouses;
+  // Core Data Stores (Signals from API)
+  readonly inventory   = signal<any[]>([]);
+  readonly warehouses  = signal<any[]>([]);
+  readonly mrvs        = signal<any[]>([]);
+  readonly mivs        = signal<any[]>([]);
+  readonly transfers   = signal<any[]>([]);
+  readonly adjustments = signal<any[]>([]);
   
   readonly printDate = new Date();
 
@@ -434,7 +440,7 @@ export class ItemLedgerComponent implements OnInit {
     const allEvents: any[] = [];
 
     // 1. MRV (Receipts)
-    const mrvsList = this.mockDataService.mrvs();
+    const mrvsList = this.mrvs();
     mrvsList.forEach(m => {
       if (m.status !== 'Posted' && m.status !== 'Approved') return;
       if (warehouseId !== 'all' && m.warehouseId !== warehouseId) return;
@@ -444,18 +450,18 @@ export class ItemLedgerComponent implements OnInit {
         if (!matchProj) return;
       }
 
-      m.items.forEach(it => {
+      (m.items || []).forEach((it: any) => {
         if (it.itemCode === itemCode) {
           allEvents.push({
-            date: m.receivedDate,
+            date: m.receivedDate || m.createdAt,
             type: 'Purchase Receipt',
-            docNo: m.voucherNumber,
+            docNo: m.voucherNumber || m.documentNumber || m.mrvNumber || 'MRV',
             ref: m.poNumber || 'N/A',
-            description: `Purchased from ${m.supplierName}`,
-            qtyIn: it.quantityReceived,
+            description: `Purchased from ${m.supplierName || 'Supplier'}`,
+            qtyIn: it.quantityReceived || it.quantity || 0,
             qtyOut: 0,
-            unitPrice: it.unitPrice,
-            totalPrice: it.totalPrice,
+            unitPrice: it.unitPrice || 0,
+            totalPrice: it.totalPrice || 0,
             warehouseId: m.warehouseId,
             projectId: m.projectId || ''
           });
@@ -464,12 +470,12 @@ export class ItemLedgerComponent implements OnInit {
     });
 
     // 2. MIV (Issues)
-    const mivsList = this.mockDataService.mivs();
+    const mivsList = this.mivs();
     mivsList.forEach(m => {
       if (m.status !== 'Posted' && m.status !== 'Approved') return;
 
       if (projectId !== 'all') {
-        const matchProj = m.destinationId === projectId || m.destinationId.includes(projectId);
+        const matchProj = m.destinationId === projectId || (m.destinationId && m.destinationId.includes(projectId));
         if (!matchProj) return;
       }
 
@@ -477,20 +483,20 @@ export class ItemLedgerComponent implements OnInit {
         return;
       }
 
-      m.items.forEach(it => {
+      (m.items || []).forEach((it: any) => {
         if (it.itemCode === itemCode) {
-          const isContractor = m.issueTo === 'Project' && (m.destinationId.toLowerCase().includes('contractor') || m.requestedBy.toLowerCase().includes('contractor'));
+          const isContractor = m.issueTo === 'Project' && (m.destinationId?.toLowerCase().includes('contractor') || m.requestedBy?.toLowerCase().includes('contractor'));
           const type = isContractor ? 'Contractor Issue' : 'Consumption';
           allEvents.push({
-            date: m.issueDate,
+            date: m.issueDate || m.createdAt,
             type: type,
-            docNo: m.voucherNumber,
+            docNo: m.voucherNumber || m.documentNumber || m.mivNumber || 'MIV',
             ref: m.referenceNumber || 'N/A',
-            description: `Issued to ${m.issueTo}: ${m.destinationId}`,
+            description: `Issued to ${m.issueTo || 'Department'}: ${m.destinationId || ''}`,
             qtyIn: 0,
-            qtyOut: it.quantityIssued,
-            unitPrice: it.unitPrice,
-            totalPrice: it.totalPrice,
+            qtyOut: it.quantityIssued || it.quantity || 0,
+            unitPrice: it.unitPrice || 0,
+            totalPrice: it.totalPrice || 0,
             warehouseId: itemHomeWarehouseId,
             projectId: m.issueTo === 'Project' ? m.destinationId : ''
           });
@@ -499,21 +505,21 @@ export class ItemLedgerComponent implements OnInit {
     });
 
     // 3. Transfers
-    const transfersList = this.mockDataService.transfers();
+    const transfersList = this.transfers();
     transfersList.forEach(x => {
       if (x.status !== 'Posted' && x.status !== 'Approved') return;
 
-      x.items.forEach(it => {
+      (x.items || []).forEach((it: any) => {
         if (it.itemCode !== itemCode) return;
         if (projectId !== 'all') return;
 
-        const qty = it.quantity;
+        const qty = it.quantity || 0;
 
         if (warehouseId === 'all') {
           allEvents.push({
-            date: x.transferDate,
+            date: x.transferDate || x.createdAt,
             type: 'Transfer Out',
-            docNo: x.transferNumber,
+            docNo: x.transferNumber || x.documentNumber || 'XFER',
             ref: 'Internal',
             description: `Transferred from WH-A to WH-B`,
             qtyIn: 0,
@@ -522,9 +528,9 @@ export class ItemLedgerComponent implements OnInit {
             projectId: ''
           });
           allEvents.push({
-            date: x.transferDate,
+            date: x.transferDate || x.createdAt,
             type: 'Transfer In',
-            docNo: x.transferNumber,
+            docNo: x.transferNumber || x.documentNumber || 'XFER',
             ref: 'Internal',
             description: `Transferred from WH-A to WH-B`,
             qtyIn: qty,
@@ -535,11 +541,11 @@ export class ItemLedgerComponent implements OnInit {
         } else {
           if (x.fromWarehouseId === warehouseId) {
             allEvents.push({
-              date: x.transferDate,
+              date: x.transferDate || x.createdAt,
               type: 'Transfer Out',
-              docNo: x.transferNumber,
+              docNo: x.transferNumber || x.documentNumber || 'XFER',
               ref: 'Internal',
-              description: `Transferred to ${x.toWarehouseId === 'w2' ? 'Warehouse B' : 'Warehouse A'}`,
+              description: `Transferred to Destination Warehouse`,
               qtyIn: 0,
               qtyOut: qty,
               warehouseId: x.fromWarehouseId,
@@ -547,11 +553,11 @@ export class ItemLedgerComponent implements OnInit {
             });
           } else if (x.toWarehouseId === warehouseId) {
             allEvents.push({
-              date: x.transferDate,
+              date: x.transferDate || x.createdAt,
               type: 'Transfer In',
-              docNo: x.transferNumber,
+              docNo: x.transferNumber || x.documentNumber || 'XFER',
               ref: 'Internal',
-              description: `Transferred from ${x.fromWarehouseId === 'w1' ? 'Warehouse A' : 'Warehouse B'}`,
+              description: `Transferred from Source Warehouse`,
               qtyIn: qty,
               qtyOut: 0,
               warehouseId: x.toWarehouseId,
@@ -563,29 +569,29 @@ export class ItemLedgerComponent implements OnInit {
     });
 
     // 4. Adjustments
-    const adjustmentsList = this.mockDataService.adjustments();
+    const adjustmentsList = this.adjustments();
     adjustmentsList.forEach(a => {
       if (a.status !== 'Posted' && a.status !== 'Approved') return;
       if (warehouseId !== 'all' && a.warehouseId !== warehouseId) return;
       if (projectId !== 'all') return;
 
-      a.items.forEach(it => {
+      (a.items || []).forEach((it: any) => {
         if (it.itemCode === itemCode) {
-          const qty = Math.abs(it.adjustedQuantity);
-          const isIn = it.adjustmentType === 'Addition' || it.adjustedQuantity > 0;
-          const isReturn = it.reason.toLowerCase().includes('return');
+          const qty = Math.abs(it.adjustedQuantity || it.quantity || 0);
+          const isIn = it.adjustmentType === 'Addition' || (it.adjustedQuantity && it.adjustedQuantity > 0);
+          const isReturn = (it.reason || '').toLowerCase().includes('return');
           const type = isReturn ? 'Returns' : (isIn ? 'Adjustment Addition' : 'Adjustment Deduction');
 
           allEvents.push({
-            date: a.adjustmentDate,
+            date: a.adjustmentDate || a.createdAt,
             type: type,
-            docNo: a.adjustmentNumber,
+            docNo: a.adjustmentNumber || a.documentNumber || 'ADJ',
             ref: 'Manual',
-            description: it.reason,
+            description: it.reason || it.notes || 'Stock Adjustment',
             qtyIn: isIn ? qty : 0,
             qtyOut: isIn ? 0 : qty,
-            unitPrice: it.unitPrice,
-            totalPrice: qty * it.unitPrice,
+            unitPrice: it.unitPrice || 0,
+            totalPrice: qty * (it.unitPrice || 0),
             warehouseId: a.warehouseId,
             projectId: ''
           });
@@ -597,7 +603,7 @@ export class ItemLedgerComponent implements OnInit {
     allEvents.sort((a, b) => {
       const dDiff = new Date(a.date).getTime() - new Date(b.date).getTime();
       if (dDiff !== 0) return dDiff;
-      return a.docNo.localeCompare(b.docNo);
+      return (a.docNo || '').localeCompare(b.docNo || '');
     });
 
     // Calculate opening and running balances
@@ -654,8 +660,36 @@ export class ItemLedgerComponent implements OnInit {
   ngOnInit() {
     this.breadcrumbService.setBreadcrumbs([
       { label: 'navigation.inventory', url: '/inventory' },
-      { label: 'navigation.item_ledger' }
+      { label: 'inventory.item_ledger_title' }
     ]);
+    this.loadAll();
+  }
+
+  loadAll() {
+    this.inventoryApi.getItems({ limit: 500 }).subscribe({
+      next: (res: any) => this.inventory.set(extractApiArray(res).map((i: any) => ({ ...i, id: i._id ?? i.id }))),
+      error: () => this.inventory.set([])
+    });
+    this.inventoryApi.getWarehouses().subscribe({
+      next: (res: any) => this.warehouses.set(extractApiArray(res)),
+      error: () => this.warehouses.set([])
+    });
+    this.inventoryApi.getMRVs({ limit: 500 }).subscribe({
+      next: (res: any) => this.mrvs.set(extractApiArray(res)),
+      error: () => this.mrvs.set([])
+    });
+    this.inventoryApi.getMIVs({ limit: 500 }).subscribe({
+      next: (res: any) => this.mivs.set(extractApiArray(res)),
+      error: () => this.mivs.set([])
+    });
+    this.inventoryApi.getTransfers({ limit: 500 }).subscribe({
+      next: (res: any) => this.transfers.set(extractApiArray(res)),
+      error: () => this.transfers.set([])
+    });
+    this.inventoryApi.getAdjustments({ limit: 500 }).subscribe({
+      next: (res: any) => this.adjustments.set(extractApiArray(res)),
+      error: () => this.adjustments.set([])
+    });
   }
 
   getWarehouseName(id: string): string {

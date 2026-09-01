@@ -8,6 +8,7 @@ import { BreadcrumbService } from '../../../../core/services/breadcrumb.service'
 import { NotificationService } from '../../../../core/services/notification.service';
 import { ArMockService } from '../../shared/ar-mock.service';
 import { ArCustomer, CustomerStatus } from '../../shared/ar.interfaces';
+import { FinanceApiService } from '../../../../core/services/finance-api.service';
 
 @Component({
   selector: 'app-finv2-customers',
@@ -20,6 +21,7 @@ export class FinV2CustomersComponent implements OnInit {
   private readonly breadcrumb = inject(BreadcrumbService);
   private readonly notify     = inject(NotificationService);
   readonly arService          = inject(ArMockService);
+  private readonly financeApi = inject(FinanceApiService);
 
   readonly searchQuery    = signal('');
   readonly statusFilter   = signal<CustomerStatus | 'All'>('All');
@@ -84,11 +86,23 @@ export class FinV2CustomersComponent implements OnInit {
   }
 
   toggleStatus(c: ArCustomer) {
-    const next: CustomerStatus = c.status === 'Active' ? 'Inactive' : 'Active';
-    this.arService.customers.update(list =>
-      list.map(x => x.id === c.id ? { ...x, status: next } : x)
-    );
-    this.notify.success('finance_v2.ar.cus.status_updated', 'finance_v2.ar.cus.status_updated_desc');
+    const id = c.id ?? (c as any)._id;
+    this.financeApi.toggleArCustomerStatus(id).subscribe({
+      next: (res) => {
+        const newStatus: CustomerStatus = (res?.status ?? (c.status === 'Active' ? 'Inactive' : 'Active')) as CustomerStatus;
+        this.arService.customers.update(list =>
+          list.map(x => x.id === c.id ? { ...x, status: newStatus } : x)
+        );
+        this.notify.success('finance_v2.ar.cus.status_updated', 'finance_v2.ar.cus.status_updated_desc');
+      },
+      error: () => {
+        const next: CustomerStatus = c.status === 'Active' ? 'Inactive' : 'Active';
+        this.arService.customers.update(list =>
+          list.map(x => x.id === c.id ? { ...x, status: next } : x)
+        );
+        this.notify.success('finance_v2.ar.cus.status_updated', 'finance_v2.ar.cus.status_updated_desc');
+      }
+    });
   }
 
   getStatusClass(s: CustomerStatus): string {
@@ -135,5 +149,47 @@ export class FinV2CustomersComponent implements OnInit {
       { label: 'finance_v2.ar.title' },
       { label: 'finance_v2.ar.cus.title' }
     ]);
+    // Load real customers from API
+    this.financeApi.getArCustomers({ limit: 200 }).subscribe({
+      next: (res) => {
+        if (res.data && res.data.length > 0) {
+          const mapped: any[] = res.data.map((c: any) => ({
+            id: c.id ?? c._id,
+            code: c.code ?? '',
+            nameEn: c.nameEn ?? c.name ?? '',
+            nameAr: c.nameAr ?? '',
+            taxNumber: c.taxNumber ?? '',
+            vatNumber: c.vatNumber ?? '',
+            commercialReg: c.commercialReg ?? '',
+            industry: c.industry ?? 'Oil & Gas',
+            contactPerson: c.contactPerson ?? '',
+            contactEmail: c.contactEmail ?? '',
+            contactPhone: c.contactPhone ?? '',
+            address: c.address ?? '',
+            city: c.city ?? '',
+            country: c.country ?? 'SA',
+            currency: c.currency ?? 'SAR',
+            creditLimit: c.creditLimit ?? 0,
+            paymentTerms: c.paymentTerms ?? 'Net 30',
+            openBalance: c.openBalance ?? c.totalOutstanding ?? 0,
+            outstandingInvoices: c.outstandingInvoices ?? 0,
+            totalInvoiced: c.totalInvoiced ?? 0,
+            totalCollected: c.totalCollected ?? 0,
+            lastInvoiceDate: c.lastInvoiceDate ?? '',
+            lastCollectionDate: c.lastCollectionDate ?? c.lastPaymentDate ?? '',
+            lastCollectionAmount: c.lastCollectionAmount ?? 0,
+            avgCollectionDays: c.avgCollectionDays ?? 0,
+            status: c.status ?? 'Active',
+            rating: c.rating ?? 3,
+            bankName: c.bankName ?? '',
+            iban: c.iban ?? '',
+            notes: c.notes ?? '',
+            branchId: c.branchId ?? 'HeadOffice'
+          }));
+          this.arService.customers.set(mapped);
+        }
+      },
+      error: () => {} // Keep ArMockService data
+    });
   }
 }

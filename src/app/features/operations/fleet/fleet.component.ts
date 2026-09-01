@@ -26,6 +26,13 @@ export class FleetComponent implements OnInit {
   readonly isLoading = signal(false);
   readonly isSaving  = signal(false);
 
+  readonly isCompletingTrip = signal(false);
+  readonly showCompleteTripModal = signal(false);
+  readonly selectedTrip = signal<any | null>(null);
+
+  // Complete trip form
+  completeTripForm = { endOdometerKm: 0, fuelConsumedLiters: 0, driverNotes: '' };
+
   readonly activeTab       = signal<'vehicles' | 'logs'>('vehicles');
   readonly selectedVehicle = signal<any | null>(null);
   readonly searchQuery     = signal<string>('');
@@ -227,5 +234,59 @@ export class FleetComponent implements OnInit {
       fuelAddedLiters: 0, fuelCost: 0,
       tripDate: new Date().toISOString().split('T')[0]
     };
+  }
+
+  // ── Complete Trip ─────────────────────────────────────────────────────────
+  openCompleteTrip(trip: any) {
+    this.selectedTrip.set(trip);
+    const sel = this.selectedVehicle();
+    this.completeTripForm = {
+      endOdometerKm: sel?.currentOdometer ?? trip.startOdometer ?? 0,
+      fuelConsumedLiters: 0,
+      driverNotes: ''
+    };
+    this.showCompleteTripModal.set(true);
+  }
+
+  closeCompleteTripModal() {
+    this.showCompleteTripModal.set(false);
+    this.selectedTrip.set(null);
+  }
+
+  saveCompleteTrip() {
+    const trip = this.selectedTrip();
+    if (!trip) return;
+    if (!this.completeTripForm.endOdometerKm || this.completeTripForm.endOdometerKm <= (trip.startOdometer ?? 0)) {
+      this.notificationService.danger('Validation', 'End odometer must be greater than start odometer');
+      return;
+    }
+    this.isCompletingTrip.set(true);
+    const tripId = trip._id ?? trip.id;
+    this.opsApi.completeTrip(tripId, {
+      endOdometer: this.completeTripForm.endOdometerKm,
+    }).subscribe({
+      next: (updated: any) => {
+        this.tripLogs.update(list =>
+          list.map(t => (t._id ?? t.id) === tripId
+            ? { ...t, status: 'Completed', endOdometer: updated.endOdometerKm ?? this.completeTripForm.endOdometerKm }
+            : t
+          )
+        );
+        // Update vehicle odometer
+        const sel = this.selectedVehicle();
+        if (sel) {
+          const updatedVehicle = { ...sel, currentOdometer: this.completeTripForm.endOdometerKm };
+          this.vehicles.update(list => list.map(v => (v._id ?? v.id) === (sel._id ?? sel.id) ? updatedVehicle : v));
+          this.selectedVehicle.set(updatedVehicle);
+        }
+        this.showCompleteTripModal.set(false);
+        this.isCompletingTrip.set(false);
+        this.notificationService.success('Trip Completed', `Trip completed — ${updated.distanceTraveledKm ?? this.completeTripForm.endOdometerKm - (trip.startOdometer ?? 0)} km traveled`);
+      },
+      error: (err: any) => {
+        this.isCompletingTrip.set(false);
+        this.notificationService.danger('Error', err?.error?.message || 'Failed to complete trip');
+      }
+    });
   }
 }

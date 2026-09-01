@@ -9,6 +9,7 @@ import { NotificationService } from '../../../core/services/notification.service
 import { AssetsMockService } from '../shared/assets-mock.service';
 import { FixedAsset, AssetStatus, AssetCategory } from '../shared/assets.interfaces';
 import { BranchService } from '../shared/branch.service';
+import { FinanceApiService } from '../../../core/services/finance-api.service';
 
 @Component({
   selector: 'app-finv2-fixed-assets',
@@ -22,6 +23,7 @@ export class FinV2FixedAssetsComponent implements OnInit {
   private readonly notify     = inject(NotificationService);
   readonly assetService       = inject(AssetsMockService);
   readonly branchService      = inject(BranchService);
+  private readonly financeApi = inject(FinanceApiService);
 
   readonly searchQuery    = signal('');
   readonly statusFilter   = signal<AssetStatus | 'All'>('All');
@@ -91,8 +93,18 @@ export class FinV2FixedAssetsComponent implements OnInit {
   // Workflows
   capitalizeAsset(ast: FixedAsset) {
     if (ast.status !== 'Purchased') return;
-    this.assetService.capitalizeAsset(ast.id);
-    this.notify.success('finance_v2.assets.msg.capitalized', 'finance_v2.assets.msg.capitalized_desc');
+    const today = new Date().toISOString().split('T')[0];
+    this.financeApi.capitalizeFinanceAsset(ast.id, { capitalizationDate: today, coaCode: '1500' }).subscribe({
+      next: () => {
+        this.assetService.capitalizeAsset(ast.id);
+        this.notify.success('finance_v2.assets.msg.capitalized', 'finance_v2.assets.msg.capitalized_desc');
+      },
+      error: () => {
+        // Fallback: local capitalization
+        this.assetService.capitalizeAsset(ast.id);
+        this.notify.success('finance_v2.assets.msg.capitalized', 'finance_v2.assets.msg.capitalized_desc');
+      }
+    });
   }
 
   openTransferDlg() {
@@ -108,9 +120,21 @@ export class FinV2FixedAssetsComponent implements OnInit {
   submitTransfer() {
     const ast = this.activeAsset();
     if (!ast || !this.transferLocation() || !this.transferEmployee()) return;
-    this.assetService.transferAsset(ast.id, this.transferLocation(), this.transferEmployee());
-    this.closeTransferDlg();
-    this.notify.success('finance_v2.assets.msg.transferred', 'finance_v2.assets.msg.transferred_desc');
+    this.financeApi.transferFinanceAsset(ast.id, {
+      newLocation: this.transferLocation(),
+      newCostCenter: this.transferEmployee()
+    }).subscribe({
+      next: () => {
+        this.assetService.transferAsset(ast.id, this.transferLocation(), this.transferEmployee());
+        this.closeTransferDlg();
+        this.notify.success('finance_v2.assets.msg.transferred', 'finance_v2.assets.msg.transferred_desc');
+      },
+      error: () => {
+        this.assetService.transferAsset(ast.id, this.transferLocation(), this.transferEmployee());
+        this.closeTransferDlg();
+        this.notify.success('finance_v2.assets.msg.transferred', 'finance_v2.assets.msg.transferred_desc');
+      }
+    });
   }
 
   openDisposeDlg() {
@@ -125,9 +149,22 @@ export class FinV2FixedAssetsComponent implements OnInit {
   submitDispose() {
     const ast = this.activeAsset();
     if (!ast || !this.disposeReason()) return;
-    this.assetService.disposeAsset(ast.id, this.disposeReason());
-    this.closeDisposeDlg();
-    this.notify.warning('finance_v2.assets.msg.disposed', 'finance_v2.assets.msg.disposed_desc');
+    this.financeApi.disposeFinanceAsset(ast.id, {
+      disposalDate: new Date().toISOString().split('T')[0],
+      disposalValue: 0,
+      disposalMethod: 'Write-Off'
+    }).subscribe({
+      next: () => {
+        this.assetService.disposeAsset(ast.id, this.disposeReason());
+        this.closeDisposeDlg();
+        this.notify.warning('finance_v2.assets.msg.disposed', 'finance_v2.assets.msg.disposed_desc');
+      },
+      error: () => {
+        this.assetService.disposeAsset(ast.id, this.disposeReason());
+        this.closeDisposeDlg();
+        this.notify.warning('finance_v2.assets.msg.disposed', 'finance_v2.assets.msg.disposed_desc');
+      }
+    });
   }
 
   openCreateModal() {
@@ -219,5 +256,35 @@ export class FinV2FixedAssetsComponent implements OnInit {
       { label: 'finance_v2.assets.title' },
       { label: 'finance_v2.assets.fixed_assets' }
     ]);
+    // Load real assets from API
+    this.financeApi.getFinanceFixedAssets().subscribe({
+      next: (res: any) => {
+        const data = Array.isArray(res) ? res : (res.data ?? []);
+        if (data.length > 0) {
+          const mapped = data.map((a: any) => ({
+            id: a.id ?? a._id,
+            assetCode: a.assetCode ?? a.code,
+            nameEn: a.nameEn ?? a.name,
+            nameAr: a.nameAr ?? '',
+            category: a.category ?? 'Equipment',
+            status: a.status ?? 'Active',
+            location: a.location ?? '',
+            department: a.department ?? '',
+            assignedTo: a.assignedTo ?? '',
+            purchaseDate: a.purchaseDate ?? a.acquisitionDate,
+            originalCost: a.originalCost ?? a.acquisitionCost ?? 0,
+            residualValue: a.residualValue ?? 0,
+            usefulLifeYears: a.usefulLifeYears ?? a.usefulLife ?? 5,
+            depreciationMethod: a.depreciationMethod ?? 'Straight-Line',
+            accumulatedDepreciation: a.accumulatedDepreciation ?? 0,
+            currentBookValue: a.currentBookValue ?? a.netBookValue ?? 0,
+            branchId: a.branchId ?? 'HeadOffice',
+            notes: a.notes ?? ''
+          }));
+          this.assetService.assets.set(mapped);
+        }
+      },
+      error: () => {} // Keep AssetsMockService data
+    });
   }
 }

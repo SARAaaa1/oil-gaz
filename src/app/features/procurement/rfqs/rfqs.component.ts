@@ -10,7 +10,8 @@ import { RFQ, RFQVendor, RFQQuotation } from '../../../shared/interfaces/rfq.int
 import { PurchaseRequest, PurchaseRequestItem } from '../../../shared/interfaces/purchase-request.interface';
 import { ProcurementChainComponent } from '../../../shared/components/procurement-chain/procurement-chain.component';
 import { ProcurementService } from '../../../core/services/procurement.service';
-import { MockDataService } from '../../../core/services/mock-data.service';
+import { HttpClient } from '@angular/common/http';
+import { environment } from '../../../../environments/environment';
 import { finalize } from 'rxjs/operators';
 
 // ─── Mappers ─────────────────────────────────────────────────────────────────
@@ -95,7 +96,7 @@ function mapApiQuotation(raw: any): RFQQuotation {
 })
 export class RfqsComponent implements OnInit {
   private readonly procurementService  = inject(ProcurementService);
-  private readonly mockDataService     = inject(MockDataService); // للـ vendors فقط
+  private readonly http                = inject(HttpClient);
   private readonly breadcrumbService   = inject(BreadcrumbService);
   private readonly notificationService = inject(NotificationService);
   private readonly auditService        = inject(AuditService);
@@ -103,14 +104,15 @@ export class RfqsComponent implements OnInit {
   private readonly router              = inject(Router);
   private readonly translate           = inject(TranslateService);
   private readonly cdr                 = inject(ChangeDetectorRef);
+  private readonly vendorsApiUrl       = `${environment.apiUrl}/vendors`;
 
   // ── State ─────────────────────────────────────────────────────────────────
   readonly rfqs             = signal<RFQ[]>([]);
   readonly purchaseRequests = signal<PurchaseRequest[]>([]);
   readonly isLoading        = signal<boolean>(false);
 
-  // الـ Vendors لا تزال من الـ Mock حتى يتوفر endpoint لها
-  readonly vendors = this.mockDataService.vendors;
+  // Vendors — loaded from real API
+  readonly vendors = signal<any[]>([]);
 
   readonly isFormView       = signal<boolean>(false);
   readonly selectedPRSource = signal<PurchaseRequest | null>(null);
@@ -150,13 +152,14 @@ export class RfqsComponent implements OnInit {
     const list  = this.vendors();
     const query = this.vendorSearchQuery().trim().toLowerCase();
     if (!query) return list;
-    return list.filter(v =>
+    return list.filter((v: any) =>
       v.vendorName.toLowerCase().includes(query) ||
       (v.arabicName && v.arabicName.toLowerCase().includes(query)) ||
       (v.category   && v.category.toLowerCase().includes(query)) ||
       v.vendorCode.toLowerCase().includes(query)
     );
   });
+
 
   readonly filteredRFQs = computed(() => {
     let list   = this.rfqs();
@@ -186,6 +189,7 @@ export class RfqsComponent implements OnInit {
 
     this.loadRFQs();
     this.loadPRs();
+    this.loadVendors();
 
     this.route.queryParams.subscribe(params => {
       const prId = params['createForPR'];
@@ -279,6 +283,31 @@ export class RfqsComponent implements OnInit {
       error: err => console.error('Failed to load PRs:', err)
     });
   }
+
+  private loadVendors() {
+    this.http.get<any>(`${this.vendorsApiUrl}?limit=200&status=Approved`).subscribe({
+      next: res => {
+        const raw = res?.items ?? res?.data ?? (Array.isArray(res) ? res : []);
+        this.vendors.set(raw.map((v: any) => ({
+          id:         v._id ?? v.id,
+          vendorId:   v._id ?? v.id,
+          vendorCode: v.vendorCode ?? v.code ?? '',
+          vendorName: v.vendorName ?? v.name ?? '',
+          arabicName: v.arabicName ?? '',
+          category:   v.category ?? '',
+          contactEmail: v.contactEmail ?? v.email ?? '',
+          status:     v.status ?? 'Active',
+        })));
+        this.cdr.markForCheck();
+      },
+      error: err => {
+        console.warn('Could not load vendors from API, list will be empty:', err);
+        this.cdr.markForCheck();
+      }
+    });
+  }
+
+
 
   // ── RFQ Form Actions ──────────────────────────────────────────────────────
 

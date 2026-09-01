@@ -6,7 +6,7 @@ import { FormsModule } from '@angular/forms';
 import { TranslateModule } from '@ngx-translate/core';
 import { BreadcrumbService } from '../../../../core/services/breadcrumb.service';
 import { NotificationService } from '../../../../core/services/notification.service';
-import { ArMockService } from '../../shared/ar-mock.service';
+import { FinanceApiService } from '../../../../core/services/finance-api.service';
 import { ArCollection, CollectionStatus, CollectionMethod, CollectionAllocation } from '../../shared/ar.interfaces';
 import { BranchService } from '../../shared/branch.service';
 
@@ -20,7 +20,7 @@ import { BranchService } from '../../shared/branch.service';
 export class FinV2CollectionsComponent implements OnInit {
   private readonly breadcrumb = inject(BreadcrumbService);
   private readonly notify     = inject(NotificationService);
-  readonly arService          = inject(ArMockService);
+  readonly financeApi         = inject(FinanceApiService);
   readonly branchService      = inject(BranchService);
 
   readonly searchQuery    = signal('');
@@ -30,6 +30,11 @@ export class FinV2CollectionsComponent implements OnInit {
   readonly selectedId     = signal<string | null>(null);
   readonly showModal      = signal(false);
   readonly activeTab      = signal<'details' | 'allocations'>('details');
+
+  readonly collections = signal<any[]>([]);
+  readonly invoices = signal<any[]>([]);
+  readonly customers = signal<any[]>([]);
+  readonly isLoading = signal(false);
 
   // New voucher form
   readonly formCustomerId  = signal('');
@@ -48,7 +53,7 @@ export class FinV2CollectionsComponent implements OnInit {
     const st  = this.statusFilter();
     const mt  = this.methodFilter();
     const br  = this.branchFilter();
-    return this.arService.collections()
+    return this.collections()
       .filter(c => {
         const mq = !q || c.voucherNumber.toLowerCase().includes(q) ||
                    c.customerName.toLowerCase().includes(q) ||
@@ -63,27 +68,43 @@ export class FinV2CollectionsComponent implements OnInit {
 
   readonly activeCollection = computed(() => {
     const id = this.selectedId();
-    return id ? (this.arService.collections().find(c => c.id === id) ?? null) : null;
+    return id ? (this.collections().find(c => c.id === id) ?? null) : null;
   });
 
-  // KPIs
-  readonly kpis           = this.arService.kpis;
-  readonly totalPosted    = computed(() => this.arService.collections().filter(c => c.status === 'Posted').reduce((s, c) => s + c.totalAmount, 0));
-  readonly totalPending   = computed(() => this.arService.collections().filter(c => c.status === 'Draft').reduce((s, c) => s + c.totalAmount, 0));
-  readonly countPosted    = computed(() => this.arService.collections().filter(c => c.status === 'Posted').length);
-  readonly countDraft     = computed(() => this.arService.collections().filter(c => c.status === 'Draft').length);
+  // KPIs — includes all fields the template references
+  readonly kpis = computed(() => {
+    const cols = this.collections();
+    const postedCols = cols.filter(c => c.status === 'Posted');
+    const draftCols  = cols.filter(c => c.status === 'Draft');
+    const totalPosted  = postedCols.reduce((s, c) => s + (c.totalAmount ?? 0), 0);
+    const totalPending = draftCols.reduce((s, c) => s + (c.totalAmount ?? 0), 0);
+
+    // Derive outstanding/collectedThisMonth from invoices if available
+    const invs = this.invoices();
+    const outstanding       = invs.reduce((s, i) => s + (i.balanceDue ?? i.outstandingAmount ?? 0), 0);
+    const now = new Date();
+    const collectedThisMonth = postedCols
+      .filter(c => { const d = new Date(c.collectionDate); return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear(); })
+      .reduce((s, c) => s + (c.totalAmount ?? 0), 0);
+
+    return { totalPosted, totalPending, outstanding, collectedThisMonth };
+  });
+  readonly totalPosted    = computed(() => this.collections().filter(c => c.status === 'Posted').reduce((s, c) => s + c.totalAmount, 0));
+  readonly totalPending   = computed(() => this.collections().filter(c => c.status === 'Draft').reduce((s, c) => s + c.totalAmount, 0));
+  readonly countPosted    = computed(() => this.collections().filter(c => c.status === 'Posted').length);
+  readonly countDraft     = computed(() => this.collections().filter(c => c.status === 'Draft').length);
 
   // Allocatable invoices for modal
   readonly allocatableInvoices = computed(() => {
     const cid = this.formCustomerId();
     if (!cid) return [];
-    return this.arService.customerInvoices()
+    return this.invoices()
       .filter(i => i.customerId === cid && i.outstandingAmount > 0 && !['Collected','Closed','Rejected'].includes(i.status));
   });
 
   readonly formCustomerName = computed(() => {
     const cid = this.formCustomerId();
-    return this.arService.customers().find(c => c.id === cid)?.nameEn ?? '';
+    return this.customers().find(c => c.id === cid)?.nameEn ?? '';
   });
 
   readonly formTotal = computed(() =>
@@ -134,43 +155,31 @@ export class FinV2CollectionsComponent implements OnInit {
       this.notify.warning('finance_v2.ar.col.error_required', 'finance_v2.ar.col.error_required_msg');
       return;
     }
-    const cols   = this.arService.collections();
-    const nextNo = `CV-2025-${String(cols.length + 1).padStart(3, '0')}`;
-    const newCol: ArCollection = {
-      id:               `cv${Date.now()}`,
-      voucherNumber:    nextNo,
-      collectionDate:   this.formDate(),
-      customerId:       this.formCustomerId(),
-      customerName:     this.formCustomerName(),
-      collectionMethod: this.formMethod(),
-      bankName:         this.formBank(),
-      chequeNumber:     '',
-      referenceNumber:  this.formRef(),
-      currency:         'SAR',
-      totalAmount:      this.formTotal(),
-      status:           'Draft',
-      remarks:          this.formNotes(),
-      createdBy:        'Current User',
-      createdDate:      this.formDate(),
-      approvedBy:       '',
-      approvalDate:     '',
-      allocations:      this.formAllocations(),
-      attachments:      []
-    };
-    this.arService.collections.update(list => [...list, newCol]);
-    this.selectedId.set(newCol.id);
-    this.closeModal();
-    this.notify.success('finance_v2.ar.col.saved', 'finance_v2.ar.col.saved_desc');
+    this.financeApi.createArVoucher({
+      collectionDate: this.formDate(),
+      customerName: this.formCustomerName(),
+      bankAccountId: this.formBank(),
+      paymentMethod: this.formMethod() as any,
+      referenceNumber: this.formRef(),
+      invoicesCollected: this.formAllocations().map(a => ({ invoiceId: a.invoiceId, invoiceNumber: a.invoiceNumber, amountCollected: a.allocatedAmount }))
+    }).subscribe({
+      next: () => {
+        this.loadAll();
+        this.closeModal();
+        this.notify.success('تم إنشاء سند القبض', '');
+      },
+      error: () => {}
+    });
   }
 
   postCollection(col: ArCollection) {
     if (col.status !== 'Draft') return;
-    this.arService.collections.update(list =>
+    this.collections.update(list =>
       list.map(c => c.id === col.id ? { ...c, status: 'Posted' as CollectionStatus, approvedBy: 'Sara Al-Rasheed', approvalDate: '2025-07-01' } : c)
     );
     // Update invoice collected amounts
     col.allocations.forEach(a => {
-      this.arService.customerInvoices.update(list =>
+      this.invoices.update(list =>
         list.map(i => {
           if (i.id !== a.invoiceId) return i;
           const collected = i.collectedAmount + a.allocatedAmount;
@@ -185,7 +194,7 @@ export class FinV2CollectionsComponent implements OnInit {
 
   cancelCollection(col: ArCollection) {
     if (col.status !== 'Draft') return;
-    this.arService.collections.update(list =>
+    this.collections.update(list =>
       list.map(c => c.id === col.id ? { ...c, status: 'Cancelled' as CollectionStatus } : c)
     );
     this.notify.warning('finance_v2.ar.col.cancelled', 'finance_v2.ar.col.cancelled_desc');
@@ -219,5 +228,12 @@ export class FinV2CollectionsComponent implements OnInit {
       { label: 'finance_v2.ar.title' },
       { label: 'finance_v2.ar.col.title' }
     ]);
+    this.loadAll();
+  }
+
+  loadAll() {
+    this.isLoading.set(true);
+    this.financeApi.getArVouchers().subscribe({ next: v => this.collections.set(v), error: () => {} });
+    this.financeApi.getArInvoices({ limit: 200 }).subscribe({ next: res => { this.invoices.set(res.data); this.isLoading.set(false); }, error: () => this.isLoading.set(false) });
   }
 }

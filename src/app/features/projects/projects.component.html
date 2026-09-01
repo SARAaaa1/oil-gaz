@@ -1118,19 +1118,79 @@
           </div>
         </div>
 
-        <div class="border-t border-slate-100 pt-4 space-y-4">
-          <h4 class="text-slate-800 font-black text-[10px] uppercase tracking-wide border-b border-slate-100 pb-1">Associated Financial Cost Center</h4>
-          
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div class="border-t border-slate-100 pt-4 space-y-3">
+          <h4 class="text-slate-800 font-black text-[10px] uppercase tracking-wide border-b border-slate-100 pb-1 flex items-center gap-1.5">
+            <svg class="w-3.5 h-3.5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+            Associated Financial Cost Center
+          </h4>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <!-- Step 1: Main Root Center (Head Office / Free Zone) -->
             <div>
-              <label class="block mb-1 text-slate-700 uppercase tracking-wide text-[9px] font-bold">Cost Center Code</label>
-              <input type="text" name="costCenterCode" [(ngModel)]="newProjectForm.costCenterCode" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 text-slate-900 font-mono font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400" style="color: #0f172a !important; background-color: #f8fafc !important;" placeholder="Auto generated if empty" />
+              <label class="block mb-1 text-slate-700 uppercase tracking-wide text-[9px] font-bold">
+                Main Root Center <span class="text-red-500">*</span>
+              </label>
+              <select
+                name="parentCostCenterCode"
+                [(ngModel)]="newProjectForm.parentCostCenterCode"
+                (ngModelChange)="onParentCCChange()"
+                class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                style="color: #0f172a !important; background-color: #f8fafc !important;"
+              >
+                <option value="" style="color:#64748b">— اختر المركز الرئيسي —</option>
+                @for (cc of parentCostCenters(); track cc.code) {
+                  <option [value]="cc.code" style="color: #0f172a !important;">
+                    🏢 {{ cc.nameAr || cc.nameEn }}
+                  </option>
+                }
+              </select>
             </div>
+
+            <!-- Step 2: Department / Cost Center -->
             <div>
-              <label class="block mb-1 text-slate-700 uppercase tracking-wide text-[9px] font-bold">Cost Center Name</label>
-              <input type="text" name="costCenterName" [(ngModel)]="newProjectForm.costCenterName" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400" style="color: #0f172a !important; background-color: #f8fafc !important;" placeholder="Auto generated if empty" />
+              <label class="block mb-1 text-slate-700 uppercase tracking-wide text-[9px] font-bold">
+                Department / Cost Center <span class="text-slate-400 font-semibold normal-case">(اختياري)</span>
+              </label>
+              @if (childCostCenters().length > 0) {
+                <select
+                  name="costCenterCode"
+                  [(ngModel)]="newProjectForm.costCenterCode"
+                  (ngModelChange)="onChildCCChange()"
+                  class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                  style="color: #0f172a !important; background-color: #f8fafc !important;"
+                >
+                  <option value="" style="color:#64748b">— اختر القسم / مركز التكلفة —</option>
+                  @for (cc of childCostCenters(); track cc.code) {
+                    <option [value]="cc.code" style="color: #0f172a !important;">
+                      {{ cc.code }} — {{ cc.nameAr || cc.nameEn || cc.name }}
+                    </option>
+                  }
+                </select>
+              } @else if (newProjectForm.parentCostCenterCode) {
+                <div class="w-full bg-amber-50 border border-amber-200 rounded-lg p-2 text-amber-700 font-bold text-[10px] flex items-center gap-1.5">
+                  <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                  No sub-departments — using main CC directly
+                </div>
+              } @else {
+                <div class="w-full bg-slate-100 border border-slate-200 rounded-lg p-2 text-slate-400 font-semibold text-[10px]">
+                  Select a main cost center first
+                </div>
+              }
             </div>
           </div>
+
+          <!-- Resolved CC preview badge -->
+          @if (newProjectForm.parentCostCenterCode || newProjectForm.costCenterCode) {
+            <div class="flex items-center gap-2 bg-indigo-50 border border-indigo-100 rounded-lg px-3 py-2">
+              <span class="text-[9px] text-indigo-500 font-bold uppercase tracking-wider">Resolved Cost Center:</span>
+              <span class="font-mono font-black text-indigo-700 text-[11px]">
+                {{ newProjectForm.costCenterCode || newProjectForm.parentCostCenterCode }}
+              </span>
+              <span class="text-indigo-400 font-semibold text-[10px]">
+                — {{ newProjectForm.costCenterName || '' }}
+              </span>
+            </div>
+          }
         </div>
       </div>
 

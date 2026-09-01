@@ -9,6 +9,7 @@
   "navigation": {
     "dashboard": "لوحة القيادة",
     "operations": "العمليات",
+    "projects": "المشاريع",
     "contracts": "العقود",
     "dar": "تقارير النشاط اليومي (DAR)",
     "timesheets": "التقدم الشهري / جداول العمل",
@@ -224,6 +225,7 @@
     }
   },
   "common": {
+    "salistech": "ساليز-تك",
     "petroflow": "بتروفلو",
     "petroflow_erp": "نظام بتروفلو",
     "enterprise_mvp": "نسخة المؤسسة التجريبية",

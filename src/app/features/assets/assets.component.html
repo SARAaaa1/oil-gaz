@@ -115,6 +115,18 @@
                   } @else {
                     <span class="text-slate-400 font-bold">-</span>
                   }
+                  <button 
+                    (click)="openEditModal(eq)"
+                    class="px-2 py-1 bg-amber-50 text-amber-700 hover:bg-amber-100 rounded text-[10px] font-bold"
+                  >
+                    ✏️ Edit
+                  </button>
+                  <button 
+                    (click)="openDeleteConfirm(eq)"
+                    class="px-2 py-1 bg-rose-50 text-rose-700 hover:bg-rose-100 rounded text-[10px] font-bold"
+                  >
+                    🗑️
+                  </button>
                 </td>
               </tr>
             }
@@ -388,6 +400,344 @@
       <div class="p-4 bg-slate-50 border-t border-slate-100 flex justify-end space-x-2 rtl:space-x-reverse text-xs">
         <button (click)="showDisposalModal.set(false)" class="px-4 py-2 bg-white border border-slate-200 rounded-lg text-slate-700 font-bold hover:bg-slate-100">{{ 'common.cancel' | translate }}</button>
         <button (click)="saveDisposal()" class="px-4 py-2 bg-red-650 hover:bg-red-700 text-white font-bold rounded-lg shadow-md">{{ 'assets.btn_save_disposal' | translate }}</button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Add Equipment Modal -->
+@if (showAddModal()) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
+    <div class="bg-white rounded-2xl shadow-2xl border border-slate-100 w-full max-w-2xl overflow-hidden animate-scale-in">
+      <div class="p-4 bg-gradient-to-r from-indigo-600 to-indigo-700 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+          <h3 class="font-black text-white text-sm">Register New Equipment Asset</h3>
+        </div>
+        <button (click)="showAddModal.set(false)" class="text-white/70 hover:text-white transition-colors">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <div class="p-5 space-y-4 text-xs max-h-[70vh] overflow-y-auto">
+
+        <!-- Row 1: Codes -->
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-slate-700 font-bold mb-1 uppercase tracking-wide text-[9px]">Asset Number *</label>
+            <input type="text" [(ngModel)]="addForm.assetNumber" placeholder="e.g. AT-10099"
+              class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-900 font-mono font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400"
+              style="color:#0f172a !important; background-color:#f8fafc !important;">
+          </div>
+          <div>
+            <label class="block text-slate-700 font-bold mb-1 uppercase tracking-wide text-[9px]">Equipment Code *</label>
+            <input type="text" [(ngModel)]="addForm.equipmentCode" placeholder="e.g. EQ-RIG-010"
+              class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-900 font-mono font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400"
+              style="color:#0f172a !important; background-color:#f8fafc !important;">
+          </div>
+        </div>
+
+        <!-- Row 2: Name + Category -->
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-slate-700 font-bold mb-1 uppercase tracking-wide text-[9px]">Equipment Name *</label>
+            <input type="text" [(ngModel)]="addForm.equipmentName" placeholder="e.g. Rig Alpha Mast"
+              class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400"
+              style="color:#0f172a !important; background-color:#f8fafc !important;">
+          </div>
+          <div>
+            <label class="block text-slate-700 font-bold mb-1 uppercase tracking-wide text-[9px]">Category *</label>
+            <select [(ngModel)]="addForm.category"
+              class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400"
+              style="color:#0f172a !important; background-color:#f8fafc !important;">
+              @for (cat of categories; track cat) {
+                <option [value]="cat" style="color:#0f172a !important;">{{ cat }}</option>
+              }
+            </select>
+          </div>
+        </div>
+
+        <!-- Row 3: Manufacturer + Model -->
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-slate-700 font-bold mb-1 uppercase tracking-wide text-[9px]">Manufacturer</label>
+            <input type="text" [(ngModel)]="addForm.manufacturer" placeholder="e.g. Caterpillar"
+              class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400"
+              style="color:#0f172a !important; background-color:#f8fafc !important;">
+          </div>
+          <div>
+            <label class="block text-slate-700 font-bold mb-1 uppercase tracking-wide text-[9px]">Model</label>
+            <input type="text" [(ngModel)]="addForm.modelName" placeholder="e.g. CAT-3512"
+              class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400"
+              style="color:#0f172a !important; background-color:#f8fafc !important;">
+          </div>
+        </div>
+
+        <!-- Row 4: Serial + Purchase Date -->
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-slate-700 font-bold mb-1 uppercase tracking-wide text-[9px]">Serial Number</label>
+            <input type="text" [(ngModel)]="addForm.serialNumber" placeholder="e.g. SN-CAT-00123"
+              class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-900 font-mono font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400"
+              style="color:#0f172a !important; background-color:#f8fafc !important;">
+          </div>
+          <div>
+            <label class="block text-slate-700 font-bold mb-1 uppercase tracking-wide text-[9px]">Purchase Date</label>
+            <input type="date" [(ngModel)]="addForm.purchaseDate"
+              class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400"
+              style="color:#0f172a !important; background-color:#f8fafc !important;">
+          </div>
+        </div>
+
+        <!-- Row 5: Costs -->
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-slate-700 font-bold mb-1 uppercase tracking-wide text-[9px]">Purchase Cost ($)</label>
+            <input type="number" [(ngModel)]="addForm.purchaseCost"
+              class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-900 font-mono font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400"
+              style="color:#0f172a !important; background-color:#f8fafc !important;">
+          </div>
+          <div>
+            <label class="block text-slate-700 font-bold mb-1 uppercase tracking-wide text-[9px]">Current Value ($)</label>
+            <input type="number" [(ngModel)]="addForm.currentValue"
+              class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-900 font-mono font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400"
+              style="color:#0f172a !important; background-color:#f8fafc !important;">
+          </div>
+        </div>
+
+        <!-- Row 6: Location + Status -->
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-slate-700 font-bold mb-1 uppercase tracking-wide text-[9px]">Location *</label>
+            <input type="text" [(ngModel)]="addForm.location" placeholder="e.g. Warehouse A"
+              class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400"
+              style="color:#0f172a !important; background-color:#f8fafc !important;">
+          </div>
+          <div>
+            <label class="block text-slate-700 font-bold mb-1 uppercase tracking-wide text-[9px]">Status</label>
+            <select [(ngModel)]="addForm.status"
+              class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400"
+              style="color:#0f172a !important; background-color:#f8fafc !important;">
+              @for (st of statuses; track st) {
+                <option [value]="st" style="color:#0f172a !important;">{{ st }}</option>
+              }
+            </select>
+          </div>
+        </div>
+
+        <!-- ── COST CENTER SECTION ── -->
+        <div class="border-t border-slate-100 pt-3 space-y-2">
+          <h4 class="text-[9px] font-black text-slate-600 uppercase tracking-wider flex items-center gap-1.5">
+            <svg class="w-3 h-3 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+            Cost Center
+          </h4>
+          <div class="grid grid-cols-2 gap-3">
+            <!-- Parent CC -->
+            <div>
+              <label class="block text-slate-700 font-bold mb-1 uppercase tracking-wide text-[9px]">Main Cost Center</label>
+              <select [ngModel]="addFormParentCC()" (ngModelChange)="onAddParentChange($event)"
+                class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                style="color:#0f172a !important; background-color:#f8fafc !important;">
+                <option value="" style="color:#64748b">— Select Main CC —</option>
+                @for (cc of parentCostCenters(); track cc.code) {
+                  <option [value]="cc.code" style="color:#0f172a !important;">{{ cc.code }} — {{ cc.nameEn }}</option>
+                }
+              </select>
+            </div>
+            <!-- Child CC -->
+            <div>
+              <label class="block text-slate-700 font-bold mb-1 uppercase tracking-wide text-[9px]">Sub Cost Center</label>
+              @if (addChildCCs().length > 0) {
+                <select [(ngModel)]="addForm.costCenter"
+                  class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                  style="color:#0f172a !important; background-color:#f8fafc !important;">
+                  <option value="" style="color:#64748b">— Use Main CC —</option>
+                  @for (cc of addChildCCs(); track cc.code) {
+                    <option [value]="cc.code" style="color:#0f172a !important;">{{ cc.code }} — {{ cc.nameEn }}</option>
+                  }
+                </select>
+              } @else if (addFormParentCC()) {
+                <div class="w-full bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-amber-700 font-bold text-[10px]">No sub-departments — using main CC</div>
+              } @else {
+                <div class="w-full bg-slate-100 border border-slate-200 rounded-lg px-3 py-2 text-slate-400 text-[10px]">Select main CC first</div>
+              }
+            </div>
+          </div>
+          <!-- Resolved CC badge -->
+          @if (addFormParentCC()) {
+            <div class="flex items-center gap-2 bg-indigo-50 border border-indigo-100 rounded-lg px-3 py-1.5">
+              <span class="text-[9px] text-indigo-500 font-bold uppercase tracking-wider">Resolved CC:</span>
+              <span class="font-mono font-black text-indigo-700 text-[10px]">{{ addForm.costCenter || addFormParentCC() }}</span>
+            </div>
+          }
+        </div>
+
+        <!-- Notes -->
+        <div>
+          <label class="block text-slate-700 font-bold mb-1 uppercase tracking-wide text-[9px]">Notes</label>
+          <textarea [(ngModel)]="addForm.notes" rows="2" placeholder="Additional notes..."
+            class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400"
+            style="color:#0f172a !important; background-color:#f8fafc !important;"></textarea>
+        </div>
+      </div>
+
+      <div class="p-4 bg-slate-50 border-t border-slate-100 flex justify-end space-x-2 rtl:space-x-reverse text-xs">
+        <button (click)="showAddModal.set(false)" class="px-4 py-2 bg-white border border-slate-200 rounded-lg text-slate-700 font-bold hover:bg-slate-100">Cancel</button>
+        <button (click)="saveEquipment()" [disabled]="isSaving()"
+          class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg shadow-md disabled:opacity-50">
+          @if (isSaving()) { Saving... } @else { Register Asset }
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Edit Equipment Modal -->
+@if (showEditModal()) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+    <div class="bg-white rounded-2xl shadow-2xl border border-slate-100 w-full max-w-lg overflow-hidden animate-scale-in">
+      <div class="p-4 bg-slate-50 border-b border-slate-100 flex items-center justify-between text-xs font-semibold">
+        <h3 class="font-black text-amber-700">✏️ Edit Equipment — {{ editingAsset()?.equipmentName }}</h3>
+        <button (click)="showEditModal.set(false)" class="text-slate-400 hover:text-slate-600">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <div class="p-5 space-y-3 text-xs max-h-[65vh] overflow-y-auto">
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-slate-700 font-bold mb-1">Equipment Name *</label>
+            <input type="text" [(ngModel)]="editForm.equipmentName"
+              class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-amber-400"
+              style="color: #0f172a !important; background-color: #f8fafc !important;">
+          </div>
+          <div>
+            <label class="block text-slate-700 font-bold mb-1">Manufacturer</label>
+            <input type="text" [(ngModel)]="editForm.manufacturer"
+              class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-amber-400"
+              style="color: #0f172a !important; background-color: #f8fafc !important;">
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-slate-700 font-bold mb-1">Model</label>
+            <input type="text" [(ngModel)]="editForm.modelName"
+              class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-amber-400"
+              style="color: #0f172a !important; background-color: #f8fafc !important;">
+          </div>
+          <div>
+            <label class="block text-slate-700 font-bold mb-1">Location</label>
+            <input type="text" [(ngModel)]="editForm.location"
+              class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-amber-400"
+              style="color: #0f172a !important; background-color: #f8fafc !important;">
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-slate-700 font-bold mb-1">Purchase Cost ($)</label>
+            <input type="number" [(ngModel)]="editForm.purchaseCost"
+              class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-amber-400"
+              style="color: #0f172a !important; background-color: #f8fafc !important;">
+          </div>
+          <div>
+            <label class="block text-slate-700 font-bold mb-1">Current Value ($)</label>
+            <input type="number" [(ngModel)]="editForm.currentValue"
+              class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-amber-400"
+              style="color: #0f172a !important; background-color: #f8fafc !important;">
+          </div>
+        </div>
+
+        <!-- ── COST CENTER SECTION (Edit) ── -->
+        <div class="border-t border-slate-100 pt-3 space-y-2">
+          <h4 class="text-[9px] font-black text-slate-600 uppercase tracking-wider flex items-center gap-1.5">
+            <svg class="w-3 h-3 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+            Cost Center
+          </h4>
+          <div class="grid grid-cols-2 gap-3">
+            <!-- Parent CC -->
+            <div>
+              <label class="block text-slate-700 font-bold mb-1 uppercase tracking-wide text-[9px]">Main Root Center</label>
+              <select [ngModel]="editFormParentCC()" (ngModelChange)="onEditParentChange($event)"
+                class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-amber-400"
+                style="color:#0f172a !important; background-color:#f8fafc !important;">
+                <option value="" style="color:#64748b">— اختر المركز الرئيسي —</option>
+                @for (cc of parentCostCenters(); track cc.code) {
+                  <option [value]="cc.code" style="color:#0f172a !important;">🏢 {{ cc.nameAr || cc.nameEn }}</option>
+                }
+              </select>
+            </div>
+            <!-- Child CC -->
+            <div>
+              <label class="block text-slate-700 font-bold mb-1 uppercase tracking-wide text-[9px]">Department / Cost Center</label>
+              @if (editChildCCs().length > 0) {
+                <select [(ngModel)]="editForm.costCenter"
+                  class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-amber-400"
+                  style="color:#0f172a !important; background-color:#f8fafc !important;">
+                  <option value="" style="color:#64748b">— اختر القسم / مركز التكلفة —</option>
+                  @for (cc of editChildCCs(); track cc.code) {
+                    <option [value]="cc.code" style="color:#0f172a !important;">{{ cc.code }} — {{ cc.nameAr || cc.nameEn || cc.name }}</option>
+                  }
+                </select>
+              } @else if (editFormParentCC()) {
+                <div class="w-full bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-amber-700 font-bold text-[10px]">No sub-departments — using main CC</div>
+              } @else {
+                <div class="w-full bg-slate-100 border border-slate-200 rounded-lg px-3 py-2 text-slate-400 text-[10px]">اختر المركز الرئيسي أولاً</div>
+              }
+            </div>
+          </div>
+          <!-- Resolved CC badge -->
+          @if (editFormParentCC()) {
+            <div class="flex items-center gap-2 bg-amber-50 border border-amber-100 rounded-lg px-3 py-1.5">
+              <span class="text-[9px] text-amber-600 font-bold uppercase tracking-wider">Resolved CC:</span>
+              <span class="font-mono font-black text-amber-700 text-[10px]">{{ editForm.costCenter || editFormParentCC() }}</span>
+            </div>
+          }
+        </div>
+
+        <div>
+          <label class="block text-slate-700 font-bold mb-1">Notes</label>
+          <textarea [(ngModel)]="editForm.notes" rows="2"
+            class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-amber-400"
+            style="color: #0f172a !important; background-color: #f8fafc !important;"></textarea>
+        </div>
+      </div>
+
+      <div class="p-4 bg-slate-50 border-t border-slate-100 flex justify-end space-x-2 rtl:space-x-reverse text-xs">
+        <button (click)="showEditModal.set(false)" class="px-4 py-2 bg-white border border-slate-200 rounded-lg text-slate-700 font-bold hover:bg-slate-100">
+          {{ 'common.cancel' | translate }}
+        </button>
+        <button (click)="saveEditEquipment()" [disabled]="isSaving()" class="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-lg shadow-md disabled:opacity-50">
+          @if (isSaving()) { Saving... } @else { Save Changes }
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Delete Confirmation Modal -->
+@if (showDeleteConfirm()) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+    <div class="bg-white rounded-2xl shadow-2xl border border-slate-100 w-full max-w-sm overflow-hidden animate-scale-in">
+      <div class="p-4 bg-rose-50 border-b border-rose-100 flex items-center gap-3">
+        <div class="w-10 h-10 rounded-full bg-rose-100 flex items-center justify-center">
+          <svg class="w-5 h-5 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+        </div>
+        <div>
+          <h3 class="font-black text-rose-700 text-sm">Confirm Delete</h3>
+          <p class="text-xs text-rose-500 font-semibold">This action cannot be undone</p>
+        </div>
+      </div>
+      <div class="p-5 text-sm text-slate-700 font-semibold">
+        Are you sure you want to remove <span class="font-black text-slate-900">{{ selectedEquipment?.equipmentName }}</span>?
+        Active assignments or maintenance records may prevent deletion.
+      </div>
+      <div class="p-4 bg-slate-50 border-t border-slate-100 flex justify-end space-x-2 rtl:space-x-reverse text-xs">
+        <button (click)="showDeleteConfirm.set(false)" class="px-4 py-2 bg-white border border-slate-200 rounded-lg text-slate-700 font-bold hover:bg-slate-100">
+          {{ 'common.cancel' | translate }}
+        </button>
+        <button (click)="confirmDelete()" [disabled]="isSaving()" class="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-lg shadow-md disabled:opacity-50">
+          @if (isSaving()) { Deleting... } @else { Yes, Delete }
+        </button>
       </div>
     </div>
   </div>

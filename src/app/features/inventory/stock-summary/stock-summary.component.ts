@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { MockDataService } from '../../../core/services/mock-data.service';
+import { InventoryApiService, extractApiArray } from '../../../core/services/inventory-api.service';
 import { WorkflowService } from '../../../core/services/workflow.service';
 import { BreadcrumbService } from '../../../core/services/breadcrumb.service';
 import { NotificationService } from '../../../core/services/notification.service';
@@ -276,6 +277,7 @@ export class StockSummaryComponent implements OnInit {
   private readonly breadcrumbService = inject(BreadcrumbService);
   private readonly notificationService = inject(NotificationService);
   private readonly translateService = inject(TranslateService);
+  private readonly inventoryApi = inject(InventoryApiService);
 
   // Filter Signals
   readonly selectedWarehouseId = signal<string>('all');
@@ -285,9 +287,13 @@ export class StockSummaryComponent implements OnInit {
   readonly dateFrom = signal<string>('2026-06-01');
   readonly dateTo = signal<string>('2026-06-30');
 
-  // Core Data Stores (Signals)
-  readonly inventory = this.mockDataService.inventoryItems;
-  readonly warehouses = this.mockDataService.warehouses;
+  // Core Data Stores (Signals from API)
+  readonly inventory   = signal<any[]>([]);
+  readonly warehouses  = signal<any[]>([]);
+  readonly mrvs        = signal<any[]>([]);
+  readonly mivs        = signal<any[]>([]);
+  readonly transfers   = signal<any[]>([]);
+  readonly adjustments = signal<any[]>([]);
   
   readonly printDate = new Date();
 
@@ -380,16 +386,16 @@ export class StockSummaryComponent implements OnInit {
       const endDate = endStr ? new Date(endStr) : null;
 
       // 1. MRVs (Receipts)
-      const mrvsList = this.mockDataService.mrvs();
+      const mrvsList = this.mrvs();
       mrvsList.forEach(m => {
         if (m.status !== 'Posted' && m.status !== 'Approved') return;
         if (warehouseId !== 'all' && m.warehouseId !== warehouseId) return;
         if (projectId !== 'all' && m.projectId !== projectId && m.projectName !== projectId) return;
 
-        m.items.forEach(it => {
+        (m.items || []).forEach((it: any) => {
           if (it.itemCode === itemCode) {
-            const qty = it.quantityReceived;
-            const txDate = new Date(m.receivedDate);
+            const qty = it.quantityReceived || it.quantity || 0;
+            const txDate = new Date(m.receivedDate || m.createdAt);
 
             if (!endDate || txDate <= endDate) {
               ptdIn += qty;
@@ -405,17 +411,17 @@ export class StockSummaryComponent implements OnInit {
       });
 
       // 2. MIVs (Issues)
-      const mivsList = this.mockDataService.mivs();
+      const mivsList = this.mivs();
       mivsList.forEach(m => {
         if (m.status !== 'Posted' && m.status !== 'Approved') return;
-        if (projectId !== 'all' && m.destinationId !== projectId && !m.destinationId.includes(projectId)) return;
+        if (projectId !== 'all' && m.destinationId !== projectId && (m.destinationId && !m.destinationId.includes(projectId))) return;
         if (warehouseId !== 'all' && itemHomeWarehouseId && itemHomeWarehouseId !== warehouseId) return;
 
-        m.items.forEach(it => {
+        (m.items || []).forEach((it: any) => {
           if (it.itemCode === itemCode) {
-            const qty = it.quantityIssued;
-            const txDate = new Date(m.issueDate);
-            const isContractor = m.issueTo === 'Project' && (m.destinationId.toLowerCase().includes('contractor') || m.requestedBy.toLowerCase().includes('contractor'));
+            const qty = it.quantityIssued || it.quantity || 0;
+            const txDate = new Date(m.issueDate || m.createdAt);
+            const isContractor = m.issueTo === 'Project' && (m.destinationId?.toLowerCase().includes('contractor') || m.requestedBy?.toLowerCase().includes('contractor'));
 
             if (!endDate || txDate <= endDate) {
               if (isContractor) {
@@ -439,16 +445,16 @@ export class StockSummaryComponent implements OnInit {
       });
 
       // 3. Transfers (Internal transfers)
-      const transfersList = this.mockDataService.transfers();
+      const transfersList = this.transfers();
       transfersList.forEach(x => {
         if (x.status !== 'Posted' && x.status !== 'Approved') return;
         if (projectId !== 'all') return;
 
-        x.items.forEach(it => {
+        (x.items || []).forEach((it: any) => {
           if (it.itemCode !== itemCode) return;
           
-          const qty = it.quantity;
-          const txDate = new Date(x.transferDate);
+          const qty = it.quantity || 0;
+          const txDate = new Date(x.transferDate || x.createdAt);
 
           if (!endDate || txDate <= endDate) {
             if (warehouseId !== 'all') {
@@ -475,17 +481,17 @@ export class StockSummaryComponent implements OnInit {
       });
 
       // 4. Adjustments
-      const adjustmentsList = this.mockDataService.adjustments();
+      const adjustmentsList = this.adjustments();
       adjustmentsList.forEach(a => {
         if (a.status !== 'Posted' && a.status !== 'Approved') return;
         if (warehouseId !== 'all' && a.warehouseId !== warehouseId) return;
         if (projectId !== 'all') return;
 
-        a.items.forEach(it => {
+        (a.items || []).forEach((it: any) => {
           if (it.itemCode === itemCode) {
-            const qty = Math.abs(it.adjustedQuantity);
-            const isIn = it.adjustmentType === 'Addition' || it.adjustedQuantity > 0;
-            const txDate = new Date(a.adjustmentDate);
+            const qty = Math.abs(it.adjustedQuantity || it.quantity || 0);
+            const isIn = it.adjustmentType === 'Addition' || (it.adjustedQuantity && it.adjustedQuantity > 0);
+            const txDate = new Date(a.adjustmentDate || a.createdAt);
 
             if (!endDate || txDate <= endDate) {
               if (isIn) ptdIn += qty;
@@ -529,8 +535,36 @@ export class StockSummaryComponent implements OnInit {
   ngOnInit() {
     this.breadcrumbService.setBreadcrumbs([
       { label: 'navigation.inventory', url: '/inventory' },
-      { label: 'navigation.stock_summary' }
+      { label: 'inventory.stock_summary_title' }
     ]);
+    this.loadAll();
+  }
+
+  loadAll() {
+    this.inventoryApi.getItems({ limit: 500 }).subscribe({
+      next: (res: any) => this.inventory.set(extractApiArray(res).map((i: any) => ({ ...i, id: i._id ?? i.id }))),
+      error: () => this.inventory.set([])
+    });
+    this.inventoryApi.getWarehouses().subscribe({
+      next: (res: any) => this.warehouses.set(extractApiArray(res)),
+      error: () => this.warehouses.set([])
+    });
+    this.inventoryApi.getMRVs({ limit: 500 }).subscribe({
+      next: (res: any) => this.mrvs.set(extractApiArray(res)),
+      error: () => this.mrvs.set([])
+    });
+    this.inventoryApi.getMIVs({ limit: 500 }).subscribe({
+      next: (res: any) => this.mivs.set(extractApiArray(res)),
+      error: () => this.mivs.set([])
+    });
+    this.inventoryApi.getTransfers({ limit: 500 }).subscribe({
+      next: (res: any) => this.transfers.set(extractApiArray(res)),
+      error: () => this.transfers.set([])
+    });
+    this.inventoryApi.getAdjustments({ limit: 500 }).subscribe({
+      next: (res: any) => this.adjustments.set(extractApiArray(res)),
+      error: () => this.adjustments.set([])
+    });
   }
 
   getWarehouseName(id: string): string {

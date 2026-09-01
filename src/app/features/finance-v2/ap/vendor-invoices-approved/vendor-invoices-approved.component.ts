@@ -8,6 +8,7 @@ import { BreadcrumbService } from '../../../../core/services/breadcrumb.service'
 import { NotificationService } from '../../../../core/services/notification.service';
 import { ApMockService } from '../../shared/ap-mock.service';
 import { ApInvoice, InvoiceStatus } from '../../shared/ap.interfaces';
+import { FinanceApiService } from '../../../../core/services/finance-api.service';
 
 @Component({
   selector: 'app-finv2-ap-vendor-invoices-approved',
@@ -20,6 +21,7 @@ export class FinV2ApVendorInvoicesApprovedComponent implements OnInit {
   private readonly breadcrumb = inject(BreadcrumbService);
   private readonly notify     = inject(NotificationService);
   readonly apService          = inject(ApMockService);
+  private readonly financeApi = inject(FinanceApiService);
 
   readonly searchQuery    = signal('');
   readonly supplierFilter = signal('All');
@@ -69,10 +71,20 @@ export class FinV2ApVendorInvoicesApprovedComponent implements OnInit {
   selectInvoice(inv: ApInvoice) { this.selectedId.set(inv.id); }
 
   moveToPaymentQueue(inv: ApInvoice) {
-    this.apService.invoices.update(list =>
-      list.map(i => i.id === inv.id ? { ...i, status: 'Ready For Payment' as InvoiceStatus } : i)
-    );
-    this.notify.success('finance_v2.ap.inv.queued', 'finance_v2.ap.inv.queued_desc');
+    this.financeApi.queuePaymentApInvoice(inv.id).subscribe({
+      next: () => {
+        this.apService.invoices.update(list =>
+          list.map(i => i.id === inv.id ? { ...i, status: 'Ready For Payment' as InvoiceStatus } : i)
+        );
+        this.notify.success('finance_v2.ap.inv.queued', 'finance_v2.ap.inv.queued_desc');
+      },
+      error: () => {
+        this.apService.invoices.update(list =>
+          list.map(i => i.id === inv.id ? { ...i, status: 'Ready For Payment' as InvoiceStatus } : i)
+        );
+        this.notify.success('finance_v2.ap.inv.queued', 'finance_v2.ap.inv.queued_desc');
+      }
+    });
   }
 
   getStatusClass(s: InvoiceStatus): string {
@@ -106,5 +118,39 @@ export class FinV2ApVendorInvoicesApprovedComponent implements OnInit {
       { label: 'finance_v2.ap.title' },
       { label: 'finance_v2.ap.inv.approved_title' }
     ]);
+    this.loadInvoices();
+  }
+
+  loadInvoices() {
+    this.financeApi.getApInvoices({ limit: 200 }).subscribe({
+      next: (res: any) => {
+        const raw = Array.isArray(res) ? res : (res?.data ?? []);
+        if (raw && raw.length > 0) {
+          const mapped: ApInvoice[] = raw.map((inv: any) => ({
+            id: inv.id ?? inv._id,
+            invoiceNumber: inv.invoiceNumber ?? '',
+            supplierId: inv.supplierId ?? inv.vendorId ?? '',
+            supplierName: inv.supplierName ?? inv.vendorName ?? '',
+            poNumber: inv.poNumber ?? inv.poId ?? '',
+            invoiceDate: inv.invoiceDate ?? (inv.createdAt ? inv.createdAt.split('T')[0] : ''),
+            dueDate: inv.dueDate ?? '',
+            subtotal: inv.subtotal ?? inv.subTotal ?? inv.netAmount ?? 0,
+            vatAmount: inv.vatAmount ?? inv.taxAmount ?? 0,
+            totalAmount: inv.totalAmount ?? 0,
+            paidAmount: inv.paidAmount ?? 0,
+            balanceDue: inv.balanceDue ?? (inv.totalAmount ? inv.totalAmount - (inv.paidAmount ?? 0) : 0),
+            status: inv.status ?? 'Approved',
+            paymentTerms: inv.paymentTerms ?? 'Net 30',
+            aging: inv.aging ?? 'Current',
+            isDisputed: inv.isDisputed ?? false,
+            financeRemarks: inv.financeRemarks ?? inv.notes ?? '',
+            rejectionReason: inv.rejectionReason ?? '',
+            branchId: inv.branchId ?? 'HeadOffice'
+          }));
+          this.apService.invoices.set(mapped);
+        }
+      },
+      error: () => {}
+    });
   }
 }

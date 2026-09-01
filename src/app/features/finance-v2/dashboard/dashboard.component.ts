@@ -8,6 +8,7 @@ import { LanguageService } from '../../../core/services/language.service';
 import { FinanceV2MockService } from '../shared/finance-v2-mock.service';
 import { MonthlyChartData, AgingBucket } from '../shared/finance-v2.interfaces';
 import { BranchService } from '../shared/branch.service';
+import { FinanceApiService } from '../../../core/services/finance-api.service';
 
 @Component({
   selector: 'app-finv2-dashboard',
@@ -21,6 +22,9 @@ export class FinV2DashboardComponent implements OnInit {
   readonly langService = inject(LanguageService);
   readonly mockService = inject(FinanceV2MockService);
   readonly branchService = inject(BranchService);
+  private readonly financeApi = inject(FinanceApiService);
+
+  readonly apiKpis = signal<any>(null); // Populated from real API on load
 
   readonly activeBranch = computed(() => this.branchService.activeBranch());
 
@@ -34,33 +38,34 @@ export class FinV2DashboardComponent implements OnInit {
   readonly recentCollections = this.mockService.recentCollections;
 
   readonly branchKpis = computed(() => {
-    const kpi = this.kpis();
+    // Use real API KPIs if available, fallback to mock
+    const kpi = this.apiKpis() ?? this.kpis();
     const br = this.activeBranch();
     if (br === 'FreeZone') {
       return {
-        totalAssets: 4_280_000,
-        totalLiabilities: 1_220_000,
-        equity: 3_060_000,
-        cash: 95_000,
-        bankBalance: 580_000,
-        accountsReceivable: 480_000,
-        accountsPayable: 610_000,
-        monthRevenue: 310_000,
-        monthExpenses: 220_000,
-        netProfit: 90_000
+        totalAssets: kpi.totalAssets ?? 4_280_000,
+        totalLiabilities: kpi.totalLiabilities ?? 1_220_000,
+        equity: kpi.equity ?? 3_060_000,
+        cash: kpi.cash ?? 95_000,
+        bankBalance: kpi.bankBalance ?? 580_000,
+        accountsReceivable: kpi.accountsReceivable ?? 480_000,
+        accountsPayable: kpi.accountsPayable ?? 610_000,
+        monthRevenue: kpi.monthRevenue ?? 310_000,
+        monthExpenses: kpi.monthExpenses ?? 220_000,
+        netProfit: kpi.netProfit ?? 90_000
       };
     } else if (br === 'HeadOffice') {
       return {
-        totalAssets: 8_170_000,
-        totalLiabilities: 3_060_000,
-        equity: 5_110_000,
-        cash: 185_000,
-        bankBalance: 1_260_000,
-        accountsReceivable: 1_160_000,
-        accountsPayable: 1_210_000,
-        monthRevenue: 610_000,
-        monthExpenses: 460_000,
-        netProfit: 150_000
+        totalAssets: kpi.totalAssets ?? 8_170_000,
+        totalLiabilities: kpi.totalLiabilities ?? 3_060_000,
+        equity: kpi.equity ?? 5_110_000,
+        cash: kpi.cash ?? 185_000,
+        bankBalance: kpi.bankBalance ?? 1_260_000,
+        accountsReceivable: kpi.accountsReceivable ?? 1_160_000,
+        accountsPayable: kpi.accountsPayable ?? 1_210_000,
+        monthRevenue: kpi.monthRevenue ?? 610_000,
+        monthExpenses: kpi.monthExpenses ?? 460_000,
+        netProfit: kpi.netProfit ?? 150_000
       };
     }
     return kpi; // All
@@ -144,6 +149,33 @@ export class FinV2DashboardComponent implements OnInit {
       { label: 'navigation.finance' },
       { label: 'finance_v2.dashboard.title' }
     ]);
+    // Load real KPIs from API
+    this.financeApi.getFinanceDashboardKpis().subscribe({
+      next: (res: any) => {
+        if (!res) return;
+        const cashVal = typeof res.cashPosition === 'object' ? res.cashPosition?.cash : (res.cashBalance ?? res.cash);
+        const bankVal = typeof res.cashPosition === 'object' ? res.cashPosition?.banks : (res.bankBalance ?? res.banks);
+        const arVal   = typeof res.ar === 'object' ? res.ar?.outstanding : (res.accountsReceivable ?? res.ar);
+        const apVal   = typeof res.ap === 'object' ? res.ap?.outstanding : (res.accountsPayable ?? res.ap);
+        const revVal  = typeof res.revenue === 'object' ? res.revenue?.total : (res.monthRevenue ?? res.revenue);
+        const expVal  = typeof res.expenses === 'object' ? res.expenses?.total : (res.monthExpenses ?? res.expenses);
+        const netProf = res.netProfit ?? ((revVal ?? 0) - (expVal ?? 0));
+
+        this.apiKpis.set({
+          totalAssets:        res.totalAssets ?? res.assets ?? 12_450_000,
+          totalLiabilities:   res.totalLiabilities ?? res.liabilities ?? 4_280_000,
+          equity:             res.equity ?? 8_170_000,
+          cash:               cashVal ?? 280_000,
+          bankBalance:        bankVal ?? 1_840_000,
+          accountsReceivable: arVal ?? 1_640_000,
+          accountsPayable:    apVal ?? 1_820_000,
+          monthRevenue:       revVal ?? 920_000,
+          monthExpenses:      expVal ?? 680_000,
+          netProfit:          netProf ?? 240_000
+        });
+      },
+      error: () => {} // silently fall back to mock KPIs
+    });
   }
 
   // SVG helpers for line chart

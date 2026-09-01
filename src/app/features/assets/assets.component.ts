@@ -13,6 +13,7 @@ import {
   AssetStatus
 } from '../../core/services/assets-api.service';
 import { OperationsApiService } from '../../core/services/operations-api.service';
+import { CostCenterStoreService } from '../../core/services/cost-center-store.service';
 
 @Component({
   selector: 'app-assets',
@@ -27,6 +28,37 @@ export class AssetsComponent implements OnInit {
   private readonly breadcrumbService = inject(BreadcrumbService);
   private readonly notificationService = inject(NotificationService);
   private readonly authService = inject(AuthService);
+  private readonly costCenterStore = inject(CostCenterStoreService);
+
+  // ── Cost Center Hierarchy (2 Main Roots: Head Office & Free Zone) ────────────
+  /** The 2 Main Root options (Head Office & Free Zone) */
+  readonly parentCostCenters = computed(() =>
+    this.costCenterStore.mainRoots()
+  );
+
+  // -- Add Equipment form CC state --
+  readonly addFormParentCC = signal<string>('');
+  readonly addChildCCs = computed(() => {
+    const p = this.addFormParentCC();
+    if (!p) return [];
+    return this.costCenterStore.getDepartmentsByRoot(p);
+  });
+  onAddParentChange(parentCode: string) {
+    this.addFormParentCC.set(parentCode);
+    this.addForm.costCenter = '';  // reset child selection
+  }
+
+  // -- Edit Equipment form CC state --
+  readonly editFormParentCC = signal<string>('');
+  readonly editChildCCs = computed(() => {
+    const p = this.editFormParentCC();
+    if (!p) return [];
+    return this.costCenterStore.getDepartmentsByRoot(p);
+  });
+  onEditParentChange(parentCode: string) {
+    this.editFormParentCC.set(parentCode);
+    this.editForm.costCenter = '';  // reset child selection
+  }
 
   // ── State ──────────────────────────────────────────────────────────────────
   readonly equipment     = signal<Equipment[]>([]);
@@ -46,9 +78,15 @@ export class AssetsComponent implements OnInit {
   readonly showAssignModal    = signal(false);
   readonly showTransferModal  = signal(false);
   readonly showDisposalModal  = signal(false);
+  readonly showEditModal      = signal(false);
+  readonly showDeleteConfirm  = signal(false);
+  readonly editingAsset       = signal<Equipment | null>(null);
 
   // Add Equipment Form
   addForm: Partial<CreateEquipmentBody> = this.emptyAddForm();
+  
+  // Edit Equipment Form
+  editForm: Partial<CreateEquipmentBody> = {};
 
   // Action Inputs
   selectedEquipment: Equipment | null = null;
@@ -166,6 +204,7 @@ export class AssetsComponent implements OnInit {
   // ── Add Equipment ──────────────────────────────────────────────────────────
   openAddModal() {
     this.addForm = this.emptyAddForm();
+    this.addFormParentCC.set('');   // reset CC state
     this.showAddModal.set(true);
   }
 
@@ -175,7 +214,16 @@ export class AssetsComponent implements OnInit {
       return;
     }
     this.isSaving.set(true);
-    this.assetsApi.createEquipment(this.addForm as CreateEquipmentBody).subscribe({
+
+    const finalCC = this.addForm.costCenter || this.addFormParentCC();
+    const payload: CreateEquipmentBody = {
+      ...this.addForm as CreateEquipmentBody,
+      costCenter: finalCC,
+      costCenterCode: finalCC,
+      parentCostCenter: this.addFormParentCC() || undefined
+    };
+
+    this.assetsApi.createEquipment(payload).subscribe({
       next: (created) => {
         this.equipment.update(list => [created, ...list]);
         this.showAddModal.set(false);
@@ -345,6 +393,93 @@ export class AssetsComponent implements OnInit {
       }
     });
   }
+
+  // ── Edit Equipment ─────────────────────────────────────────────────────────
+  openEditModal(asset: Equipment) {
+    this.editingAsset.set(asset);
+    // Restore parent CC for the cascading dropdown
+    const existingCC = this.costCenterStore.costCenters()
+      .find(cc => cc.code === (asset.costCenter || ''));
+    const parentCode = existingCC?.parentCode ?? asset.costCenter ?? '';
+    this.editFormParentCC.set(parentCode);
+    this.editForm = {
+      equipmentName:   asset.equipmentName,
+      manufacturer:    asset.manufacturer  || '',
+      modelName:       asset.modelName     || '',
+      location:        asset.location      || '',
+      costCenter:      existingCC?.parentCode ? (asset.costCenter || '') : '',
+      department:      asset.department    || '',
+      notes:           asset.notes         || '',
+      purchaseCost:    asset.purchaseCost  || 0,
+      currentValue:    asset.currentValue  || 0,
+    };
+    this.showEditModal.set(true);
+  }
+
+  saveEditEquipment() {
+    const asset = this.editingAsset();
+    if (!asset) return;
+    this.isSaving.set(true);
+
+    const finalCC = this.editForm.costCenter || this.editFormParentCC();
+    const payload: Partial<CreateEquipmentBody> = {
+      ...this.editForm,
+      costCenter: finalCC,
+      costCenterCode: finalCC,
+      parentCostCenter: this.editFormParentCC() || undefined
+    };
+
+    this.assetsApi.updateEquipment(asset._id, payload).subscribe({
+      next: (updated) => {
+        this.equipment.update(list => list.map(e => e._id === updated._id ? updated : e));
+        this.showEditModal.set(false);
+        this.editingAsset.set(null);
+        this.notificationService.success('Updated', `${updated.equipmentName} updated successfully`);
+        this.isSaving.set(false);
+      },
+      error: (err) => {
+        this.notificationService.danger('Error', err?.error?.message || 'Failed to update equipment');
+        this.isSaving.set(false);
+      }
+    });
+  }
+
+  // ── Delete Equipment ───────────────────────────────────────────────────────
+  openDeleteConfirm(asset: Equipment) {
+    this.selectedEquipment = asset;
+    this.showDeleteConfirm.set(true);
+  }
+
+  confirmDelete() {
+    if (!this.selectedEquipment) return;
+    this.isSaving.set(true);
+    this.assetsApi.deleteEquipment(this.selectedEquipment._id).subscribe({
+      next: () => {
+        this.equipment.update(list => list.filter(e => e._id !== this.selectedEquipment!._id));
+        this.showDeleteConfirm.set(false);
+        this.notificationService.success('Deleted', `${this.selectedEquipment?.equipmentName} removed`);
+        this.selectedEquipment = null;
+        this.isSaving.set(false);
+      },
+      error: (err) => {
+        this.notificationService.danger('Error', err?.error?.message || 'Cannot delete — asset may have active assignments');
+        this.isSaving.set(false);
+      }
+    });
+  }
+
+  // ── Change Status Directly ─────────────────────────────────────────────────
+  changeAssetStatus(asset: Equipment, status: AssetStatus) {
+    this.assetsApi.updateStatus(asset._id, { status }).subscribe({
+      next: (updated) => {
+        this.equipment.update(list => list.map(e => e._id === updated._id ? updated : e));
+        this.notificationService.success('Status Updated', `${asset.equipmentName} → ${status}`);
+      },
+      error: (err) => this.notificationService.danger('Error', err?.error?.message || 'Status update failed')
+    });
+  }
+
+
 
   // ── Helpers ───────────────────────────────────────────────────────────────
   private emptyAddForm(): Partial<CreateEquipmentBody> {

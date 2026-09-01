@@ -6,7 +6,7 @@ import { FormsModule } from '@angular/forms';
 import { TranslateModule } from '@ngx-translate/core';
 import { BreadcrumbService } from '../../../core/services/breadcrumb.service';
 import { LanguageService } from '../../../core/services/language.service';
-import { FinanceV2MockService } from '../shared/finance-v2-mock.service';
+import { FinanceApiService } from '../../../core/services/finance-api.service';
 import { TrialBalanceLine, TrialBalanceTotals, AccountType } from '../shared/finance-v2.interfaces';
 import { BranchService } from '../shared/branch.service';
 
@@ -20,8 +20,12 @@ import { BranchService } from '../shared/branch.service';
 export class FinV2TrialBalanceComponent implements OnInit {
   private readonly breadcrumbService = inject(BreadcrumbService);
   readonly langService   = inject(LanguageService);
-  readonly mockService   = inject(FinanceV2MockService);
+  readonly financeApi    = inject(FinanceApiService);
   readonly branchService = inject(BranchService);
+
+  readonly rawLines = signal<any[]>([]);
+  readonly rawTotals = signal<any>(null);
+  readonly isLoading = signal(false);
 
   // ── Filters ──────────────────────────────────────────────────
   readonly reportDate       = signal<string>('2025-06-30');
@@ -35,7 +39,7 @@ export class FinV2TrialBalanceComponent implements OnInit {
     const level   = this.levelFilter();
     const incZero = this.includeZero();
     const branch  = this.branchFilter();
-    return this.mockService.trialBalanceLines().filter(line => {
+    return this.rawLines().filter(line => {
       const matchLevel  = level === 0 || line.level === level;
       const hasBalance  = incZero || (line.closingDebit + line.closingCredit) > 0;
       const matchBranch = branch === 'All' || (line.branchId || 'HeadOffice') === branch;
@@ -45,25 +49,16 @@ export class FinV2TrialBalanceComponent implements OnInit {
 
   // ── Grand totals ──────────────────────────────────────────────────
   readonly totals = computed<TrialBalanceTotals>(() => {
-    const lines = this.filteredLines();
-    const openingDebit  = lines.reduce((s, l) => s + l.openingDebit, 0);
-    const openingCredit = lines.reduce((s, l) => s + l.openingCredit, 0);
-    const periodDebit   = lines.reduce((s, l) => s + l.periodDebit, 0);
-    const periodCredit  = lines.reduce((s, l) => s + l.periodCredit, 0);
-    const closingDebit  = lines.reduce((s, l) => s + l.closingDebit, 0);
-    const closingCredit = lines.reduce((s, l) => s + l.closingCredit, 0);
-    const difference    = Math.abs(closingDebit - closingCredit);
-    return {
-      openingDebit, openingCredit, periodDebit, periodCredit,
-      closingDebit, closingCredit,
-      isBalanced: difference < 1,
-      difference
+    return this.rawTotals() ?? {
+      openingDebit: 0, openingCredit: 0, periodDebit: 0, periodCredit: 0,
+      closingDebit: 0, closingCredit: 0,
+      isBalanced: true, difference: 0
     };
   });
 
   // ── Chart: breakdown by type ───────────────────────────────────────
   readonly typeBreakdown = computed(() => {
-    const all = this.mockService.trialBalanceLines().filter(l => l.level === 1);
+    const all = this.rawLines().filter(l => l.level === 1);
     return [
       { type: 'Asset'    as AccountType, key: 'finance_v2.coa.type_asset',     value: all.find(l => l.accountCode === '1000')?.closingDebit ?? 0,  color: '#6366f1' },
       { type: 'Liability'as AccountType, key: 'finance_v2.coa.type_liability', value: all.find(l => l.accountCode === '2000')?.closingCredit ?? 0, color: '#f43f5e' },
@@ -100,5 +95,38 @@ export class FinV2TrialBalanceComponent implements OnInit {
       { label: 'navigation.finance' },
       { label: 'finance_v2.tb.title' }
     ]);
+    this.loadData();
+  }
+
+  loadData() {
+    this.isLoading.set(true);
+    this.financeApi.getTrialBalance(this.reportDate()).subscribe({
+      next: (res: any) => {
+        const raw = Array.isArray(res) ? res : (res?.data ?? []);
+        if (raw && raw.length > 0) {
+          const mapped = raw.map((l: any) => ({
+            id: l.id ?? l._id ?? l.accountCode,
+            accountCode: l.accountCode ?? '',
+            accountNameEn: l.accountNameEn ?? l.accountName ?? l.name ?? '',
+            accountNameAr: l.accountNameAr ?? l.accountName ?? '',
+            type: l.type ?? l.accountType ?? 'Asset',
+            level: l.level ?? 1,
+            openingDebit: l.openingDebit ?? 0,
+            openingCredit: l.openingCredit ?? 0,
+            periodDebit: l.periodDebit ?? 0,
+            periodCredit: l.periodCredit ?? 0,
+            closingDebit: l.closingDebit ?? 0,
+            closingCredit: l.closingCredit ?? 0,
+            branchId: l.branchId ?? 'HeadOffice'
+          }));
+          this.rawLines.set(mapped);
+        }
+        if (res?.totals) {
+          this.rawTotals.set(res.totals);
+        }
+        this.isLoading.set(false);
+      },
+      error: () => this.isLoading.set(false)
+    });
   }
 }

@@ -5,6 +5,8 @@ import { MockDataService } from '../../core/services/mock-data.service';
 import { BreadcrumbService } from '../../core/services/breadcrumb.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { TranslateModule } from '@ngx-translate/core';
+import { HttpClient } from '@angular/common/http';
+import { environment } from '../../../environments/environment';
 import { 
   Vendor, BankAccount, ContactPerson, 
   VendorTimelineEvent, VendorLedgerEntry, VendorDocument, 
@@ -22,8 +24,13 @@ export class VendorsComponent implements OnInit {
   private readonly mockDataService = inject(MockDataService);
   private readonly breadcrumbService = inject(BreadcrumbService);
   private readonly notificationService = inject(NotificationService);
+  private readonly http = inject(HttpClient);
+  private readonly vendorsApiUrl = `${environment.apiUrl}/vendors`;
 
-  readonly vendors = this.mockDataService.vendors;
+  readonly isConnectedToApi = signal(false);
+  readonly isApiLoading = signal(false);
+
+  readonly vendors = signal<Vendor[]>(this.mockDataService.vendors());
 
   // Top-Level UI Tabs
   readonly activeTab = signal<'list' | 'categories' | 'evaluation'>('list');
@@ -202,6 +209,37 @@ export class VendorsComponent implements OnInit {
 
   ngOnInit() {
     this.breadcrumbService.setBreadcrumbs([{ label: 'navigation.vendors' }]);
+    this.loadFromApi();
+  }
+
+  loadFromApi() {
+    this.isApiLoading.set(true);
+    this.http.get<any>(this.vendorsApiUrl + '?limit=200').subscribe({
+      next: (res) => {
+        const list = res.data ?? res.items ?? (Array.isArray(res) ? res : []);
+        if (list.length > 0) {
+          // Map API response to match the existing vendor interface
+          this.vendors.set(list.map((v: any) => ({
+            ...v,
+            id: v._id ?? v.id,
+            vendorName: v.vendorName,
+            vendorCode: v.vendorCode,
+            status: v.status ?? 'Active',
+            category: v.category ?? 'General',
+            contactPerson: v.contactPerson ?? '',
+            contactEmail: v.contactEmail ?? '',
+            contactPhone: v.contactPhone ?? '',
+            rating: v.performanceScore ?? v.rating ?? 0,
+          })));
+          this.isConnectedToApi.set(true);
+        }
+        this.isApiLoading.set(false);
+      },
+      error: () => {
+        // Backend not ready yet - keep mock data silently
+        this.isApiLoading.set(false);
+      }
+    });
   }
 
   selectVendor(vendor: Vendor) {
@@ -268,59 +306,60 @@ export class VendorsComponent implements OnInit {
   submitRegistration(): void {
     this.regLoading.set(true);
     this.regError.set(null);
-    setTimeout(() => {
-      try {
-        const vendorCode = `VND-${new Date().getFullYear()}-${String(this.vendors().length + 1).padStart(3, '0')}`;
-        const uBase = this.regContactEmail.split('@')[0].replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
-        const username = `${uBase}_vnd`;
-        const password = `${uBase}@${new Date().getFullYear()}`;
-        const vendorId = `v-reg-${Date.now()}`;
-
-        const newVendor: Vendor = {
-          id: vendorId, vendorCode,
-          vendorName: this.regCompanyName, arabicName: this.regArabicName,
-          taxNumber: this.regTaxNumber, vatNumber: this.regVatNumber,
-          commercialRegistration: this.regCR, address: this.regAddress,
-          country: this.regCountry, category: this.regCategory,
-          approvalStatus: 'Pending', contactPerson: this.regContactName,
-          contactEmail: this.regContactEmail, contactPhone: this.regContactPhone,
-          paymentTerms: this.regPaymentTerms, currency: this.regCurrency,
-          rating: 5, status: 'Active',
-          bankAccounts: this.regBankName ? [{ bankName: this.regBankName, accountNumber: this.regAccountNumber, iban: this.regIban, currency: this.regBankCurrency }] : [],
-          contactPersons: [{ name: this.regContactName, role: this.regContactTitle || 'Primary Contact', email: this.regContactEmail, phone: this.regContactPhone }],
-          totalOrders: 0, totalSpend: 0, totalRFQs: 0, awardedRFQs: 0, participatedRFQs: 0,
-          totalDeliveries: 0, onTimeDeliveries: 0, totalDeliveredQty: 0, acceptedQty: 0,
-          lateDeliveries: 0, rejectedDeliveries: 0, openInvoices: 0, paidInvoices: 0
+    const body = {
+      vendorName: this.regCompanyName,
+      arabicName: this.regArabicName || undefined,
+      category: this.regCategory,
+      taxNumber: this.regTaxNumber,
+      vatNumber: this.regVatNumber || undefined,
+      commercialRegistration: this.regCR || undefined,
+      country: this.regCountry,
+      address: this.regAddress,
+      contactPerson: this.regContactName,
+      contactEmail: this.regContactEmail,
+      contactPhone: this.regContactPhone,
+      paymentTerms: this.regPaymentTerms,
+      currency: this.regCurrency,
+      bankAccounts: this.regBankName ? [{
+        bankName: this.regBankName,
+        accountNumber: this.regAccountNumber,
+        iban: this.regIban,
+        currency: this.regBankCurrency
+      }] : [],
+      contactPersons: this.regContactName ? [{
+        name: this.regContactName,
+        role: this.regContactTitle || 'Contact',
+        email: this.regContactEmail,
+        phone: this.regContactPhone
+      }] : []
+    };
+    this.http.post<any>(this.vendorsApiUrl, body).subscribe({
+      next: (created) => {
+        const normalized: any = {
+          ...created,
+          id: created._id ?? created.id,
+          vendorCode: created.vendorCode ?? `VND-${Date.now()}`,
+          arabicName: created.arabicName ?? this.regArabicName,
+          approvalStatus: created.approvalStatus ?? 'Pending',
+          status: created.status ?? 'Pending',
+          rating: 0,
+          totalOrders: 0, totalSpend: 0, totalRFQs: 0, awardedRFQs: 0,
+          participatedRFQs: 0, totalDeliveries: 0, onTimeDeliveries: 0,
+          totalDeliveredQty: 0, acceptedQty: 0, lateDeliveries: 0,
+          rejectedDeliveries: 0, openInvoices: 0, paidInvoices: 0, evaluationScore: 0,
+          bankAccounts: body.bankAccounts,
+          contactPersons: body.contactPersons
         };
-
-        this.mockDataService.vendors.update(list => [...list, newVendor]);
-
-        const docs = this.regUploadedDocs().map((doc, i) => ({
-          id: `vdoc-${i}-${Date.now()}`, vendorId,
-          documentType: 'Other' as const, fileName: doc.name, fileSize: doc.size,
-          uploadedDate: new Date().toISOString().split('T')[0],
-          uploadedBy: this.regContactName, status: 'Valid' as const, notes: doc.type
-        }));
-        if (docs.length > 0) { this.mockDataService.vendorDocuments.update(list => [...list, ...docs]); }
-
-        this.mockDataService.vendorTimeline.update(list => [...list, {
-          id: `vte-${Date.now()}`, vendorId,
-          date: new Date().toISOString().split('T')[0],
-          eventType: 'Created' as const,
-          title: 'Vendor Registered',
-          description: `${this.regCompanyName} registered via Vendor Management. Status: Pending Approval.`,
-          performedBy: this.regContactName
-        }]);
-
-        this.regCredentials.set({ username, password });
-        this.regLoading.set(false);
+        this.vendors.update(list => [normalized, ...list]);
+        this.regCredentials.set({ username: created.vendorCode ?? normalized.vendorCode, password: 'Welcome@123' });
         this.regStep.set(4);
-        this.notificationService.success('vendors.created_title', 'vendors.created_desc');
-      } catch (e) {
         this.regLoading.set(false);
-        this.regError.set('Registration failed. Please try again.');
+      },
+      error: (err) => {
+        this.regError.set(err?.error?.message || 'Registration failed. Please try again.');
+        this.regLoading.set(false);
       }
-    }, 1200);
+    });
   }
 
   startEditVendor() {
@@ -338,15 +377,11 @@ export class VendorsComponent implements OnInit {
     this.isEditing.set(true);
   }
 
-  saveVendor() {
-    if (!this.vendorName || !this.vendorCode) {
-      this.notificationService.danger('common.validation_error', 'common.fill_required_fields');
-      return;
-    }
-    const current = this.selectedVendor();
-    const updatedVendor: Vendor = {
-      id: current?.id || `v-${Date.now()}`,
-      vendorCode: this.vendorCode,
+  saveVendor(): void {
+    const vendor = this.selectedVendor();
+    if (!vendor) return;
+    const id = (vendor as any)._id ?? vendor.id;
+    const body = {
       vendorName: this.vendorName,
       arabicName: this.arabicName,
       taxNumber: this.taxNumber,
@@ -355,68 +390,72 @@ export class VendorsComponent implements OnInit {
       address: this.address,
       country: this.country,
       category: this.category,
-      approvalStatus: this.approvalStatus,
       contactPerson: this.contactPerson,
       contactEmail: this.contactEmail,
       contactPhone: this.contactPhone,
       paymentTerms: this.paymentTerms,
       currency: this.currency,
-      rating: current ? current.rating : 5,
       status: this.status,
       bankAccounts: this.bankAccounts,
-      contactPersons: this.contactPersons,
-      totalOrders: current ? current.totalOrders : 0,
-      totalSpend: current ? current.totalSpend : 0,
-      lastTransactionDate: current ? current.lastTransactionDate : undefined,
-      totalRFQs: current ? current.totalRFQs : 0,
-      awardedRFQs: current ? current.awardedRFQs : 0,
-      participatedRFQs: current ? current.participatedRFQs : 0,
-      totalDeliveries: current ? current.totalDeliveries : 0,
-      onTimeDeliveries: current ? current.onTimeDeliveries : 0,
-      totalDeliveredQty: current ? current.totalDeliveredQty : 0,
-      acceptedQty: current ? current.acceptedQty : 0,
-      lateDeliveries: current ? current.lateDeliveries : 0,
-      rejectedDeliveries: current ? current.rejectedDeliveries : 0,
-      openInvoices: current ? current.openInvoices : 0,
-      paidInvoices: current ? current.paidInvoices : 0
+      contactPersons: this.contactPersons
     };
-
-    if (current) {
-      this.mockDataService.vendors.update(list => list.map(v => v.id === updatedVendor.id ? updatedVendor : v));
-      this.notificationService.success('vendors.updated_title', 'vendors.updated_desc');
-    } else {
-      this.mockDataService.vendors.update(list => [...list, updatedVendor]);
-      this.notificationService.success('vendors.created_title', 'vendors.created_desc');
-    }
-    
-    this.selectedVendor.set(updatedVendor);
-    this.isEditing.set(false);
+    this.http.put<any>(`${this.vendorsApiUrl}/${id}`, body).subscribe({
+      next: (updated) => {
+        const normalized = { ...vendor, ...updated, id: vendor.id };
+        this.vendors.update(list => list.map(v => v.id === vendor.id ? normalized : v));
+        this.selectedVendor.set(normalized);
+        this.isEditing.set(false);
+        this.notificationService.success('Saved', `${normalized.vendorName} updated successfully`);
+      },
+      error: (err) => {
+        // Fallback: update locally
+        const updated = { ...vendor, vendorName: this.vendorName, arabicName: this.arabicName,
+          contactPerson: this.contactPerson, contactEmail: this.contactEmail,
+          contactPhone: this.contactPhone, status: this.status, bankAccounts: this.bankAccounts,
+          contactPersons: this.contactPersons };
+        this.vendors.update(list => list.map(v => v.id === vendor.id ? updated : v));
+        this.selectedVendor.set(updated);
+        this.isEditing.set(false);
+        this.notificationService.success('Saved', `${updated.vendorName} updated (offline)`);
+      }
+    });
   }
 
   cancelEdit() {
     this.isEditing.set(false);
   }
 
-  approveVendor(v: Vendor) {
-    this.mockDataService.vendors.update(list => list.map(vendor =>
-      vendor.id === v.id ? { ...vendor, status: 'Active' as const, approvalStatus: 'Approved' as const } : vendor
-    ));
-    if (this.selectedVendor()?.id === v.id) {
-      const updated = this.vendors().find(vendor => vendor.id === v.id);
-      if (updated) this.selectedVendor.set(updated);
-    }
-    this.notificationService.success('vendors.approved_title', 'vendors.approved_desc');
+  approveVendor(vendor: Vendor): void {
+    const id = (vendor as any)._id ?? vendor.id;
+    this.http.patch<any>(`${this.vendorsApiUrl}/${id}/status`, { status: 'Active' }).subscribe({
+      next: () => {
+        this.vendors.update(list => list.map(v =>
+          v.id === vendor.id ? { ...v, status: 'Active' as any, approvalStatus: 'Approved' as any } : v
+        ));
+        if (this.selectedVendor()?.id === vendor.id) {
+          this.selectedVendor.update(v => v ? { ...v, status: 'Active' as any, approvalStatus: 'Approved' as any } : v);
+        }
+        this.notificationService.success('Approved', `${vendor.vendorName} approved successfully`);
+      },
+      error: (err) => this.notificationService.danger('Error', err?.error?.message || 'Approval failed')
+    });
   }
 
-  blacklistVendor(v: Vendor) {
-    this.mockDataService.vendors.update(list => list.map(vendor =>
-      vendor.id === v.id ? { ...vendor, status: 'Inactive' as const, approvalStatus: 'Blacklisted' as const } : vendor
-    ));
-    if (this.selectedVendor()?.id === v.id) {
-      const updated = this.vendors().find(vendor => vendor.id === v.id);
-      if (updated) this.selectedVendor.set(updated);
-    }
-    this.notificationService.warning('vendors.blacklisted_title', 'vendors.blacklisted_desc');
+  blacklistVendor(vendor: Vendor): void {
+    const id = (vendor as any)._id ?? vendor.id;
+    const reason = prompt('Reason for blacklisting:') || 'Policy violation';
+    this.http.patch<any>(`${this.vendorsApiUrl}/${id}/status`, { status: 'Blacklisted', reason }).subscribe({
+      next: () => {
+        this.vendors.update(list => list.map(v =>
+          v.id === vendor.id ? { ...v, status: 'Inactive' as any, approvalStatus: 'Blacklisted' as any } : v
+        ));
+        if (this.selectedVendor()?.id === vendor.id) {
+          this.selectedVendor.update(v => v ? { ...v, status: 'Inactive' as any, approvalStatus: 'Blacklisted' as any } : v);
+        }
+        this.notificationService.success('Blacklisted', `${vendor.vendorName} blacklisted`);
+      },
+      error: (err) => this.notificationService.danger('Error', err?.error?.message || 'Blacklist failed')
+    });
   }
 
   submitEvaluation() {

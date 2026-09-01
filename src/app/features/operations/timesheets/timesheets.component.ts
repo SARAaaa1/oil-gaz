@@ -32,6 +32,15 @@ export class TimesheetsComponent implements OnInit {
   readonly isLoading   = signal(false);
   readonly isSaving    = signal(false);
 
+  readonly showCreateModal = signal(false);
+  readonly isCreating = signal(false);
+  readonly isSubmitting = signal<string | null>(null); // stores WO ID being submitted
+
+  // Create form
+  createForm = { rigId: '', month: new Date().toISOString().slice(0, 7), projectCode: '' };
+
+  readonly rigs = signal<any[]>([]);
+
   readonly selectedTimesheetId = signal<string | null>(null);
   readonly editingDay          = signal<TimesheetDay | null>(null);
 
@@ -54,6 +63,12 @@ export class TimesheetsComponent implements OnInit {
       { label: 'navigation.timesheets' }
     ]);
     this.loadTimesheets();
+
+    // Load rigs for the create form dropdown
+    this.opsApi.getRigs().subscribe({
+      next: (data: any) => this.rigs.set(Array.isArray(data) ? data : (data.data ?? [])),
+      error: () => {}
+    });
   }
 
   loadTimesheets() {
@@ -153,6 +168,85 @@ export class TimesheetsComponent implements OnInit {
       error: (err: any) => {
         this.notificationService.danger('Error', err?.error?.message || 'Failed to update day');
         this.isSaving.set(false);
+      }
+    });
+  }
+
+  // ── Create Timesheet ───────────────────────────────────────────────────────
+  openCreateTimesheet() {
+    this.createForm = {
+      rigId: this.rigs()[0]?._id ?? this.rigs()[0]?.id ?? '',
+      month: new Date().toISOString().slice(0, 7),
+      projectCode: ''
+    };
+    this.showCreateModal.set(true);
+  }
+
+  saveCreateTimesheet() {
+    if (!this.createForm.rigId || !this.createForm.month) {
+      this.notificationService.danger('Validation', 'Rig and Month are required');
+      return;
+    }
+    this.isCreating.set(true);
+    this.opsApi.createTimesheet({
+      rigId: this.createForm.rigId,
+      month: this.createForm.month,
+      projectCode: this.createForm.projectCode || undefined,
+    }).subscribe({
+      next: (created: any) => {
+        const normalized = { ...created, id: created._id ?? created.id, utilizationRate: 0, downtimePercent: 0 };
+        this.timesheets.update(list => [normalized, ...list]);
+        this.showCreateModal.set(false);
+        this.isCreating.set(false);
+        this.notificationService.success('Timesheet Created', `Timesheet for ${created.rigName ?? 'Rig'} - ${this.createForm.month} created`);
+      },
+      error: (err: any) => {
+        this.isCreating.set(false);
+        if (err?.status === 409) {
+          this.notificationService.danger('Duplicate', 'A timesheet for this rig and month already exists');
+        } else {
+          this.notificationService.danger('Error', err?.error?.message || 'Failed to create timesheet');
+        }
+      }
+    });
+  }
+
+  // ── Submit / Approve Timesheet ─────────────────────────────────────────────
+  submitTimesheet(ts: any) {
+    const tsId = ts._id ?? ts.id;
+    this.isSubmitting.set(tsId);
+    this.opsApi.updateTimesheetStatus(tsId, 'Submitted').subscribe({
+      next: (updated: any) => {
+        this.timesheets.update(list =>
+          list.map(t => (t._id ?? (t as any).id) === tsId ? { ...t, status: 'Submitted' } : t)
+        );
+        this.isSubmitting.set(null);
+        this.notificationService.success('Submitted', 'Timesheet submitted for approval');
+      },
+      error: (err: any) => {
+        this.isSubmitting.set(null);
+        this.notificationService.danger('Error', err?.error?.message || 'Failed to submit timesheet');
+      }
+    });
+  }
+
+  approveTimesheet(ts: any) {
+    const tsId = ts._id ?? ts.id;
+    this.isSubmitting.set(tsId);
+    this.opsApi.updateTimesheetStatus(tsId, 'Approved').subscribe({
+      next: (updated: any) => {
+        this.timesheets.update(list =>
+          list.map(t => (t._id ?? (t as any).id) === tsId
+            ? { ...t, status: 'Approved', utilizationRate: updated.summary?.utilizationRate ?? (t as any).utilizationRate }
+            : t
+          )
+        );
+        this.isSubmitting.set(null);
+        this.notificationService.success('Approved', 'Timesheet approved successfully');
+      },
+      error: (err: any) => {
+        this.isSubmitting.set(null);
+        this.notificationService.danger('Error', err?.error?.message || 'Failed to approve timesheet');
       }
     });
   }

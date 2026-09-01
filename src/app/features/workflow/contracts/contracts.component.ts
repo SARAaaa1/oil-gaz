@@ -17,6 +17,7 @@ import {
   PaginatedResponse
 } from '../../../core/services/workflow-api.service';
 import { ActivityTimelineComponent } from '../../../shared/components/activity-timeline/activity-timeline.component';
+import { CostCenterStoreService } from '../../../core/services/cost-center-store.service';
 
 @Component({
   selector: 'app-contracts',
@@ -35,6 +36,39 @@ export class ContractsComponent implements OnInit {
   private readonly router        = inject(Router);
   private readonly translate     = inject(TranslateService);
   readonly exchangeRateService   = inject(ExchangeRateService);
+  private readonly costCenterStore = inject(CostCenterStoreService);
+
+  // ── Cost Center Hierarchy (2 Main Roots: Head Office & Free Zone) ────────────
+  readonly mainRoots = computed(() => this.costCenterStore.mainRoots());
+  readonly contractParentCC = signal<string>('');
+
+  /** The 2 Main Root options (Head Office & Free Zone) */
+  readonly parentCostCenters = computed(() =>
+    this.costCenterStore.mainRoots()
+  );
+
+  /** Cost Centers / Departments under the selected Main Root */
+  readonly childCostCenters = computed(() => {
+    const parent = this.contractParentCC();
+    if (!parent) return [];
+    return this.costCenterStore.getDepartmentsByRoot(parent);
+  });
+
+  onParentCCChange(parentCode: string) {
+    this.contractParentCC.set(parentCode);
+    this.formModel.parentCostCenter = parentCode;
+    this.formModel.costCenterCode = '';
+    this.formModel.costCenterName = '';
+  }
+
+  onChildCCChange(childCode: string) {
+    const selected = this.costCenterStore.costCenters().find(cc => cc.code === childCode);
+    if (selected) {
+      this.formModel.costCenterName = selected.nameEn || selected.name || selected.code;
+    } else {
+      this.formModel.costCenterName = '';
+    }
+  }
 
   // ── State ──────────────────────────────────────────────────────────────────
   readonly contracts      = signal<Contract[]>([]);
@@ -248,6 +282,7 @@ export class ContractsComponent implements OnInit {
   async openCreateModal() {
     this.isEditMode.set(false);
     this.editingContractId = '';
+    this.contractParentCC.set('');
     this.formModel = {
       ...this.emptyForm(),
       startDate: new Date().toISOString().split('T')[0],
@@ -268,8 +303,16 @@ export class ContractsComponent implements OnInit {
   openEditModal(contract: Contract) {
     this.isEditMode.set(true);
     this.editingContractId = contract._id;
+
+    const existingCC = this.costCenterStore.costCenters()
+      .find(cc => cc.code === (contract.costCenterCode || ''));
+    const parentCode = existingCC?.parentCode ?? contract.parentCostCenter ?? contract.costCenterCode ?? '';
+    this.contractParentCC.set(parentCode);
+
     this.formModel = JSON.parse(JSON.stringify({
       ...contract,
+      parentCostCenter: parentCode,
+      costCenterCode: existingCC?.parentCode ? (contract.costCenterCode || '') : '',
       rigId:   contract.rigId   ?? '',
       rigName: contract.rigName ?? ''
     }));
@@ -302,6 +345,10 @@ export class ContractsComponent implements OnInit {
     }
     this.recalcEGP();
 
+    const finalCCCode = this.formModel.costCenterCode || this.contractParentCC();
+    const resolvedCC = this.costCenterStore.costCenters().find(cc => cc.code === finalCCCode);
+    const ccName = resolvedCC?.nameEn || resolvedCC?.name || this.formModel.costCenterName || '';
+
     const body: CreateContractBody = {
       title:              this.formModel.title,
       clientName:         this.formModel.clientName,
@@ -327,9 +374,9 @@ export class ContractsComponent implements OnInit {
       region:             this.formModel.region,
       siteName:           this.formModel.siteName,
       gpsCoordinates:     this.formModel.gpsCoordinates,
-      costCenterCode:     this.formModel.costCenterCode,
-      costCenterName:     this.formModel.costCenterName,
-      parentCostCenter:   this.formModel.parentCostCenter,
+      costCenterCode:     finalCCCode,
+      costCenterName:     ccName,
+      parentCostCenter:   this.contractParentCC() || undefined,
       preferredWarehouse: this.formModel.preferredWarehouse,
       nearestWarehouse:   this.formModel.nearestWarehouse,
       distanceKm:         Number(this.formModel.distanceKm) || 0,

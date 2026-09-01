@@ -8,6 +8,9 @@ import { AuditService } from '../../../core/services/audit.service';
 import { FinanceCoreService } from '../../../core/services/finance-core.service';
 import { NotificationService } from '../../../core/services/notification.service';
 import { MRV } from '../../../shared/interfaces/inventory.interface';
+import { POItem } from '../../../shared/interfaces/purchase-order.interface';
+import { InventoryApiService, extractApiArray } from '../../../core/services/inventory-api.service';
+import { ProcurementService } from '../../../core/services/procurement.service';
 
 @Component({
   selector: 'app-goods-receipts',
@@ -23,10 +26,12 @@ export class GoodsReceiptsComponent implements OnInit {
   private readonly auditService = inject(AuditService);
   private readonly financeService = inject(FinanceCoreService);
   private readonly notificationService = inject(NotificationService);
+  private readonly inventoryApi = inject(InventoryApiService);
+  private readonly procurementService = inject(ProcurementService);
 
-  readonly warehouses = this.mockDataService.warehouses;
-  readonly purchaseOrders = this.mockDataService.purchaseOrders;
-  readonly mrvs = this.mockDataService.mrvs;
+  readonly warehouses = signal<any[]>([]);
+  readonly purchaseOrders = signal<any[]>([]);
+  readonly mrvs = signal<MRV[]>([]);
 
   readonly selectedMRV = signal<MRV | null>(null);
   readonly isMRVModalOpen = signal(false);
@@ -61,6 +66,24 @@ export class GoodsReceiptsComponent implements OnInit {
       { label: 'navigation.inventory', url: '/inventory' },
       { label: 'navigation.goods_receipts' }
     ]);
+    this.loadAll();
+  }
+
+  loadAll() {
+    this.procurementService.getPOs(1, 100).subscribe({
+      next: (res: any) => this.purchaseOrders.set(extractApiArray(res)),
+      error: () => this.purchaseOrders.set([])
+    });
+
+    this.inventoryApi.getWarehouses(1).subscribe({
+      next: (res: any) => this.warehouses.set(extractApiArray(res)),
+      error: () => this.warehouses.set([])
+    });
+
+    this.inventoryApi.getMRVs({}).subscribe({
+      next: (res: any) => this.mrvs.set(extractApiArray(res)),
+      error: () => this.mrvs.set([])
+    });
   }
 
   // ─── Computed ─────────────────────────────────────────────────────────────
@@ -137,7 +160,7 @@ export class GoodsReceiptsComponent implements OnInit {
     this.mrvForm.projectName = po.projectName || 'Permian Drilling';
     this.mrvForm.referenceNumber = po.poNumber;
 
-    this.mrvForm.items = po.items.map(item => {
+    this.mrvForm.items = po.items.map((item: POItem) => {
       const prev = this.getPreviouslyReceivedQty(po.id, item.itemCode);
       const remaining = Math.max(0, item.quantity - prev);
       return {

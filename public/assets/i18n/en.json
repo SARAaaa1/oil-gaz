@@ -9,6 +9,7 @@
   "navigation": {
     "dashboard": "Dashboard",
     "operations": "Operations",
+    "projects": "projects",
     "contracts": "Contracts",
     "dar": "Daily Activity Reports (DAR)",
     "timesheets": "Monthly Progress / Timesheets",

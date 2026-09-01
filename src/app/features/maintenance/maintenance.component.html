@@ -1,9 +1,36 @@
 <div class="space-y-6">
 
   <!-- Header -->
-  <div>
-    <h1 class="text-2xl font-black text-slate-800 tracking-tight">{{ 'maintenance.title' | translate }}</h1>
-    <p class="text-xs text-slate-500 font-semibold mt-1">{{ 'maintenance.subtitle' | translate }}</p>
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="text-2xl font-black text-slate-800 tracking-tight">{{ 'maintenance.title' | translate }}</h1>
+      <p class="text-xs text-slate-500 font-semibold mt-1">{{ 'maintenance.subtitle' | translate }}</p>
+    </div>
+    <button (click)="activeTab.set('create')"
+      class="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-all shadow-sm flex items-center gap-1.5">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+      New Work Order
+    </button>
+  </div>
+
+  <!-- KPI Cards -->
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+    <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-sm text-xs">
+      <p class="text-slate-400 font-bold uppercase tracking-wider">Open</p>
+      <p class="text-2xl font-black text-slate-800 mt-1">{{ kpis().open }}</p>
+    </div>
+    <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-sm text-xs">
+      <p class="text-slate-400 font-bold uppercase tracking-wider">In Progress</p>
+      <p class="text-2xl font-black text-amber-600 mt-1">{{ kpis().inProgress }}</p>
+    </div>
+    <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-sm text-xs">
+      <p class="text-slate-400 font-bold uppercase tracking-wider">Completed</p>
+      <p class="text-2xl font-black text-emerald-600 mt-1">{{ kpis().completed }}</p>
+    </div>
+    <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-sm text-xs">
+      <p class="text-slate-400 font-bold uppercase tracking-wider">PM Overdue</p>
+      <p class="text-2xl font-black text-red-600 mt-1">{{ kpis().overdue }}</p>
+    </div>
   </div>
 
   <!-- Tabs Nav -->
@@ -42,6 +69,26 @@
 
   <!-- Tab 1: Work Orders List -->
   @if (activeTab() === 'orders') {
+    <!-- Search & Filter bar -->
+    <div class="flex flex-wrap gap-3 items-center">
+      <input type="text" [value]="searchQuery()" (input)="searchQuery.set($any($event.target).value)"
+        placeholder="Search WO number, asset, technician..."
+        class="flex-1 min-w-[200px] bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-800 focus:outline-none">
+      <select [value]="statusFilter()" (change)="statusFilter.set($any($event.target).value)"
+        class="bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-800 focus:outline-none">
+        <option value="All">All Statuses</option>
+        <option value="Open">Open</option>
+        <option value="In Progress">In Progress</option>
+        <option value="Completed">Completed</option>
+        <option value="Cancelled">Cancelled</option>
+      </select>
+      @if (isLoading()) {
+        <span class="text-xs text-slate-400 font-semibold flex items-center gap-1">
+          <svg class="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
+          Loading...
+        </span>
+      }
+    </div>
     <div class="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden animate-fade-in text-xs font-semibold">
       <div class="overflow-x-auto">
         <table class="w-full text-left border-collapse">
@@ -58,7 +105,7 @@
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-50 text-slate-700 font-medium">
-            @for (wo of workOrders(); track wo.id) {
+            @for (wo of filteredOrders(); track wo.id) {
               <tr class="hover:bg-slate-50/30 transition-colors">
                 <td class="p-4 font-mono font-bold text-slate-900">{{ wo.woNumber }}</td>
                 <td class="p-4">
@@ -81,8 +128,8 @@
                     {{ wo.priority }}
                   </span>
                 </td>
-                <td class="p-4 text-slate-500 max-w-xs truncate">{{ wo.issueDescription }}</td>
-                <td class="p-4 text-slate-650">{{ wo.assignedToTechnician || '-' }}</td>
+                <td class="p-4 text-slate-500 max-w-xs truncate">{{ wo.issueDescription ?? wo.description }}</td>
+                <td class="p-4 text-slate-650">{{ wo.assignedToTechnician ?? wo.assignedTo ?? '-' }}</td>
                 <td class="p-4 text-center">
                   <span 
                     [class.bg-slate-100]="wo.status === 'Open'"

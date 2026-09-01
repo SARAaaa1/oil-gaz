@@ -62,6 +62,9 @@ export interface Contract {
   status: ContractStatus;
   projectCode?: string;
   costCenterCode?: string;
+  costCenterName?: string;
+  parentCostCenter?: string;
+  parentCostCenterCode?: string;
   createdAt?: string;
 
   // Compat fields for legacy template bindings

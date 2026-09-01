@@ -538,19 +538,77 @@
                 </div>
               </div>
 
-              <div class="grid grid-cols-3 gap-2">
-                <div>
-                  <label class="block text-[10px] uppercase font-bold tracking-wider text-slate-700 mb-1">{{ 'workflow.contracts.cc_code' | translate }}</label>
-                  <input type="text" [(ngModel)]="formModel.costCenterCode" placeholder="CC-PROJ-XXX" class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400" style="color: #0f172a !important; background-color: #ffffff !important;" />
+              <!-- ── COST CENTER HIERARCHY PICKER ── -->
+              <div class="border-t border-slate-100 pt-2 space-y-2">
+                <label class="block text-[10px] uppercase font-black tracking-wider text-slate-800 flex items-center gap-1">
+                  <svg class="w-3 h-3 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+                  Financial Cost Center Allocation
+                </label>
+
+                <div class="grid grid-cols-2 gap-2">
+                  <!-- Main CC Select (2 Main Roots) -->
+                  <div>
+                    <label class="block text-[9px] uppercase font-bold tracking-wider text-slate-600 mb-1">
+                      Main Root Center <span class="text-red-500">*</span>
+                    </label>
+                    <select
+                      [ngModel]="contractParentCC()"
+                      (ngModelChange)="onParentCCChange($event)"
+                      class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                      style="color: #0f172a !important; background-color: #ffffff !important;"
+                    >
+                      <option value="" style="color:#64748b">— اختر المركز الرئيسي —</option>
+                      @for (cc of parentCostCenters(); track cc.code) {
+                        <option [value]="cc.code" style="color: #0f172a !important;">
+                          🏢 {{ cc.nameAr || cc.nameEn }}
+                        </option>
+                      }
+                    </select>
+                  </div>
+
+                  <!-- Sub CC / Department Select -->
+                  <div>
+                    <label class="block text-[9px] uppercase font-bold tracking-wider text-slate-600 mb-1">
+                      Department / Cost Center <span class="text-slate-400 font-semibold normal-case">(اختياري)</span>
+                    </label>
+                    @if (childCostCenters().length > 0) {
+                      <select
+                        [(ngModel)]="formModel.costCenterCode"
+                        (ngModelChange)="onChildCCChange($event)"
+                        class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                        style="color: #0f172a !important; background-color: #ffffff !important;"
+                      >
+                        <option value="" style="color:#64748b">— اختر القسم / مركز التكلفة —</option>
+                        @for (cc of childCostCenters(); track cc.code) {
+                          <option [value]="cc.code" style="color: #0f172a !important;">
+                            {{ cc.code }} — {{ cc.nameAr || cc.nameEn || cc.name }}
+                          </option>
+                        }
+                      </select>
+                    } @else if (contractParentCC()) {
+                      <div class="w-full bg-amber-50 border border-amber-200 rounded px-2.5 py-1.5 text-amber-700 font-bold text-[10px]">
+                        No sub-departments — using main CC directly
+                      </div>
+                    } @else {
+                      <div class="w-full bg-slate-100 border border-slate-200 rounded px-2.5 py-1.5 text-slate-400 font-semibold text-[10px]">
+                        Select main cost center first
+                      </div>
+                    }
+                  </div>
                 </div>
-                <div>
-                  <label class="block text-[10px] uppercase font-bold tracking-wider text-slate-700 mb-1">{{ 'workflow.contracts.cc_name' | translate }}</label>
-                  <input type="text" [(ngModel)]="formModel.costCenterName" placeholder="Rig Alpha CC" class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400" style="color: #0f172a !important; background-color: #ffffff !important;" />
-                </div>
-                <div>
-                  <label class="block text-[10px] uppercase font-bold tracking-wider text-slate-700 mb-1">{{ 'workflow.contracts.parent_cc' | translate }}</label>
-                  <input type="text" [(ngModel)]="formModel.parentCostCenter" class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400" style="color: #0f172a !important; background-color: #ffffff !important;" />
-                </div>
+
+                <!-- Resolved CC Preview Badge -->
+                @if (contractParentCC()) {
+                  <div class="flex items-center gap-2 bg-indigo-50 border border-indigo-100 rounded px-2.5 py-1 text-[10px]">
+                    <span class="text-indigo-500 font-bold uppercase tracking-wider text-[9px]">Resolved Cost Center:</span>
+                    <span class="font-mono font-black text-indigo-700">
+                      {{ formModel.costCenterCode || contractParentCC() }}
+                    </span>
+                    <span class="text-indigo-500 font-semibold">
+                      — {{ formModel.costCenterName || '' }}
+                    </span>
+                  </div>
+                }
               </div>
 
               <div class="grid grid-cols-2 gap-2">

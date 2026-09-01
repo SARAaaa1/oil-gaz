@@ -6,7 +6,7 @@ import { FormsModule } from '@angular/forms';
 import { TranslateModule } from '@ngx-translate/core';
 import { BreadcrumbService } from '../../../../core/services/breadcrumb.service';
 import { NotificationService } from '../../../../core/services/notification.service';
-import { TreasuryMockService } from '../../shared/treasury-mock.service';
+import { FinanceApiService } from '../../../../core/services/finance-api.service';
 import { BankAccount, BankAccountStatus, TreasuryMovement } from '../../shared/treasury.interfaces';
 import { Router } from '@angular/router';
 import { BranchService } from '../../shared/branch.service';
@@ -24,10 +24,17 @@ export class FinV2BanksComponent implements OnInit {
   private readonly breadcrumb = inject(BreadcrumbService);
   private readonly notify     = inject(NotificationService);
   private readonly router     = inject(Router);
-  readonly treasuryService    = inject(TreasuryMockService);
+  readonly financeApi         = inject(FinanceApiService);
   readonly branchService      = inject(BranchService);
   readonly apService          = inject(ApMockService);
   readonly arService          = inject(ArMockService);
+
+  readonly bankAccounts = signal<any[]>([]);
+  readonly kpiData = signal<any>(null);
+  readonly isLoading = signal(false);
+  readonly isSaving = signal(false);
+  readonly showCreateModal = signal(false);
+  readonly movements = signal<any[]>([]);
 
   // قوائم المحاسبين
   readonly accountants = [
@@ -53,28 +60,28 @@ export class FinV2BanksComponent implements OnInit {
     const q  = this.searchQuery().toLowerCase();
     const st = this.statusFilter();
     const br = this.branchFilter();
-    return this.treasuryService.bankAccounts()
+    return this.bankAccounts()
       .filter(b => {
         const mq = !q || b.bankName.toLowerCase().includes(q) ||
-                   b.branch.toLowerCase().includes(q) ||
-                   b.iban.toLowerCase().includes(q) ||
-                   b.accountNumber.toLowerCase().includes(q);
+                   (b.branch && b.branch.toLowerCase().includes(q)) ||
+                   (b.iban && b.iban.toLowerCase().includes(q)) ||
+                   (b.accountNumber && b.accountNumber.toLowerCase().includes(q));
         const ms = st === 'All' || b.status === st;
         const mb = br === 'All' || (b.branchId || 'HeadOffice') === br;
         return mq && ms && mb;
       })
-      .sort((a, b) => b.currentBalance - a.currentBalance);
+      .sort((a, b) => (b.currentBalance || b.balance || 0) - (a.currentBalance || a.balance || 0));
   });
 
   readonly activeAccount = computed(() => {
     const id = this.selectedId();
-    return id ? (this.treasuryService.bankAccounts().find(b => b.id === id) ?? null) : null;
+    return id ? (this.bankAccounts().find(b => b.id === id || b._id === id) ?? null) : null;
   });
 
   readonly activeAccountMovements = computed(() => {
     const id = this.selectedId();
     if (!id) return [];
-    return this.treasuryService.movements()
+    return this.movements()
       .filter(m => m.accountType === 'Bank' && m.accountId === id)
       .sort((a, b) => b.date.localeCompare(a.date));
   });
@@ -82,24 +89,24 @@ export class FinV2BanksComponent implements OnInit {
   // KPIs
   readonly totalBankBalance = computed(() => {
     const br = this.branchFilter();
-    return this.treasuryService.bankAccounts()
+    return this.bankAccounts()
       .filter(b => b.status === 'Active' && (br === 'All' || (b.branchId || 'HeadOffice') === br))
-      .reduce((s, b) => s + (b.currency === 'USD' ? b.currentBalance * 3.75 : b.currency === 'EUR' ? b.currentBalance * 4.0 : b.currentBalance), 0);
+      .reduce((s, b) => s + (b.currency === 'USD' ? (b.currentBalance || b.balance || 0) * 3.75 : b.currency === 'EUR' ? (b.currentBalance || b.balance || 0) * 4.0 : (b.currentBalance || b.balance || 0)), 0);
   });
 
   readonly activeCount = computed(() => {
     const br = this.branchFilter();
-    return this.treasuryService.bankAccounts().filter(b => b.status === 'Active' && (br === 'All' || (b.branchId || 'HeadOffice') === br)).length;
+    return this.bankAccounts().filter(b => b.status === 'Active' && (br === 'All' || (b.branchId || 'HeadOffice') === br)).length;
   });
 
   selectAccount(acc: BankAccount) {
     this.selectedId.set(acc.id);
   }
 
-  toggleAccountStatus(acc: BankAccount) {
+  toggleAccountStatus(acc: any) {
     const next: BankAccountStatus = acc.status === 'Active' ? 'Inactive' : 'Active';
-    this.treasuryService.bankAccounts.update(list =>
-      list.map(b => b.id === acc.id ? { ...b, status: next } : b)
+    this.bankAccounts.update(list =>
+      list.map(b => (b.id === acc.id || b._id === acc.id) ? { ...b, status: next } : b)
     );
     this.notify.success('finance_v2.treasury.banks.status_updated', 'finance_v2.treasury.banks.status_updated_desc');
   }
@@ -150,11 +157,12 @@ export class FinV2BanksComponent implements OnInit {
     const diff  = isDep ? amt : -amt;
 
     // Update bank balance
-    this.treasuryService.bankAccounts.update(list =>
-      list.map(b => b.id === acc.id ? {
+    this.bankAccounts.update(list =>
+      list.map(b => (b.id === acc.id || b._id === acc.id) ? {
         ...b,
-        currentBalance: b.currentBalance + diff,
-        availableBalance: b.availableBalance + diff
+        currentBalance: (b.currentBalance || b.balance || 0) + diff,
+        availableBalance: (b.availableBalance || b.balance || 0) + diff,
+        balance: (b.balance || 0) + diff
       } : b)
     );
 
@@ -177,7 +185,7 @@ export class FinV2BanksComponent implements OnInit {
       description: this.txReason() || `${voucherLabel} ${methodLabel}${chequeInfo}${partnerInfo}`,
       matched: false
     };
-    this.treasuryService.movements.update(list => [newMovement, ...list]);
+    this.movements.update(list => [newMovement, ...list]);
 
     this.closeTxDialog();
     this.notify.success('finance_v2.treasury.banks.tx_success', 'finance_v2.treasury.banks.tx_success_desc');
@@ -206,8 +214,36 @@ export class FinV2BanksComponent implements OnInit {
       { label: 'finance_v2.treasury.title' },
       { label: 'finance_v2.treasury.banks.title' }
     ]);
-    // Auto-select first bank account
-    const first = this.treasuryService.bankAccounts()[0];
-    if (first) this.selectedId.set(first.id);
+    this.loadBanks();
+  }
+
+  loadBanks() {
+    this.isLoading.set(true);
+    this.financeApi.getBankAccounts().subscribe({
+      next: res => { this.bankAccounts.set(res.data); this.kpiData.set(res.kpis); this.isLoading.set(false); },
+      error: () => this.isLoading.set(false)
+    });
+  }
+
+  createBankAccount(form: any) {
+    this.isSaving.set(true);
+    this.financeApi.createBankAccount({
+      bankName: form.bankName,
+      accountNumber: form.accountNumber,
+      iban: form.iban,
+      currency: form.currency,
+      balance: form.balance ?? 0
+    }).subscribe({
+      next: created => {
+        this.bankAccounts.update(list => [...list, {...created, id: created._id}]);
+        this.showCreateModal?.set(false);
+        this.notify.success('Bank Account Created', '');
+        this.loadBanks();
+        this.isSaving.set(false);
+      },
+      error: err => {
+        this.isSaving.set(false);
+      }
+    });
   }
 }

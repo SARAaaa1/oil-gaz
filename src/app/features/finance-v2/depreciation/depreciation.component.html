@@ -85,7 +85,7 @@
               <td class="px-4 py-3 text-slate-500">{{ a.category }}</td>
               <td class="px-4 py-3 text-right text-slate-650">{{ formatAmt(a.originalCost) }}</td>
               <td class="px-4 py-3 text-right text-slate-500">{{ formatAmt(a.residualValue) }}</td>
-              <td class="px-4 py-3 text-right font-black text-indigo-600">{{ formatAmt(assetService.calculateMonthlyDepreciation(a)) }}</td>
+              <td class="px-4 py-3 text-right font-black text-indigo-600">{{ formatAmt(calculateMonthlyDepreciation(a)) }}</td>
               <td class="px-4 py-3 text-right text-red-600">{{ formatAmt(a.accumulatedDepreciation) }}</td>
               <td class="px-4 py-3 text-right font-black text-slate-800">{{ formatAmt(a.currentBookValue) }}</td>
               <td class="px-4 py-3 text-center text-slate-500 font-mono text-[10px]">

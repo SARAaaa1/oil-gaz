@@ -116,7 +116,7 @@ export class CommandPaletteComponent implements OnInit, OnDestroy {
     { id: 'nav_inv', category: 'Navigation', label: 'navigation.inventory', arabicLabel: 'إدارة المخازن والأصناف', icon: '📥', action: () => this.router.navigate(['/inventory']) },
     { id: 'nav_contr', category: 'Navigation', label: 'navigation.contracts', arabicLabel: 'إدارة العقود والمشاريع', icon: '💼', action: () => this.router.navigate(['/workflow/contracts']) },
     { id: 'nav_hse', category: 'Navigation', label: 'navigation.hse', arabicLabel: 'إدارة السلامة والصحة المهنية HSE', icon: '🦺', action: () => this.router.navigate(['/hse']) },
-    { id: 'nav_finance', category: 'Navigation', label: 'navigation.finance', arabicLabel: 'الحسابات العامة واليومية', icon: '💵', action: () => this.router.navigate(['/finance/general-ledger']) },
+    { id: 'nav_finance', category: 'Navigation', label: 'navigation.finance', arabicLabel: 'الحسابات العامة واليومية', icon: '💵', action: () => this.router.navigate(['/finance-v2/general-ledger']) },
     
     // Quick Actions
     { id: 'act_pr', category: 'Actions', label: 'Create Purchase Request', arabicLabel: 'إنشاء طلب شراء جديد', icon: '➕ 📝', shortcut: 'Alt + R', action: () => this.router.navigate(['/procurement/purchase-requests'], { queryParams: { openForm: 'true' } }) },

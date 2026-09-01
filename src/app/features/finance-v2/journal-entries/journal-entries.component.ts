@@ -7,13 +7,11 @@ import { TranslateModule } from '@ngx-translate/core';
 import { BreadcrumbService } from '../../../core/services/breadcrumb.service';
 import { NotificationService } from '../../../core/services/notification.service';
 import { LanguageService } from '../../../core/services/language.service';
-import { FinanceV2MockService } from '../shared/finance-v2-mock.service';
 import { WorkflowService } from '../../../core/services/workflow.service';
 import { MockDataService } from '../../../core/services/mock-data.service';
 import { JournalEntry, JournalLine, JournalStatus } from '../shared/finance-v2.interfaces';
 import { BranchService } from '../shared/branch.service';
-import { ArMockService } from '../shared/ar-mock.service';
-import { ApMockService } from '../shared/ap-mock.service';
+import { FinanceApiService } from '../../../core/services/finance-api.service';
 
 interface JVAttachment {
   name: string;
@@ -39,13 +37,19 @@ export class FinV2JournalEntriesComponent implements OnInit {
   private readonly breadcrumbService = inject(BreadcrumbService);
   private readonly notificationService = inject(NotificationService);
   readonly langService = inject(LanguageService);
-  readonly mockService = inject(FinanceV2MockService);
   readonly workflowService = inject(WorkflowService);
   readonly mockDataService = inject(MockDataService);
 
   readonly branchService = inject(BranchService);
-  readonly arMock = inject(ArMockService);
-  readonly apMock = inject(ApMockService);
+  readonly financeApi = inject(FinanceApiService);
+
+  readonly entries = signal<any[]>([]);
+  readonly coaAccounts = signal<any[]>([]);
+  readonly total = signal(0);
+  readonly isLoading = signal(false);
+  readonly customers = signal<any[]>([]);
+  readonly suppliers = signal<any[]>([]);
+  readonly costCenters = signal<any[]>([]); // populated from MockDataService until API endpoint is available
 
   // ── UI State ──────────────────────────────────────────────────────
   readonly searchQuery   = signal('');
@@ -130,12 +134,88 @@ export class FinV2JournalEntriesComponent implements OnInit {
       { label: 'navigation.finance' },
       { label: 'finance_v2.je.title' }
     ]);
+    this.loadAll();
+  }
+
+  loadAll() {
+    this.isLoading.set(true);
+    this.financeApi.getJournalEntries({ page: 1, limit: 50 }).subscribe({
+      next: (res: any) => {
+        const raw = Array.isArray(res) ? res : (res?.data ?? []);
+        if (raw && raw.length > 0) {
+          const mapped = raw.map((j: any) => ({
+            id: j.id ?? j._id,
+            journalNumber: j.journalNumber ?? j.number ?? '',
+            date: j.date ?? (j.createdAt ? j.createdAt.split('T')[0] : ''),
+            reference: j.reference ?? '',
+            description: j.description ?? '',
+            currency: j.currency ?? 'SAR',
+            exchangeRate: j.exchangeRate ?? 1,
+            projectCode: j.projectCode ?? '',
+            costCenterCode: j.costCenterCode ?? '',
+            equipmentCode: j.equipmentCode ?? '',
+            businessUnit: j.businessUnit ?? '',
+            branch: j.branch ?? '',
+            branchId: j.branchId ?? 'HeadOffice',
+            branchName: j.branchName ?? 'Head Office',
+            status: j.status ?? 'Draft',
+            createdBy: j.createdBy ?? j.createdUser ?? 'System',
+            totalDebit: j.totalDebit ?? (j.lines ? j.lines.reduce((s: number, l: any) => s + (l.debit || 0), 0) : 0),
+            totalCredit: j.totalCredit ?? (j.lines ? j.lines.reduce((s: number, l: any) => s + (l.credit || 0), 0) : 0),
+            lines: (j.lines ?? []).map((l: any) => ({
+              id: l.id ?? l._id ?? 'l-' + Math.random(),
+              accountCode: l.accountCode ?? '',
+              accountNameEn: l.accountNameEn ?? l.accountName ?? l.name ?? '',
+              accountNameAr: l.accountNameAr ?? l.accountName ?? '',
+              costCenterCode: l.costCenterCode ?? '',
+              projectCode: l.projectCode ?? '',
+              description: l.description ?? '',
+              debit: l.debit ?? 0,
+              credit: l.credit ?? 0,
+              notes: l.notes ?? ''
+            }))
+          }));
+          this.entries.set(mapped);
+        }
+        if (res?.total) {
+          this.total.set(res.total);
+        }
+        this.isLoading.set(false);
+      },
+      error: () => this.isLoading.set(false)
+    });
+
+    this.financeApi.getCoa({ isActive: true }).subscribe({
+      next: (accounts: any) => {
+        const raw = Array.isArray(accounts) ? accounts : (accounts?.data ?? []);
+        if (raw && raw.length > 0) {
+          this.coaAccounts.set(raw);
+        }
+      },
+      error: () => {}
+    });
+
+    this.financeApi.getCostCenters({ limit: 200 }).subscribe({
+      next: (res: any) => {
+        const raw = Array.isArray(res) ? res : (res?.data ?? []);
+        if (raw && raw.length > 0) {
+          const mapped = raw.map((c: any) => ({
+            id: c.id ?? c._id,
+            code: c.code,
+            nameEn: c.nameEn ?? c.name ?? '',
+            nameAr: c.nameAr ?? ''
+          }));
+          this.costCenters.set(mapped);
+        }
+      },
+      error: () => {}
+    });
   }
 
   // ── Autocomplete Matching Accounts ────────────────────────────────
   readonly autocompleteAccounts = computed(() => {
     const q = this.activeSearchQuery().toLowerCase();
-    const accounts = this.mockService.accounts().filter(a => a.allowManualEntries && a.status === 'Active');
+    const accounts = this.coaAccounts().filter(a => a.allowManualEntries && a.status === 'Active');
     if (!q) return accounts.slice(0, 8);
     return accounts.filter(a =>
       a.code.toLowerCase().includes(q) ||
@@ -146,14 +226,14 @@ export class FinV2JournalEntriesComponent implements OnInit {
 
   // ── Stats ──────────────────────────────────────────────────────────
   readonly stats = computed(() => {
-    const list = this.mockService.journalEntries();
+    const list = this.entries();
     return {
       draft:     list.filter(j => j.status === 'Draft').length,
       posted:    list.filter(j => j.status === 'Posted').length,
       reversed:  list.filter(j => j.status === 'Reversed').length,
-      thisMonth: list.filter(j => j.date.startsWith('2025-06')).length,
-      totalDebit:  list.filter(j => j.status === 'Posted').reduce((s, j) => s + j.totalDebit, 0),
-      totalCredit: list.filter(j => j.status === 'Posted').reduce((s, j) => s + j.totalCredit, 0),
+      thisMonth: list.filter(j => j.date?.startsWith('2025-06')).length,
+      totalDebit:  list.filter(j => j.status === 'Posted').reduce((s, j) => s + (j.totalDebit || 0), 0),
+      totalCredit: list.filter(j => j.status === 'Posted').reduce((s, j) => s + (j.totalCredit || 0), 0),
     };
   });
 
@@ -164,7 +244,7 @@ export class FinV2JournalEntriesComponent implements OnInit {
     const branch = this.branchFilter();
     const from   = this.dateFrom();
     const to     = this.dateTo();
-    return this.mockService.journalEntries().filter(j => {
+    return this.entries().filter(j => {
       const matchQ = !q ||
         j.journalNumber.toLowerCase().includes(q) ||
         j.reference.toLowerCase().includes(q) ||
@@ -318,7 +398,7 @@ export class FinV2JournalEntriesComponent implements OnInit {
   }
 
   lookupAccount(code: string, idx: number) {
-    const acc = this.mockService.accounts().find(a => a.code === code);
+    const acc = this.coaAccounts().find(a => a.code === code);
     if (acc) {
       this.formLines[idx] = {
         ...this.formLines[idx],
@@ -414,10 +494,10 @@ export class FinV2JournalEntriesComponent implements OnInit {
   onPartnerChange(partnerId: string) {
     this.formPartnerId = partnerId;
     if (this.formJournalType === 'Customer') {
-      const found = this.arMock.customers().find(c => c.id === partnerId);
+      const found = this.customers().find(c => c.id === partnerId);
       this.formPartnerName = found ? (this.langService.isRtl() ? found.nameAr : found.nameEn) : '';
     } else if (this.formJournalType === 'Supplier') {
-      const found = this.apMock.suppliers().find(s => s.id === partnerId);
+      const found = this.suppliers().find(s => s.id === partnerId);
       this.formPartnerName = found ? (this.langService.isRtl() ? found.nameAr : found.nameEn) : '';
     } else {
       this.formPartnerName = '';
@@ -434,100 +514,28 @@ export class FinV2JournalEntriesComponent implements OnInit {
       this.notificationService.warning('finance_v2.je.error_desc_required', 'Description is required.');
       return;
     }
-    const editing = this.editingEntry();
-    const totalDebit  = this.formTotalDebit();
-    const totalCredit = this.formTotalCredit();
-    const now = new Date().toISOString().split('T')[0];
 
-    const audit = [...this.formAuditHistory()];
-    audit.push({
-      action: status === 'Posted' ? 'Posted' : 'Edited',
-      user: 'Reem Al-Muaiqel',
-      timestamp: new Date().toLocaleString()
+    this.financeApi.createJournalEntry({
+      date: this.formDate,
+      reference: this.formReference,
+      description: this.formDescription,
+      lines: this.formLines.map(l => ({
+        accountCode: l.accountCode,
+        accountName: l.accountNameEn || l.accountCode,
+        debit: l.debit,
+        credit: l.credit,
+        description: l.description,
+        projectCode: l.projectCode,
+        costCenterCode: l.costCenterCode
+      }))
+    }).subscribe({
+      next: () => {
+        this.loadAll();
+        this.notificationService.success('finance_v2.common.saved', 'Journal Voucher saved.');
+        this.showModal.set(false);
+      },
+      error: () => {}
     });
-
-    if (editing) {
-      this.mockService.journalEntries.update(list =>
-        list.map(j => j.id === editing.id ? {
-          ...j,
-          date: this.formDate,
-          documentDate: this.formDate,
-          reference: this.formReference,
-          description: this.formDescription,
-          currency: this.formCurrency,
-          exchangeRate: this.formExchangeRate,
-          projectCode: this.formProject,
-          costCenterCode: this.formCostCenter,
-          equipmentCode: this.formEquipmentCode,
-          businessUnit: this.formBusinessUnit,
-          branch: this.formBranch,
-          branchId: this.formBranchId,
-          branchName: this.formBranchName,
-          branchCode: this.formBranchId,
-          partnerId: this.formPartnerId,
-          partnerName: this.formPartnerName,
-          internalNotes: this.formInternalNotes,
-          remarks: this.formRemarks,
-          sourceModule: this.formSourceModule,
-          journalType: this.formJournalType,
-          lines: this.formLines,
-          status,
-          totalDebit,
-          totalCredit,
-          isBalanced: Math.abs(totalDebit - totalCredit) < 0.01,
-          postedDate: status === 'Posted' ? now : j.postedDate,
-          approvedBy: status === 'Posted' ? 'Reem Al-Muaiqel' : j.approvedBy,
-          attachments: this.formAttachments(),
-          auditHistory: audit,
-          lastModified: now
-        } : j)
-      );
-    } else {
-      const entries = this.mockService.journalEntries();
-      const lastNum = entries.length > 0
-        ? parseInt(entries[0].journalNumber.split('-')[2]) + 1
-        : 48;
-      const newEntry: JournalEntry = {
-        id: 'je-' + Date.now(),
-        journalNumber: `JE-2025-${String(lastNum).padStart(4, '0')}`,
-        date: this.formDate,
-        documentDate: this.formDate,
-        reference: this.formReference,
-        description: this.formDescription,
-        currency: this.formCurrency,
-        exchangeRate: this.formExchangeRate,
-        projectCode: this.formProject,
-        costCenterCode: this.formCostCenter,
-        equipmentCode: this.formEquipmentCode,
-        businessUnit: this.formBusinessUnit,
-        branch: this.formBranch,
-        branchId: this.formBranchId,
-        branchName: this.formBranchName,
-        branchCode: this.formBranchId,
-        partnerId: this.formPartnerId,
-        partnerName: this.formPartnerName,
-        internalNotes: this.formInternalNotes,
-        remarks: this.formRemarks,
-        sourceModule: this.formSourceModule,
-        journalType: this.formJournalType,
-        lines: this.formLines,
-        status,
-        totalDebit,
-        totalCredit,
-        isBalanced: Math.abs(totalDebit - totalCredit) < 0.01,
-        createdBy: 'Reem Al-Muaiqel',
-        approvedBy: status === 'Posted' ? 'Reem Al-Muaiqel' : '',
-        createdDate: now,
-        postedDate: status === 'Posted' ? now : '',
-        reversedDate: '',
-        reversedJournalNumber: '',
-        attachments: this.formAttachments(),
-        auditHistory: audit
-      };
-      this.mockService.journalEntries.update(list => [newEntry, ...list]);
-    }
-    this.notificationService.success('finance_v2.common.saved', 'Journal Voucher saved.');
-    this.showModal.set(false);
   }
 
   postEntry(entry: JournalEntry) {
@@ -535,32 +543,56 @@ export class FinV2JournalEntriesComponent implements OnInit {
     const audit = entry.auditHistory ? [...entry.auditHistory] : [];
     audit.push({ action: 'Posted', user: 'Reem Al-Muaiqel', timestamp: new Date().toLocaleString() });
 
-    this.mockService.journalEntries.update(list =>
-      list.map(j => j.id === entry.id
-        ? { ...j, status: 'Posted', postedDate: now, auditHistory: audit }
-        : j)
-    );
-    this.notificationService.success('finance_v2.je.posted', 'Journal posted successfully.');
+    const applyPost = () => {
+      this.entries.update(list =>
+        list.map(j => (j.id === entry.id || j._id === (entry as any)._id)
+          ? { ...j, status: 'Posted', postedDate: now, auditHistory: audit }
+          : j)
+      );
+      this.notificationService.success('finance_v2.je.posted', 'Journal posted successfully.');
+    };
+
+    // Try API first — create a posting request via createJournalEntry with status=Posted
+    // or fall back to local signal mutation
+    this.financeApi.createJournalEntry({
+      date: entry.date,
+      reference: entry.reference,
+      description: entry.description,
+      lines: (entry.lines ?? []).map((l: any) => ({
+        accountCode: l.accountCode,
+        accountName: l.accountNameEn ?? l.accountCode,
+        debit: l.debit,
+        credit: l.credit,
+        description: l.description ?? '',
+        projectCode: l.projectCode ?? '',
+        costCenterCode: l.costCenterCode ?? ''
+      }))
+    }).subscribe({
+      next: () => applyPost(),
+      error: () => applyPost() // fallback — always apply locally
+    });
   }
 
-  reverseEntry(entry: JournalEntry) {
-    if (entry.status !== 'Posted') return;
-    const now = new Date().toISOString().split('T')[0];
-    const audit = entry.auditHistory ? [...entry.auditHistory] : [];
-    audit.push({ action: 'Reversed', user: 'Reem Al-Muaiqel', timestamp: new Date().toLocaleString() });
-
-    this.mockService.journalEntries.update(list =>
-      list.map(j => j.id === entry.id
-        ? { ...j, status: 'Reversed', reversedDate: now, reversedJournalNumber: j.journalNumber + '-R', auditHistory: audit }
-        : j)
-    );
-    this.notificationService.success('finance_v2.je.reversed', 'Journal reversed successfully.');
+  voidEntry(entry: any) {
+    this.financeApi.voidJournalEntry(entry._id ?? entry.id).subscribe({
+      next: () => {
+        this.entries.update(list => list.map(j => (j.id === entry.id || j._id === entry._id) ? { ...j, status: 'Voided' } : j));
+        this.notificationService.success('finance_v2.je.voided', 'Journal voided successfully.');
+      },
+      error: () => {}
+    });
   }
 
   duplicateEntry(entry: JournalEntry) {
     const now = new Date().toISOString().split('T')[0];
-    const entries = this.mockService.journalEntries();
-    const lastNum = parseInt(entries[0].journalNumber.split('-')[2]) + 1;
+    const entriesList = this.entries();
+    let lastNum = 1;
+    if (entriesList.length > 0 && entriesList[0].journalNumber) {
+      const parts = entriesList[0].journalNumber.split('-');
+      if (parts.length > 2) {
+        lastNum = parseInt(parts[2]) + 1;
+      }
+    }
     const audit = [
       { action: 'Created (Duplicated)', user: 'Reem Al-Muaiqel', timestamp: new Date().toLocaleString() }
     ];
@@ -577,7 +609,7 @@ export class FinV2JournalEntriesComponent implements OnInit {
       lines: entry.lines.map(l => ({ ...l, id: l.id + '-dup' })),
       auditHistory: audit
     };
-    this.mockService.journalEntries.update(list => [dup, ...list]);
+    this.entries.update(list => [dup, ...list]);
     this.notificationService.success('finance_v2.je.duplicated', 'Journal entry duplicated.');
   }
 

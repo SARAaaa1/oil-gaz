@@ -10,6 +10,7 @@ import { HSEIncident, PTW, SafetyInspection, SafetyRisk } from '../../shared/int
 import { Project } from '../../shared/interfaces/project.interface';
 import { WorkflowService } from '../../core/services/workflow.service';
 import { AuditService } from '../../core/services/audit.service';
+import { HseApiService } from '../../core/services/hse-api.service';
 
 @Component({
   selector: 'app-hse',
@@ -25,6 +26,7 @@ export class HseComponent implements OnInit {
   private readonly notificationService = inject(NotificationService);
   private readonly translate = inject(TranslateService);
   private readonly auditService = inject(AuditService);
+  private readonly hseApi = inject(HseApiService);
 
   // Core signals
   readonly incidents = this.mockDataService.hseIncidents;
@@ -189,33 +191,62 @@ export class HseComponent implements OnInit {
       return;
     }
 
-    const incNum = 'INC-2026-' + Math.floor(100 + Math.random() * 900);
-    const newInc: HSEIncident = {
-      id: 'inc-' + Math.random().toString(36).substring(2, 9),
-      incidentNumber: incNum,
+    this.hseApi.createIncident({
       type: this.incidentType,
       severity: this.incidentSeverity,
       date: this.incidentDate,
       location: this.incidentLocation,
       description: this.incidentDescription,
       immediateActionTaken: this.incidentImmediateAction,
-      reportedBy: this.incidentReportedBy,
-      status: 'Investigating'
-    };
-
-    this.incidents.update(prev => [newInc, ...prev]);
-
-    // Also push to Audit logs
-    this.auditService.log({
-      action: 'Create',
-      module: 'HSE',
-      entityName: 'HSEIncident',
-      entityId: incNum,
-      details: `HSE Incident logged: ${incNum} (${this.incidentType}) at ${this.incidentLocation}.`
+      reportedBy: this.incidentReportedBy
+    }).subscribe({
+      next: (created) => {
+        const newInc: HSEIncident = {
+          id: created.id ?? created._id,
+          incidentNumber: created.incidentNumber,
+          type: created.type,
+          severity: created.severity,
+          date: created.date,
+          location: created.location,
+          description: created.description,
+          immediateActionTaken: created.immediateActionTaken,
+          reportedBy: created.reportedBy,
+          status: 'Investigating'
+        };
+        this.incidents.update(prev => [newInc, ...prev]);
+        this.auditService.log({
+          action: 'Create', module: 'HSE', entityName: 'HSEIncident',
+          entityId: created.incidentNumber,
+          details: `HSE Incident logged: ${created.incidentNumber} (${this.incidentType}) at ${this.incidentLocation}.`
+        });
+        this.showIncidentModal.set(false);
+        this.notificationService.success('hse.incident_logged_title', 'hse.incident_logged_desc');
+      },
+      error: () => {
+        // Fallback: create locally
+        const incNum = 'INC-2026-' + Math.floor(100 + Math.random() * 900);
+        const newInc: HSEIncident = {
+          id: 'inc-' + Math.random().toString(36).substring(2, 9),
+          incidentNumber: incNum,
+          type: this.incidentType,
+          severity: this.incidentSeverity,
+          date: this.incidentDate,
+          location: this.incidentLocation,
+          description: this.incidentDescription,
+          immediateActionTaken: this.incidentImmediateAction,
+          reportedBy: this.incidentReportedBy,
+          status: 'Investigating'
+        };
+        this.incidents.update(prev => [newInc, ...prev]);
+        this.auditService.log({
+          action: 'Create', module: 'HSE', entityName: 'HSEIncident',
+          entityId: incNum,
+          details: `HSE Incident logged: ${incNum} (${this.incidentType}) at ${this.incidentLocation}.`
+        });
+        this.showIncidentModal.set(false);
+        this.notificationService.success('hse.incident_logged_title', 'hse.incident_logged_desc');
+      }
     });
-
-    this.showIncidentModal.set(false);
-    this.notificationService.success('hse.incident_logged_title', 'hse.incident_logged_desc');
   }
 
   // Open Investigate modal to close incident
@@ -266,26 +297,58 @@ export class HseComponent implements OnInit {
       return;
     }
 
-    const ptwNum = 'PTW-2026-' + Math.floor(100 + Math.random() * 900);
-    const newPtw: PTW = {
-      id: 'ptw-' + Math.random().toString(36).substring(2, 9),
-      permitNumber: ptwNum,
+    this.hseApi.createPtw({
       type: this.ptwType,
-      requestDate: new Date().toISOString().split('T')[0],
+      location: this.ptwLocation,
+      applicantName: this.ptwApplicant,
       validFrom: this.ptwValidFrom.replace('T', ' '),
       validTo: this.ptwValidTo.replace('T', ' '),
-      location: this.ptwLocation,
       assignedProjectCode: this.ptwProjectCode || undefined,
-      applicantName: this.ptwApplicant,
-      safetyOfficerApproved: false,
-      operationsManagerApproved: false,
-      status: 'Pending Approval',
       gasTestRequired: this.ptwGasTestRequired
-    };
-
-    this.ptws.update(prev => [newPtw, ...prev]);
-    this.showPtwModal.set(false);
-    this.notificationService.success('hse.ptw_submitted_title', 'hse.ptw_submitted_desc');
+    }).subscribe({
+      next: (created) => {
+        const newPtw: PTW = {
+          id: created.id ?? created._id,
+          permitNumber: created.permitNumber,
+          type: created.type,
+          requestDate: new Date().toISOString().split('T')[0],
+          validFrom: created.validFrom,
+          validTo: created.validTo,
+          location: created.location,
+          assignedProjectCode: created.assignedProjectCode,
+          applicantName: created.applicantName,
+          safetyOfficerApproved: false,
+          operationsManagerApproved: false,
+          status: 'Pending Approval',
+          gasTestRequired: created.gasTestRequired ?? false
+        };
+        this.ptws.update(prev => [newPtw, ...prev]);
+        this.showPtwModal.set(false);
+        this.notificationService.success('hse.ptw_submitted_title', 'hse.ptw_submitted_desc');
+      },
+      error: () => {
+        // Fallback: create locally
+        const ptwNum = 'PTW-2026-' + Math.floor(100 + Math.random() * 900);
+        const newPtw: PTW = {
+          id: 'ptw-' + Math.random().toString(36).substring(2, 9),
+          permitNumber: ptwNum,
+          type: this.ptwType,
+          requestDate: new Date().toISOString().split('T')[0],
+          validFrom: this.ptwValidFrom.replace('T', ' '),
+          validTo: this.ptwValidTo.replace('T', ' '),
+          location: this.ptwLocation,
+          assignedProjectCode: this.ptwProjectCode || undefined,
+          applicantName: this.ptwApplicant,
+          safetyOfficerApproved: false,
+          operationsManagerApproved: false,
+          status: 'Pending Approval',
+          gasTestRequired: this.ptwGasTestRequired
+        };
+        this.ptws.update(prev => [newPtw, ...prev]);
+        this.showPtwModal.set(false);
+        this.notificationService.success('hse.ptw_submitted_title', 'hse.ptw_submitted_desc');
+      }
+    });
   }
 
   // Double signatures logic for PTW approvals
@@ -333,25 +396,52 @@ export class HseComponent implements OnInit {
       return;
     }
 
-    const insNum = 'SI-2026-' + Math.floor(100 + Math.random() * 900);
     const score = Number(this.inspectionScore) || 100;
-    const status: 'Closed' | 'Action Required' = score >= 90 ? 'Closed' : 'Action Required';
 
-    const newIns: SafetyInspection = {
-      id: 'si-' + Math.random().toString(36).substring(2, 9),
-      inspectionNumber: insNum,
-      date: new Date().toISOString().split('T')[0],
+    this.hseApi.createSafetyInspection({
       location: this.inspectionLocation,
       inspectorName: this.inspectionInspector,
       itemsAuditedCount: Number(this.inspectionAuditedCount) || 10,
       violationsCount: Number(this.inspectionViolationsCount) || 0,
-      scorePercentage: score,
-      status: status
-    };
-
-    this.inspections.update(prev => [newIns, ...prev]);
-    this.showInspectionModal.set(false);
-    this.notificationService.success('hse.inspection_logged_title', 'hse.inspection_logged_desc');
+      scorePercentage: score
+    }).subscribe({
+      next: (created) => {
+        const status: 'Closed' | 'Action Required' = created.scorePercentage >= 90 ? 'Closed' : 'Action Required';
+        const newIns: SafetyInspection = {
+          id: created.id ?? created._id,
+          inspectionNumber: created.inspectionNumber,
+          date: created.date,
+          location: created.location,
+          inspectorName: created.inspectorName,
+          itemsAuditedCount: created.itemsAuditedCount,
+          violationsCount: created.violationsCount,
+          scorePercentage: created.scorePercentage,
+          status
+        };
+        this.inspections.update(prev => [newIns, ...prev]);
+        this.showInspectionModal.set(false);
+        this.notificationService.success('hse.inspection_logged_title', 'hse.inspection_logged_desc');
+      },
+      error: () => {
+        // Fallback: create locally
+        const insNum = 'SI-2026-' + Math.floor(100 + Math.random() * 900);
+        const status: 'Closed' | 'Action Required' = score >= 90 ? 'Closed' : 'Action Required';
+        const newIns: SafetyInspection = {
+          id: 'si-' + Math.random().toString(36).substring(2, 9),
+          inspectionNumber: insNum,
+          date: new Date().toISOString().split('T')[0],
+          location: this.inspectionLocation,
+          inspectorName: this.inspectionInspector,
+          itemsAuditedCount: Number(this.inspectionAuditedCount) || 10,
+          violationsCount: Number(this.inspectionViolationsCount) || 0,
+          scorePercentage: score,
+          status
+        };
+        this.inspections.update(prev => [newIns, ...prev]);
+        this.showInspectionModal.set(false);
+        this.notificationService.success('hse.inspection_logged_title', 'hse.inspection_logged_desc');
+      }
+    });
   }
 
   // Risk Entry
@@ -370,20 +460,45 @@ export class HseComponent implements OnInit {
       return;
     }
 
-    const codeNum = 'RSK-OPS-' + Math.floor(100 + Math.random() * 900);
-    const newRisk: SafetyRisk = {
-      id: 'rsk-' + Math.random().toString(36).substring(2, 9),
-      riskCode: codeNum,
+    this.hseApi.createRisk({
       activityDescription: this.riskActivity,
       hazardDescription: this.riskHazard,
       initialSeverity: this.riskInitialSeverity,
       controlMeasures: this.riskControlMeasures,
-      residualSeverity: this.riskResidualSeverity,
-      status: 'Mitigated'
-    };
-
-    this.risks.update(prev => [newRisk, ...prev]);
-    this.showRiskModal.set(false);
-    this.notificationService.success('hse.risk_added_title', 'hse.risk_added_desc');
+      residualSeverity: this.riskResidualSeverity
+    }).subscribe({
+      next: (created) => {
+        const newRisk: SafetyRisk = {
+          id: created.id ?? created._id,
+          riskCode: created.riskCode,
+          activityDescription: created.activityDescription,
+          hazardDescription: created.hazardDescription,
+          initialSeverity: created.initialSeverity,
+          controlMeasures: created.controlMeasures,
+          residualSeverity: created.residualSeverity,
+          status: 'Mitigated'
+        };
+        this.risks.update(prev => [newRisk, ...prev]);
+        this.showRiskModal.set(false);
+        this.notificationService.success('hse.risk_added_title', 'hse.risk_added_desc');
+      },
+      error: () => {
+        // Fallback: create locally
+        const codeNum = 'RSK-OPS-' + Math.floor(100 + Math.random() * 900);
+        const newRisk: SafetyRisk = {
+          id: 'rsk-' + Math.random().toString(36).substring(2, 9),
+          riskCode: codeNum,
+          activityDescription: this.riskActivity,
+          hazardDescription: this.riskHazard,
+          initialSeverity: this.riskInitialSeverity,
+          controlMeasures: this.riskControlMeasures,
+          residualSeverity: this.riskResidualSeverity,
+          status: 'Mitigated'
+        };
+        this.risks.update(prev => [newRisk, ...prev]);
+        this.showRiskModal.set(false);
+        this.notificationService.success('hse.risk_added_title', 'hse.risk_added_desc');
+      }
+    });
   }
 }

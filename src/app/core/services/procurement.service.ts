@@ -436,4 +436,48 @@ export class ProcurementService {
       catchError(err => throwError(() => err))
     );
   }
+
+  // ── v3.0 Approval Workflow Endpoints ──────────────────────────────────────
+
+  /**
+   * PATCH /procurement/purchase-requests/:id/approve
+   * اعتماد أو رفض طلب الشراء — Action: 'approve' | 'reject'
+   */
+  approvePR(id: string, body: { action: 'approve' | 'reject'; comments?: string }): Observable<any> {
+    return this.http.patch<ApiResponse<any>>(
+      `${this.baseUrl}/purchase-requests/${id}/approve`,
+      body
+    ).pipe(
+      map(res => res.data ?? res),
+      catchError(err => throwError(() => err))
+    );
+  }
+
+  /**
+   * POST /procurement/rfqs/:id/send
+   * إرسال طلب عروض الأسعار للموردين
+   */
+  sendRfqToVendors(rfqId: string): Observable<any> {
+    return this.http.post<ApiResponse<any>>(
+      `${this.baseUrl}/rfqs/${rfqId}/send`,
+      {}
+    ).pipe(
+      map(res => res.data ?? res),
+      catchError(err => throwError(() => err))
+    );
+  }
+
+  /**
+   * PATCH /procurement/purchase-orders/:id/approve
+   * اعتماد أمر الشراء عبر PATCH (بديل للـ POST الموجود)
+   */
+  approvePOPatch(id: string, body: ApprovePOBody): Observable<any> {
+    return this.http.patch<ApiResponse<any>>(
+      `${this.baseUrl}/purchase-orders/${id}/approve`,
+      body
+    ).pipe(
+      map(res => res.data ?? res),
+      catchError(err => throwError(() => err))
+    );
+  }
 }

@@ -6,7 +6,7 @@ import { FormsModule } from '@angular/forms';
 import { TranslateModule } from '@ngx-translate/core';
 import { BreadcrumbService } from '../../../core/services/breadcrumb.service';
 import { NotificationService } from '../../../core/services/notification.service';
-import { VatMockService } from '../shared/vat-mock.service';
+import { FinanceApiService } from '../../../core/services/finance-api.service';
 import { VatReturn, VatTransaction, VatReturnStatus, VatType } from '../shared/vat.interfaces';
 import { BranchService } from '../shared/branch.service';
 
@@ -20,8 +20,17 @@ import { BranchService } from '../shared/branch.service';
 export class FinV2VatComponent implements OnInit {
   private readonly breadcrumb = inject(BreadcrumbService);
   private readonly notify     = inject(NotificationService);
-  readonly vatService         = inject(VatMockService);
+  readonly financeApi         = inject(FinanceApiService);
   readonly branchService      = inject(BranchService);
+
+  readonly vatSummary = signal<any>(null);
+  readonly outputLines = signal<any[]>([]);
+  readonly inputLines = signal<any[]>([]);
+  readonly isLoading = signal(false);
+  readonly isSettling = signal(false);
+
+  readonly periodStart = signal(new Date().getFullYear() + '-01-01');
+  readonly periodEnd = signal(new Date().toISOString().split('T')[0]);
 
   readonly searchQuery  = signal('');
   readonly statusFilter = signal<VatReturnStatus | 'All'>('All');
@@ -35,33 +44,35 @@ export class FinV2VatComponent implements OnInit {
   readonly showSettlementDlg = signal(false);
 
   readonly filtered = computed(() => {
+    // Returns list from outputLines + inputLines combined as "returns" for the table
+    // When backend sends proper VatReturn[] use that; for now expose lines as return items
     const q  = this.searchQuery().toLowerCase();
     const st = this.statusFilter();
     const br = this.branchFilter();
-    return this.vatService.vatReturns()
-      .filter(r => {
-        const mq = !q || r.vatReturnNumber.toLowerCase().includes(q) ||
-                   r.taxPeriod.toLowerCase().includes(q);
-        const ms = st === 'All' || r.status === st;
-        const mb = br === 'All' || (r.branchId || 'HeadOffice') === br;
-        return mq && ms && mb;
-      })
-      .sort((a, b) => b.vatReturnNumber.localeCompare(a.vatReturnNumber));
+    const summary = this.vatSummary();
+    if (!summary) return [] as any[];
+    // Wrap the single summary into a list for the @for loop
+    const list: any[] = [summary];
+    return list.filter(r => {
+      const mq = !q || (r.returnNumber ?? r.id ?? '').toLowerCase().includes(q);
+      const ms = st === 'All' || r.status === st;
+      const mb = br === 'All' || (r.branchId || 'HeadOffice') === br;
+      return mq && ms && mb;
+    });
   });
 
   readonly activeReturn = computed(() => {
-    const id = this.selectedId();
-    return id ? (this.vatService.vatReturns().find(r => r.id === id) ?? null) : null;
+    return this.vatSummary();
   });
 
   // Calculate return details dynamically for preview / display
   readonly activeReturnKpis = computed(() => {
     const r = this.activeReturn();
     if (!r) return null;
-    const sales     = r.transactions.filter(t => t.type === 'Output').reduce((s, t) => s + t.taxableAmount, 0);
-    const purchases = r.transactions.filter(t => t.type === 'Input').reduce((s, t) => s + t.taxableAmount, 0);
-    const output    = r.transactions.filter(t => t.type === 'Output').reduce((s, t) => s + t.vatAmount, 0);
-    const input     = r.transactions.filter(t => t.type === 'Input').reduce((s, t) => s + t.vatAmount, 0);
+    const sales     = r.transactions.filter((t: any) => t.type === 'Output').reduce((s: any, t: any) => s + t.taxableAmount, 0);
+    const purchases = r.transactions.filter((t: any) => t.type === 'Input').reduce((s: any, t: any) => s + t.taxableAmount, 0);
+    const output    = r.transactions.filter((t: any) => t.type === 'Output').reduce((s: any, t: any) => s + t.vatAmount, 0);
+    const input     = r.transactions.filter((t: any) => t.type === 'Input').reduce((s: any, t: any) => s + t.vatAmount, 0);
     const net       = output - input;
 
     return {
@@ -81,7 +92,7 @@ export class FinV2VatComponent implements OnInit {
     const list: string[] = [];
 
     // Trigger warning on negative taxable amounts or mismatch VAT calculations
-    r.transactions.forEach(t => {
+    r.transactions.forEach((t: any) => {
       if (t.taxableAmount < 0 && t.documentNumber.startsWith('INV')) {
         list.push(`finance_v2.vat.alerts.negative_amount||${t.documentNumber}`);
       }
@@ -99,8 +110,24 @@ export class FinV2VatComponent implements OnInit {
     return list;
   });
 
-  // KPIs
-  readonly kpis = this.vatService.kpis;
+  readonly kpis = computed(() => {
+    const summary = this.vatSummary();
+    const out = this.outputLines();
+    const inp = this.inputLines();
+    const totalSales     = out.reduce((s: number, l: any) => s + (l.taxableAmount ?? 0), 0);
+    const totalPurchases = inp.reduce((s: number, l: any) => s + (l.taxableAmount ?? 0), 0);
+    const vatOutput      = out.reduce((s: number, l: any) => s + (l.vatAmount ?? 0), 0);
+    const vatInput       = inp.reduce((s: number, l: any) => s + (l.vatAmount ?? 0), 0);
+    return {
+      totalReturns: summary ? 1 : 0,
+      payable:       summary?.netVatPayable ?? (vatOutput - vatInput),
+      receivable:    vatInput > vatOutput ? vatInput - vatOutput : 0,
+      totalSales,
+      totalPurchases,
+      vatOutput,
+      vatInput
+    };
+  });
 
   selectReturn(r: VatReturn) {
     this.selectedId.set(r.id);
@@ -141,34 +168,20 @@ export class FinV2VatComponent implements OnInit {
   }
 
   postSettlement() {
-    const r = this.activeReturn();
-    if (!r || r.status !== 'Submitted') return;
-
-    // Update return status to Settled
-    this.updateStatus(r.id, 'Settled', { settlementDate: '2025-07-02' });
-
-    // Update return transactions status to Settled
-    const updatedTx = r.transactions.map(t => ({ ...t, status: 'Settled' as const }));
-    this.vatService.vatReturns.update(list =>
-      list.map(item => item.id === r.id ? { ...item, transactions: updatedTx } : item)
-    );
-
-    // Update global transactions ledger
-    this.vatService.transactions.update(list =>
-      list.map(t => {
-        const match = r.transactions.find(rt => rt.id === t.id);
-        return match ? { ...t, status: 'Settled' as const } : t;
-      })
-    );
-
-    this.closeSettlementDialog();
-    this.notify.success('finance_v2.vat.msg.settled', 'finance_v2.vat.msg.settled_desc');
+    this.isSettling.set(true);
+    this.financeApi.postVatSettlement({ periodStart: this.periodStart(), periodEnd: this.periodEnd() }).subscribe({
+      next: res => {
+        this.notify.success('تم ترحيل التسوية', 'صافي الضريبة: ' + res.netVatPayable);
+        this.isSettling.set(false);
+        this.loadVatReport();
+        this.closeSettlementDialog();
+      },
+      error: () => this.isSettling.set(false)
+    });
   }
 
   private updateStatus(id: string, status: VatReturnStatus, extra: Partial<VatReturn> = {}) {
-    this.vatService.vatReturns.update(list =>
-      list.map(r => r.id === id ? { ...r, status, ...extra } : r)
-    );
+    // Mock local update disabled for api
   }
 
   // Helpers
@@ -205,5 +218,20 @@ export class FinV2VatComponent implements OnInit {
       { label: 'navigation.finance' },
       { label: 'finance_v2.vat.title' }
     ]);
+    this.loadVatReport();
+  }
+
+  loadVatReport() {
+    this.isLoading.set(true);
+    this.financeApi.getVatReport(this.periodStart(), this.periodEnd()).subscribe({
+      next: (res: any) => {
+        const payload = res?.data ?? res;
+        if (payload?.summary)     this.vatSummary.set(payload.summary);
+        if (payload?.outputLines) this.outputLines.set(payload.outputLines);
+        if (payload?.inputLines)  this.inputLines.set(payload.inputLines);
+        this.isLoading.set(false);
+      },
+      error: () => this.isLoading.set(false)
+    });
   }
 }

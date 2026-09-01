@@ -9,6 +9,7 @@ import { NotificationService } from '../../../core/services/notification.service
 import { ReportsMockService } from '../shared/reports-mock.service';
 import { ReportType, ReportFilter, ReportMetadata } from '../shared/reports.interfaces';
 import { BranchService } from '../shared/branch.service';
+import { FinanceApiService } from '../../../core/services/finance-api.service';
 
 @Component({
   selector: 'app-finv2-reports',
@@ -22,8 +23,96 @@ export class FinV2ReportsComponent implements OnInit {
   private readonly notify     = inject(NotificationService);
   readonly reportService      = inject(ReportsMockService);
   readonly branchService      = inject(BranchService);
+  private readonly financeApi = inject(FinanceApiService);
 
-  readonly selectedReport = signal<ReportType>('Trial Balance');
+  readonly selectedReport      = signal<ReportType>('Trial Balance');
+  readonly isLoading           = signal(false);
+  readonly apiCashFlow         = signal<any[] | null>(null);
+  readonly apiBudgetVsActual   = signal<any[] | null>(null);
+  readonly apiCostCenter       = signal<any[] | null>(null);
+  readonly apiProjectFinancial = signal<any[] | null>(null);
+  readonly apiApAging          = signal<any[] | null>(null);
+  readonly apiArAging          = signal<any[] | null>(null);
+
+  selectReport(r: ReportType) {
+    this.selectedReport.set(r);
+    this.loadReport(r);
+  }
+
+  loadReport(r: ReportType) {
+    this.isLoading.set(true);
+    const filter = this.reportService.activeFilter();
+    switch (r) {
+      case 'Cash Flow':
+        this.financeApi.getCashFlowReport({}).subscribe({
+          next: d => {
+            const raw = Array.isArray(d) ? d : (d?.data ?? null);
+            if (raw && raw.length > 0) this.apiCashFlow.set(raw);
+            this.isLoading.set(false);
+          },
+          error: () => this.isLoading.set(false)
+        });
+        break;
+      case 'Budget vs Actual':
+        this.financeApi.getBudgetVsActualReport(
+          filter.project && filter.project !== 'All Projects' ? { projectCode: filter.project } : {}
+        ).subscribe({
+          next: d => {
+            const raw = Array.isArray(d) ? d : (d?.data ?? null);
+            if (raw && raw.length > 0) this.apiBudgetVsActual.set(raw);
+            this.isLoading.set(false);
+          },
+          error: () => this.isLoading.set(false)
+        });
+        break;
+      case 'Cost Center':
+        this.financeApi.getCostCenterPLReport(
+          filter.costCenter && filter.costCenter !== 'All Cost Centers' ? { costCenterCode: filter.costCenter } : {}
+        ).subscribe({
+          next: d => {
+            const raw = Array.isArray(d) ? d : (d?.data ?? null);
+            if (raw && raw.length > 0) this.apiCostCenter.set(raw);
+            this.isLoading.set(false);
+          },
+          error: () => this.isLoading.set(false)
+        });
+        break;
+      case 'Project Financial':
+        this.financeApi.getProjectFinancialReport(
+          filter.project && filter.project !== 'All Projects' ? { projectCode: filter.project } : {}
+        ).subscribe({
+          next: d => {
+            const raw = Array.isArray(d) ? d : (d?.data ?? null);
+            if (raw && raw.length > 0) this.apiProjectFinancial.set(raw);
+            this.isLoading.set(false);
+          },
+          error: () => this.isLoading.set(false)
+        });
+        break;
+      case 'AP Aging':
+        this.financeApi.getApAgingDetailReport({}).subscribe({
+          next: d => {
+            const raw = Array.isArray(d) ? d : (d?.data ?? null);
+            if (raw && raw.length > 0) this.apiApAging.set(raw);
+            this.isLoading.set(false);
+          },
+          error: () => this.isLoading.set(false)
+        });
+        break;
+      case 'AR Aging':
+        this.financeApi.getArAgingDetailReport({}).subscribe({
+          next: d => {
+            const raw = Array.isArray(d) ? d : (d?.data ?? null);
+            if (raw && raw.length > 0) this.apiArAging.set(raw);
+            this.isLoading.set(false);
+          },
+          error: () => this.isLoading.set(false)
+        });
+        break;
+      default:
+        this.isLoading.set(false);
+    }
+  }
 
   readonly branchFilter = computed(() => {
     const br = this.reportService.activeFilter().branch;
@@ -55,18 +144,18 @@ export class FinV2ReportsComponent implements OnInit {
   readonly activeFilter = this.reportService.activeFilter;
   readonly kpis         = this.reportService.kpis;
 
-  // Reports data maps
+  // Reports data maps (with API override computed fallback)
   readonly trialBalance   = this.reportService.trialBalance;
   readonly incomeStatement = this.reportService.incomeStatement;
   readonly balanceSheet   = this.reportService.balanceSheet;
-  readonly cashFlow       = this.reportService.cashFlow;
-  readonly budgetVsActual = this.reportService.budgetVsActual;
-  readonly apAging         = this.reportService.apAging;
-  readonly arAging         = this.reportService.arAging;
+  readonly cashFlow       = computed(() => this.apiCashFlow() ?? this.reportService.cashFlow());
+  readonly budgetVsActual = computed(() => this.apiBudgetVsActual() ?? this.reportService.budgetVsActual());
+  readonly apAging         = computed(() => this.apiApAging() ?? this.reportService.apAging());
+  readonly arAging         = computed(() => this.apiArAging() ?? this.reportService.arAging());
   readonly assetRegister   = this.reportService.assetRegister;
   readonly vatSummary     = this.reportService.vatSummary;
-  readonly costCenter      = this.reportService.costCenterReport;
-  readonly projectFinancial = this.reportService.projectFinancialReport;
+  readonly costCenter      = computed(() => this.apiCostCenter() ?? this.reportService.costCenterReport());
+  readonly projectFinancial = computed(() => this.apiProjectFinancial() ?? this.reportService.projectFinancialReport());
 
   readonly reportMetadata = computed<ReportMetadata>(() => {
     const f = this.activeFilter();
@@ -131,5 +220,7 @@ export class FinV2ReportsComponent implements OnInit {
       { label: 'navigation.finance' },
       { label: 'finance_v2.reports.title' }
     ]);
+    // Load initial report from API
+    this.loadReport(this.selectedReport());
   }
 }

@@ -177,59 +177,33 @@ export const routes: Routes = [
       },
       // Projects is now under /operations/projects — redirect old path for backward compat
       { path: 'projects', redirectTo: '/operations/projects', pathMatch: 'full' },
+      // ══════════════════════════════════════════════════════════
+      // /finance — Redirects to finance-v2 (v1 deprecated)
+      // financial-analysis pages kept here (sidebar links to /finance/*)
+      // ══════════════════════════════════════════════════════════
       {
         path: 'finance',
         data: { permission: 'view:finance' },
         children: [
-          { path: '', redirectTo: 'cost-centers', pathMatch: 'full' },
-          {
-            path: 'cost-centers',
-            loadComponent: () => import('./features/finance/cost-centers/cost-centers.component').then(m => m.CostCentersComponent)
-          },
-          {
-            path: 'chart-of-accounts',
-            loadComponent: () => import('./features/finance/chart-of-accounts/chart-of-accounts.component').then(m => m.ChartOfAccountsComponent)
-          },
-          {
-            path: 'general-ledger',
-            loadComponent: () => import('./features/finance/general-ledger/general-ledger.component').then(m => m.GeneralLedgerComponent)
-          },
-          {
-            path: 'ap',
-            loadComponent: () => import('./features/finance/accounts-payable/accounts-payable.component').then(m => m.AccountsPayableComponent)
-          },
-          {
-            path: 'ar',
-            loadComponent: () => import('./features/finance/accounts-receivable/accounts-receivable.component').then(m => m.AccountsReceivableComponent)
-          },
-          {
-            path: 'cash-bank',
-            loadComponent: () => import('./features/finance/cash-bank/cash-bank.component').then(m => m.CashBankComponent)
-          },
-          {
-            path: 'cost-control',
-            loadComponent: () => import('./features/finance/cost-control/cost-control.component').then(m => m.CostControlComponent)
-          },
-          {
-            path: 'financial-statements',
-            loadComponent: () => import('./features/finance/financial-statements/financial-statements.component').then(m => m.FinancialStatementsComponent)
-          },
-          {
-            path: 'vat-report',
-            loadComponent: () => import('./features/finance/vat-report/vat-report.component').then(m => m.VatReportComponent)
-          },
-          {
-            path: 'asset-depreciation',
-            loadComponent: () => import('./features/finance/asset-depreciation/asset-depreciation.component').then(m => m.AssetDepreciationComponent)
-          },
-          {
-            path: 'budget',
-            loadComponent: () => import('./features/finance/budget/budget.component').then(m => m.BudgetComponent)
-          },
-          {
-            path: 'period-close',
-            loadComponent: () => import('./features/finance/period-close/period-close.component').then(m => m.PeriodCloseComponent)
-          },
+          // Core redirects → finance-v2
+          { path: '',                    redirectTo: '/finance-v2/dashboard',           pathMatch: 'full' },
+          { path: 'cost-centers',        redirectTo: '/finance-v2/cost-centers',        pathMatch: 'full' },
+          { path: 'chart-of-accounts',   redirectTo: '/finance-v2/chart-of-accounts',   pathMatch: 'full' },
+          { path: 'general-ledger',      redirectTo: '/finance-v2/general-ledger',      pathMatch: 'full' },
+          { path: 'journal-entries',     redirectTo: '/finance-v2/journal-entries',     pathMatch: 'full' },
+          { path: 'ap',                  redirectTo: '/finance-v2/ap/vendor-invoices-draft', pathMatch: 'full' },
+          { path: 'supplier-invoices',   redirectTo: '/finance-v2/ap/vendor-invoices-approved', pathMatch: 'full' },
+          { path: 'payment-vouchers',    redirectTo: '/finance-v2/ap/payments',         pathMatch: 'full' },
+          { path: 'ar',                  redirectTo: '/finance-v2/ar/customer-invoices', pathMatch: 'full' },
+          { path: 'cash-bank',           redirectTo: '/finance-v2/treasury/banks',      pathMatch: 'full' },
+          { path: 'cost-control',        redirectTo: '/finance-v2/budget',              pathMatch: 'full' },
+          { path: 'financial-statements',redirectTo: '/finance-v2/trial-balance',       pathMatch: 'full' },
+          { path: 'vat-report',          redirectTo: '/finance-v2/taxes/vat',           pathMatch: 'full' },
+          { path: 'asset-depreciation',  redirectTo: '/finance-v2/assets/depreciation', pathMatch: 'full' },
+          { path: 'budget',              redirectTo: '/finance-v2/budget',              pathMatch: 'full' },
+          { path: 'period-close',        redirectTo: '/finance-v2/admin/period-close',  pathMatch: 'full' },
+
+          // Financial Analysis — kept under /finance/* (sidebar links here)
           {
             path: 'project-analysis',
             loadComponent: () => import('./features/finance-v2/financial-analysis/project-analysis/project-analysis.component').then(m => m.ProjectAnalysisComponent)

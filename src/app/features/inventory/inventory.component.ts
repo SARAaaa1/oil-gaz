@@ -8,7 +8,8 @@ import { AuditService } from '../../core/services/audit.service';
 import { FinanceCoreService } from '../../core/services/finance-core.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { MockDataService } from '../../core/services/mock-data.service';
-import { InventoryApiService } from '../../core/services/inventory-api.service';
+import { InventoryApiService, extractApiArray } from '../../core/services/inventory-api.service';
+import { ProcurementService } from '../../core/services/procurement.service';
 import {
   InventoryItem, Warehouse, MRV, MRVItem, MIV, MIVItem,
   InternalTransfer, InternalTransferItem, StockAdjustment, StockAdjustmentItem,
@@ -168,6 +169,7 @@ export class InventoryComponent implements OnInit {
   private readonly translate           = inject(TranslateService);
   private readonly route               = inject(ActivatedRoute);
   private readonly cdr                 = inject(ChangeDetectorRef);
+  private readonly procurementService = inject(ProcurementService);
 
   // ── Core Data Stores (API-backed Signals) ──────────────────────────────────
   readonly inventory   = signal<InventoryItem[]>([]);
@@ -181,8 +183,8 @@ export class InventoryComponent implements OnInit {
   // KPI summary from API
   readonly apiSummary = signal<{ totalItems: number; totalValue: number; lowStockCount: number; outOfStockCount: number } | null>(null);
 
-  // Still from mock (not yet in API scope)
-  readonly purchaseOrders       = this.mockDataService.purchaseOrders;
+  // Live Purchase Orders from Procurement API
+  readonly purchaseOrders       = signal<any[]>([]);
   readonly bulkImportHistories  = this.mockDataService.bulkImportHistories;
   readonly inventoryReservations = this.mockDataService.inventoryReservations;
 
@@ -315,71 +317,107 @@ export class InventoryComponent implements OnInit {
     this.loadTransfers();
     this.loadAdjustments();
     this.loadSummary();
+    this.loadPOs();
+  }
+
+  private loadPOs() {
+    this.procurementService.getPOs(1, 100).subscribe({
+      next: res => {
+        const raw = extractApiArray(res);
+        this.purchaseOrders.set(raw);
+        this.cdr.markForCheck();
+      },
+      error: err => console.error('Failed to load purchase orders:', err)
+    });
   }
 
   private loadItems() {
     this.inventoryApi.getItems({ limit: 500 }).subscribe({
       next: res => {
-        const raw = res?.items ?? (Array.isArray(res) ? res : []);
+        const raw = extractApiArray(res);
         this.inventory.set(raw.map(mapApiItem));
         this.cdr.markForCheck();
       },
-      error: err => console.error('Failed to load items:', err)
+      error: err => {
+        console.error('Failed to load items from API:', err);
+        this.inventory.set([]);
+        this.cdr.markForCheck();
+      }
     });
   }
 
   private loadWarehouses() {
     this.inventoryApi.getWarehouses().subscribe({
       next: res => {
-        const raw = res?.items ?? (Array.isArray(res) ? res : []);
+        const raw = extractApiArray(res);
         this.warehouses.set(raw.map(mapApiWarehouse));
         this.cdr.markForCheck();
       },
-      error: err => console.error('Failed to load warehouses:', err)
+      error: err => {
+        console.error('Failed to load warehouses from API:', err);
+        this.warehouses.set([]);
+        this.cdr.markForCheck();
+      }
     });
   }
 
   private loadMRVs() {
     this.inventoryApi.getMRVs({ limit: 200 }).subscribe({
       next: res => {
-        const raw = res?.items ?? (Array.isArray(res) ? res : []);
+        const raw = extractApiArray(res);
         this.mrvs.set(raw.map(mapApiMRV));
         this.cdr.markForCheck();
       },
-      error: err => console.error('Failed to load MRVs:', err)
+      error: err => {
+        console.error('Failed to load MRVs from API:', err);
+        this.mrvs.set([]);
+        this.cdr.markForCheck();
+      }
     });
   }
 
   private loadMIVs() {
     this.inventoryApi.getMIVs({ limit: 200 }).subscribe({
       next: res => {
-        const raw = res?.items ?? (Array.isArray(res) ? res : []);
+        const raw = extractApiArray(res);
         this.mivs.set(raw.map(mapApiMIV));
         this.cdr.markForCheck();
       },
-      error: err => console.error('Failed to load MIVs:', err)
+      error: err => {
+        console.error('Failed to load MIVs from API:', err);
+        this.mivs.set([]);
+        this.cdr.markForCheck();
+      }
     });
   }
 
   private loadTransfers() {
     this.inventoryApi.getTransfers({ limit: 200 }).subscribe({
       next: res => {
-        const raw = res?.items ?? (Array.isArray(res) ? res : []);
+        const raw = extractApiArray(res);
         this.transfers.set(raw.map(mapApiTransfer));
         this.cdr.markForCheck();
       },
-      error: err => console.error('Failed to load transfers:', err)
+      error: err => {
+        console.error('Failed to load transfers from API:', err);
+        this.transfers.set([]);
+        this.cdr.markForCheck();
+      }
     });
   }
 
   private loadAdjustments() {
     this.inventoryApi.getAdjustments({ limit: 200 }).subscribe({
       next: res => {
-        const raw = res?.items ?? (Array.isArray(res) ? res : []);
+        const raw = extractApiArray(res);
         this.adjustments.set(raw.map(mapApiAdjustment));
         this.cdr.markForCheck();
       },
-      error: err => console.error('Failed to load adjustments:', err)
+      error: err => {
+        console.error('Failed to load adjustments from API:', err);
+        this.adjustments.set([]);
+        this.cdr.markForCheck();
+      }
     });
   }
 
@@ -389,7 +427,7 @@ export class InventoryComponent implements OnInit {
         this.apiSummary.set(summary);
         this.cdr.markForCheck();
       },
-      error: () => { /* يُستخدم computed fallback */ }
+      error: () => { /* fallback to computed signals */ }
     });
   }
 
@@ -569,15 +607,15 @@ export class InventoryComponent implements OnInit {
   onMRVPOSelect() {
     const po = this.purchaseOrders().find(p => p.id === this.mrvForm.poId);
     if (po) {
-      this.mrvForm.supplierName = po.vendorName;
-      this.mrvForm.items = po.items.map(item => ({
+      this.mrvForm.supplierName = po.vendorName || po.supplierName || '';
+      this.mrvForm.items = (po.items || []).map((item: any) => ({
         itemCode:         item.itemCode,
         itemName:         item.itemName,
-        quantityOrdered:  item.quantity,
-        quantityReceived: item.quantity,
-        unitPrice:        item.unitPrice,
-        totalPrice:       item.quantity * item.unitPrice,
-        uom:              item.uom
+        quantityOrdered:  item.quantity || 0,
+        quantityReceived: item.quantity || 0,
+        unitPrice:        item.unitPrice || 0,
+        totalPrice:       (item.quantity || 0) * (item.unitPrice || 0),
+        uom:              item.uom || 'EA'
       }));
     }
   }

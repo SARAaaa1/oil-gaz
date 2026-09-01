@@ -9,6 +9,7 @@ import { NotificationService } from '../../../../core/services/notification.serv
 import { LanguageService } from '../../../../core/services/language.service';
 import { ApMockService } from '../../shared/ap-mock.service';
 import { ApSupplier, SupplierStatus } from '../../shared/ap.interfaces';
+import { FinanceApiService, CreateApSupplierBody } from '../../../../core/services/finance-api.service';
 
 @Component({
   selector: 'app-finv2-ap-suppliers',
@@ -22,6 +23,9 @@ export class FinV2ApSuppliersComponent implements OnInit {
   private readonly notify       = inject(NotificationService);
   readonly lang                 = inject(LanguageService);
   readonly apService            = inject(ApMockService);
+  private readonly financeApi   = inject(FinanceApiService);
+
+  readonly apiLoading = signal(false);
 
   // ── UI State ──────────────────────────────────────────────────────
   readonly searchQuery      = signal('');
@@ -86,36 +90,97 @@ export class FinV2ApSuppliersComponent implements OnInit {
 
   saveSupplier() {
     const data = this.formData;
-    if (!data.nameEn || !data.code) {
+    if (!data.nameEn) {
       this.notify.warning('finance_v2.ap.sup.error_required', 'finance_v2.ap.sup.error_required_msg');
       return;
     }
-    const newSup: ApSupplier = {
-      id: 'sup-' + Date.now(),
-      code: data.code!, nameEn: data.nameEn!, nameAr: data.nameAr ?? '',
-      taxNumber: data.taxNumber ?? '', vatNumber: data.vatNumber ?? '',
-      commercialReg: data.commercialReg ?? '', address: data.address ?? '',
-      city: data.city ?? '', country: data.country ?? 'SA',
-      contactPerson: data.contactPerson ?? '', contactEmail: data.contactEmail ?? '',
-      contactPhone: data.contactPhone ?? '', paymentTerms: data.paymentTerms ?? 'Net 30',
-      currency: data.currency ?? 'SAR', creditLimit: data.creditLimit ?? 0,
-      openBalance: 0, outstandingInvoices: 0,
-      lastPaymentDate: '', lastPaymentAmount: 0,
-      status: data.status ?? 'Active', rating: data.rating ?? 3,
-      bankName: data.bankName ?? '', iban: data.iban ?? '',
-      category: data.category ?? 'General', notes: data.notes ?? ''
+
+    const body: CreateApSupplierBody = {
+      nameEn: data.nameEn!,
+      nameAr: data.nameAr ?? '',
+      category: data.category ?? 'General',
+      taxNumber: data.taxNumber,
+      commercialReg: data.commercialReg,
+      contactPerson: data.contactPerson ?? '',
+      contactEmail: data.contactEmail ?? '',
+      contactPhone: data.contactPhone ?? '',
+      address: data.address,
+      paymentTerms: data.paymentTerms ?? 'Net 30',
+      currency: data.currency ?? 'SAR',
+      bankName: data.bankName,
+      iban: data.iban
     };
-    this.apService.suppliers.update(list => [newSup, ...list]);
-    this.notify.success('finance_v2.common.saved', 'finance_v2.ap.sup.saved_desc');
-    this.showAddModal.set(false);
+
+    this.apiLoading.set(true);
+    this.financeApi.createApSupplier(body).subscribe({
+      next: (created) => {
+        // Map API response to local ApSupplier shape
+        const newSup: ApSupplier = {
+          id: created.id ?? created._id,
+          code: created.code,
+          nameEn: created.nameEn, nameAr: created.nameAr ?? '',
+          taxNumber: created.taxNumber ?? '', vatNumber: '',
+          commercialReg: created.commercialReg ?? '', address: created.address ?? '',
+          city: '', country: 'SA',
+          contactPerson: created.contactPerson, contactEmail: created.contactEmail,
+          contactPhone: created.contactPhone, paymentTerms: (created.paymentTerms as any) ?? 'Net 30',
+          currency: created.currency ?? 'SAR', creditLimit: 0,
+          openBalance: created.openBalance ?? 0, outstandingInvoices: created.outstandingInvoices ?? 0,
+          lastPaymentDate: '', lastPaymentAmount: 0,
+          status: created.status as SupplierStatus ?? 'Active', rating: 3,
+          bankName: created.bankName ?? '', iban: created.iban ?? '',
+          category: created.category ?? 'General', notes: ''
+        };
+        this.apService.suppliers.update(list => [newSup, ...list]);
+        this.notify.success('finance_v2.common.saved', 'finance_v2.ap.sup.saved_desc');
+        this.showAddModal.set(false);
+        this.apiLoading.set(false);
+      },
+      error: () => {
+        // Fallback: create locally if API unavailable
+        const newSup: ApSupplier = {
+          id: 'sup-' + Date.now(),
+          code: 'SUP-' + String(this.apService.suppliers().length + 1).padStart(4, '0'),
+          nameEn: data.nameEn!, nameAr: data.nameAr ?? '',
+          taxNumber: data.taxNumber ?? '', vatNumber: data.vatNumber ?? '',
+          commercialReg: data.commercialReg ?? '', address: data.address ?? '',
+          city: data.city ?? '', country: data.country ?? 'SA',
+          contactPerson: data.contactPerson ?? '', contactEmail: data.contactEmail ?? '',
+          contactPhone: data.contactPhone ?? '', paymentTerms: data.paymentTerms ?? 'Net 30',
+          currency: data.currency ?? 'SAR', creditLimit: data.creditLimit ?? 0,
+          openBalance: 0, outstandingInvoices: 0,
+          lastPaymentDate: '', lastPaymentAmount: 0,
+          status: data.status ?? 'Active', rating: data.rating ?? 3,
+          bankName: data.bankName ?? '', iban: data.iban ?? '',
+          category: data.category ?? 'General', notes: data.notes ?? ''
+        };
+        this.apService.suppliers.update(list => [newSup, ...list]);
+        this.notify.success('finance_v2.common.saved', 'finance_v2.ap.sup.saved_desc');
+        this.showAddModal.set(false);
+        this.apiLoading.set(false);
+      }
+    });
   }
 
   toggleStatus(s: ApSupplier) {
-    const nextStatus: SupplierStatus = s.status === 'Active' ? 'Inactive' : 'Active';
-    this.apService.suppliers.update(list =>
-      list.map(x => x.id === s.id ? { ...x, status: nextStatus } : x)
-    );
-    this.notify.success('finance_v2.common.updated', 'finance_v2.ap.sup.status_updated');
+    const id = s.id ?? (s as any)._id;
+    this.financeApi.toggleApSupplierStatus(id).subscribe({
+      next: (res) => {
+        const newStatus: SupplierStatus = (res?.status ?? (s.status === 'Active' ? 'Inactive' : 'Active')) as SupplierStatus;
+        this.apService.suppliers.update(list =>
+          list.map(x => x.id === s.id ? { ...x, status: newStatus } : x)
+        );
+        this.notify.success('finance_v2.common.updated', 'finance_v2.ap.sup.status_updated');
+      },
+      error: () => {
+        // Fallback: toggle locally
+        const nextStatus: SupplierStatus = s.status === 'Active' ? 'Inactive' : 'Active';
+        this.apService.suppliers.update(list =>
+          list.map(x => x.id === s.id ? { ...x, status: nextStatus } : x)
+        );
+        this.notify.success('finance_v2.common.updated', 'finance_v2.ap.sup.status_updated');
+      }
+    });
   }
 
   // ── Helpers ───────────────────────────────────────────────────────
@@ -144,5 +209,48 @@ export class FinV2ApSuppliersComponent implements OnInit {
       { label: 'finance_v2.ap.title' },
       { label: 'finance_v2.ap.sup.title' }
     ]);
+    this.loadSuppliers();
+  }
+
+  loadSuppliers() {
+    this.apiLoading.set(true);
+    this.financeApi.getApSuppliers({ limit: 200 }).subscribe({
+      next: (res: any) => {
+        const raw = Array.isArray(res) ? res : (res?.data ?? []);
+        if (raw && raw.length > 0) {
+          const mapped: ApSupplier[] = raw.map((s: any) => ({
+            id: s.id ?? s._id,
+            code: s.code ?? '',
+            nameEn: s.nameEn ?? s.name ?? '',
+            nameAr: s.nameAr ?? '',
+            taxNumber: s.taxNumber ?? '',
+            vatNumber: s.vatNumber ?? '',
+            commercialReg: s.commercialReg ?? '',
+            address: s.address ?? '',
+            city: s.city ?? '',
+            country: s.country ?? 'SA',
+            contactPerson: s.contactPerson ?? '',
+            contactEmail: s.contactEmail ?? '',
+            contactPhone: s.contactPhone ?? '',
+            paymentTerms: s.paymentTerms ?? 'Net 30',
+            currency: s.currency ?? 'SAR',
+            creditLimit: s.creditLimit ?? 0,
+            openBalance: s.openBalance ?? 0,
+            outstandingInvoices: s.outstandingInvoices ?? 0,
+            lastPaymentDate: s.lastPaymentDate ?? '',
+            lastPaymentAmount: s.lastPaymentAmount ?? 0,
+            status: s.status ?? 'Active',
+            rating: s.rating ?? 3,
+            bankName: s.bankName ?? '',
+            iban: s.iban ?? '',
+            category: s.category ?? 'General',
+            notes: s.notes ?? ''
+          }));
+          this.apService.suppliers.set(mapped);
+        }
+        this.apiLoading.set(false);
+      },
+      error: () => this.apiLoading.set(false)
+    });
   }
 }

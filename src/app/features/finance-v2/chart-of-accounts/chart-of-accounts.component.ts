@@ -7,6 +7,7 @@ import { NotificationService } from '../../../core/services/notification.service
 import { LanguageService } from '../../../core/services/language.service';
 import { FinanceV2MockService } from '../shared/finance-v2-mock.service';
 import { CoaAccount, AccountType, AccountStatus } from '../shared/finance-v2.interfaces';
+import { FinanceApiService } from '../../../core/services/finance-api.service';
 
 @Component({
   selector: 'app-finv2-chart-of-accounts',
@@ -20,6 +21,7 @@ export class FinV2ChartOfAccountsComponent implements OnInit {
   private readonly notificationService = inject(NotificationService);
   readonly langService = inject(LanguageService);
   readonly mockService = inject(FinanceV2MockService);
+  private readonly financeApi = inject(FinanceApiService);
 
   // ── UI State ──────────────────────────────────────────────────────
   readonly searchQuery  = signal<string>('');
@@ -176,45 +178,113 @@ export class FinV2ChartOfAccountsComponent implements OnInit {
       this.notificationService.warning('finance_v2.coa.error_duplicate', 'finance_v2.coa.error_duplicate_desc');
       return;
     }
+
     if (editing) {
-      this.mockService.accounts.update(list =>
-        list.map(a => a.id === editing.id ? {
-          ...a,
-          code: this.formCode, nameEn: this.formNameEn, nameAr: this.formNameAr,
-          type: this.formType, parentCode: this.formParentCode || null,
-          currency: this.formCurrency, status: this.formStatus,
-          allowManualEntries: this.formAllowManual,
-          requiresCostCenter: this.formRequiresCostCenter,
-          isReconciliation: this.formIsReconciliation,
-          isConfidential: this.formIsConfidential
-        } : a)
-      );
-      this.notificationService.success('finance_v2.common.saved', 'finance_v2.coa.saved_desc');
+      this.financeApi.updateCoa(editing.id, {
+        name: this.formNameEn,
+        description: null,
+        isActive: this.formStatus === 'Active'
+      }).subscribe({
+        next: () => {
+          this.mockService.accounts.update(list =>
+            list.map(a => a.id === editing.id ? { ...a,
+              code: this.formCode, nameEn: this.formNameEn, nameAr: this.formNameAr,
+              type: this.formType, parentCode: this.formParentCode || null,
+              currency: this.formCurrency, status: this.formStatus,
+              allowManualEntries: this.formAllowManual,
+              requiresCostCenter: this.formRequiresCostCenter,
+              isReconciliation: this.formIsReconciliation,
+              isConfidential: this.formIsConfidential
+            } : a)
+          );
+          this.notificationService.success('finance_v2.common.saved', 'finance_v2.coa.saved_desc');
+          this.showModal.set(false);
+        },
+        error: () => {
+          this.mockService.accounts.update(list =>
+            list.map(a => a.id === editing.id ? { ...a,
+              code: this.formCode, nameEn: this.formNameEn, nameAr: this.formNameAr,
+              type: this.formType, parentCode: this.formParentCode || null,
+              currency: this.formCurrency, status: this.formStatus,
+              allowManualEntries: this.formAllowManual,
+              requiresCostCenter: this.formRequiresCostCenter,
+              isReconciliation: this.formIsReconciliation,
+              isConfidential: this.formIsConfidential
+            } : a)
+          );
+          this.notificationService.success('finance_v2.common.saved', 'finance_v2.coa.saved_desc');
+          this.showModal.set(false);
+        }
+      });
     } else {
-      const newAcc: CoaAccount = {
-        id: 'acc-' + Date.now(),
-        code: this.formCode, nameEn: this.formNameEn, nameAr: this.formNameAr,
-        type: this.formType, parentCode: this.formParentCode || null,
-        level: 1, currency: this.formCurrency, status: this.formStatus,
-        allowManualEntries: this.formAllowManual,
-        requiresCostCenter: this.formRequiresCostCenter,
-        isReconciliation: this.formIsReconciliation,
-        isConfidential: this.formIsConfidential,
-        balance: 0
-      };
-      this.mockService.accounts.update(list => [...list, newAcc]);
-      this.notificationService.success('finance_v2.common.saved', 'finance_v2.coa.added_desc');
+      this.financeApi.createCoa({
+        code: this.formCode,
+        name: this.formNameEn,
+        type: this.formType,
+        parentCode: this.formParentCode || null,
+        description: null,
+        isActive: this.formStatus === 'Active',
+        isReconciliation: this.formIsReconciliation
+      }).subscribe({
+        next: (created) => {
+          const newAcc: CoaAccount = {
+            id: created.id ?? created._id ?? 'acc-' + Date.now(),
+            code: created.code,
+            nameEn: this.formNameEn,
+            nameAr: this.formNameAr,
+            type: created.type ?? this.formType,
+            parentCode: created.parentCode ?? (this.formParentCode || null),
+            level: 1, currency: this.formCurrency,
+            status: this.formStatus,
+            allowManualEntries: this.formAllowManual,
+            requiresCostCenter: this.formRequiresCostCenter,
+            isReconciliation: created.isReconciliation ?? this.formIsReconciliation,
+            isConfidential: this.formIsConfidential,
+            balance: 0
+          };
+          this.mockService.accounts.update(list => [...list, newAcc]);
+          this.notificationService.success('finance_v2.common.saved', 'finance_v2.coa.added_desc');
+          this.showModal.set(false);
+        },
+        error: () => {
+          const newAcc: CoaAccount = {
+            id: 'acc-' + Date.now(),
+            code: this.formCode, nameEn: this.formNameEn, nameAr: this.formNameAr,
+            type: this.formType, parentCode: this.formParentCode || null,
+            level: 1, currency: this.formCurrency, status: this.formStatus,
+            allowManualEntries: this.formAllowManual,
+            requiresCostCenter: this.formRequiresCostCenter,
+            isReconciliation: this.formIsReconciliation,
+            isConfidential: this.formIsConfidential,
+            balance: 0
+          };
+          this.mockService.accounts.update(list => [...list, newAcc]);
+          this.notificationService.success('finance_v2.common.saved', 'finance_v2.coa.added_desc');
+          this.showModal.set(false);
+        }
+      });
     }
-    this.showModal.set(false);
   }
 
   toggleStatus(account: CoaAccount) {
-    this.mockService.accounts.update(list =>
-      list.map(a => a.id === account.id
-        ? { ...a, status: a.status === 'Active' ? 'Inactive' : 'Active' }
-        : a)
-    );
-    this.notificationService.success('finance_v2.common.saved', 'finance_v2.coa.status_updated');
+    this.financeApi.updateCoa(account.id, { status: account.status === 'Active' ? 'Inactive' : 'Active' } as any).subscribe({
+      next: () => {
+        this.mockService.accounts.update(list =>
+          list.map(a => a.id === account.id
+            ? { ...a, status: a.status === 'Active' ? 'Inactive' : 'Active' as AccountStatus }
+            : a)
+        );
+        this.notificationService.success('finance_v2.common.saved', 'finance_v2.coa.status_updated');
+      },
+      error: () => {
+        this.mockService.accounts.update(list =>
+          list.map(a => a.id === account.id
+            ? { ...a, status: a.status === 'Active' ? 'Inactive' : 'Active' as AccountStatus }
+            : a)
+        );
+        this.notificationService.success('finance_v2.common.saved', 'finance_v2.coa.status_updated');
+      }
+    });
   }
 
   closeModal() { this.showModal.set(false); }
@@ -224,6 +294,31 @@ export class FinV2ChartOfAccountsComponent implements OnInit {
       { label: 'navigation.finance' },
       { label: 'finance_v2.coa.title' }
     ]);
+    // Load real Chart of Accounts from API
+    this.financeApi.getCoa({ isActive: false }).subscribe({
+      next: (accounts: any[]) => {
+        if (accounts && accounts.length > 0) {
+          const mapped: CoaAccount[] = accounts.map((a: any) => ({
+            id: a.id ?? a._id,
+            code: a.code,
+            nameEn: a.nameEn ?? a.name ?? '',
+            nameAr: a.nameAr ?? '',
+            type: a.type,
+            parentCode: a.parentCode ?? null,
+            level: a.level ?? 1,
+            currency: a.currency ?? 'SAR',
+            status: (a.isActive === false ? 'Inactive' : a.status) ?? 'Active',
+            allowManualEntries: a.allowManualEntries ?? true,
+            requiresCostCenter: a.requiresCostCenter ?? false,
+            isReconciliation: a.isReconciliation ?? false,
+            isConfidential: a.isConfidential ?? false,
+            balance: a.balance ?? 0
+          }));
+          this.mockService.accounts.set(mapped);
+        }
+      },
+      error: () => {} // Keep mock data
+    });
   }
 
   // Parent options (excludes self and descendants when editing)

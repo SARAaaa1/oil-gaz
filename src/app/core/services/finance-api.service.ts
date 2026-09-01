@@ -355,10 +355,16 @@ export interface CostCenter {
 export interface CreateCostCenterBody {
   code: string;
   name: string;
+  nameEn?: string;
+  nameAr?: string;
   type: string;
-  parentCode?: string;
-  status?: 'Active' | 'Inactive';
+  parentCode?: string | null;
+  level?: number;
+  status?: 'Active' | 'Inactive' | 'Suspended';
   description?: string;
+  manager?: string;
+  budget?: number;
+  branch?: string;
 }
 
 // ─── 8. Asset Depreciation Types ───────────────────────────────────────────────
@@ -457,6 +463,199 @@ export interface BalanceSheetResponse {
     statedCapital: number;
   };
   isBalanced: boolean;
+}
+
+// ─── 11. AP Suppliers Types ───────────────────────────────────────────────────
+
+export interface ApSupplierApi {
+  _id: string;
+  id?: string;
+  code: string;
+  nameEn: string;
+  nameAr: string;
+  category: string;
+  taxNumber?: string;
+  commercialReg?: string;
+  contactPerson: string;
+  contactEmail: string;
+  contactPhone: string;
+  address?: string;
+  paymentTerms: string;
+  currency: string;
+  bankName?: string;
+  iban?: string;
+  status: 'Active' | 'Inactive';
+  openBalance?: number;
+  outstandingInvoices?: number;
+  createdAt?: string;
+}
+
+export interface CreateApSupplierBody {
+  nameEn: string;
+  nameAr: string;
+  category: string;
+  taxNumber?: string;
+  commercialReg?: string;
+  contactPerson: string;
+  contactEmail: string;
+  contactPhone: string;
+  address?: string;
+  paymentTerms?: string;
+  currency?: string;
+  bankName?: string;
+  iban?: string;
+}
+
+// ─── 12. AR Customers Types ────────────────────────────────────────────────────
+
+export interface ArCustomerApi {
+  _id: string;
+  id?: string;
+  code: string;
+  nameEn: string;
+  nameAr: string;
+  industry?: string;
+  taxNumber?: string;
+  contactPerson: string;
+  contactEmail: string;
+  contactPhone: string;
+  address?: string;
+  paymentTerms: string;
+  currency: string;
+  creditLimit?: number;
+  status: 'Active' | 'Inactive';
+  openBalance?: number;
+  outstandingInvoices?: number;
+  createdAt?: string;
+}
+
+export interface CreateArCustomerBody {
+  nameEn: string;
+  nameAr: string;
+  industry?: string;
+  taxNumber?: string;
+  contactPerson: string;
+  contactEmail: string;
+  contactPhone: string;
+  address?: string;
+  paymentTerms?: string;
+  currency?: string;
+  creditLimit?: number;
+}
+
+// ─── 13. Treasury Transfer API Types ──────────────────────────────────────────
+
+export interface TreasuryTransferApi {
+  _id: string;
+  id?: string;
+  transferNumber: string;
+  fromAccountId: string;
+  fromAccountType: 'Bank' | 'Cash';
+  fromAccountName?: string;
+  toAccountId: string;
+  toAccountType: 'Bank' | 'Cash';
+  toAccountName?: string;
+  amount: number;
+  currency: string;
+  transferDate: string;
+  reference?: string;
+  notes?: string;
+  status: 'Draft' | 'Approved' | 'Executed' | 'Cancelled';
+  createdAt?: string;
+}
+
+export interface CreateTreasuryTransferBody {
+  fromAccountId: string;
+  fromAccountType: 'Bank' | 'Cash';
+  toAccountId: string;
+  toAccountType: 'Bank' | 'Cash';
+  amount: number;
+  currency?: string;
+  transferDate: string;
+  reference?: string;
+  notes?: string;
+}
+
+export interface TreasuryTransferKpis {
+  totalDraft: number;
+  totalApproved: number;
+  totalExecuted: number;
+}
+
+// ─── 14. Account Movement Types ────────────────────────────────────────────────
+
+export interface AccountMovement {
+  id: string;
+  date: string;
+  type: string;
+  reference: string;
+  description: string;
+  debit: number;
+  credit: number;
+  runningBalance: number;
+}
+
+export interface AccountMovementsResponse {
+  data: AccountMovement[];
+  openingBalance: number;
+  closingBalance: number;
+  totalDebit: number;
+  totalCredit: number;
+  total: number;
+  page: number;
+}
+
+// ─── 15. GL Ledger Account Types ───────────────────────────────────────────────
+
+export interface LedgerAccount {
+  accountCode: string;
+  accountName: string;
+  accountType: string;
+  openingBalance: number;
+  totalDebit: number;
+  totalCredit: number;
+  closingBalance: number;
+  movements: AccountMovement[];
+}
+
+// ─── 16. Finance Dashboard KPIs Types ─────────────────────────────────────────
+
+export interface FinanceDashboardKpis {
+  revenue: { total: number; collected: number };
+  expenses: { total: number };
+  cashPosition: { banks: number; cash: number; total: number };
+  ar: { outstanding: number; overdue: number };
+  ap: { outstanding: number; dueThisWeek: number };
+  budget: { total: number; utilized: number; utilizationPct: number };
+  monthlyChart: { month: string; revenue: number; expenses: number; profit: number }[];
+  recentJournals: { id: string; journalNumber: string; date: string; description: string; amount: number }[];
+}
+
+// ─── 17. Period Close Types ────────────────────────────────────────────────────
+
+export interface PeriodClose {
+  _id: string;
+  id?: string;
+  periodStart: string;
+  periodEnd: string;
+  fiscalYear: number;
+  status: 'Open' | 'Closed' | 'Locked';
+  closedBy?: string;
+  closedAt?: string;
+  createdAt?: string;
+}
+
+export interface PeriodCloseChecklistItem {
+  id: string;
+  title: string;
+  status: 'Pending' | 'Done' | 'Blocked';
+  issues?: string[];
+}
+
+export interface CreatePeriodCloseBody {
+  periodStart: string;
+  periodEnd: string;
+  fiscalYear: number;
 }
 
 // ─── FinanceApiService ─────────────────────────────────────────────────────────
@@ -751,13 +950,16 @@ export class FinanceApiService {
 
   // ── 7. Cost Centers (/finance/cost-centers) ──────────────────────────────
 
-  getCostCenters(params: { type?: string; status?: string; search?: string; page?: number; limit?: number } = {}): Observable<{ data: CostCenter[]; financeTotals?: any }> {
+  getCostCenters(params: { type?: string; status?: string; search?: string; page?: number; limit?: number; slim?: boolean; level?: number; parentCode?: string | null } = {}): Observable<{ data: CostCenter[]; financeTotals?: any }> {
     let p = new HttpParams();
-    if (params.type)   p = p.set('type', params.type);
-    if (params.status) p = p.set('status', params.status);
-    if (params.search) p = p.set('search', params.search);
-    if (params.page)   p = p.set('page', String(params.page));
-    if (params.limit)  p = p.set('limit', String(params.limit));
+    if (params.type)       p = p.set('type', params.type);
+    if (params.status)     p = p.set('status', params.status);
+    if (params.search)     p = p.set('search', params.search);
+    if (params.page)       p = p.set('page', String(params.page));
+    if (params.limit)      p = p.set('limit', String(params.limit));
+    if (params.slim)       p = p.set('slim', 'true');
+    if (params.level)      p = p.set('level', String(params.level));
+    if (params.parentCode !== undefined && params.parentCode !== null) p = p.set('parentCode', params.parentCode);
 
     return this.http.get<any>(`${this.apiRoot}/cost-centers`, { params: p }).pipe(
       map(res => ({
@@ -880,6 +1082,425 @@ export class FinanceApiService {
     if (asOfDate) p = p.set('asOfDate', asOfDate);
 
     return this.http.get<any>(`${this.apiRoot}/statements/balance-sheet`, { params: p }).pipe(
+      map(res => res.data ?? res),
+      catchError(err => throwError(() => err))
+    );
+  }
+
+  // ── 11. AP Suppliers (/finance/ap/suppliers) ──────────────────────────────
+
+  getApSuppliers(params: { status?: string; category?: string; search?: string; slim?: boolean; page?: number; limit?: number } = {}): Observable<{ data: ApSupplierApi[]; total: number; page: number }> {
+    let p = new HttpParams();
+    if (params.status)   p = p.set('status', params.status);
+    if (params.category) p = p.set('category', params.category);
+    if (params.search)   p = p.set('search', params.search);
+    if (params.slim)     p = p.set('slim', 'true');
+    if (params.page)     p = p.set('page', String(params.page));
+    if (params.limit)    p = p.set('limit', String(params.limit));
+
+    return this.http.get<any>(`${this.apiRoot}/ap/suppliers`, { params: p }).pipe(
+      map(res => ({
+        data: res.data ?? (Array.isArray(res) ? res : []),
+        total: res.total ?? 0,
+        page: res.page ?? 1
+      })),
+      catchError(err => throwError(() => err))
+    );
+  }
+
+  createApSupplier(body: CreateApSupplierBody): Observable<ApSupplierApi> {
+    return this.http.post<any>(`${this.apiRoot}/ap/suppliers`, body).pipe(
+      map(res => res.data ?? res),
+      catchError(err => throwError(() => err))
+    );
+  }
+
+  updateApSupplier(id: string, body: Partial<CreateApSupplierBody>): Observable<ApSupplierApi> {
+    return this.http.patch<any>(`${this.apiRoot}/ap/suppliers/${id}`, body).pipe(
+      map(res => res.data ?? res),
+      catchError(err => throwError(() => err))
+    );
+  }
+
+  toggleApSupplierStatus(id: string): Observable<{ message: string; status: string; data: ApSupplierApi }> {
+    return this.http.patch<any>(`${this.apiRoot}/ap/suppliers/${id}/toggle-status`, {}).pipe(
+      map(res => res.data ?? res),
+      catchError(err => throwError(() => err))
+    );
+  }
+
+  // ── 12. AP Invoice Workflow (/finance/ap/invoices) ────────────────────────
+
+  submitApInvoice(id: string): Observable<any> {
+    return this.http.patch<any>(`${this.apiRoot}/ap/invoices/${id}/submit`, {}).pipe(
+      map(res => res.data ?? res),
+      catchError(err => throwError(() => err))
+    );
+  }
+
+  approveApInvoice(id: string, approvalNotes?: string): Observable<any> {
+    return this.http.patch<any>(`${this.apiRoot}/ap/invoices/${id}/approve`, { approvalNotes: approvalNotes ?? '' }).pipe(
+      map(res => res.data ?? res),
+      catchError(err => throwError(() => err))
+    );
+  }
+
+  rejectApInvoice(id: string, rejectionReason: string): Observable<any> {
+    return this.http.patch<any>(`${this.apiRoot}/ap/invoices/${id}/reject`, { rejectionReason }).pipe(
+      map(res => res.data ?? res),
+      catchError(err => throwError(() => err))
+    );
+  }
+
+  queuePaymentApInvoice(id: string): Observable<any> {
+    return this.http.patch<any>(`${this.apiRoot}/ap/invoices/${id}/queue-payment`, {}).pipe(
+      map(res => res.data ?? res),
+      catchError(err => throwError(() => err))
+    );
+  }
+
+  // ── 13. AR Customers (/finance/ar/customers) ──────────────────────────────
+
+  getArCustomers(params: { status?: string; search?: string; slim?: boolean; page?: number; limit?: number } = {}): Observable<{ data: ArCustomerApi[]; total: number; page: number }> {
+    let p = new HttpParams();
+    if (params.status)   p = p.set('status', params.status);
+    if (params.search)   p = p.set('search', params.search);
+    if (params.slim)     p = p.set('slim', 'true');
+    if (params.page)     p = p.set('page', String(params.page));
+    if (params.limit)    p = p.set('limit', String(params.limit));
+
+    return this.http.get<any>(`${this.apiRoot}/ar/customers`, { params: p }).pipe(
+      map(res => ({
+        data: res.data ?? (Array.isArray(res) ? res : []),
+        total: res.total ?? 0,
+        page: res.page ?? 1
+      })),
+      catchError(err => throwError(() => err))
+    );
+  }
+
+  createArCustomer(body: CreateArCustomerBody): Observable<ArCustomerApi> {
+    return this.http.post<any>(`${this.apiRoot}/ar/customers`, body).pipe(
+      map(res => res.data ?? res),
+      catchError(err => throwError(() => err))
+    );
+  }
+
+  updateArCustomer(id: string, body: Partial<CreateArCustomerBody>): Observable<ArCustomerApi> {
+    return this.http.patch<any>(`${this.apiRoot}/ar/customers/${id}`, body).pipe(
+      map(res => res.data ?? res),
+      catchError(err => throwError(() => err))
+    );
+  }
+
+  toggleArCustomerStatus(id: string): Observable<{ message: string; status: string; data: ArCustomerApi }> {
+    return this.http.patch<any>(`${this.apiRoot}/ar/customers/${id}/toggle-status`, {}).pipe(
+      map(res => res.data ?? res),
+      catchError(err => throwError(() => err))
+    );
+  }
+
+  // ── 14. AR Invoice Status (/finance/ar/invoices/:id/status) ──────────────
+
+  updateArInvoiceStatus(id: string, status: 'Draft' | 'Sent' | 'Cancelled', comments?: string): Observable<any> {
+    return this.http.patch<any>(`${this.apiRoot}/ar/invoices/${id}/status`, { status, comments: comments ?? '' }).pipe(
+      map(res => res.data ?? res),
+      catchError(err => throwError(() => err))
+    );
+  }
+
+  // ── 15. Treasury Transfers (/finance/cash-bank/transfers) ─────────────────
+
+  getTreasuryTransfers(params: { status?: string; dateFrom?: string; dateTo?: string; page?: number; limit?: number } = {}): Observable<{ data: TreasuryTransferApi[]; kpis: TreasuryTransferKpis; total: number; page: number }> {
+    let p = new HttpParams();
+    if (params.status)   p = p.set('status', params.status);
+    if (params.dateFrom) p = p.set('dateFrom', params.dateFrom);
+    if (params.dateTo)   p = p.set('dateTo', params.dateTo);
+    if (params.page)     p = p.set('page', String(params.page));
+    if (params.limit)    p = p.set('limit', String(params.limit));
+
+    return this.http.get<any>(`${this.apiRoot}/cash-bank/transfers`, { params: p }).pipe(
+      map(res => ({
+        data: res.data ?? (Array.isArray(res) ? res : []),
+        kpis: res.kpis ?? { totalDraft: 0, totalApproved: 0, totalExecuted: 0 },
+        total: res.total ?? 0,
+        page: res.page ?? 1
+      })),
+      catchError(err => throwError(() => err))
+    );
+  }
+
+  createTreasuryTransfer(body: CreateTreasuryTransferBody): Observable<TreasuryTransferApi> {
+    return this.http.post<any>(`${this.apiRoot}/cash-bank/transfers`, body).pipe(
+      map(res => res.data ?? res),
+      catchError(err => throwError(() => err))
+    );
+  }
+
+  approveTreasuryTransfer(id: string): Observable<TreasuryTransferApi> {
+    return this.http.patch<any>(`${this.apiRoot}/cash-bank/transfers/${id}/approve`, {}).pipe(
+      map(res => res.data ?? res),
+      catchError(err => throwError(() => err))
+    );
+  }
+
+  executeTreasuryTransfer(id: string): Observable<TreasuryTransferApi> {
+    return this.http.post<any>(`${this.apiRoot}/cash-bank/transfers/${id}/execute`, {}).pipe(
+      map(res => res.data ?? res),
+      catchError(err => throwError(() => err))
+    );
+  }
+
+  cancelTreasuryTransfer(id: string): Observable<TreasuryTransferApi> {
+    return this.http.patch<any>(`${this.apiRoot}/cash-bank/transfers/${id}/cancel`, {}).pipe(
+      map(res => res.data ?? res),
+      catchError(err => throwError(() => err))
+    );
+  }
+
+  // ── 16. Account Movements ─────────────────────────────────────────────────
+
+  getBankAccountMovements(id: string, params: { dateFrom?: string; dateTo?: string; page?: number; limit?: number } = {}): Observable<AccountMovementsResponse> {
+    let p = new HttpParams();
+    if (params.dateFrom) p = p.set('dateFrom', params.dateFrom);
+    if (params.dateTo)   p = p.set('dateTo', params.dateTo);
+    if (params.page)     p = p.set('page', String(params.page));
+    if (params.limit)    p = p.set('limit', String(params.limit));
+
+    return this.http.get<any>(`${this.apiRoot}/cash-bank/bank-accounts/${id}/movements`, { params: p }).pipe(
+      map(res => ({
+        data: res.data ?? [],
+        openingBalance: res.openingBalance ?? 0,
+        closingBalance: res.closingBalance ?? 0,
+        totalDebit: res.totalDebit ?? 0,
+        totalCredit: res.totalCredit ?? 0,
+        total: res.total ?? 0,
+        page: res.page ?? 1
+      })),
+      catchError(err => throwError(() => err))
+    );
+  }
+
+  getCashAccountMovements(id: string, params: { page?: number; limit?: number } = {}): Observable<AccountMovementsResponse> {
+    let p = new HttpParams();
+    if (params.page)  p = p.set('page', String(params.page));
+    if (params.limit) p = p.set('limit', String(params.limit));
+
+    return this.http.get<any>(`${this.apiRoot}/cash-bank/cash-accounts/${id}/movements`, { params: p }).pipe(
+      map(res => ({
+        data: res.data ?? [],
+        openingBalance: res.openingBalance ?? 0,
+        closingBalance: res.closingBalance ?? 0,
+        totalDebit: res.totalDebit ?? 0,
+        totalCredit: res.totalCredit ?? 0,
+        total: res.total ?? 0,
+        page: res.page ?? 1
+      })),
+      catchError(err => throwError(() => err))
+    );
+  }
+
+  // ── 17. Budget Status (/finance/budget/:id/status) ────────────────────────
+
+  updateBudgetStatus(id: string, status: 'Draft' | 'Submitted' | 'Approved' | 'Active' | 'Closed', comments?: string): Observable<any> {
+    return this.http.patch<any>(`${this.apiRoot}/budget/${id}/status`, { status, comments: comments ?? '' }).pipe(
+      map(res => res.data ?? res),
+      catchError(err => throwError(() => err))
+    );
+  }
+
+  // ── 18. GL Ledger Accounts (/finance/gl/ledger-accounts) ─────────────────
+
+  getLedgerAccounts(params: { accountCode?: string; dateFrom?: string; dateTo?: string } = {}): Observable<LedgerAccount[]> {
+    let p = new HttpParams();
+    if (params.accountCode) p = p.set('accountCode', params.accountCode);
+    if (params.dateFrom)    p = p.set('dateFrom', params.dateFrom);
+    if (params.dateTo)      p = p.set('dateTo', params.dateTo);
+
+    return this.http.get<any>(`${this.apiRoot}/gl/ledger-accounts`, { params: p }).pipe(
+      map(res => res.data ?? (Array.isArray(res) ? res : [])),
+      catchError(err => throwError(() => err))
+    );
+  }
+
+  // ── 19. Finance Dashboard KPIs (/finance/dashboard/kpis) ─────────────────
+
+  getFinanceDashboardKpis(period: 'thisMonth' | 'thisQuarter' | 'thisYear' | string = 'thisYear'): Observable<FinanceDashboardKpis> {
+    const p = new HttpParams().set('period', period);
+    return this.http.get<any>(`${this.apiRoot}/dashboard/kpis`, { params: p }).pipe(
+      map(res => res.data ?? res),
+      catchError(err => throwError(() => err))
+    );
+  }
+
+  // ── 20. Period Close (/finance/period-close) ──────────────────────────────
+
+  getPeriodCloses(params: { page?: number; limit?: number } = {}): Observable<{ data: PeriodClose[]; total: number }> {
+    let p = new HttpParams();
+    if (params.page)  p = p.set('page', String(params.page));
+    if (params.limit) p = p.set('limit', String(params.limit));
+
+    return this.http.get<any>(`${this.apiRoot}/period-close`, { params: p }).pipe(
+      map(res => ({
+        data: res.data ?? (Array.isArray(res) ? res : []),
+        total: res.total ?? 0
+      })),
+      catchError(err => throwError(() => err))
+    );
+  }
+
+  createPeriodClose(body: CreatePeriodCloseBody): Observable<PeriodClose> {
+    return this.http.post<any>(`${this.apiRoot}/period-close`, body).pipe(
+      map(res => res.data ?? res),
+      catchError(err => throwError(() => err))
+    );
+  }
+
+  closePeriodClose(id: string): Observable<PeriodClose> {
+    return this.http.patch<any>(`${this.apiRoot}/period-close/${id}/close`, {}).pipe(
+      map(res => res.data ?? res),
+      catchError(err => throwError(() => err))
+    );
+  }
+
+  reopenPeriodClose(id: string): Observable<PeriodClose> {
+    return this.http.patch<any>(`${this.apiRoot}/period-close/${id}/reopen`, {}).pipe(
+      map(res => res.data ?? res),
+      catchError(err => throwError(() => err))
+    );
+  }
+
+  getPeriodCloseChecklist(id: string): Observable<{ checklist: PeriodCloseChecklistItem[]; issues: string[] }> {
+    return this.http.get<any>(`${this.apiRoot}/period-close/${id}/checklist`).pipe(
+      map(res => ({
+        checklist: res.data?.checklist ?? res.checklist ?? [],
+        issues: res.data?.issues ?? res.issues ?? []
+      })),
+      catchError(err => throwError(() => err))
+    );
+  }
+
+  // ── 21. Fixed Assets Finance View (/finance/fixed-assets) ────────────────
+
+  getFinanceFixedAssets(params: { status?: string; category?: string; search?: string; page?: number; limit?: number } = {}): Observable<{ data: any[]; total: number }> {
+    let p = new HttpParams();
+    if (params.status)   p = p.set('status', params.status);
+    if (params.category) p = p.set('category', params.category);
+    if (params.search)   p = p.set('search', params.search);
+    if (params.page)     p = p.set('page', String(params.page));
+    if (params.limit)    p = p.set('limit', String(params.limit));
+
+    return this.http.get<any>(`${this.apiRoot}/fixed-assets`, { params: p }).pipe(
+      map(res => ({
+        data: res.data ?? (Array.isArray(res) ? res : []),
+        total: res.total ?? 0
+      })),
+      catchError(err => throwError(() => err))
+    );
+  }
+
+  // GET /fixed-assets — list all assets
+  getFinanceAssets(params: { status?: string; category?: string; branchId?: string; page?: number; limit?: number } = {}): Observable<any> {
+    const p: any = {};
+    if (params.status)   p['status']   = params.status;
+    if (params.category) p['category'] = params.category;
+    if (params.branchId) p['branchId'] = params.branchId;
+    if (params.page)     p['page']     = params.page;
+    if (params.limit)    p['limit']    = params.limit;
+    return this.http.get<any>(`${this.apiRoot}/fixed-assets`, { params: p }).pipe(
+      map(res => res.data ?? res),
+      catchError(err => throwError(() => err))
+    );
+  }
+
+  capitalizeFinanceAsset(id: string, body: { capitalizationDate: string; coaCode?: string; notes?: string }): Observable<any> {
+    return this.http.post<any>(`${this.apiRoot}/fixed-assets/${id}/capitalize`, body).pipe(
+      map(res => res.data ?? res),
+      catchError(err => throwError(() => err))
+    );
+  }
+
+  disposeFinanceAsset(id: string, body: { disposalDate: string; disposalValue: number; disposalMethod: 'Sale' | 'Write-Off' | 'Trade-In' | 'Donation' }): Observable<any> {
+    return this.http.post<any>(`${this.apiRoot}/fixed-assets/${id}/dispose`, body).pipe(
+      map(res => res.data ?? res),
+      catchError(err => throwError(() => err))
+    );
+  }
+
+  transferFinanceAsset(id: string, body: { newLocation: string; newCostCenter?: string }): Observable<any> {
+    return this.http.post<any>(`${this.apiRoot}/fixed-assets/${id}/transfer`, body).pipe(
+      map(res => res.data ?? res),
+      catchError(err => throwError(() => err))
+    );
+  }
+
+  // ── 22. Financial Reports (/finance/reports) ──────────────────────────────
+
+  getCashFlowReport(params: { dateFrom?: string; dateTo?: string; fiscalYear?: number } = {}): Observable<any> {
+    let p = new HttpParams();
+    if (params.dateFrom)   p = p.set('dateFrom', params.dateFrom);
+    if (params.dateTo)     p = p.set('dateTo', params.dateTo);
+    if (params.fiscalYear) p = p.set('fiscalYear', String(params.fiscalYear));
+
+    return this.http.get<any>(`${this.apiRoot}/reports/cash-flow`, { params: p }).pipe(
+      map(res => res.data ?? res),
+      catchError(err => throwError(() => err))
+    );
+  }
+
+  getBudgetVsActualReport(params: { fiscalYear?: number; projectCode?: string; costCenterCode?: string } = {}): Observable<any> {
+    let p = new HttpParams();
+    if (params.fiscalYear)    p = p.set('fiscalYear', String(params.fiscalYear));
+    if (params.projectCode)   p = p.set('projectCode', params.projectCode);
+    if (params.costCenterCode) p = p.set('costCenterCode', params.costCenterCode);
+
+    return this.http.get<any>(`${this.apiRoot}/reports/budget-vs-actual`, { params: p }).pipe(
+      map(res => res.data ?? res),
+      catchError(err => throwError(() => err))
+    );
+  }
+
+  getCostCenterPLReport(params: { dateFrom?: string; dateTo?: string; costCenterCode?: string } = {}): Observable<any> {
+    let p = new HttpParams();
+    if (params.dateFrom)      p = p.set('dateFrom', params.dateFrom);
+    if (params.dateTo)        p = p.set('dateTo', params.dateTo);
+    if (params.costCenterCode) p = p.set('costCenterCode', params.costCenterCode);
+
+    return this.http.get<any>(`${this.apiRoot}/reports/cost-center-pl`, { params: p }).pipe(
+      map(res => res.data ?? res),
+      catchError(err => throwError(() => err))
+    );
+  }
+
+  getProjectFinancialReport(params: { projectCode?: string; dateFrom?: string; dateTo?: string } = {}): Observable<any> {
+    let p = new HttpParams();
+    if (params.projectCode) p = p.set('projectCode', params.projectCode);
+    if (params.dateFrom)    p = p.set('dateFrom', params.dateFrom);
+    if (params.dateTo)      p = p.set('dateTo', params.dateTo);
+
+    return this.http.get<any>(`${this.apiRoot}/reports/project-financial`, { params: p }).pipe(
+      map(res => res.data ?? res),
+      catchError(err => throwError(() => err))
+    );
+  }
+
+  getApAgingDetailReport(params: { asOfDate?: string; vendorId?: string } = {}): Observable<any> {
+    let p = new HttpParams();
+    if (params.asOfDate)  p = p.set('asOfDate', params.asOfDate);
+    if (params.vendorId)  p = p.set('vendorId', params.vendorId);
+
+    return this.http.get<any>(`${this.apiRoot}/reports/ap-aging-detail`, { params: p }).pipe(
+      map(res => res.data ?? res),
+      catchError(err => throwError(() => err))
+    );
+  }
+
+  getArAgingDetailReport(params: { asOfDate?: string; customerId?: string } = {}): Observable<any> {
+    let p = new HttpParams();
+    if (params.asOfDate)   p = p.set('asOfDate', params.asOfDate);
+    if (params.customerId) p = p.set('customerId', params.customerId);
+
+    return this.http.get<any>(`${this.apiRoot}/reports/ar-aging-detail`, { params: p }).pipe(
       map(res => res.data ?? res),
       catchError(err => throwError(() => err))
     );

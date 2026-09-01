@@ -6,7 +6,7 @@ import { FormsModule } from '@angular/forms';
 import { TranslateModule } from '@ngx-translate/core';
 import { BreadcrumbService } from '../../../../core/services/breadcrumb.service';
 import { NotificationService } from '../../../../core/services/notification.service';
-import { TreasuryMockService } from '../../shared/treasury-mock.service';
+import { FinanceApiService } from '../../../../core/services/finance-api.service';
 import { ReconciliationSession, ReconciliationStatus, StatementTransaction, SystemTransaction } from '../../shared/treasury.interfaces';
 import { BranchService } from '../../shared/branch.service';
 
@@ -20,8 +20,14 @@ import { BranchService } from '../../shared/branch.service';
 export class FinV2ReconciliationComponent implements OnInit {
   private readonly breadcrumb = inject(BreadcrumbService);
   private readonly notify     = inject(NotificationService);
-  readonly treasuryService    = inject(TreasuryMockService);
+  readonly financeApi         = inject(FinanceApiService);
   readonly branchService      = inject(BranchService);
+
+  readonly reconciliations = signal<any[]>([]);
+  readonly bankAccounts = signal<any[]>([]);
+  readonly isLoading = signal(false);
+  readonly isSaving = signal(false);
+  readonly showCreateModal = signal(false);
 
   readonly selectedId   = signal<string | null>(null);
   readonly statusFilter = signal<ReconciliationStatus | 'All'>('All');
@@ -34,7 +40,7 @@ export class FinV2ReconciliationComponent implements OnInit {
   readonly filtered = computed(() => {
     const st = this.statusFilter();
     const br = this.branchFilter();
-    return this.treasuryService.reconciliationSessions()
+    return this.reconciliations()
       .filter(r => {
         const ms = st === 'All' || r.status === st;
         const mb = br === 'All' || (r.branchId || 'HeadOffice') === br;
@@ -44,7 +50,7 @@ export class FinV2ReconciliationComponent implements OnInit {
 
   readonly activeSession = computed(() => {
     const id = this.selectedId();
-    return id ? (this.treasuryService.reconciliationSessions().find(r => r.id === id) ?? null) : null;
+    return id ? (this.reconciliations().find(r => r.id === id || r._id === id) ?? null) : null;
   });
 
   selectSession(sess: ReconciliationSession) {
@@ -58,10 +64,10 @@ export class FinV2ReconciliationComponent implements OnInit {
     if (!sess || sess.status === 'Approved') return;
 
     let matchedCount = 0;
-    const stmt = sess.statementTransactions.map(st => {
+    const stmt = sess.statementTransactions.map((st: any) => {
       if (st.matched) return st;
       // Search for unmatched system txn with same reference and amount
-      const match = sess.systemTransactions.find(sy => !sy.matched && sy.reference === st.reference && sy.amount === st.amount);
+      const match = sess.systemTransactions.find((sy: any) => !sy.matched && sy.reference === st.reference && sy.amount === st.amount);
       if (match) {
         st.matched = true;
         match.matched = true;
@@ -71,8 +77,8 @@ export class FinV2ReconciliationComponent implements OnInit {
     });
 
     if (matchedCount > 0) {
-      this.treasuryService.reconciliationSessions.update(list =>
-        list.map(r => r.id === sess.id ? {
+      this.reconciliations.update(list =>
+        list.map(r => (r.id === sess.id || r._id === sess.id) ? {
           ...r,
           statementTransactions: stmt,
           matchedCount: r.matchedCount + matchedCount,
@@ -89,7 +95,7 @@ export class FinV2ReconciliationComponent implements OnInit {
   selectStmtTx(id: string) {
     const sess = this.activeSession();
     if (!sess || sess.status === 'Approved') return;
-    const tx = sess.statementTransactions.find(t => t.id === id);
+    const tx = sess.statementTransactions.find((t: any) => t.id === id);
     if (tx?.matched) return;
     this.selectedStmtTxId.set(this.selectedStmtTxId() === id ? null : id);
   }
@@ -97,7 +103,7 @@ export class FinV2ReconciliationComponent implements OnInit {
   selectSysTx(id: string) {
     const sess = this.activeSession();
     if (!sess || sess.status === 'Approved') return;
-    const tx = sess.systemTransactions.find(t => t.id === id);
+    const tx = sess.systemTransactions.find((t: any) => t.id === id);
     if (tx?.matched) return;
     this.selectedSysTxId.set(this.selectedSysTxId() === id ? null : id);
   }
@@ -108,8 +114,8 @@ export class FinV2ReconciliationComponent implements OnInit {
     const sess   = this.activeSession();
     if (!stmtId || !sysId || !sess) return;
 
-    const stmtTx = sess.statementTransactions.find(t => t.id === stmtId);
-    const sysTx  = sess.systemTransactions.find(t => t.id === sysId);
+    const stmtTx = sess.statementTransactions.find((t: any) => t.id === stmtId);
+    const sysTx  = sess.systemTransactions.find((t: any) => t.id === sysId);
 
     if (!stmtTx || !sysTx) return;
 
@@ -122,8 +128,8 @@ export class FinV2ReconciliationComponent implements OnInit {
     stmtTx.matched = true;
     sysTx.matched  = true;
 
-    this.treasuryService.reconciliationSessions.update(list =>
-      list.map(r => r.id === sess.id ? {
+    this.reconciliations.update(list =>
+      list.map(r => (r.id === sess.id || r._id === sess.id) ? {
         ...r,
         matchedCount: r.matchedCount + 1,
         unmatchedCount: Math.max(0, r.unmatchedCount - 1),
@@ -144,8 +150,8 @@ export class FinV2ReconciliationComponent implements OnInit {
       return;
     }
 
-    this.treasuryService.reconciliationSessions.update(list =>
-      list.map(r => r.id === sess.id ? { ...r, status: 'Approved' } : r)
+    this.reconciliations.update(list =>
+      list.map(r => (r.id === sess.id || r._id === sess.id) ? { ...r, status: 'Approved' } : r)
     );
     this.notify.success('finance_v2.treasury.reconciliation.approved', 'finance_v2.treasury.reconciliation.approved_desc');
   }
@@ -165,5 +171,42 @@ export class FinV2ReconciliationComponent implements OnInit {
       { label: 'finance_v2.treasury.title' },
       { label: 'finance_v2.treasury.banks.btn_reconcile' }
     ]);
+    this.loadAll();
+  }
+
+  loadAll() {
+    this.isLoading.set(true);
+    
+    this.financeApi.getBankAccounts().subscribe({
+      next: res => this.bankAccounts.set(res.data)
+    });
+
+    this.financeApi.getReconciliations().subscribe({
+      next: recs => {
+        this.reconciliations.set(recs);
+        this.isLoading.set(false);
+      },
+      error: () => this.isLoading.set(false)
+    });
+  }
+
+  createReconciliation(form: any) {
+    this.isSaving.set(true);
+    this.financeApi.createReconciliation({
+      bankAccountId: form.bankAccountId,
+      statementPeriod: form.statementPeriod,
+      statementEndDate: form.statementEndDate,
+      statementBalance: form.statementBalance
+    }).subscribe({
+      next: created => {
+        this.reconciliations.update(l => [{...created, id: created._id}, ...l]);
+        this.showCreateModal?.set(false);
+        this.notify.success('Reconciliation Created', '');
+        this.isSaving.set(false);
+      },
+      error: () => {
+        this.isSaving.set(false);
+      }
+    });
   }
 }

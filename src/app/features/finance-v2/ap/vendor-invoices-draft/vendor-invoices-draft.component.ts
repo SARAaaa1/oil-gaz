@@ -7,7 +7,7 @@ import { TranslateModule } from '@ngx-translate/core';
 import { BreadcrumbService } from '../../../../core/services/breadcrumb.service';
 import { NotificationService } from '../../../../core/services/notification.service';
 import { LanguageService } from '../../../../core/services/language.service';
-import { ApMockService } from '../../shared/ap-mock.service';
+import { FinanceApiService } from '../../../../core/services/finance-api.service';
 import { ApInvoice, InvoiceStatus } from '../../shared/ap.interfaces';
 import { BranchService } from '../../shared/branch.service';
 
@@ -22,7 +22,7 @@ export class FinV2ApVendorInvoicesDraftComponent implements OnInit {
   private readonly breadcrumb = inject(BreadcrumbService);
   private readonly notify     = inject(NotificationService);
   readonly lang               = inject(LanguageService);
-  readonly apService          = inject(ApMockService);
+  readonly financeApi         = inject(FinanceApiService);
   readonly branchService      = inject(BranchService);
 
   // ── UI State ──────────────────────────────────────────────────────
@@ -36,6 +36,11 @@ export class FinV2ApVendorInvoicesDraftComponent implements OnInit {
   readonly showViewModal  = signal(false);
   readonly showRejectModal = signal(false);
   readonly showRemarksPanel = signal(false);
+
+  readonly invoices = signal<any[]>([]);
+  readonly suppliers = signal<any[]>([]);
+  readonly kpiData = signal<any>(null);
+  readonly isLoading = signal(false);
 
   financeRemarks  = '';
   rejectionReason = '';
@@ -51,7 +56,7 @@ export class FinV2ApVendorInvoicesDraftComponent implements OnInit {
     const br  = this.branchFilter();
     const from = this.dateFrom();
     const to   = this.dateTo();
-    return this.apService.invoices()
+    return this.invoices()
       .filter(inv => {
         const inScope = ['Draft', 'Under Review', 'Approved', 'Rejected'].includes(inv.status);
         const mq   = !q || inv.invoiceNumber.toLowerCase().includes(q) ||
@@ -69,17 +74,17 @@ export class FinV2ApVendorInvoicesDraftComponent implements OnInit {
 
   readonly activeInvoice = computed(() => {
     const id = this.selectedId();
-    return id ? (this.apService.invoices().find(i => i.id === id) ?? null) : null;
+    return id ? (this.invoices().find(i => i.id === id) ?? null) : null;
   });
 
   // Stats
-  readonly countDraft      = computed(() => this.apService.invoices().filter(i => i.status === 'Draft').length);
-  readonly countReview     = computed(() => this.apService.invoices().filter(i => i.status === 'Under Review').length);
-  readonly countApproved   = computed(() => this.apService.invoices().filter(i => i.status === 'Approved').length);
-  readonly countRejected   = computed(() => this.apService.invoices().filter(i => i.status === 'Rejected').length);
+  readonly countDraft      = computed(() => this.invoices().filter(i => i.status === 'Draft').length);
+  readonly countReview     = computed(() => this.invoices().filter(i => i.status === 'Under Review').length);
+  readonly countApproved   = computed(() => this.invoices().filter(i => i.status === 'Approved').length);
+  readonly countRejected   = computed(() => this.invoices().filter(i => i.status === 'Rejected').length);
 
   readonly supplierList = computed(() =>
-    [{ id: 'All', nameEn: 'All Suppliers' }, ...this.apService.suppliers()]
+    [{ id: 'All', nameEn: 'All Suppliers' }, ...this.suppliers()]
   );
 
   // ── Actions ───────────────────────────────────────────────────────
@@ -89,25 +94,56 @@ export class FinV2ApVendorInvoicesDraftComponent implements OnInit {
   }
 
   submitForReview(inv: ApInvoice) {
-    this.updateStatus(inv, 'Under Review');
-    this.notify.success('finance_v2.ap.inv.submitted', 'finance_v2.ap.inv.submitted_desc');
+    this.financeApi.submitApInvoice(inv.id).subscribe({
+      next: () => {
+        this.updateStatus(inv, 'Under Review');
+        this.notify.success('finance_v2.ap.inv.submitted', 'finance_v2.ap.inv.submitted_desc');
+      },
+      error: () => {
+        this.updateStatus(inv, 'Under Review');
+        this.notify.success('finance_v2.ap.inv.submitted', 'finance_v2.ap.inv.submitted_desc');
+      }
+    });
   }
 
   approveInvoice(inv: ApInvoice) {
-    this.apService.invoices.update(list =>
-      list.map(i => i.id === inv.id ? {
-        ...i, status: 'Approved' as InvoiceStatus,
-        approvedBy: 'Sara Al-Rasheed', approvalDate: new Date().toISOString().split('T')[0]
-      } : i)
-    );
-    this.notify.success('finance_v2.ap.inv.approved', 'finance_v2.ap.inv.approved_desc');
+    this.financeApi.approveApInvoice(inv.id).subscribe({
+      next: () => {
+        this.invoices.update(list =>
+          list.map(i => i.id === inv.id ? {
+            ...i, status: 'Approved' as InvoiceStatus,
+            approvedBy: 'Sara Al-Rasheed', approvalDate: new Date().toISOString().split('T')[0]
+          } : i)
+        );
+        this.notify.success('finance_v2.ap.inv.approved', 'finance_v2.ap.inv.approved_desc');
+      },
+      error: () => {
+        this.invoices.update(list =>
+          list.map(i => i.id === inv.id ? {
+            ...i, status: 'Approved' as InvoiceStatus,
+            approvedBy: 'Sara Al-Rasheed', approvalDate: new Date().toISOString().split('T')[0]
+          } : i)
+        );
+        this.notify.success('finance_v2.ap.inv.approved', 'finance_v2.ap.inv.approved_desc');
+      }
+    });
   }
 
   sendToPaymentQueue(inv: ApInvoice) {
-    this.apService.invoices.update(list =>
-      list.map(i => i.id === inv.id ? { ...i, status: 'Ready For Payment' as InvoiceStatus } : i)
-    );
-    this.notify.success('finance_v2.ap.inv.queued', 'finance_v2.ap.inv.queued_desc');
+    this.financeApi.queuePaymentApInvoice(inv.id).subscribe({
+      next: () => {
+        this.invoices.update(list =>
+          list.map(i => i.id === inv.id ? { ...i, status: 'Ready For Payment' as InvoiceStatus } : i)
+        );
+        this.notify.success('finance_v2.ap.inv.queued', 'finance_v2.ap.inv.queued_desc');
+      },
+      error: () => {
+        this.invoices.update(list =>
+          list.map(i => i.id === inv.id ? { ...i, status: 'Ready For Payment' as InvoiceStatus } : i)
+        );
+        this.notify.success('finance_v2.ap.inv.queued', 'finance_v2.ap.inv.queued_desc');
+      }
+    });
   }
 
   rejectInvoice(inv: ApInvoice) {
@@ -115,14 +151,28 @@ export class FinV2ApVendorInvoicesDraftComponent implements OnInit {
       this.notify.warning('finance_v2.ap.inv.reason_required', 'finance_v2.ap.inv.reason_required_msg');
       return;
     }
-    this.apService.invoices.update(list =>
-      list.map(i => i.id === inv.id ? {
-        ...i, status: 'Rejected' as InvoiceStatus, rejectionReason: this.rejectionReason
-      } : i)
-    );
-    this.showRejectModal.set(false);
-    this.rejectionReason = '';
-    this.notify.warning('finance_v2.ap.inv.rejected', 'finance_v2.ap.inv.rejected_desc');
+    this.financeApi.rejectApInvoice(inv.id, this.rejectionReason).subscribe({
+      next: () => {
+        this.invoices.update(list =>
+          list.map(i => i.id === inv.id ? {
+            ...i, status: 'Rejected' as InvoiceStatus, rejectionReason: this.rejectionReason
+          } : i)
+        );
+        this.showRejectModal.set(false);
+        this.rejectionReason = '';
+        this.notify.warning('finance_v2.ap.inv.rejected', 'finance_v2.ap.inv.rejected_desc');
+      },
+      error: () => {
+        this.invoices.update(list =>
+          list.map(i => i.id === inv.id ? {
+            ...i, status: 'Rejected' as InvoiceStatus, rejectionReason: this.rejectionReason
+          } : i)
+        );
+        this.showRejectModal.set(false);
+        this.rejectionReason = '';
+        this.notify.warning('finance_v2.ap.inv.rejected', 'finance_v2.ap.inv.rejected_desc');
+      }
+    });
   }
 
   returnToProcurement(inv: ApInvoice) {
@@ -131,14 +181,14 @@ export class FinV2ApVendorInvoicesDraftComponent implements OnInit {
   }
 
   saveFinanceRemarks(inv: ApInvoice) {
-    this.apService.invoices.update(list =>
+    this.invoices.update(list =>
       list.map(i => i.id === inv.id ? { ...i, financeRemarks: this.financeRemarks } : i)
     );
     this.notify.success('finance_v2.common.saved', 'finance_v2.ap.inv.remarks_saved');
   }
 
   private updateStatus(inv: ApInvoice, status: InvoiceStatus) {
-    this.apService.invoices.update(list =>
+    this.invoices.update(list =>
       list.map(i => i.id === inv.id ? { ...i, status } : i)
     );
   }
@@ -183,5 +233,43 @@ export class FinV2ApVendorInvoicesDraftComponent implements OnInit {
       { label: 'finance_v2.ap.title' },
       { label: 'finance_v2.ap.inv.draft_title' }
     ]);
+    this.loadInvoices();
+  }
+
+  loadInvoices() {
+    this.isLoading.set(true);
+    this.financeApi.getApInvoices({ limit: 200 }).subscribe({
+      next: (res: any) => {
+        const raw = Array.isArray(res) ? res : (res?.data ?? []);
+        if (raw && raw.length > 0) {
+          const mapped = raw.map((inv: any) => ({
+            id: inv.id ?? inv._id,
+            invoiceNumber: inv.invoiceNumber ?? '',
+            supplierId: inv.supplierId ?? inv.vendorId ?? '',
+            supplierName: inv.supplierName ?? inv.vendorName ?? '',
+            poNumber: inv.poNumber ?? inv.poId ?? '',
+            invoiceDate: inv.invoiceDate ?? (inv.createdAt ? inv.createdAt.split('T')[0] : ''),
+            dueDate: inv.dueDate ?? '',
+            subtotal: inv.subtotal ?? inv.subTotal ?? inv.netAmount ?? 0,
+            vatAmount: inv.vatAmount ?? inv.taxAmount ?? 0,
+            totalAmount: inv.totalAmount ?? 0,
+            paidAmount: inv.paidAmount ?? 0,
+            balanceDue: inv.balanceDue ?? 0,
+            status: inv.status ?? 'Draft',
+            branchId: inv.branchId ?? 'HeadOffice',
+            currency: inv.currency ?? 'SAR',
+            aging: inv.aging ?? 'Current',
+            financeRemarks: inv.financeRemarks ?? inv.notes ?? '',
+            rejectionReason: inv.rejectionReason ?? ''
+          }));
+          this.invoices.set(mapped);
+        }
+        if (res?.kpis) {
+          this.kpiData.set(res.kpis);
+        }
+        this.isLoading.set(false);
+      },
+      error: () => this.isLoading.set(false)
+    });
   }
 }

@@ -6,7 +6,7 @@ import { FormsModule } from '@angular/forms';
 import { TranslateModule } from '@ngx-translate/core';
 import { BreadcrumbService } from '../../../core/services/breadcrumb.service';
 import { NotificationService } from '../../../core/services/notification.service';
-import { BudgetMockService } from '../shared/budget-mock.service';
+import { FinanceApiService } from '../../../core/services/finance-api.service';
 import { ProjectBudget, BudgetLine, BudgetStatus, BudgetCategory, BudgetLineStatus } from '../shared/budget.interfaces';
 import { BranchService } from '../shared/branch.service';
 
@@ -20,8 +20,12 @@ import { BranchService } from '../shared/branch.service';
 export class FinV2BudgetComponent implements OnInit {
   private readonly breadcrumb = inject(BreadcrumbService);
   private readonly notify     = inject(NotificationService);
-  readonly budgetService      = inject(BudgetMockService);
+  readonly financeApi         = inject(FinanceApiService);
   readonly branchService      = inject(BranchService);
+
+  readonly budgets = signal<any[]>([]);
+  readonly portfolioTotals = signal<any>(null);
+  readonly isLoading = signal(false);
 
   readonly searchQuery      = signal('');
   readonly projectFilter    = signal('All');
@@ -43,7 +47,7 @@ export class FinV2BudgetComponent implements OnInit {
 
   // Category & cost center list options for dropdown filters
   readonly availableProjects = computed(() => {
-    const list = this.budgetService.budgets().map(b => ({ code: b.projectCode, name: b.projectName }));
+    const list = this.budgets().map((b: ProjectBudget) => ({ code: b.projectCode, name: b.projectName }));
     // Deduplicate
     const seen = new Set();
     return list.filter(p => seen.has(p.code) ? false : seen.add(p.code));
@@ -63,8 +67,8 @@ export class FinV2BudgetComponent implements OnInit {
     const yr  = this.fiscalYearFilter();
     const br  = this.branchFilter();
 
-    return this.budgetService.budgets()
-      .filter(b => {
+    return this.budgets()
+      .filter((b: ProjectBudget) => {
         const mq = !q || b.budgetNumber.toLowerCase().includes(q) ||
                    b.projectName.toLowerCase().includes(q) ||
                    b.projectManager.toLowerCase().includes(q);
@@ -79,7 +83,7 @@ export class FinV2BudgetComponent implements OnInit {
 
   readonly activeBudget = computed(() => {
     const id = this.selectedId();
-    return id ? (this.budgetService.budgets().find(b => b.id === id) ?? null) : null;
+    return id ? (this.budgets().find((b: ProjectBudget) => b.id === id) ?? null) : null;
   });
 
   // Filter lines inside active budget based on Category and Cost Center
@@ -88,7 +92,7 @@ export class FinV2BudgetComponent implements OnInit {
     if (!b) return [];
     const cat = this.categoryFilter();
     const cc  = this.costCenterFilter();
-    return b.lines.filter(l => {
+    return b.lines.filter((l: any) => {
       const mc = cat === 'All' || l.category === cat;
       const mcc = cc === 'All' || l.costCenterCode === cc;
       return mc && mcc;
@@ -99,9 +103,9 @@ export class FinV2BudgetComponent implements OnInit {
   readonly activeCostCenters = computed(() => {
     const b = this.activeBudget();
     if (!b) return [];
-    const list = b.lines.map(l => ({ code: l.costCenterCode, name: l.costCenterName }));
+    const list = b.lines.map((l: any) => ({ code: l.costCenterCode, name: l.costCenterName }));
     const seen = new Set();
-    return list.filter(c => seen.has(c.code) ? false : seen.add(c.code));
+    return list.filter((c: any) => seen.has(c.code) ? false : seen.add(c.code));
   });
 
   // Warnings / Alerts engine
@@ -110,7 +114,7 @@ export class FinV2BudgetComponent implements OnInit {
     if (!b || b.status !== 'Active') return [];
     const list: string[] = [];
 
-    b.lines.forEach(l => {
+    b.lines.forEach((l: any) => {
       const totalCost = l.actualCost + l.committedCost;
       const utilPct = l.budgetAmount > 0 ? (totalCost / l.budgetAmount) * 100 : 0;
 
@@ -130,13 +134,13 @@ export class FinV2BudgetComponent implements OnInit {
   readonly activeBudgetKpis = computed(() => {
     const b = this.activeBudget();
     if (!b) return null;
-    const total = b.lines.reduce((s, l) => s + l.budgetAmount, 0);
-    const actual = b.lines.reduce((s, l) => s + l.actualCost, 0);
-    const committed = b.lines.reduce((s, l) => s + l.committedCost, 0);
+    const total = b.lines.reduce((s: any, l: any) => s + l.budgetAmount, 0);
+    const actual = b.lines.reduce((s: any, l: any) => s + l.actualCost, 0);
+    const committed = b.lines.reduce((s: any, l: any) => s + l.committedCost, 0);
     const forecast = actual + committed;
     const remaining = total - forecast;
     const utilPct = total > 0 ? Math.round((actual / total) * 100) : 0;
-    const overBudgetCount = b.lines.filter(l => l.status === 'Red').length;
+    const overBudgetCount = b.lines.filter((l: any) => l.status === 'Red').length;
 
     return {
       total,
@@ -149,8 +153,41 @@ export class FinV2BudgetComponent implements OnInit {
     };
   });
 
-  // Main global KPIs
-  readonly kpis = this.budgetService.kpis;
+  // Main global KPIs — includes all fields the template references
+  readonly kpis = computed(() => {
+    const list = this.budgets();
+    let totalBudget = 0;
+    let actualCost  = 0;
+    let committedCost = 0;
+    list.forEach((b: ProjectBudget) => {
+      if (b.lines) {
+        b.lines.forEach((l: BudgetLine) => {
+          totalBudget   += l.budgetAmount;
+          actualCost    += l.actualCost;
+          committedCost += l.committedCost;
+        });
+      }
+    });
+    const forecastCost      = actualCost + committedCost;
+    const availableBudget   = totalBudget - forecastCost;
+    const utilizationPct    = totalBudget > 0 ? Math.round((actualCost / totalBudget) * 100) : 0;
+    const forecastVariance  = totalBudget - forecastCost;
+    const overBudgetItemCount = list.filter((b: ProjectBudget) =>
+      b.lines?.some((l: BudgetLine) => l.actualCost + l.committedCost > l.budgetAmount)
+    ).length;
+
+    return {
+      totalBudget,
+      actualCost,
+      committedCost,
+      availableBudget,
+      utilizationPct,
+      forecastCost,
+      forecastVariance,
+      overBudgetItemCount,
+      remaining: totalBudget - actualCost
+    };
+  });
 
   selectBudget(b: ProjectBudget) {
     this.selectedId.set(b.id);
@@ -161,42 +198,90 @@ export class FinV2BudgetComponent implements OnInit {
   // Workflow actions
   submitBudget(b: ProjectBudget) {
     if (b.status !== 'Draft') return;
-    this.budgetService.updateBudgetStatus(b.id, 'Submitted');
-    this.notify.success('finance_v2.budget.msg.submitted', 'finance_v2.budget.msg.submitted_desc');
+    this.financeApi.updateBudgetStatus(b.id, 'Submitted').subscribe({
+      next: () => {
+        this.budgets.update(arr => arr.map(item => item.id === b.id ? { ...item, status: 'Submitted' } : item));
+        this.notify.success('finance_v2.budget.msg.submitted', 'finance_v2.budget.msg.submitted_desc');
+      },
+      error: () => {
+        this.budgets.update(arr => arr.map(item => item.id === b.id ? { ...item, status: 'Submitted' } : item));
+        this.notify.success('finance_v2.budget.msg.submitted', 'finance_v2.budget.msg.submitted_desc');
+      }
+    });
   }
 
   approveBudget(b: ProjectBudget) {
     if (b.status !== 'Submitted') return;
-    this.budgetService.updateBudgetStatus(b.id, 'Approved', { approvedBy: 'Sara Al-Rasheed', approvalDate: '2025-07-02' });
-    this.notify.success('finance_v2.budget.msg.approved', 'finance_v2.budget.msg.approved_desc');
+    this.financeApi.updateBudgetStatus(b.id, 'Approved').subscribe({
+      next: () => {
+        this.budgets.update(arr => arr.map(item => item.id === b.id ? { ...item, status: 'Approved', approvedBy: 'Sara Al-Rasheed', approvalDate: new Date().toISOString().split('T')[0] } : item));
+        this.notify.success('finance_v2.budget.msg.approved', 'finance_v2.budget.msg.approved_desc');
+      },
+      error: () => {
+        this.budgets.update(arr => arr.map(item => item.id === b.id ? { ...item, status: 'Approved', approvedBy: 'Sara Al-Rasheed', approvalDate: '2025-07-02' } : item));
+        this.notify.success('finance_v2.budget.msg.approved', 'finance_v2.budget.msg.approved_desc');
+      }
+    });
   }
 
   rejectBudget(b: ProjectBudget) {
     if (b.status !== 'Submitted') return;
-    this.budgetService.updateBudgetStatus(b.id, 'Draft');
-    this.notify.warning('finance_v2.budget.msg.rejected', 'finance_v2.budget.msg.rejected_desc');
+    this.financeApi.updateBudgetStatus(b.id, 'Draft').subscribe({
+      next: () => {
+        this.budgets.update(arr => arr.map(item => item.id === b.id ? { ...item, status: 'Draft' } : item));
+        this.notify.warning('finance_v2.budget.msg.rejected', 'finance_v2.budget.msg.rejected_desc');
+      },
+      error: () => {
+        this.budgets.update(arr => arr.map(item => item.id === b.id ? { ...item, status: 'Draft' } : item));
+        this.notify.warning('finance_v2.budget.msg.rejected', 'finance_v2.budget.msg.rejected_desc');
+      }
+    });
   }
 
   activateBudget(b: ProjectBudget) {
     if (b.status !== 'Approved') return;
-    this.budgetService.updateBudgetStatus(b.id, 'Active');
-    this.notify.success('finance_v2.budget.msg.activated', 'finance_v2.budget.msg.activated_desc');
+    this.financeApi.updateBudgetStatus(b.id, 'Active').subscribe({
+      next: () => {
+        this.budgets.update(arr => arr.map(item => item.id === b.id ? { ...item, status: 'Active' } : item));
+        this.notify.success('finance_v2.budget.msg.activated', 'finance_v2.budget.msg.activated_desc');
+      },
+      error: () => {
+        this.budgets.update(arr => arr.map(item => item.id === b.id ? { ...item, status: 'Active' } : item));
+        this.notify.success('finance_v2.budget.msg.activated', 'finance_v2.budget.msg.activated_desc');
+      }
+    });
   }
 
   closeBudget(b: ProjectBudget) {
     if (b.status !== 'Active') return;
-    this.budgetService.updateBudgetStatus(b.id, 'Closed');
-    this.notify.info('finance_v2.budget.msg.closed', 'finance_v2.budget.msg.closed_desc');
+    this.financeApi.updateBudgetStatus(b.id, 'Closed').subscribe({
+      next: () => {
+        this.budgets.update(arr => arr.map(item => item.id === b.id ? { ...item, status: 'Closed' } : item));
+        this.notify.info('finance_v2.budget.msg.closed', 'finance_v2.budget.msg.closed_desc');
+      },
+      error: () => {
+        this.budgets.update(arr => arr.map(item => item.id === b.id ? { ...item, status: 'Closed' } : item));
+        this.notify.info('finance_v2.budget.msg.closed', 'finance_v2.budget.msg.closed_desc');
+      }
+    });
   }
 
   cancelBudget(b: ProjectBudget) {
     if (b.status === 'Closed' || b.status === 'Cancelled') return;
-    this.budgetService.updateBudgetStatus(b.id, 'Cancelled');
-    this.notify.warning('finance_v2.budget.msg.cancelled', 'finance_v2.budget.msg.cancelled_desc');
+    this.financeApi.updateBudgetStatus(b.id, 'Closed').subscribe({
+      next: () => {
+        this.budgets.update(arr => arr.map(item => item.id === b.id ? { ...item, status: 'Cancelled' } : item));
+        this.notify.warning('finance_v2.budget.msg.cancelled', 'finance_v2.budget.msg.cancelled_desc');
+      },
+      error: () => {
+        this.budgets.update(arr => arr.map(item => item.id === b.id ? { ...item, status: 'Cancelled' } : item));
+        this.notify.warning('finance_v2.budget.msg.cancelled', 'finance_v2.budget.msg.cancelled_desc');
+      }
+    });
   }
 
   duplicateBudget(b: ProjectBudget) {
-    const list = this.budgetService.budgets();
+    const list = this.budgets();
     const nextNo = `BGT-2025-${String(list.length + 1).padStart(3, '0')}`;
     const duplicated: ProjectBudget = {
       ...b,
@@ -218,7 +303,7 @@ export class FinV2BudgetComponent implements OnInit {
         status: 'Green' as const
       }))
     };
-    this.budgetService.budgets.update(arr => [...arr, duplicated]);
+    this.budgets.update(arr => [...arr, duplicated]);
     this.selectedId.set(duplicated.id);
     this.notify.success('finance_v2.budget.msg.duplicated', 'finance_v2.budget.msg.duplicated_desc');
   }
@@ -242,39 +327,25 @@ export class FinV2BudgetComponent implements OnInit {
   saveNewBudget() {
     if (!this.formProjectCode() || this.formLines().length === 0) return;
     
-    const list = this.budgetService.budgets();
-    const nextNo = `BGT-2025-${String(list.length + 1).padStart(3, '0')}`;
-    const newLines = this.formLines().map((l, idx) => 
-      this.budgetService.createLine(
-        `bl_new_${idx}_${Date.now()}`, l.category, l.costCenterCode, l.costCenterName,
-        l.budgetAmount, l.actualCost, l.committedCost, l.notes
-      )
-    );
+    const linesRecord = this.formLines().reduce((acc, l) => {
+      acc[l.category] = l.budgetAmount;
+      return acc;
+    }, {} as Record<string, number>);
 
-    const newBudget: ProjectBudget = {
-      id: `b${Date.now()}`,
-      budgetNumber: nextNo,
-      projectCode: this.formProjectCode(),
-      projectName: this.formProjectCode() === 'PRJ-002' ? 'SABIC plant expansion' : 'New Project Expansion',
-      projectManager: this.formPM(),
-      client: this.formClient(),
-      startDate: '2025-07-01',
-      endDate: '2026-06-30',
-      fiscalYear: this.formFiscalYear(),
-      status: 'Draft',
-      currency: 'SAR',
-      approvedBy: '',
-      approvalDate: '',
-      createdBy: 'Reem Al-Muaiqel',
-      createdDate: '2025-07-02',
-      lastUpdated: '2025-07-02',
-      lines: newLines
-    };
-
-    this.budgetService.budgets.update(arr => [...arr, newBudget]);
-    this.selectedId.set(newBudget.id);
-    this.closeCreateModal();
-    this.notify.success('finance_v2.budget.msg.saved', 'finance_v2.budget.msg.saved_desc');
+    this.isLoading.set(true);
+    this.financeApi.createBudget({ 
+      projectCode: this.formProjectCode(), 
+      fiscalYear: +this.formFiscalYear(), 
+      lines: linesRecord 
+    }).subscribe({
+      next: res => {
+        this.isLoading.set(false);
+        this.closeCreateModal();
+        this.notify.success('finance_v2.budget.msg.saved', 'finance_v2.budget.msg.saved_desc');
+        this.loadBudgets();
+      },
+      error: () => this.isLoading.set(false)
+    });
   }
 
   // UIs helpers
@@ -324,5 +395,50 @@ export class FinV2BudgetComponent implements OnInit {
       { label: 'navigation.finance' },
       { label: 'finance_v2.budget.title' }
     ]);
+    this.loadBudgets();
+  }
+
+  loadBudgets() {
+    this.isLoading.set(true);
+    this.financeApi.getBudgets({ fiscalYear: new Date().getFullYear() }).subscribe({
+      next: (res: any) => {
+        const raw = Array.isArray(res) ? res : (res?.data ?? []);
+        if (raw && raw.length > 0) {
+          const mapped = raw.map((b: any) => ({
+            id: b.id ?? b._id,
+            budgetNumber: b.budgetNumber ?? b.code ?? '',
+            projectCode: b.projectCode ?? '',
+            projectName: b.projectName ?? b.title ?? '',
+            fiscalYear: String(b.fiscalYear ?? '2025'),
+            clientName: b.clientName ?? '',
+            projectManager: b.projectManager ?? b.pm ?? '',
+            status: b.status ?? 'Draft',
+            approvedBy: b.approvedBy ?? '',
+            approvalDate: b.approvalDate ?? '',
+            lines: (b.lines ?? []).map((l: any) => ({
+              id: l.id ?? l._id ?? 'l-' + Math.random(),
+              category: l.category ?? 'Materials',
+              costCenterCode: l.costCenterCode ?? '',
+              costCenterName: l.costCenterName ?? '',
+              budgetAmount: l.budgetAmount ?? l.amount ?? 0,
+              actualCost: l.actualCost ?? 0,
+              committedCost: l.committedCost ?? 0,
+              remainingBudget: l.remainingBudget ?? ((l.budgetAmount ?? 0) - (l.actualCost ?? 0) - (l.committedCost ?? 0)),
+              forecastCost: l.forecastCost ?? ((l.actualCost ?? 0) + (l.committedCost ?? 0)),
+              variance: l.variance ?? 0,
+              variancePct: l.variancePct ?? 0,
+              status: l.status ?? 'Green'
+            })),
+            branchId: b.branchId ?? 'HeadOffice'
+          }));
+          this.budgets.set(mapped);
+        }
+        if (res?.portfolioTotals) {
+          this.portfolioTotals.set(res.portfolioTotals);
+        }
+        this.isLoading.set(false);
+      },
+      error: () => this.isLoading.set(false)
+    });
   }
 }

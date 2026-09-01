@@ -271,7 +271,7 @@
                 <select [value]="formCustomerId()" (change)="formCustomerId.set($any($event.target).value)"
                   class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-semibold text-slate-700 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/10">
                   <option value="">{{ 'finance_v2.ar.cus.select_customer' | translate }}</option>
-                  @for (c of arService.customers(); track c.id) {
+                  @for (c of customers(); track c.id) {
                     <option [value]="c.id">{{ c.nameEn }}</option>
                   }
                 </select>

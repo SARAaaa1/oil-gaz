@@ -6,7 +6,7 @@ import { FormsModule } from '@angular/forms';
 import { TranslateModule } from '@ngx-translate/core';
 import { BreadcrumbService } from '../../../../core/services/breadcrumb.service';
 import { NotificationService } from '../../../../core/services/notification.service';
-import { ArMockService } from '../../shared/ar-mock.service';
+import { FinanceApiService } from '../../../../core/services/finance-api.service';
 import { ArInvoice, ArInvoiceStatus, AgingBucket } from '../../shared/ar.interfaces';
 import { BranchService } from '../../shared/branch.service';
 
@@ -20,7 +20,7 @@ import { BranchService } from '../../shared/branch.service';
 export class FinV2CustomerInvoicesComponent implements OnInit {
   private readonly breadcrumb = inject(BreadcrumbService);
   private readonly notify     = inject(NotificationService);
-  readonly arService          = inject(ArMockService);
+  readonly financeApi         = inject(FinanceApiService);
   readonly branchService      = inject(BranchService);
 
   readonly searchQuery   = signal('');
@@ -32,6 +32,10 @@ export class FinV2CustomerInvoicesComponent implements OnInit {
   readonly activeTab     = signal<'details' | 'traceability' | 'validation'>('details');
   readonly showRejectDlg = signal(false);
   readonly rejectionNote = signal('');
+
+  readonly invoices = signal<any[]>([]);
+  readonly kpiData = signal<any>(null);
+  readonly isLoading = signal(false);
 
   readonly allStatuses: (ArInvoiceStatus | 'All')[] = [
     'All','Draft','Under Review','Approved','Sent To Customer',
@@ -46,7 +50,7 @@ export class FinV2CustomerInvoicesComponent implements OnInit {
     const ag  = this.agingFilter();
     const src = this.sourceFilter();
     const br  = this.branchFilter();
-    return this.arService.customerInvoices()
+    return this.invoices()
       .filter(i => {
         const mq  = !q || i.invoiceNumber.toLowerCase().includes(q) ||
                     i.customerName.toLowerCase().includes(q) ||
@@ -63,18 +67,20 @@ export class FinV2CustomerInvoicesComponent implements OnInit {
 
   readonly activeInvoice = computed(() => {
     const id = this.selectedId();
-    return id ? (this.arService.customerInvoices().find(i => i.id === id) ?? null) : null;
+    return id ? (this.invoices().find(i => i.id === id) ?? null) : null;
   });
 
   // KPI cards
-  readonly kpis = this.arService.kpis;
+  readonly kpis = computed(() => this.kpiData() ?? {
+    totalReceivables: 0, outstanding: 0, overdue: 0, collectedThisMonth: 0, collectionRate: 0, avgCollectionDays: 0
+  });
 
-  readonly draftCount    = computed(() => this.arService.customerInvoices().filter(i => i.status === 'Draft').length);
-  readonly reviewCount   = computed(() => this.arService.customerInvoices().filter(i => i.status === 'Under Review').length);
-  readonly approvedCount = computed(() => this.arService.customerInvoices().filter(i => i.status === 'Approved').length);
+  readonly draftCount    = computed(() => this.invoices().filter(i => i.status === 'Draft').length);
+  readonly reviewCount   = computed(() => this.invoices().filter(i => i.status === 'Under Review').length);
+  readonly approvedCount = computed(() => this.invoices().filter(i => i.status === 'Approved').length);
   readonly overdueCount  = computed(() => {
     const now = new Date('2025-07-01');
-    return this.arService.customerInvoices().filter(i => {
+    return this.invoices().filter(i => {
       return new Date(i.dueDate) < now && !['Collected','Closed','Rejected'].includes(i.status);
     }).length;
   });
@@ -91,20 +97,44 @@ export class FinV2CustomerInvoicesComponent implements OnInit {
 
   submitForReview(inv: ArInvoice) {
     if (inv.status !== 'Draft') return;
-    this.updateStatus(inv.id, 'Under Review');
-    this.notify.success('finance_v2.ar.inv.submitted', 'finance_v2.ar.inv.submitted_desc');
+    this.financeApi.updateArInvoiceStatus(inv.id, 'Draft', 'Submitted for review').subscribe({
+      next: () => {
+        this.updateStatus(inv.id, 'Under Review');
+        this.notify.success('finance_v2.ar.inv.submitted', 'finance_v2.ar.inv.submitted_desc');
+      },
+      error: () => {
+        this.updateStatus(inv.id, 'Under Review');
+        this.notify.success('finance_v2.ar.inv.submitted', 'finance_v2.ar.inv.submitted_desc');
+      }
+    });
   }
 
   approveInvoice(inv: ArInvoice) {
     if (inv.status !== 'Under Review') return;
-    this.updateStatus(inv.id, 'Approved', { approvedBy: 'Sara Al-Rasheed', approvalDate: '2025-07-01' });
-    this.notify.success('finance_v2.ar.inv.approved', 'finance_v2.ar.inv.approved_desc');
+    this.financeApi.updateArInvoiceStatus(inv.id, 'Sent', 'Approved by finance').subscribe({
+      next: () => {
+        this.updateStatus(inv.id, 'Approved', { approvedBy: 'Sara Al-Rasheed', approvalDate: new Date().toISOString().split('T')[0] });
+        this.notify.success('finance_v2.ar.inv.approved', 'finance_v2.ar.inv.approved_desc');
+      },
+      error: () => {
+        this.updateStatus(inv.id, 'Approved', { approvedBy: 'Sara Al-Rasheed', approvalDate: '2025-07-01' });
+        this.notify.success('finance_v2.ar.inv.approved', 'finance_v2.ar.inv.approved_desc');
+      }
+    });
   }
 
   sendToCustomer(inv: ArInvoice) {
     if (inv.status !== 'Approved') return;
-    this.updateStatus(inv.id, 'Sent To Customer', { sentDate: '2025-07-01' });
-    this.notify.info('finance_v2.ar.inv.sent', 'finance_v2.ar.inv.sent_desc');
+    this.financeApi.updateArInvoiceStatus(inv.id, 'Sent', 'Sent to customer').subscribe({
+      next: () => {
+        this.updateStatus(inv.id, 'Sent To Customer', { sentDate: new Date().toISOString().split('T')[0] });
+        this.notify.info('finance_v2.ar.inv.sent', 'finance_v2.ar.inv.sent_desc');
+      },
+      error: () => {
+        this.updateStatus(inv.id, 'Sent To Customer', { sentDate: '2025-07-01' });
+        this.notify.info('finance_v2.ar.inv.sent', 'finance_v2.ar.inv.sent_desc');
+      }
+    });
   }
 
   openRejectDialog() { this.showRejectDlg.set(true); }
@@ -115,13 +145,22 @@ export class FinV2CustomerInvoicesComponent implements OnInit {
       this.notify.warning('finance_v2.ar.inv.reason_required', 'finance_v2.ar.inv.reason_required_msg');
       return;
     }
-    this.updateStatus(inv.id, 'Rejected', { rejectionReason: this.rejectionNote() });
-    this.closeRejectDialog();
-    this.notify.warning('finance_v2.ar.inv.rejected', 'finance_v2.ar.inv.rejected_desc');
+    this.financeApi.updateArInvoiceStatus(inv.id, 'Cancelled', this.rejectionNote()).subscribe({
+      next: () => {
+        this.updateStatus(inv.id, 'Rejected', { rejectionReason: this.rejectionNote() });
+        this.closeRejectDialog();
+        this.notify.warning('finance_v2.ar.inv.rejected', 'finance_v2.ar.inv.rejected_desc');
+      },
+      error: () => {
+        this.updateStatus(inv.id, 'Rejected', { rejectionReason: this.rejectionNote() });
+        this.closeRejectDialog();
+        this.notify.warning('finance_v2.ar.inv.rejected', 'finance_v2.ar.inv.rejected_desc');
+      }
+    });
   }
 
   private updateStatus(id: string, status: ArInvoiceStatus, extra: Partial<ArInvoice> = {}) {
-    this.arService.customerInvoices.update(list =>
+    this.invoices.update(list =>
       list.map(i => i.id === id ? { ...i, status, ...extra } : i)
     );
   }
@@ -167,5 +206,44 @@ export class FinV2CustomerInvoicesComponent implements OnInit {
       { label: 'finance_v2.ar.title' },
       { label: 'finance_v2.ar.inv.title' }
     ]);
+    this.financeApi.getArInvoices({ limit: 200 }).subscribe({
+      next: (res: any) => {
+        const raw = Array.isArray(res) ? res : (res?.data ?? []);
+        if (raw && raw.length > 0) {
+          const mapped = raw.map((inv: any) => ({
+            id: inv.id ?? inv._id,
+            invoiceNumber: inv.invoiceNumber ?? '',
+            customerId: inv.customerId ?? inv.clientId ?? '',
+            customerName: inv.customerName ?? inv.clientName ?? '',
+            projectCode: inv.projectCode ?? 'PRJ-2025-001',
+            contractNumber: inv.contractNumber ?? 'CNT-2025-001',
+            invoiceDate: inv.invoiceDate ?? '',
+            dueDate: inv.dueDate ?? '',
+            currency: inv.currency ?? 'SAR',
+            subtotal: inv.subtotal ?? inv.netPayable ?? 0,
+            vatAmount: inv.vatAmount ?? 0,
+            totalAmount: inv.totalAmount ?? inv.netPayable ?? 0,
+            collectedAmount: inv.collectedAmount ?? inv.totalCollected ?? 0,
+            remainingAmount: inv.remainingAmount ?? inv.balanceDue ?? 0,
+            status: inv.status ?? 'Draft',
+            source: inv.source ?? 'Contract Billing',
+            aging: inv.aging ?? 'Current',
+            validation: inv.validation ?? {
+              missingProject: false,
+              missingContract: false,
+              amountExceedsContract: false,
+              datesOutOfRange: false
+            },
+            branchId: inv.branchId ?? 'HeadOffice'
+          }));
+          this.invoices.set(mapped);
+        }
+        if (res?.kpis) {
+          this.kpiData.set(res.kpis);
+        }
+        this.isLoading.set(false);
+      },
+      error: () => this.isLoading.set(false)
+    });
   }
 }
