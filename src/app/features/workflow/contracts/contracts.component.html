@@ -393,26 +393,169 @@
               </div>
             </div>
 
-            <div class="grid grid-cols-2 gap-3">
-              <div>
-                <label class="block text-[10px] uppercase font-bold tracking-wider text-slate-700 mb-1">{{ 'workflow.contracts.label_type' | translate }}</label>
-                <select [(ngModel)]="formModel.type" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400" style="color: #0f172a !important; background-color: #f8fafc !important;">
-                  <option value="Daily Rate" style="color: #0f172a !important;">{{ 'workflow.contracts.type_daily' | translate }}</option>
-                  <option value="Time & Material" style="color: #0f172a !important;">{{ 'workflow.contracts.type_tm' | translate }}</option>
-                  <option value="Lump Sum" style="color: #0f172a !important;">{{ 'workflow.contracts.type_lump' | translate }}</option>
-                </select>
-              </div>
-              <div>
-                <label class="block text-[10px] uppercase font-bold tracking-wider text-slate-700 mb-1">{{ 'workflow.contracts.label_rig_site' | translate }}</label>
-                <select [(ngModel)]="formModel.rigId" (change)="onRigChange()" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400" style="color: #0f172a !important; background-color: #f8fafc !important;">
-                  <option value="" style="color: #0f172a !important;">{{ 'workflow.contracts.no_rig_associated' | translate }}</option>
-                  @for (rig of rigs(); track (rig._id ?? rig.id)) {
-                    <option [value]="rig._id ?? rig.id" style="color: #0f172a !important;">
-                      {{ rig.equipmentName || rig.rigName || rig.equipmentCode }} - {{ rig.location || rig.category || 'Rig' }}
-                    </option>
+            <!-- Contract Type -->
+            <div>
+              <label class="block text-[10px] uppercase font-bold tracking-wider text-slate-700 mb-1">{{ 'workflow.contracts.label_type' | translate }}</label>
+              <select [(ngModel)]="formModel.type" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400" style="color: #0f172a !important; background-color: #f8fafc !important;">
+                <option value="Daily Rate" style="color: #0f172a !important;">{{ 'workflow.contracts.type_daily' | translate }}</option>
+                <option value="Time & Material" style="color: #0f172a !important;">{{ 'workflow.contracts.type_tm' | translate }}</option>
+                <option value="Lump Sum" style="color: #0f172a !important;">{{ 'workflow.contracts.type_lump' | translate }}</option>
+              </select>
+            </div>
+
+            <!-- ══ MULTI-ASSET PICKER ══ -->
+            <div class="space-y-2">
+              <label class="flex items-center gap-1.5 text-[10px] uppercase font-black tracking-wider text-slate-800">
+                <svg class="w-3.5 h-3.5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18"/>
+                </svg>
+                تعيين الأصول للعقد
+                <span class="ml-auto px-1.5 py-0.5 bg-indigo-100 text-indigo-700 rounded-full text-[9px] font-bold">
+                  {{ selectedAssets().length }} مختار
+                </span>
+              </label>
+
+              <!-- Selected Assets Chips -->
+              @if (selectedAssets().length > 0) {
+                <div class="flex flex-wrap gap-1.5 p-2 bg-indigo-50 border border-indigo-200 rounded-lg">
+                  @for (asset of selectedAssets(); track asset.assetId) {
+                    <span class="inline-flex items-center gap-1 px-2 py-0.5 bg-white border border-indigo-300 text-indigo-800 rounded-full text-[10px] font-bold shadow-sm">
+                      <span class="w-1.5 h-1.5 rounded-full bg-indigo-500 shrink-0"></span>
+                      {{ asset.equipmentName }}
+                      <span class="text-[8px] text-indigo-400 font-semibold">({{ asset.category }})</span>
+                      <button type="button" (click)="removeSelectedAsset(asset.assetId)"
+                        class="ml-0.5 w-3.5 h-3.5 flex items-center justify-center rounded-full hover:bg-red-100 text-indigo-400 hover:text-red-600 transition-colors">
+                        <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                      </button>
+                    </span>
+                  }
+                </div>
+              }
+
+              <!-- Search + Category Filter -->
+              <div class="flex gap-2">
+                <div class="relative flex-1">
+                  <svg class="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                  </svg>
+                  <input type="text"
+                    [value]="assetSearchQuery()"
+                    (input)="assetSearchQuery.set($any($event.target).value)"
+                    placeholder="ابحث بالاسم أو الكود أو الموقع..."
+                    class="w-full pl-7 pr-3 py-1.5 bg-white border border-slate-300 rounded-lg text-[11px] text-slate-900 font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                    style="color: #0f172a !important;"/>
+                </div>
+                <select
+                  [value]="assetCategoryFilter()"
+                  (change)="assetCategoryFilter.set($any($event.target).value)"
+                  class="bg-white border border-slate-300 rounded-lg px-2 py-1.5 text-[10px] font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                  style="color: #0f172a !important;">
+                  @for (cat of assetCategories(); track cat) {
+                    <option [value]="cat" [selected]="cat === assetCategoryFilter()" style="color: #0f172a !important;">{{ cat === 'ALL' ? 'كل الفئات' : cat }}</option>
                   }
                 </select>
               </div>
+
+              <!-- Assets Checklist -->
+              <div class="border border-slate-200 rounded-lg overflow-hidden">
+                @if (allAssets().length === 0) {
+                  <div class="flex flex-col items-center justify-center py-6 bg-slate-50 text-slate-400">
+                    <svg class="w-8 h-8 mb-2 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0H4"/>
+                    </svg>
+                    <p class="text-[11px] font-semibold">جاري تحميل الأصول...</p>
+                  </div>
+                } @else if (filteredAssets().length === 0) {
+                  <div class="flex items-center justify-center py-5 bg-slate-50 text-slate-400 text-[11px] font-semibold">
+                    لا توجد نتائج مطابقة
+                  </div>
+                } @else {
+                  <div class="max-h-52 overflow-y-auto divide-y divide-slate-100">
+                    @for (asset of filteredAssets(); track (asset._id ?? asset.id)) {
+                      <label
+                        class="flex items-center gap-3 px-3 py-2 cursor-pointer transition-colors select-none"
+                        [class.bg-indigo-50]="isAssetSelected(asset)"
+                        [class.hover:bg-slate-50]="!isAssetSelected(asset)"
+                        (click)="toggleAsset(asset)">
+
+                        <!-- Checkbox -->
+                        <span class="flex-shrink-0 w-4 h-4 rounded border-2 flex items-center justify-center transition-colors"
+                          [class.border-indigo-500]="isAssetSelected(asset)"
+                          [class.bg-indigo-500]="isAssetSelected(asset)"
+                          [class.border-slate-300]="!isAssetSelected(asset)"
+                          [class.bg-white]="!isAssetSelected(asset)">
+                          @if (isAssetSelected(asset)) {
+                            <svg class="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3.5" d="M5 13l4 4L19 7"/>
+                            </svg>
+                          }
+                        </span>
+
+                        <!-- Asset Info -->
+                        <div class="flex-1 min-w-0">
+                          <div class="flex items-center gap-1.5">
+                            <span class="text-[11px] font-bold text-slate-800 truncate">
+                              {{ asset.equipmentName || asset.name }}
+                            </span>
+                            <span class="shrink-0 px-1.5 py-0.5 rounded text-[8px] font-extrabold uppercase tracking-wide"
+                              [class.bg-blue-100]="asset.category === 'Rig'"
+                              [class.text-blue-700]="asset.category === 'Rig'"
+                              [class.bg-amber-100]="asset.category === 'Generator'"
+                              [class.text-amber-700]="asset.category === 'Generator'"
+                              [class.bg-green-100]="asset.category === 'Crane'"
+                              [class.text-green-700]="asset.category === 'Crane'"
+                              [class.bg-teal-100]="asset.category === 'Vehicle'"
+                              [class.text-teal-700]="asset.category === 'Vehicle'"
+                              [class.bg-rose-100]="asset.category === 'Camp'"
+                              [class.text-rose-700]="asset.category === 'Camp'"
+                              [class.bg-purple-100]="asset.category !== 'Rig' && asset.category !== 'Generator' && asset.category !== 'Crane' && asset.category !== 'Vehicle' && asset.category !== 'Camp'"
+                              [class.text-purple-700]="asset.category !== 'Rig' && asset.category !== 'Generator' && asset.category !== 'Crane' && asset.category !== 'Vehicle' && asset.category !== 'Camp'">
+                              {{ asset.category }}{{ asset.subType ? ' · ' + asset.subType : '' }}
+                            </span>
+                          </div>
+                          <div class="flex items-center gap-2 mt-0.5">
+                            <span class="text-[9px] text-slate-400 font-mono">{{ asset.assetNumber || asset.equipmentCode }}</span>
+                            @if (asset.location) {
+                              <span class="text-[9px] text-slate-400">• {{ asset.location }}</span>
+                            }
+                            @if (asset.plateNumber) {
+                              <span class="text-[9px] text-teal-500 font-bold">🚗 {{ asset.plateNumber }}</span>
+                            }
+                            @if (asset.totalBeds) {
+                              <span class="text-[9px] text-rose-500 font-bold">🛏 {{ asset.totalBeds }} سرير</span>
+                            }
+                          </div>
+                        </div>
+
+                        <!-- Status Badge -->
+                        <span class="shrink-0 px-1.5 py-0.5 rounded-full text-[8px] font-bold uppercase"
+                          [class.bg-emerald-100]="asset.status === 'Active'"
+                          [class.text-emerald-700]="asset.status === 'Active'"
+                          [class.bg-sky-100]="asset.status === 'Standby'"
+                          [class.text-sky-700]="asset.status === 'Standby'"
+                          [class.bg-orange-100]="asset.status === 'Maintenance'"
+                          [class.text-orange-700]="asset.status === 'Maintenance'"
+                          [class.bg-slate-100]="asset.status !== 'Active' && asset.status !== 'Standby' && asset.status !== 'Maintenance'"
+                          [class.text-slate-600]="asset.status !== 'Active' && asset.status !== 'Standby' && asset.status !== 'Maintenance'">
+                          {{ asset.status }}
+                        </span>
+                      </label>
+                    }
+                  </div>
+                }
+              </div>
+
+              <!-- Summary line -->
+              @if (allAssets().length > 0) {
+                <p class="text-[9px] text-slate-400 font-semibold">
+                  {{ filteredAssets().length }} أصل معروض من أصل {{ allAssets().length }} إجمالي
+                  @if (selectedAssets().length > 0) {
+                    • <span class="text-indigo-600 font-bold">{{ selectedAssets().length }} مختار</span>
+                  }
+                </p>
+              }
             </div>
 
             <!-- Date Fields (With Explicit Black Text Color) -->
@@ -546,10 +689,10 @@
                 </label>
 
                 <div class="grid grid-cols-2 gap-2">
-                  <!-- Main CC Select (2 Main Roots) -->
+                  <!-- Level 1: Main Root (HeadOffice / FreeZone) -->
                   <div>
                     <label class="block text-[9px] uppercase font-bold tracking-wider text-slate-600 mb-1">
-                      Main Root Center <span class="text-red-500">*</span>
+                      المركز الرئيسي <span class="text-red-500">*</span>
                     </label>
                     <select
                       [ngModel]="contractParentCC()"
@@ -566,19 +709,19 @@
                     </select>
                   </div>
 
-                  <!-- Sub CC / Department Select -->
+                  <!-- Level 2: Department -->
                   <div>
                     <label class="block text-[9px] uppercase font-bold tracking-wider text-slate-600 mb-1">
-                      Department / Cost Center <span class="text-slate-400 font-semibold normal-case">(اختياري)</span>
+                      القسم / الإدارة
                     </label>
                     @if (childCostCenters().length > 0) {
                       <select
-                        [(ngModel)]="formModel.costCenterCode"
+                        [ngModel]="contractLevel2CC()"
                         (ngModelChange)="onChildCCChange($event)"
                         class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400"
                         style="color: #0f172a !important; background-color: #ffffff !important;"
                       >
-                        <option value="" style="color:#64748b">— اختر القسم / مركز التكلفة —</option>
+                        <option value="" style="color:#64748b">— اختر القسم —</option>
                         @for (cc of childCostCenters(); track cc.code) {
                           <option [value]="cc.code" style="color: #0f172a !important;">
                             {{ cc.code }} — {{ cc.nameAr || cc.nameEn || cc.name }}
@@ -587,26 +730,63 @@
                       </select>
                     } @else if (contractParentCC()) {
                       <div class="w-full bg-amber-50 border border-amber-200 rounded px-2.5 py-1.5 text-amber-700 font-bold text-[10px]">
-                        No sub-departments — using main CC directly
+                        لا يوجد أقسام — سيُستخدم المركز الرئيسي مباشرة
                       </div>
                     } @else {
                       <div class="w-full bg-slate-100 border border-slate-200 rounded px-2.5 py-1.5 text-slate-400 font-semibold text-[10px]">
-                        Select main cost center first
+                        اختر المركز الرئيسي أولاً
                       </div>
                     }
                   </div>
                 </div>
 
+                <!-- Level 3: Sub-department / Project CC (shown only when level-2 has children) -->
+                @if (grandchildCostCenters().length > 0) {
+                  <div>
+                    <label class="flex items-center gap-1 text-[9px] uppercase font-bold tracking-wider text-indigo-700 mb-1">
+                      <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                      </svg>
+                      مركز تكلفة المشروع / الفرع
+                      <span class="ml-1 px-1.5 py-0.5 bg-indigo-100 text-indigo-700 rounded-full text-[8px] font-extrabold">
+                        {{ grandchildCostCenters().length }} متاح
+                      </span>
+                    </label>
+                    <select
+                      [ngModel]="formModel.costCenterCode"
+                      (ngModelChange)="onGrandchildCCChange($event)"
+                      class="w-full bg-indigo-50 border border-indigo-300 rounded px-2.5 py-1.5 text-indigo-900 font-bold focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      style="color: #1e1b4b !important; background-color: #eef2ff !important;"
+                    >
+                      <option value="" style="color:#6366f1">— اختر مركز تكلفة المشروع —</option>
+                      @for (cc of grandchildCostCenters(); track cc.code) {
+                        <option [value]="cc.code" style="color: #1e1b4b !important;">
+                          {{ cc.code }} — {{ cc.nameAr || cc.nameEn || cc.name }}
+                          @if (cc.type === 'Project') { (مشروع) }
+                        </option>
+                      }
+                    </select>
+                  </div>
+                }
+
                 <!-- Resolved CC Preview Badge -->
                 @if (contractParentCC()) {
-                  <div class="flex items-center gap-2 bg-indigo-50 border border-indigo-100 rounded px-2.5 py-1 text-[10px]">
-                    <span class="text-indigo-500 font-bold uppercase tracking-wider text-[9px]">Resolved Cost Center:</span>
-                    <span class="font-mono font-black text-indigo-700">
-                      {{ formModel.costCenterCode || contractParentCC() }}
+                  <div class="flex flex-wrap items-center gap-2 bg-indigo-50 border border-indigo-100 rounded px-2.5 py-1.5 text-[10px]">
+                    <!-- breadcrumb trail -->
+                    <span class="flex items-center gap-1 font-semibold text-slate-500">
+                      <span class="font-black text-slate-700">{{ contractParentCC() }}</span>
+                      @if (contractLevel2CC()) {
+                        <svg class="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                        <span class="font-black text-slate-700">{{ contractLevel2CC() }}</span>
+                      }
+                      @if (formModel.costCenterCode && formModel.costCenterCode !== contractLevel2CC()) {
+                        <svg class="w-3 h-3 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                        <span class="font-black text-indigo-700">{{ formModel.costCenterCode }}</span>
+                      }
                     </span>
-                    <span class="text-indigo-500 font-semibold">
-                      — {{ formModel.costCenterName || '' }}
-                    </span>
+                    @if (formModel.costCenterName) {
+                      <span class="text-indigo-500 font-semibold">— {{ formModel.costCenterName }}</span>
+                    }
                   </div>
                 }
               </div>

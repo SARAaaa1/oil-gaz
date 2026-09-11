@@ -62,19 +62,70 @@ export class CostCenterStoreService {
       next: (res: any) => {
         const rawItems: any[] = res.data ?? (Array.isArray(res) ? res : []);
         if (rawItems && rawItems.length > 0) {
-          const normalized: BackendCostCenter[] = rawItems.map(item => ({
-            ...item,
-            id: item._id || item.id,
-            code: item.code,
-            name: item.name || item.nameEn || item.code,
-            nameEn: item.nameEn || item.name || item.code,
-            nameAr: item.nameAr || item.name || item.code,
-            parentCode: item.parentCode ?? null,
-            level: item.level ?? (item.parentCode ? 2 : 1),
-            branch: item.branch || (item.code.startsWith('FZ-') || (item.parentCode && item.parentCode.startsWith('FZ-')) ? 'FreeZone' : 'HeadOffice')
+          // ── Flatten all levels: top-level items + their children[] recursively ──
+          const flatten = (items: any[], depth: number = 0): BackendCostCenter[] => {
+            const result: BackendCostCenter[] = [];
+            for (const item of items) {
+              const branch = item.branch ||
+                (item.code?.startsWith('FZ-') || item.parentCode?.startsWith('FZ-')
+                  ? 'FreeZone' : 'HeadOffice');
+              // Extract children before spreading to avoid nesting in the flat list
+              const { children: _children, ...itemWithoutChildren } = item;
+              result.push({
+                ...itemWithoutChildren,
+                id:         item._id || item.id,
+                code:       item.code,
+                name:       item.name || item.nameEn || item.code,
+                nameEn:     item.nameEn || item.name || item.code,
+                nameAr:     item.nameAr || item.name || item.code,
+                parentCode: item.parentCode ?? null,
+                level:      item.level ?? (item.parentCode ? (depth + 1) : 1),
+                branch
+              });
+              // Recurse into children if the API returned them inline
+              if (Array.isArray(item.children) && item.children.length > 0) {
+                result.push(...flatten(item.children, depth + 1));
+              }
+            }
+            return result;
+          };
+
+          const normalized = flatten(rawItems);
+          // Deduplicate by code (in case API returned the same CC at multiple depths)
+          const seen = new Set<string>();
+          const deduped = normalized.filter(cc => {
+            if (seen.has(cc.code)) return false;
+            seen.add(cc.code);
+            return true;
+          });
+
+          this.costCenters.set(deduped);
+
+          // ── Map backend fields → mock fields so financeV2 components don't crash ──
+          // Backend uses: budgetAmount, spentAmount, availableAmount, committedAmount, utilizationPct
+          // Mock expects:  budget,       spent,       available,       committed,       utilizationPct
+          const mockedItems = deduped.map((cc: any) => ({
+            id:             cc.id || cc._id || cc.code,
+            code:           cc.code,
+            nameEn:         cc.nameEn || cc.name || cc.code,
+            nameAr:         cc.nameAr || cc.name || cc.code,
+            type:           cc.type || 'Department',
+            parentCode:     cc.parentCode ?? null,
+            level:          cc.level ?? 1,
+            branch:         cc.branch ?? 'HeadOffice',
+            status:         cc.status || (cc.isActive ? 'Active' : 'Inactive'),
+            manager:        cc.manager || '',
+            budget:         cc.budgetAmount    ?? cc.budget    ?? 0,
+            spent:          cc.spentAmount     ?? cc.spent     ?? 0,
+            available:      cc.availableAmount ?? cc.available ?? 0,
+            committed:      cc.committedAmount ?? cc.committed ?? 0,
+            utilizationPct: cc.utilizationPct  ?? 0,
+            alertLevel:     cc.alertLevel ?? 'none',
+            description:    cc.description ?? null,
+            childrenCount:  cc.childrenCount ?? 0,
+            createdAt:      cc.createdAt ?? ''
           }));
-          this.costCenters.set(normalized);
-          this.financeV2Mock.costCenters.set(normalized as any);
+          this.financeV2Mock.costCenters.set(mockedItems as any);
         } else {
           this.loadMockFallback();
         }
@@ -104,20 +155,25 @@ export class CostCenterStoreService {
     })));
   }
 
-  /** Departments / Cost Centers under Head Office or Free Zone root */
+  /**
+   * Level-1 Departments directly under a Root (HeadOffice / FreeZone).
+   * Returns only items whose parentCode is null (i.e. top-level departments).
+   */
   getDepartmentsByRoot(rootCode: string): BackendCostCenter[] {
     if (!rootCode) return [];
     const isFreeZone = rootCode === 'FreeZone' || rootCode === 'FZ-CC-100' || rootCode === 'FZ';
     return this.costCenters().filter(cc => {
+      // Must be a top-level department (no parent = sits directly under the root)
+      if (cc.parentCode !== null && cc.parentCode !== undefined) return false;
       if (isFreeZone) {
-        return cc.branch === 'FreeZone' || cc.code.startsWith('FZ-') || cc.parentCode === 'FreeZone';
+        return cc.branch === 'FreeZone' || cc.code.startsWith('FZ-');
       } else {
         return cc.branch === 'HeadOffice' || (!cc.code.startsWith('FZ-') && cc.branch !== 'FreeZone');
       }
     });
   }
 
-  /** Sub-departments/projects/rigs under a specific parent cost center code */
+  /** Level-2+ items: direct children of a given parent cost center code */
   getChildren(parentCode: string): BackendCostCenter[] {
     if (!parentCode) return [];
     return this.costCenters().filter(cc => cc.parentCode === parentCode);

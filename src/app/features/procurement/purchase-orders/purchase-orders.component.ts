@@ -9,6 +9,7 @@ import { PurchaseOrder, POApprovalStep } from '../../../shared/interfaces/purcha
 import { AuditService } from '../../../core/services/audit.service';
 import { ProcurementChainComponent } from '../../../shared/components/procurement-chain/procurement-chain.component';
 import { ProcurementService } from '../../../core/services/procurement.service';
+import { WorkflowApiService } from '../../../core/services/workflow-api.service';
 import { finalize } from 'rxjs/operators';
 
 // ─── Mapper ───────────────────────────────────────────────────────────────────
@@ -66,11 +67,11 @@ function mapApiPO(raw: any): PurchaseOrder {
     contractFileUrl:       raw.contractFileUrl,
     contractFileName:      raw.contractFileName,
     contractFileSizeKb:    raw.contractFileSizeKb,
-    chargeType:            raw.chargeType,
-    projectId:             raw.projectId,
-    projectName:           raw.projectName,
-    assetId:               raw.assetId,
-    assetName:             raw.assetName,
+    chargeType:            raw.chargeType ?? raw.chargeAllocation,
+    projectId:             raw.projectId ?? raw.projectCode ?? raw.project?.code ?? raw.project?._id ?? raw.project?.id,
+    projectName:           raw.projectName ?? raw.project?.name ?? raw.project?.title,
+    assetId:               raw.assetId ?? raw.assetCode ?? raw.asset?._id,
+    assetName:             raw.assetName ?? raw.asset?.name,
     companyRepresentative: raw.companyRepresentative,
     supplierRepresentative: raw.supplierRepresentative,
   };
@@ -88,6 +89,7 @@ function mapApiPO(raw: any): PurchaseOrder {
 })
 export class PurchaseOrdersComponent implements OnInit {
   private readonly procurementService  = inject(ProcurementService);
+  private readonly workflowApi         = inject(WorkflowApiService);
   private readonly breadcrumbService   = inject(BreadcrumbService);
   private readonly notificationService = inject(NotificationService);
   private readonly auditService        = inject(AuditService);
@@ -98,10 +100,12 @@ export class PurchaseOrdersComponent implements OnInit {
 
   // ── State ─────────────────────────────────────────────────────────────────
   readonly purchaseOrders = signal<PurchaseOrder[]>([]);
+  readonly projects       = signal<{ id: string; name: string }[]>([]);
   readonly isLoading      = signal<boolean>(false);
 
-  readonly selectedPOId = signal<string | null>(null);
-  readonly searchQuery  = signal<string>('');
+  readonly selectedPOId        = signal<string | null>(null);
+  readonly searchQuery         = signal<string>('');
+  readonly selectedProject     = signal<string>('ALL');
 
   // RFQ data (cached for the selected PO)
   readonly rfqVendors = signal<any[]>([]);
@@ -118,11 +122,22 @@ export class PurchaseOrdersComponent implements OnInit {
   readonly filteredPOs = computed(() => {
     let list  = this.purchaseOrders();
     const query = this.searchQuery().trim().toLowerCase();
+    const projectFilter = this.selectedProject();
+
+    if (projectFilter !== 'ALL') {
+      list = list.filter(po =>
+        po.projectId === projectFilter ||
+        po.projectName === projectFilter
+      );
+    }
+
     if (query) {
       list = list.filter(po =>
         po.poNumber.toLowerCase().includes(query) ||
         po.vendorName.toLowerCase().includes(query) ||
-        po.costCenter.toLowerCase().includes(query)
+        po.costCenter.toLowerCase().includes(query) ||
+        (po.projectName && po.projectName.toLowerCase().includes(query)) ||
+        (po.projectId && po.projectId.toLowerCase().includes(query))
       );
     }
     return [...list].sort((a, b) => b.poNumber.localeCompare(a.poNumber));
@@ -153,6 +168,7 @@ export class PurchaseOrdersComponent implements OnInit {
     ]);
 
     this.loadPOs();
+    this.loadProjects();
 
     this.route.queryParams.subscribe(params => {
       const poId = params['poId'];
@@ -189,6 +205,22 @@ export class PurchaseOrdersComponent implements OnInit {
       });
   }
 
+  private loadProjects() {
+    this.workflowApi.getProjects({ limit: 200 }).subscribe({
+      next: (res: any) => {
+        const rawList = res?.items ?? res?.data ?? (Array.isArray(res) ? res : []);
+        if (Array.isArray(rawList) && rawList.length > 0) {
+          this.projects.set(rawList.map((p: any) => ({
+            id: p.code || p.projectCode || p._id || p.id,
+            name: p.name || p.projectName || p.title || 'Project'
+          })));
+          this.cdr.markForCheck();
+        }
+      },
+      error: () => {}
+    });
+  }
+
   // ── Selection ─────────────────────────────────────────────────────────────
 
   selectPO(po: PurchaseOrder) {
@@ -208,6 +240,19 @@ export class PurchaseOrdersComponent implements OnInit {
         approverName: nextPending.approverName || '',
         comments:     ''
       };
+    }
+
+    // جلب بيانات الـ RFQ المرتبطة
+    if (po.rfqId) {
+      this.procurementService.getRFQById(po.rfqId).subscribe({
+        next: (rfqData: any) => {
+          this.rfqVendors.set(rfqData?.vendors ?? []);
+          this.cdr.markForCheck();
+        },
+        error: () => this.rfqVendors.set([])
+      });
+    } else {
+      this.rfqVendors.set([]);
     }
 
     // جلب تفاصيل كاملة للـ PO من الـ API

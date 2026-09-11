@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal, computed, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnInit, inject, signal, computed, effect, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TranslateModule } from '@ngx-translate/core';
@@ -40,13 +40,41 @@ export class FinV2CostCentersComponent implements OnInit {
   readonly showModal    = signal<boolean>(false);
   readonly editingCC    = signal<CostCenter | null>(null);
 
-  // Independent expand sets per branch
-  readonly expandedCodesHO = signal<Set<string>>(new Set(['CC-100', 'CC-110']));
-  readonly expandedCodesFZ = signal<Set<string>>(new Set(['FZ-CC-100', 'FZ-CC-110']));
+  // Independent expand sets per branch — populated automatically when data loads
+  readonly expandedCodesHO = signal<Set<string>>(new Set<string>());
+  readonly expandedCodesFZ = signal<Set<string>>(new Set<string>());
 
   // Branch section collapse
   readonly branchCollapsedHO = signal<boolean>(false);
   readonly branchCollapsedFZ = signal<boolean>(false);
+
+  constructor() {
+    // Auto-expand all parent nodes whenever costCenters data changes (API load or refresh)
+    effect(() => {
+      const all = this.mockService.costCenters();
+      if (!all || all.length === 0) return;
+
+      // Collect all codes that appear as a parentCode (i.e. they have children)
+      const parentCodes = new Set<string>();
+      for (const cc of all) {
+        if (cc.parentCode) parentCodes.add(cc.parentCode);
+      }
+
+      // Split by branch and update expanded sets
+      const hoExpanded = new Set<string>();
+      const fzExpanded = new Set<string>();
+      for (const cc of all) {
+        if (parentCodes.has(cc.code)) {
+          if (cc.branch === 'FreeZone') fzExpanded.add(cc.code);
+          else hoExpanded.add(cc.code);
+        }
+      }
+
+      // Only update if the sets actually changed to avoid infinite loops
+      this.expandedCodesHO.set(hoExpanded);
+      this.expandedCodesFZ.set(fzExpanded);
+    });
+  }
 
   // ── Form ──────────────────────────────────────────────────────────
   formCode   = '';

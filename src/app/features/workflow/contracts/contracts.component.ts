@@ -2,6 +2,8 @@ import { Component, OnInit, inject, signal, computed, ChangeDetectionStrategy } 
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+import { forkJoin, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { BreadcrumbService } from '../../../core/services/breadcrumb.service';
 import { AuthService } from '../../../core/services/auth.service';
@@ -13,6 +15,7 @@ import {
   WorkflowApiService,
   Contract,
   ContractStatus,
+  ContractAsset,
   CreateContractBody,
   PaginatedResponse
 } from '../../../core/services/workflow-api.service';
@@ -38,43 +41,95 @@ export class ContractsComponent implements OnInit {
   readonly exchangeRateService   = inject(ExchangeRateService);
   private readonly costCenterStore = inject(CostCenterStoreService);
 
-  // ── Cost Center Hierarchy (2 Main Roots: Head Office & Free Zone) ────────────
+  // ── Cost Center Hierarchy (3 Levels: Root → Dept → Sub/Project CC) ─────────
   readonly mainRoots = computed(() => this.costCenterStore.mainRoots());
-  readonly contractParentCC = signal<string>('');
+  readonly contractParentCC = signal<string>('');   // Level 1: HeadOffice | FreeZone
+  readonly contractLevel2CC = signal<string>('');   // Level 2: Department (e.g. C11)
 
   /** The 2 Main Root options (Head Office & Free Zone) */
   readonly parentCostCenters = computed(() =>
     this.costCenterStore.mainRoots()
   );
 
-  /** Cost Centers / Departments under the selected Main Root */
+  /** Level-2: Departments under the selected Root */
   readonly childCostCenters = computed(() => {
     const parent = this.contractParentCC();
     if (!parent) return [];
     return this.costCenterStore.getDepartmentsByRoot(parent);
   });
 
+  /** Level-3: Sub-departments / Project CCs under the selected Level-2 department */
+  readonly grandchildCostCenters = computed(() => {
+    const l2 = this.contractLevel2CC();
+    if (!l2) return [];
+    return this.costCenterStore.getChildren(l2);
+  });
+
   onParentCCChange(parentCode: string) {
     this.contractParentCC.set(parentCode);
+    this.contractLevel2CC.set('');
     this.formModel.parentCostCenter = parentCode;
-    this.formModel.costCenterCode = '';
-    this.formModel.costCenterName = '';
+    this.formModel.costCenterCode   = '';
+    this.formModel.costCenterName   = '';
   }
 
   onChildCCChange(childCode: string) {
-    const selected = this.costCenterStore.costCenters().find(cc => cc.code === childCode);
+    this.contractLevel2CC.set(childCode);
+    this.formModel.costCenterCode = childCode;
+    // Reset level-3 selection when level-2 changes
+    const l3list = this.costCenterStore.getChildren(childCode);
+    if (l3list.length === 0) {
+      // No level-3 children — resolve name from level-2
+      const selected = this.costCenterStore.costCenters().find(cc => cc.code === childCode);
+      this.formModel.costCenterName = selected?.nameEn || selected?.name || selected?.code || '';
+    } else {
+      // Has level-3 children — clear resolved name until user picks one
+      this.formModel.costCenterName = '';
+    }
+  }
+
+  onGrandchildCCChange(grandchildCode: string) {
+    const selected = this.costCenterStore.costCenters().find(cc => cc.code === grandchildCode);
     if (selected) {
+      this.formModel.costCenterCode = grandchildCode;
       this.formModel.costCenterName = selected.nameEn || selected.name || selected.code;
     } else {
+      this.formModel.costCenterCode = this.contractLevel2CC();
       this.formModel.costCenterName = '';
     }
   }
 
   // ── State ──────────────────────────────────────────────────────────────────
-  readonly contracts      = signal<Contract[]>([]);
-  readonly rigs           = signal<any[]>([]);
-  readonly isLoading      = signal(false);
+  readonly contracts        = signal<Contract[]>([]);
+  readonly allAssets        = signal<any[]>([]);          // ALL equipment (all categories)
+  readonly selectedAssets   = signal<ContractAsset[]>([]); // multi-selected assets
+  readonly isLoading        = signal(false);
   readonly selectedContract = signal<Contract | null>(null);
+
+  // Asset picker UI state — must be signals so filteredAssets computed re-evaluates reactively
+  readonly assetSearchQuery    = signal('');
+  readonly assetCategoryFilter = signal('ALL');
+  isAssetPickerOpen = signal(false);
+
+  // Computed: assets filtered by search + category in the picker
+  readonly filteredAssets = computed(() => {
+    let list = this.allAssets();
+    const q   = this.assetSearchQuery().trim().toLowerCase();
+    const cat = this.assetCategoryFilter();
+    if (cat !== 'ALL') list = list.filter((a: any) => a.category === cat);
+    if (q) list = list.filter((a: any) =>
+      (a.equipmentName || '').toLowerCase().includes(q) ||
+      (a.equipmentCode || '').toLowerCase().includes(q) ||
+      (a.assetNumber   || '').toLowerCase().includes(q) ||
+      (a.location      || '').toLowerCase().includes(q)
+    );
+    return list;
+  });
+
+  readonly assetCategories = computed(() => {
+    const cats = new Set<string>(this.allAssets().map((a: any) => a.category).filter(Boolean));
+    return ['ALL', ...Array.from(cats).sort()];
+  });
 
   searchQuery   = '';
   statusFilter  = 'ALL';
@@ -126,7 +181,7 @@ export class ContractsComponent implements OnInit {
       { label: this.translate.instant('workflow.contracts.breadcrumb') }
     ]);
     this.loadContracts();
-    this.loadRigs();
+    this.loadAllAssets();
   }
 
   loadContracts() {
@@ -148,31 +203,61 @@ export class ContractsComponent implements OnInit {
     });
   }
 
-  loadRigs() {
-    this.assetsApi.getEquipment({ limit: 100 }).subscribe({
-      next: (res: any) => {
-        const rawList = res.items ?? res.data ?? (Array.isArray(res) ? res : []);
-        if (rawList && rawList.length > 0) {
-          this.rigs.set(rawList.map((r: any) => ({ ...r, id: r._id ?? r.id })));
-        } else {
-          this.opsApi.getRigs().subscribe({
-            next: (rigList: any) => {
-              const items = rigList.data ?? (Array.isArray(rigList) ? rigList : []);
-              this.rigs.set(items.map((r: any) => ({ ...r, id: r._id ?? r.id })));
-            },
-            error: () => {}
-          });
-        }
-      },
-      error: () => {
-        this.opsApi.getRigs().subscribe({
-          next: (rigList: any) => {
-            const items = rigList.data ?? (Array.isArray(rigList) ? rigList : []);
-            this.rigs.set(items.map((r: any) => ({ ...r, id: r._id ?? r.id })));
-          },
-          error: () => {}
-        });
-      }
+  loadAllAssets() {
+    // Fetch from all 3 sources in parallel
+    forkJoin({
+      equipment: this.assetsApi.getEquipment({ limit: 200 }).pipe(catchError(() => of({items: [], data: []}))),
+      vehicles:  this.opsApi.getVehicles().pipe(catchError(() => of([]))),
+      camps:     this.opsApi.getCamps().pipe(catchError(() => of([])))
+    }).subscribe(({ equipment, vehicles, camps }) => {
+
+      // ── 1. Equipment (Rigs, Generators, Cranes, Pumps, etc.) ──────────────
+      const equipRes   = (equipment as any);
+      const equipList  = equipRes.items ?? equipRes.data ?? (Array.isArray(equipRes) ? equipRes : []);
+      const equipNorm  = equipList.map((a: any) => ({
+        _id:           a._id ?? a.id,
+        id:            a._id ?? a.id,
+        assetNumber:   a.assetNumber || a.equipmentCode || '',
+        equipmentName: a.equipmentName || a.name || a.equipmentCode || 'Unknown',
+        category:      a.category || 'Equipment',
+        location:      a.location || a.projectAssignment || '',
+        status:        a.status || 'Active',
+        _source:       'equipment'
+      }));
+
+      // ── 2. Fleet Vehicles (Pickups, Trucks, Buses, Cranes, etc.) ─────────
+      const vehicleList = Array.isArray(vehicles) ? vehicles : (vehicles as any).data ?? [];
+      const vehicleNorm = vehicleList.map((v: any) => ({
+        _id:           v._id ?? v.id,
+        id:            v._id ?? v.id,
+        assetNumber:   v.vehicleCode || v.plateNumber || '',
+        equipmentName: `${v.make || ''} ${v.modelName || ''} (${v.plateNumber || ''})`.trim(),
+        category:      `Vehicle`,
+        subType:       v.type || '',
+        location:      v.currentProjectCode || '',
+        status:        v.status || 'Available',
+        plateNumber:   v.plateNumber,
+        _source:       'vehicle'
+      }));
+
+      // ── 3. Camps / Caravans ───────────────────────────────────────────────
+      const campList = Array.isArray(camps) ? camps : (camps as any).data ?? [];
+      const campNorm = campList.map((c: any) => ({
+        _id:           c._id ?? c.id,
+        id:            c._id ?? c.id,
+        assetNumber:   c.campCode || '',
+        equipmentName: c.name || c.campCode || 'Camp',
+        category:      'Camp',
+        location:      c.location || c.projectCode || '',
+        status:        c.status || 'Active',
+        totalBeds:     c.totalBeds,
+        caravansCount: c.caravansCount,
+        _source:       'camp'
+      }));
+
+      // Merge all sources — equipment first (primary), then vehicles, then camps
+      const all = [...equipNorm, ...vehicleNorm, ...campNorm];
+      this.allAssets.set(all);
     });
   }
 
@@ -283,6 +368,9 @@ export class ContractsComponent implements OnInit {
     this.isEditMode.set(false);
     this.editingContractId = '';
     this.contractParentCC.set('');
+    this.selectedAssets.set([]);
+    this.assetSearchQuery.set('');
+    this.assetCategoryFilter.set('ALL');
     this.formModel = {
       ...this.emptyForm(),
       startDate: new Date().toISOString().split('T')[0],
@@ -303,18 +391,50 @@ export class ContractsComponent implements OnInit {
   openEditModal(contract: Contract) {
     this.isEditMode.set(true);
     this.editingContractId = contract._id;
+    this.assetSearchQuery.set('');
+    this.assetCategoryFilter.set('ALL');
 
-    const existingCC = this.costCenterStore.costCenters()
-      .find(cc => cc.code === (contract.costCenterCode || ''));
-    const parentCode = existingCC?.parentCode ?? contract.parentCostCenter ?? contract.costCenterCode ?? '';
-    this.contractParentCC.set(parentCode);
+    // ── Restore 3-level CC hierarchy ──
+    const savedCCCode = contract.costCenterCode || '';
+    const existingCC  = this.costCenterStore.costCenters().find(cc => cc.code === savedCCCode);
+
+    // Determine the root level (HeadOffice / FreeZone)
+    const rootCode = existingCC?.branch === 'FreeZone' ? 'FreeZone' : 'HeadOffice';
+
+    // The level-2 dept: if savedCC has a parentCode then savedCC is level-3
+    // and parentCode is level-2; otherwise savedCC is itself level-2
+    let level2Code = '';
+    let resolvedCCCode = savedCCCode;
+    if (existingCC && existingCC.parentCode && existingCC.level === 2) {
+      level2Code = existingCC.parentCode;  // saved CC is level-3 child
+    } else if (existingCC && existingCC.level === 1) {
+      level2Code = savedCCCode;            // saved CC is level-2 dept itself
+    } else {
+      // fallback: use parentCostCenter from contract
+      level2Code = contract.parentCostCenter || savedCCCode;
+    }
+
+    this.contractParentCC.set(rootCode);
+    this.contractLevel2CC.set(level2Code);
+
+    // Restore saved assets, or build from legacy rigId/rigName
+    const savedAssets: ContractAsset[] = (contract as any).assets ?? [];
+    if (savedAssets.length === 0 && contract.rigId) {
+      savedAssets.push({
+        assetId:       contract.rigId,
+        equipmentName: contract.rigName || contract.rigId,
+        category:      'Rig'
+      });
+    }
+    this.selectedAssets.set(savedAssets);
 
     this.formModel = JSON.parse(JSON.stringify({
       ...contract,
-      parentCostCenter: parentCode,
-      costCenterCode: existingCC?.parentCode ? (contract.costCenterCode || '') : '',
+      parentCostCenter: rootCode,
+      costCenterCode:   resolvedCCCode,
       rigId:   contract.rigId   ?? '',
-      rigName: contract.rigName ?? ''
+      rigName: contract.rigName ?? '',
+      assets:  savedAssets
     }));
     this.isModalOpen.set(true);
     if (!(this.formModel as any).exchangeRateUSDtoEGP) this.fetchExchangeRate();
@@ -326,10 +446,47 @@ export class ContractsComponent implements OnInit {
 
   closeModal() { this.isModalOpen.set(false); }
 
+  // ── Asset Multi-Select ────────────────────────────────────────────────────
+  isAssetSelected(asset: any): boolean {
+    return this.selectedAssets().some(a => a.assetId === (asset._id ?? asset.id));
+  }
+
+  toggleAsset(asset: any) {
+    const id = asset._id ?? asset.id;
+    const current = this.selectedAssets();
+    const idx = current.findIndex(a => a.assetId === id);
+    if (idx === -1) {
+      // Add
+      const entry: ContractAsset = {
+        assetId:       id,
+        assetNumber:   asset.assetNumber ?? asset.equipmentCode ?? '',
+        equipmentName: asset.equipmentName || asset.rigName || asset.name || '',
+        category:      asset.category || 'Unknown',
+        location:      asset.location || ''
+      };
+      this.selectedAssets.set([...current, entry]);
+    } else {
+      // Remove
+      this.selectedAssets.set(current.filter((_, i) => i !== idx));
+    }
+    // Keep legacy rigId/rigName in sync: use the first Rig-category asset
+    const firstRig = this.selectedAssets().find(a => a.category === 'Rig');
+    this.formModel.rigId   = firstRig?.assetId   ?? '';
+    this.formModel.rigName = firstRig?.equipmentName ?? '';
+    this.formModel.assets  = this.selectedAssets();
+  }
+
+  removeSelectedAsset(assetId: string) {
+    this.selectedAssets.set(this.selectedAssets().filter(a => a.assetId !== assetId));
+    const firstRig = this.selectedAssets().find(a => a.category === 'Rig');
+    this.formModel.rigId   = firstRig?.assetId   ?? '';
+    this.formModel.rigName = firstRig?.equipmentName ?? '';
+    this.formModel.assets  = this.selectedAssets();
+  }
+
+  // legacy compat – kept for older usages
   onRigChange() {
-    const selectedId = this.formModel.rigId;
-    const rig = this.rigs().find(r => r._id === selectedId || r.id === selectedId);
-    this.formModel.rigName = rig ? (rig.rigName || rig.equipmentName || rig.equipmentCode || '') : '';
+    this.formModel.assets = this.selectedAssets();
   }
 
   addRateSheetRow()     { this.formModel.rateSheet.push({ id: `rs_${Date.now()}`, description: '', unit: 'Day', rate: 0, currency: 'USD' }); }
@@ -365,6 +522,7 @@ export class ContractsComponent implements OnInit {
       scope:              this.formModel.scope,
       rigId:              this.formModel.rigId || undefined,
       rigName:            this.formModel.rigName || undefined,
+      assets:             this.selectedAssets().length > 0 ? this.selectedAssets() : undefined,
       projectManager:     this.formModel.projectManager,
       retentionPercent:   Number(this.formModel.retentionPercent) || 10,
       vatRate:            Number(this.formModel.vatRate) || 15,
@@ -413,6 +571,7 @@ export class ContractsComponent implements OnInit {
       title: '', clientName: '', clientContact: '', clientEmail: '',
       type: 'Daily Rate', startDate: '', endDate: '', value: 0,
       currency: 'USD', scope: '', rigId: '', rigName: '',
+      assets: [] as ContractAsset[],
       projectManager: '', retentionPercent: 10, vatRate: 15, withholdingRate: 5,
       paymentTerms: 'Net 30', country: '', region: '', siteName: '',
       rateSheet: [], milestones: [],

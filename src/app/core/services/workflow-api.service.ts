@@ -26,6 +26,14 @@ export interface RateSheetItem {
   currency: string;
 }
 
+export interface ContractAsset {
+  assetId: string;
+  assetNumber?: string;
+  equipmentName: string;
+  category: string;
+  location?: string;
+}
+
 export interface ContractMilestone {
   id: string;
   title: string;
@@ -49,6 +57,7 @@ export interface Contract {
   scope?: string;
   rigId?: string;
   rigName?: string;
+  assets?: ContractAsset[];
   projectManager?: string;
   retentionPercent: number;
   vatRate: number;
@@ -101,6 +110,7 @@ export interface CreateContractBody {
   scope?: string;
   rigId?: string;
   rigName?: string;
+  assets?: ContractAsset[];
   projectManager?: string;
   retentionPercent?: number;
   vatRate?: number;
