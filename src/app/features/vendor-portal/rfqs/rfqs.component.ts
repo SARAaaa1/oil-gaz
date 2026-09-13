@@ -1,11 +1,10 @@
-import { Component, OnInit, signal, computed, inject, ChangeDetectionStrategy } from '@angular/core';
+﻿import { Component, OnInit, signal, computed, inject, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink, ActivatedRoute } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
-import { MockDataService } from '../../../core/services/mock-data.service';
-import { AuthService } from '../../../core/services/auth.service';
 import { BreadcrumbService } from '../../../core/services/breadcrumb.service';
+import { VendorApiService } from '../../../core/services/vendor-api.service';
 
 @Component({
   selector: 'app-vendor-rfqs',
@@ -15,57 +14,45 @@ import { BreadcrumbService } from '../../../core/services/breadcrumb.service';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class RfqsComponent implements OnInit {
-  private readonly mockDataService = inject(MockDataService);
-  private readonly authService = inject(AuthService);
   private readonly breadcrumbService = inject(BreadcrumbService);
   private readonly translate = inject(TranslateService);
   private readonly route = inject(ActivatedRoute);
+  private readonly vendorApi = inject(VendorApiService);
 
-  // States
-  readonly rfqList = this.mockDataService.rfqs;
+  // Pure Backend States
+  readonly apiRFQs = signal<any[]>([]);
   readonly searchQuery = signal<string>('');
   readonly statusFilter = signal<string>('ALL');
   readonly currentPage = signal<number>(1);
   readonly pageSize = 10;
-
-  // Filter RFQs assigned to the logged-in vendor
-  readonly myRFQs = computed(() => {
-    const vId = this.authService.currentUser()?.vendorId;
-    if (!vId) return [];
-    return this.rfqList().filter(rfq => 
-      rfq.vendors.some(v => v.vendorId === vId)
-    );
-  });
+  readonly isLoading = signal<boolean>(false);
 
   // Filter and Search RFQs
   readonly filteredRFQs = computed(() => {
-    let list = this.myRFQs();
+    let list = this.apiRFQs();
     const query = this.searchQuery().trim().toLowerCase();
     const status = this.statusFilter();
-    const vId = this.authService.currentUser()?.vendorId;
 
     if (query) {
       list = list.filter(rfq =>
-        rfq.rfqNumber.toLowerCase().includes(query) ||
-        rfq.title.toLowerCase().includes(query) ||
-        rfq.purchaseRequestNumber.toLowerCase().includes(query)
+        rfq.rfqNumber?.toLowerCase().includes(query) ||
+        rfq.title?.toLowerCase().includes(query) ||
+        rfq.purchaseRequestNumber?.toLowerCase().includes(query)
       );
     }
 
     if (status !== 'ALL') {
       list = list.filter(rfq => {
-        const vState = rfq.vendors.find(v => v.vendorId === vId);
-        if (!vState) return false;
-        
+        const myStatus = rfq.myStatus || rfq.status;
         if (status === 'Open') {
-          return vState.status === 'Pending' || vState.status === 'Revision Requested';
+          return myStatus === 'Pending' || myStatus === 'Revision Requested';
         } else {
-          return vState.status === status;
+          return myStatus === status;
         }
       });
     }
 
-    return [...list].sort((a, b) => b.rfqNumber.localeCompare(a.rfqNumber));
+    return [...list].sort((a, b) => (b.rfqNumber || '').localeCompare(a.rfqNumber || ''));
   });
 
   // Paginated RFQs
@@ -87,27 +74,38 @@ export class RfqsComponent implements OnInit {
       { label: this.translate.instant('vendor.portal.my_rfqs') || 'My RFQs' }
     ]);
 
-    // Check query params for initial status filter
     this.route.queryParams.subscribe(params => {
       const status = params['status'];
       if (status) {
         this.statusFilter.set(status);
       }
     });
+
+    this.loadRFQs();
+  }
+
+  loadRFQs() {
+    this.isLoading.set(true);
+    this.vendorApi.getPortalRFQs().subscribe({
+      next: (res) => {
+        const items = res?.data ?? [];
+        this.apiRFQs.set(items);
+        this.isLoading.set(false);
+      },
+      error: () => {
+        this.apiRFQs.set([]);
+        this.isLoading.set(false);
+      }
+    });
   }
 
   getVendorStatus(rfq: any): string {
-    const vId = this.authService.currentUser()?.vendorId;
-    const v = rfq.vendors.find((item: any) => item.vendorId === vId);
-    return v ? v.status : 'Pending';
+    return rfq.myStatus || rfq.status || 'Pending';
   }
 
   getQuotationAmount(rfqId: string): number | null {
-    const vId = this.authService.currentUser()?.vendorId;
-    const rfq = this.rfqList().find(r => r.id === rfqId);
-    if (!rfq) return null;
-    const q = rfq.quotations.find(item => item.vendorId === vId);
-    return q ? q.totalAmount : null;
+    const rfq = this.apiRFQs().find(r => (r._id ?? r.id) === rfqId);
+    return rfq?.myQuotation?.totalAmount ?? null;
   }
 
   setPage(page: number) {

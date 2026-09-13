@@ -1,12 +1,12 @@
-import { Component, OnInit, signal, computed, inject, ChangeDetectionStrategy } from '@angular/core';
+﻿import { Component, OnInit, signal, computed, inject, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink, ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
-import { MockDataService } from '../../../core/services/mock-data.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { BreadcrumbService } from '../../../core/services/breadcrumb.service';
 import { NotificationService } from '../../../core/services/notification.service';
+import { VendorApiService } from '../../../core/services/vendor-api.service';
 
 @Component({
   selector: 'app-vendor-submit-quotation',
@@ -16,26 +16,21 @@ import { NotificationService } from '../../../core/services/notification.service
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class SubmitQuotationComponent implements OnInit {
-  private readonly mockDataService = inject(MockDataService);
   private readonly authService = inject(AuthService);
   private readonly breadcrumbService = inject(BreadcrumbService);
   private readonly translate = inject(TranslateService);
   private readonly notificationService = inject(NotificationService);
+  private readonly vendorApi = inject(VendorApiService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
 
   readonly rfqId = signal<string | null>(null);
+  readonly apiRFQDetail = signal<any | null>(null);
+  readonly isSubmitting = signal<boolean>(false);
+  readonly isLoading = signal<boolean>(false);
 
   readonly activeRFQ = computed(() => {
-    const id = this.rfqId();
-    if (!id) return null;
-    return this.mockDataService.rfqs().find(r => r.id === id) || null;
-  });
-
-  readonly activePR = computed(() => {
-    const rfq = this.activeRFQ();
-    if (!rfq) return null;
-    return this.mockDataService.purchaseRequests().find(p => p.id === rfq.purchaseRequestId) || null;
+    return this.apiRFQDetail();
   });
 
   // Quotation form fields
@@ -85,18 +80,31 @@ export class SubmitQuotationComponent implements OnInit {
       const id = params.get('id');
       this.rfqId.set(id);
 
-      // Initialize items from PR
-      const pr = this.activePR();
-      if (pr) {
-        const items = pr.items.map(item => ({
-          itemCode: item.itemCode,
-          itemName: item.itemName,
-          uom: item.uom,
-          quantity: item.quantity,
-          unitPrice: 0,
-          discountPercent: 0
-        }));
-        this.quoteItems.set(items);
+      if (id) {
+        this.isLoading.set(true);
+        this.vendorApi.getPortalRFQDetails(id).subscribe({
+          next: (res) => {
+            const data = res?.data;
+            if (data) {
+              this.apiRFQDetail.set(data);
+              const items = data.items || data.purchaseRequest?.items || [];
+              if (items.length > 0) {
+                this.quoteItems.set(items.map((item: any) => ({
+                  itemCode: item.itemCode || item.code || '',
+                  itemName: item.itemName || item.name || '',
+                  uom: item.uom || 'EA',
+                  quantity: item.quantity || 1,
+                  unitPrice: item.unitPrice || 0,
+                  discountPercent: 0
+                })));
+              }
+            }
+            this.isLoading.set(false);
+          },
+          error: () => {
+            this.isLoading.set(false);
+          }
+        });
       }
     });
   }
@@ -127,10 +135,10 @@ export class SubmitQuotationComponent implements OnInit {
   submitQuotationForm(event: Event) {
     event.preventDefault();
     const rfq = this.activeRFQ();
-    const vId = this.authService.currentUser()?.vendorId;
+    const id = this.rfqId();
     const vName = this.authService.currentUser()?.companyName || 'Vendor';
 
-    if (!rfq || !vId) return;
+    if (!id) return;
 
     // Validate that all items have positive unit prices
     const invalidItem = this.quoteItems().find(item => item.unitPrice <= 0);
@@ -155,37 +163,37 @@ export class SubmitQuotationComponent implements OnInit {
       };
     });
 
-    const totalDiscountAmount = submissionItems.reduce((sum, item) => sum + (item.discountAmount || 0), 0);
-
-    // Call service to log bid quotation
-    this.mockDataService.submitQuotation(rfq.id, {
-      vendorId: vId,
-      vendorName: vName,
-      price: this.subtotal(),
-      subtotal: this.subtotal(),
+    const payload = {
       deliveryWeeks: this.deliveryWeeks,
+      paymentTerms: this.paymentTerms,
+      notes: this.notes || undefined,
       taxPercent: this.taxPercent,
+      items: submissionItems,
+      subtotal: this.subtotal(),
       taxAmount: this.taxAmount(),
       totalAmount: this.grandTotal(),
-      notes: this.notes || undefined,
-      submissionDate: new Date().toISOString().split('T')[0],
-      status: 'Submitted',
-      paymentTerms: this.paymentTerms,
-      discountPercent: Math.round((totalDiscountAmount / (this.subtotal() + totalDiscountAmount)) * 100) || 0,
-      discountAmount: totalDiscountAmount,
-      attachments: this.uploadedFiles(),
-      items: submissionItems
+      attachments: this.uploadedFiles()
+    };
+
+    this.isSubmitting.set(true);
+
+    this.vendorApi.submitPortalQuotation(id, payload).subscribe({
+      next: (res) => {
+        this.isSubmitting.set(false);
+        this.notificationService.success(
+          'vendor.notifications.quotation_submitted_title',
+          'vendor.notifications.quotation_submitted_desc',
+          { vendor: vName, rfq: rfq?.rfqNumber || id }
+        );
+        this.router.navigate(['/vendor-portal/rfqs', id]);
+      },
+      error: (err) => {
+        this.isSubmitting.set(false);
+        this.notificationService.danger(
+          'Error',
+          err?.error?.message || 'Failed to submit quotation'
+        );
+      }
     });
-
-    // Notify non-vendor users (procurement) via Notification system!
-    this.notificationService.addNotification(
-      'vendor.notifications.quotation_submitted_title',
-      'vendor.notifications.quotation_submitted_desc',
-      'success',
-      { vendor: vName, rfq: rfq.rfqNumber }
-    );
-
-    // Redirect to My RFQs
-    this.router.navigate(['/vendor-portal/rfqs', rfq.id]);
   }
 }

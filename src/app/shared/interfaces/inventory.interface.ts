@@ -175,3 +175,75 @@ export interface InventoryReservation {
   totalValue: number;
   notes?: string;
 }
+
+// ── Opening Stock Interfaces (v3.1 Auto-Posting & Reversal) ──────────────────
+
+export interface OpeningStockItem {
+  id: string;
+  openingNumber: string;
+  itemCode: string;
+  itemName?: string;
+  warehouseCode: string;
+  warehouseName?: string;
+  openingQuantity: number;
+  unitOfMeasure: string;
+  location?: string;
+  batchNumber?: string;
+  serialNumber?: string;
+  condition?: string;
+  notes?: string;
+  openingDate?: string;
+  status: 'Draft' | 'Posted' | 'POSTED' | 'Cancelled' | 'CANCELLED';
+  unitCost?: number;
+  category?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface CreateOpeningStockDto {
+  itemCode: string;
+  warehouseCode: string;
+  openingQuantity: number;
+  unitOfMeasure: string;
+  location?: string;
+  batchNumber?: string;
+  serialNumber?: string;
+  condition?: string;
+  notes?: string;
+  openingDate?: string;
+  unitCost?: number;
+  category?: string;
+}
+
+export interface OpeningStockImportError {
+  row: number;
+  itemCode?: string;
+  warehouseCode?: string;
+  status?: string;
+  message?: string;
+  reason?: string;
+}
+
+export interface OpeningStockImportResponse {
+  success: boolean;
+  message: string;
+  totalRows?: number;
+  successCount?: number;
+  failedCount?: number;
+  data?: {
+    openingStockId?: string;
+    status?: string;
+    totalItems?: number;
+    createdMaterials?: number;
+    existingMaterials?: number;
+  };
+  results?: Array<{
+    row: number;
+    itemCode: string;
+    warehouseCode: string;
+    status: string;
+    openingNumber: string;
+  }>;
+  errors?: OpeningStockImportError[];
+}
+

@@ -1,14 +1,12 @@
-import { Component, signal, inject, ChangeDetectionStrategy } from '@angular/core';
+﻿import { Component, signal, inject, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
-import { AuthService } from '../../../core/services/auth.service';
-import { MockDataService } from '../../../core/services/mock-data.service';
 import { NotificationService } from '../../../core/services/notification.service';
+import { VendorApiService } from '../../../core/services/vendor-api.service';
 import { DascoLogoComponent } from '../../../shared/components/dasco-logo/dasco-logo.component';
 import { LanguageSwitcherComponent } from '../../../shared/components/language-switcher/language-switcher.component';
 import { VendorCategory } from '../../../shared/interfaces/vendor.interface';
-import { Vendor } from '../../../shared/interfaces/vendor.interface';
 
 interface UploadedDoc {
   name: string;
@@ -25,9 +23,8 @@ interface UploadedDoc {
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class VendorRegisterComponent {
-  private readonly authService = inject(AuthService);
-  private readonly mockDataService = inject(MockDataService);
   private readonly notificationService = inject(NotificationService);
+  private readonly vendorApi = inject(VendorApiService);
   private readonly router = inject(Router);
 
   // Steps: 1 = Company Info, 2 = Contact & Banking, 3 = Documents, 4 = Success
@@ -101,7 +98,7 @@ export class VendorRegisterComponent {
     return this.agreementAccepted;
   }
 
-  // ── Navigation ────────────────────────────────────────────────────────────
+  // ── Navigation ────────────────────────────────────────────────────
   goToStep(step: 1 | 2 | 3 | 4): void {
     this.errorMessage.set(null);
     this.currentStep.set(step);
@@ -137,7 +134,7 @@ export class VendorRegisterComponent {
     }
   }
 
-  // ── Document Upload (simulated) ───────────────────────────────────────────
+  // ── Document Upload (simulated) ───────────────────────────────────
   simulateFileUpload(docType: string, event: Event): void {
     const input = event.target as HTMLInputElement;
     const file = input?.files?.[0];
@@ -156,7 +153,6 @@ export class VendorRegisterComponent {
     } else {
       this.uploadedDocs.update(docs => [...docs, newDoc]);
     }
-    // Reset input so same file can be re-selected
     input.value = '';
   }
 
@@ -178,111 +174,56 @@ export class VendorRegisterComponent {
     return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
   }
 
-  // ── Submit Registration ───────────────────────────────────────────────────
+  // ── Submit Registration ───────────────────────────────────────────
   submitRegistration(): void {
     this.isLoading.set(true);
     this.errorMessage.set(null);
 
-    setTimeout(() => {
-      try {
-        // Generate vendor code & user credentials
-        const vendorCount = this.mockDataService.vendors().length;
-        const vendorCode = `VND-${new Date().getFullYear()}-${String(vendorCount + 1).padStart(3, '0')}`;
-        const usernameBase = this.contactEmail.split('@')[0].replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
-        const username = `${usernameBase}_vendor`;
-        const password = `${usernameBase}@${new Date().getFullYear()}`;
-        const vendorId = `v-reg-${Date.now()}`;
+    const payload = {
+      companyName: this.companyName,
+      arabicName: this.arabicName || undefined,
+      category: this.vendorCategory,
+      taxNumber: this.taxNumber,
+      vatNumber: this.vatNumber || undefined,
+      commercialRegistration: this.commercialReg || undefined,
+      country: this.country,
+      address: this.address,
+      contactPerson: this.contactName,
+      contactTitle: this.contactTitle || 'Primary Contact',
+      contactEmail: this.contactEmail,
+      contactPhone: this.contactPhone,
+      paymentTerms: this.paymentTerms,
+      currency: this.currency,
+      bankAccounts: this.bankName ? [{
+        bankName: this.bankName,
+        accountNumber: this.accountNumber,
+        iban: this.iban,
+        currency: this.bankCurrency
+      }] : [],
+      contactPersons: [{
+        name: this.contactName,
+        role: this.contactTitle || 'Primary Contact',
+        email: this.contactEmail,
+        phone: this.contactPhone
+      }]
+    };
 
-        // Create vendor record
-        const newVendor: Vendor = {
-          id: vendorId,
-          vendorCode,
-          vendorName: this.companyName,
-          arabicName: this.arabicName,
-          taxNumber: this.taxNumber,
-          vatNumber: this.vatNumber,
-          commercialRegistration: this.commercialReg,
-          address: this.address,
-          country: this.country,
-          category: this.vendorCategory,
-          approvalStatus: 'Pending',
-          contactPerson: this.contactName,
-          contactEmail: this.contactEmail,
-          contactPhone: this.contactPhone,
-          paymentTerms: this.paymentTerms,
-          currency: this.currency,
-          rating: 5,
-          status: 'Active',
-          bankAccounts: this.bankName ? [{
-            bankName: this.bankName,
-            accountNumber: this.accountNumber,
-            iban: this.iban,
-            currency: this.bankCurrency
-          }] : [],
-          contactPersons: [{
-            name: this.contactName,
-            role: this.contactTitle || 'Primary Contact',
-            email: this.contactEmail,
-            phone: this.contactPhone
-          }],
-          totalOrders: 0,
-          totalSpend: 0,
-          totalRFQs: 0,
-          awardedRFQs: 0,
-          participatedRFQs: 0,
-          totalDeliveries: 0,
-          onTimeDeliveries: 0,
-          totalDeliveredQty: 0,
-          acceptedQty: 0,
-          lateDeliveries: 0,
-          rejectedDeliveries: 0,
-          openInvoices: 0,
-          paidInvoices: 0
+    this.vendorApi.registerPublicVendor(payload).subscribe({
+      next: (res) => {
+        const data = res?.data ?? {};
+        const creds = data.credentials || {
+          username: `${this.contactEmail.split('@')[0]}_vendor`,
+          password: 'Welcome@2026'
         };
-
-        // Add vendor documents
-        const docs = this.uploadedDocs().map((doc, i) => ({
-          id: `vdoc-reg-${i}-${Date.now()}`,
-          vendorId,
-          documentType: 'Other' as const,
-          fileName: doc.name,
-          fileSize: doc.size,
-          uploadedDate: new Date().toISOString().split('T')[0],
-          uploadedBy: this.contactName,
-          status: 'Valid' as const,
-          notes: doc.type
-        }));
-
-        // Register the vendor in mock data
-        this.mockDataService.vendors.update(list => [...list, newVendor]);
-
-        // Add vendor documents
-        if (docs.length > 0) {
-          this.mockDataService.vendorDocuments.update(list => [...list, ...docs]);
-        }
-
-        // Register vendor timeline event
-        this.mockDataService.vendorTimeline.update(list => [...list, {
-          id: `vte-reg-${Date.now()}`,
-          vendorId,
-          date: new Date().toISOString().split('T')[0],
-          eventType: 'Created' as const,
-          title: 'Vendor Registered',
-          description: `${this.companyName} submitted registration via Vendor Portal. Status: Pending Approval.`,
-          performedBy: this.contactName
-        }]);
-
-        // Register vendor user credentials via auth service
-        this.authService.registerVendorUser(username, password, this.companyName, this.contactName, this.contactEmail, vendorId);
-
-        this.generatedCredentials.set({ username, password });
+        this.generatedCredentials.set(creds);
         this.isLoading.set(false);
         this.currentStep.set(4);
-      } catch (e) {
+      },
+      error: (err) => {
         this.isLoading.set(false);
-        this.errorMessage.set('Registration failed. Please try again.');
+        this.errorMessage.set(err?.error?.message || 'Registration failed. Please check your data and try again.');
       }
-    }, 1500);
+    });
   }
 
   navigateToLogin(): void {

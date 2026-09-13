@@ -10,13 +10,16 @@ import { NotificationService } from '../../core/services/notification.service';
 import { MockDataService } from '../../core/services/mock-data.service';
 import { InventoryApiService, extractApiArray } from '../../core/services/inventory-api.service';
 import { ProcurementService } from '../../core/services/procurement.service';
+import { AuthService } from '../../core/services/auth.service';
 import {
   InventoryItem, Warehouse, MRV, MRVItem, MIV, MIVItem,
   InternalTransfer, InternalTransferItem, StockAdjustment, StockAdjustmentItem,
-  StockCount, StockCountItem, InventoryReservation, InventoryReservationItem
+  StockCount, StockCountItem, InventoryReservation, InventoryReservationItem,
+  OpeningStockItem, CreateOpeningStockDto, OpeningStockImportError, OpeningStockImportResponse
 } from '../../shared/interfaces/inventory.interface';
 import { ApprovalHistoryComponent } from '../../shared/components/approval-history/approval-history.component';
 import { finalize } from 'rxjs/operators';
+import * as XLSX from 'xlsx';
 
 // ─── Mappers ──────────────────────────────────────────────────────────────────
 
@@ -45,12 +48,13 @@ function mapApiItem(raw: any): InventoryItem {
 }
 
 function mapApiWarehouse(raw: any): Warehouse {
+  const doc = raw?._doc || raw || {};
   return {
-    id:       raw._id ?? raw.id,
-    code:     raw.code ?? '',
-    name:     raw.name ?? '',
-    location: raw.location ?? '',
-    status:   raw.status ?? 'Active',
+    id:       raw?._id ?? raw?.id ?? doc?._id ?? doc?.id ?? '',
+    code:     doc?.code ?? raw?.code ?? '',
+    name:     doc?.name ?? raw?.name ?? '',
+    location: doc?.location ?? raw?.location ?? '',
+    status:   doc?.status ?? raw?.status ?? 'Active',
   };
 }
 
@@ -149,6 +153,29 @@ function mapApiAdjustment(raw: any): StockAdjustment {
   };
 }
 
+function mapApiOpeningStock(raw: any): OpeningStockItem {
+  const doc = raw?._doc || raw || {};
+  return {
+    id:              raw?._id ?? raw?.id ?? doc?._id ?? doc?.id ?? '',
+    openingNumber:   doc?.openingNumber ?? raw?.openingNumber ?? '',
+    itemCode:        doc?.itemCode ?? raw?.itemCode ?? '',
+    itemName:        doc?.itemName ?? raw?.itemName ?? '',
+    warehouseCode:   doc?.warehouseCode ?? raw?.warehouseCode ?? '',
+    warehouseName:   doc?.warehouseName ?? raw?.warehouseName ?? '',
+    openingQuantity: doc?.openingQuantity ?? raw?.openingQuantity ?? 0,
+    unitOfMeasure:   doc?.unitOfMeasure ?? raw?.unitOfMeasure ?? 'EA',
+    location:        doc?.location ?? raw?.location ?? '',
+    batchNumber:     doc?.batchNumber ?? raw?.batchNumber ?? '',
+    serialNumber:    doc?.serialNumber ?? raw?.serialNumber ?? '',
+    condition:       doc?.condition ?? raw?.condition ?? 'New',
+    notes:           doc?.notes ?? raw?.notes ?? '',
+    openingDate:     doc?.openingDate ?? raw?.openingDate ?? '',
+    status:          doc?.status ?? raw?.status ?? 'Draft',
+    createdAt:       doc?.createdAt ?? raw?.createdAt,
+    updatedAt:       doc?.updatedAt ?? raw?.updatedAt,
+  };
+}
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 @Component({
@@ -170,6 +197,16 @@ export class InventoryComponent implements OnInit {
   private readonly route               = inject(ActivatedRoute);
   private readonly cdr                 = inject(ChangeDetectorRef);
   private readonly procurementService = inject(ProcurementService);
+  private readonly authService         = inject(AuthService);
+
+  readonly canEditInventory = computed(() =>
+    this.authService.hasPermission('edit:inventory' as any) ||
+    this.authService.hasAnyRole(['Super Admin', 'General Manager', 'Store Keeper'])
+  );
+
+  readonly canDeleteWarehouse = computed(() =>
+    this.authService.hasAnyRole(['Super Admin', 'General Manager'])
+  );
 
   // ── Core Data Stores (API-backed Signals) ──────────────────────────────────
   readonly inventory   = signal<InventoryItem[]>([]);
@@ -179,6 +216,7 @@ export class InventoryComponent implements OnInit {
   readonly transfers   = signal<InternalTransfer[]>([]);
   readonly adjustments = signal<StockAdjustment[]>([]);
   readonly counts      = signal<StockCount[]>([]);
+  readonly openingStocks = signal<OpeningStockItem[]>([]);
 
   // KPI summary from API
   readonly apiSummary = signal<{ totalItems: number; totalValue: number; lowStockCount: number; outOfStockCount: number } | null>(null);
@@ -189,11 +227,42 @@ export class InventoryComponent implements OnInit {
   readonly inventoryReservations = this.mockDataService.inventoryReservations;
 
   readonly isLoading = signal<boolean>(false);
+  readonly isLoadingOpeningStock = signal<boolean>(false);
 
   // ── Navigation & Search ────────────────────────────────────────────────────
-  readonly activeTab     = signal<'dashboard' | 'items' | 'warehouses' | 'mrv' | 'miv' | 'transfers' | 'adjustments' | 'valuation' | 'history' | 'reservations'>('dashboard');
+  readonly activeTab     = signal<'dashboard' | 'items' | 'warehouses' | 'mrv' | 'miv' | 'transfers' | 'adjustments' | 'valuation' | 'history' | 'reservations' | 'opening-stock'>('dashboard');
   readonly searchQuery   = signal<string>('');
   readonly locationFilter = signal<string>('ALL');
+
+  // ── Opening Stock Filters ──────────────────────────────────────────────────
+  readonly openingStockFilterStatus    = signal<string>('ALL');
+  readonly openingStockFilterWarehouse = signal<string>('ALL');
+  readonly openingStockSearchQuery     = signal<string>('');
+
+  readonly filteredOpeningStocks = computed(() => {
+    let list = this.openingStocks();
+    const status = this.openingStockFilterStatus();
+    const wh = this.openingStockFilterWarehouse();
+    const q = this.openingStockSearchQuery().trim().toLowerCase();
+
+    if (status !== 'ALL') {
+      list = list.filter(os => os.status === status);
+    }
+    if (wh !== 'ALL') {
+      list = list.filter(os => os.warehouseCode === wh);
+    }
+    if (q) {
+      list = list.filter(os =>
+        (os.openingNumber && os.openingNumber.toLowerCase().includes(q)) ||
+        (os.itemCode && os.itemCode.toLowerCase().includes(q)) ||
+        (os.itemName && os.itemName.toLowerCase().includes(q)) ||
+        (os.warehouseCode && os.warehouseCode.toLowerCase().includes(q)) ||
+        (os.batchNumber && os.batchNumber.toLowerCase().includes(q)) ||
+        (os.serialNumber && os.serialNumber.toLowerCase().includes(q))
+      );
+    }
+    return list;
+  });
 
   // ── KPI Calculations (from API summary or computed locally) ───────────────
   readonly totalItemsCount = computed(() =>
@@ -242,18 +311,44 @@ export class InventoryComponent implements OnInit {
   readonly selectedTransfer      = signal<InternalTransfer | null>(null);
   readonly selectedAdjustment    = signal<StockAdjustment | null>(null);
   readonly isWarehouseModalOpen  = signal(false);
+  readonly isWarehouseEditMode   = signal(false);
+  readonly selectedWarehouseToEdit = signal<Warehouse | null>(null);
   readonly isMRVModalOpen        = signal(false);
   readonly isMIVModalOpen        = signal(false);
   readonly isTransferModalOpen   = signal(false);
   readonly isAdjustmentModalOpen = signal(false);
   readonly isCountModalOpen      = signal(false);
 
+  // Opening Stock Modals & State
+  readonly isOpeningStockModalOpen       = signal(false);
+  readonly isViewOpeningStockModalOpen   = signal(false);
+  readonly selectedOpeningStock          = signal<OpeningStockItem | null>(null);
+  readonly isImportOpeningStockModalOpen = signal(false);
+
+  openingStockForm: CreateOpeningStockDto = {
+    itemCode: '',
+    warehouseCode: '',
+    openingQuantity: 1,
+    unitOfMeasure: 'EA',
+    location: '',
+    batchNumber: '',
+    serialNumber: '',
+    condition: 'New',
+    notes: '',
+    openingDate: new Date().toISOString().split('T')[0]
+  };
+
+  readonly openingStockImportFile = signal<File | null>(null);
+  readonly isImportingOpeningStock = signal(false);
+  readonly importSuccessSummary = signal<{ totalRows: number; successCount: number; failedCount: number; message: string } | null>(null);
+  readonly importErrors = signal<OpeningStockImportError[]>([]);
+
   // ── Form State ────────────────────────────────────────────────────────────
   itemForm = {
-    itemCode: '', itemName: '', category: 'Drilling Consumables', subCategory: '',
+    itemCode: '', itemName: '', category: '', subCategory: '',
     uom: 'EA', itemType: 'Material', reorderLevel: 5, description: '',
     costCenter: 'CC-DRL-001', quantity: 10, unitPrice: 100,
-    location: 'Warehouse A', status: 'In Stock' as 'In Stock' | 'Low Stock' | 'Out of Stock'
+    location: '', status: 'In Stock' as 'In Stock' | 'Low Stock' | 'Out of Stock'
   };
 
   warehouseForm = { code: '', name: '', location: '', status: 'Active' as 'Active' | 'Inactive' };
@@ -312,6 +407,7 @@ export class InventoryComponent implements OnInit {
   private loadAll() {
     this.loadItems();
     this.loadWarehouses();
+    this.loadOpeningStocks();
     this.loadMRVs();
     this.loadMIVs();
     this.loadTransfers();
@@ -349,7 +445,7 @@ export class InventoryComponent implements OnInit {
   private loadWarehouses() {
     this.inventoryApi.getWarehouses().subscribe({
       next: res => {
-        const raw = extractApiArray(res);
+        const raw: any[] = Array.isArray(res) ? res : extractApiArray(res);
         this.warehouses.set(raw.map(mapApiWarehouse));
         this.cdr.markForCheck();
       },
@@ -437,11 +533,12 @@ export class InventoryComponent implements OnInit {
     this.isEditMode.set(false);
     this.isViewMode.set(false);
     this.selectedItem.set(null);
+    const defaultWh = this.warehouses()[0]?.name || '';
     this.itemForm = {
-      itemCode: '', itemName: '', category: 'Drilling Consumables', subCategory: '',
+      itemCode: '', itemName: '', category: '', subCategory: '',
       uom: 'EA', itemType: 'Material', reorderLevel: 5, description: '',
       costCenter: 'CC-DRL-001', quantity: 10, unitPrice: 100,
-      location: 'Warehouse A', status: 'In Stock'
+      location: defaultWh, status: 'In Stock'
     };
     this.isItemModalOpen.set(true);
   }
@@ -453,7 +550,7 @@ export class InventoryComponent implements OnInit {
     this.itemForm = {
       itemCode:    item.itemCode,
       itemName:    item.itemName,
-      category:    item.category || 'Drilling Consumables',
+      category:    item.category || '',
       subCategory: '',
       uom:         item.uom,
       itemType:    'Material',
@@ -563,33 +660,87 @@ export class InventoryComponent implements OnInit {
   // ─── WAREHOUSE METHODS ─────────────────────────────────────────────────────
 
   openAddWarehouse() {
+    this.isWarehouseEditMode.set(false);
+    this.selectedWarehouseToEdit.set(null);
     this.warehouseForm = { code: '', name: '', location: '', status: 'Active' };
+    this.isWarehouseModalOpen.set(true);
+  }
+
+  openEditWarehouse(wh: Warehouse) {
+    this.isWarehouseEditMode.set(true);
+    this.selectedWarehouseToEdit.set(wh);
+    this.warehouseForm = {
+      code: wh.code,
+      name: wh.name,
+      location: wh.location,
+      status: wh.status || 'Active'
+    };
     this.isWarehouseModalOpen.set(true);
   }
 
   saveWarehouse() {
     if (!this.warehouseForm.code || !this.warehouseForm.name) {
-      this.notificationService.danger('Validation Error', 'Warehouse Code and Name are required.');
+      this.notificationService.danger('common.validation_error', 'inventory.warehouse_code_name_required');
       return;
     }
 
     this.isLoading.set(true);
-    this.inventoryApi.createWarehouse(this.warehouseForm)
+    if (this.isWarehouseEditMode()) {
+      const selected = this.selectedWarehouseToEdit();
+      if (!selected) return;
+
+      this.inventoryApi.updateWarehouse(selected.id, this.warehouseForm)
+        .pipe(finalize(() => { this.isLoading.set(false); this.cdr.markForCheck(); }))
+        .subscribe({
+          next: updated => {
+            const mapped = mapApiWarehouse(updated ?? { ...selected, ...this.warehouseForm });
+            this.warehouses.update(list => list.map(w => w.id === selected.id ? mapped : w));
+            this.auditService.log('Update', 'Inventory', 'Warehouse', selected.id, JSON.stringify(selected), JSON.stringify(mapped), `Updated warehouse: ${mapped.name}`);
+            this.isWarehouseModalOpen.set(false);
+            this.notificationService.success('common.success', 'inventory.warehouse_updated_success');
+          },
+          error: (err: any) => {
+            const msg = err?.error?.message || err?.message || 'Failed to update warehouse.';
+            this.notificationService.danger('common.error', msg);
+          }
+        });
+    } else {
+      this.inventoryApi.createWarehouse(this.warehouseForm)
+        .pipe(finalize(() => { this.isLoading.set(false); this.cdr.markForCheck(); }))
+        .subscribe({
+          next: created => {
+            const mapped = mapApiWarehouse(created);
+            this.warehouses.update(list => [mapped, ...list]);
+            this.auditService.log('Create', 'Inventory', 'Warehouse', mapped.id, '', JSON.stringify(mapped), `Created warehouse: ${mapped.name}`);
+            this.isWarehouseModalOpen.set(false);
+            this.notificationService.success('common.success', 'inventory.warehouse_created_success');
+          },
+          error: (err: any) => {
+            const msg = err?.error?.message || err?.message || 'Failed to create warehouse.';
+            this.notificationService.danger('common.error', msg);
+          }
+        });
+    }
+  }
+
+  deleteWarehouse(wh: Warehouse) {
+    const confirmMsg = this.translate.instant('inventory.confirm_delete_warehouse', { name: wh.name, code: wh.code });
+    if (!confirm(confirmMsg)) return;
+
+    this.isLoading.set(true);
+    this.inventoryApi.deleteWarehouse(wh.id)
       .pipe(finalize(() => { this.isLoading.set(false); this.cdr.markForCheck(); }))
       .subscribe({
-        next: created => {
-          const mapped = mapApiWarehouse(created);
-          this.warehouses.update(list => [mapped, ...list]);
-          this.auditService.log({
-            user: 'Current User', role: 'Store Keeper', module: 'Inventory',
-            entityName: 'Warehouse', entityId: mapped.code, action: 'Create',
-            oldValue: '', newValue: JSON.stringify(mapped),
-            details: `Created warehouse: ${mapped.name} (${mapped.code})`
-          });
-          this.isWarehouseModalOpen.set(false);
-          this.notificationService.success('Success', 'Warehouse registered successfully.');
+        next: () => {
+          this.auditService.log('Delete', 'Inventory', 'Warehouse', wh.id, JSON.stringify(wh), '', `Deactivated warehouse: ${wh.name}`);
+          this.notificationService.success('common.success', 'inventory.warehouse_deactivated_success');
+          this.loadWarehouses();
         },
-        error: err => this.notificationService.danger('Error', err?.error?.message ?? 'Failed to create warehouse.')
+        error: (err: any) => {
+          // Backend returns 400 Bad Request if warehouse is already used in transactions
+          const msg = err?.error?.message || err?.message || this.translate.instant('inventory.cannot_delete_warehouse');
+          this.notificationService.danger('common.error', msg);
+        }
       });
   }
 
@@ -1045,17 +1196,49 @@ export class InventoryComponent implements OnInit {
   }
 
   downloadTemplate() {
-    const headers  = this.isEquipmentImport()
-      ? ['Equipment Code', 'Asset Tag', 'Equipment Name', 'Equipment Type', 'Manufacturer', 'Model', 'Serial Number', 'Purchase Date', 'Purchase Cost', 'Location', 'Cost Center', 'Status']
-      : ['Item Code', 'Item Name', 'Category', 'UOM', 'Quantity', 'Unit Cost', 'Warehouse'];
-    const filename = this.isEquipmentImport() ? 'equipment_import_template.csv' : 'items_import_template.csv';
-    const csvContent = 'data:text/csv;charset=utf-8,' + headers.join(',');
+    if (this.isEquipmentImport()) {
+      const headers = ['Equipment Code', 'Asset Tag', 'Equipment Name', 'Equipment Type', 'Manufacturer', 'Model', 'Serial Number', 'Purchase Date', 'Purchase Cost', 'Location', 'Cost Center', 'Status'];
+      const csvContent = 'data:text/csv;charset=utf-8,' + headers.join(',');
+      const link = document.createElement('a');
+      link.setAttribute('href', encodeURI(csvContent));
+      link.setAttribute('download', 'equipment_import_template.csv');
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      return;
+    }
+
+    const headers = [
+      'Category',
+      'Item Code',
+      'Item Name',
+      'Location',
+      'Min Quantity',
+      'Quantity',
+      'Unit Price',
+      'UOM'
+    ];
+
+    const defaultWarehouse = this.warehouses()[0]?.name || 'Warehouse A';
+    const sampleRows = [
+      ['Drilling Consumables', 'ITM-001', 'Drill Bit 8.5in PDC', defaultWarehouse, '5', '50', '1250', 'EA'],
+      ['Pipes & Tubulars', 'ITM-002', 'Steel Casing 9-5/8in J55', defaultWarehouse, '10', '100', '450', 'JOINTS']
+    ];
+
+    const csvLines = [
+      headers.join(','),
+      ...sampleRows.map(row => row.map(cell => `"${cell}"`).join(','))
+    ];
+    const csvContent = '\uFEFF' + csvLines.join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
-    link.setAttribute('href', encodeURI(csvContent));
-    link.setAttribute('download', filename);
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', 'items_import_template.csv');
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   }
 
   onDragOver(e: DragEvent) { e.preventDefault(); e.stopPropagation(); this.isDragOver.set(true); }
@@ -1070,73 +1253,206 @@ export class InventoryComponent implements OnInit {
   }
 
   handleFile(file: File) {
-    if (!file.name.endsWith('.xlsx') && !file.name.endsWith('.csv')) {
-      this.notificationService.danger('Format Error', 'Only .xlsx and .csv files are supported.');
+    const validExtensions = ['.xlsx', '.xls', '.csv'];
+    const fileExt = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
+    if (!validExtensions.includes(fileExt)) {
+      this.notificationService.danger('Format Error', 'Only .xlsx, .xls and .csv files are supported.');
       return;
     }
+
     this.uploadedFileName.set(file.name);
     this.isUploading.set(true);
-    this.uploadProgress.set(10);
-    const interval = setInterval(() => {
-      const current = this.uploadProgress();
-      if (current >= 100) {
-        clearInterval(interval);
+    this.uploadProgress.set(30);
+
+    const reader = new FileReader();
+
+    reader.onload = (e: any) => {
+      try {
+        this.uploadProgress.set(70);
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const firstSheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[firstSheetName];
+        const rawJson: any[] = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
+
+        this.uploadProgress.set(100);
         this.isUploading.set(false);
-        this.generateMockPreviewRecords();
+
+        if (this.isEquipmentImport()) {
+          this.generateMockPreviewRecords();
+        } else {
+          this.parseItemsImport(rawJson);
+        }
         this.cdr.markForCheck();
-      } else {
-        this.uploadProgress.set(current + 30);
+      } catch (err: any) {
+        this.isUploading.set(false);
+        this.notificationService.danger('Import Error', 'Failed to parse file: ' + (err?.message || 'Unknown error'));
+        this.cdr.markForCheck();
       }
-    }, 200);
+    };
+
+    reader.onerror = () => {
+      this.isUploading.set(false);
+      this.notificationService.danger('Import Error', 'Could not read the uploaded file.');
+      this.cdr.markForCheck();
+    };
+
+    reader.readAsArrayBuffer(file);
   }
 
-  generateMockPreviewRecords() {
+  parseItemsImport(rows: any[]) {
+    const preview: any[] = [];
     const errors: string[] = [];
-    const preview: any[]   = [];
+    const defaultWarehouse = this.warehouses()[0]?.name || '';
 
-    if (!this.isEquipmentImport()) {
-      preview.push({ itemCode: 'TUB-PIPE-3.5IN', itemName: 'Steel Tubing 3.5in J55', category: 'Tubulars', uom: 'JOINTS', quantity: 120, unitPrice: 450, location: 'Pipe Yard 1', status: 'In Stock', isValid: true });
-      preview.push({ itemCode: '', itemName: 'Mud Chemical Additive Class G', category: 'Drilling Consumables', uom: 'BAGS', quantity: 300, unitPrice: 45, location: 'Warehouse A', status: 'In Stock', isValid: false, errorMessage: 'Row 2: Item Code is required.' });
-      errors.push('Row 2: Item Code is required.');
+    if (!rows || rows.length === 0) {
+      errors.push('The uploaded file is empty.');
+      this.importPreviewRecords.set([]);
+      this.importValidationErrors.set(errors);
+      return;
     }
+
+    rows.forEach((row, index) => {
+      const rowNum = index + 2; // Accounting for header row (Row 1)
+
+      // Normalize row keys to handle variations like "Item Code", "item_code", "itemcode", "Code"
+      const getVal = (...keys: string[]): string => {
+        for (const k of keys) {
+          if (row[k] !== undefined && row[k] !== null && String(row[k]).trim() !== '') {
+            return String(row[k]).trim();
+          }
+          const lowerKey = k.toLowerCase().replace(/[\s_-]/g, '');
+          for (const rawKey of Object.keys(row)) {
+            if (rawKey.toLowerCase().replace(/[\s_-]/g, '') === lowerKey) {
+              const val = row[rawKey];
+              if (val !== undefined && val !== null && String(val).trim() !== '') {
+                return String(val).trim();
+              }
+            }
+          }
+        }
+        return '';
+      };
+
+      const category = getVal('Category', 'category', 'الفئة', 'التصنيف');
+      const itemCode = getVal('Item Code', 'itemCode', 'ItemCode', 'Code', 'كود المادة', 'الكود');
+      const itemName = getVal('Item Name', 'itemName', 'ItemName', 'Name', 'Description', 'اسم المادة', 'الاسم');
+      const location = getVal('Location', 'Warehouse', 'location', 'warehouse', 'المستودع', 'الموقع') || defaultWarehouse;
+      const minQtyStr = getVal('Min Quantity', 'minQuantity', 'MinQty', 'Reorder Level', 'الحد الادنى', 'الحد الأدنى');
+      const qtyStr = getVal('Quantity', 'quantity', 'Qty', 'الكمية');
+      const priceStr = getVal('Unit Price', 'unitPrice', 'UnitPrice', 'Unit Cost', 'Price', 'سعر الوحدة', 'السعر');
+      const uom = getVal('UOM', 'uom', 'Unit', 'الوحدة') || 'EA';
+
+      const minQuantity = minQtyStr !== '' && !isNaN(Number(minQtyStr)) ? Math.max(0, Number(minQtyStr)) : 5;
+      const quantity = qtyStr !== '' && !isNaN(Number(qtyStr)) ? Math.max(0, Number(qtyStr)) : 0;
+      const unitPrice = priceStr !== '' && !isNaN(Number(priceStr)) ? Math.max(0, Number(priceStr)) : 0;
+
+      const rowErrors: string[] = [];
+      if (!itemCode) {
+        rowErrors.push(`Row ${rowNum}: Item Code is required.`);
+      }
+      if (!itemName) {
+        rowErrors.push(`Row ${rowNum}: Item Name is required.`);
+      }
+
+      if (rowErrors.length > 0) {
+        errors.push(...rowErrors);
+      }
+
+      preview.push({
+        itemCode,
+        itemName,
+        category,
+        location,
+        minQuantity,
+        quantity,
+        unitPrice,
+        uom: uom.toUpperCase(),
+        isValid: rowErrors.length === 0,
+        errorMessage: rowErrors.join(' | ')
+      });
+    });
 
     this.importPreviewRecords.set(preview);
     this.importValidationErrors.set(errors);
   }
 
+  generateMockPreviewRecords() {
+    const errors: string[] = [];
+    const preview: any[] = [];
+    this.importPreviewRecords.set(preview);
+    this.importValidationErrors.set(errors);
+  }
+
   confirmImport() {
-    const validRecords  = this.importPreviewRecords().filter(r => r.isValid);
-    const successCount  = validRecords.length;
-    const failedCount   = this.importPreviewRecords().length - successCount;
+    const validRecords = this.importPreviewRecords().filter(r => r.isValid);
+    if (validRecords.length === 0) {
+      this.notificationService.danger('Validation Error', 'No valid records to import.');
+      return;
+    }
+
+    const totalRecords = validRecords.length;
 
     if (!this.isEquipmentImport()) {
-      // NOTE: bulk-import endpoint is a placeholder in the API — we create items one by one
-      const creates = validRecords.map(r =>
-        this.inventoryApi.createItem({
-          itemCode: r.itemCode, itemName: r.itemName, category: r.category,
-          uom: r.uom, quantity: r.quantity, unitPrice: r.unitPrice,
-          location: r.location, minQuantity: 5
-        })
-      );
+      this.isUploading.set(true);
+      let successCount = 0;
+      let failedCount = 0;
+      let processed = 0;
 
-      let done = 0;
-      creates.forEach(obs => obs.subscribe({
-        next: created => {
-          this.inventory.update(list => [mapApiItem(created), ...list]);
-          done++;
-          if (done === creates.length) {
-            this.mockDataService.addBulkImportHistory({ importedBy: 'Current User', numberOfRecords: successCount, status: failedCount > 0 ? 'Failed' : 'Success', module: 'Inventory' });
-            this.isImportModalOpen.set(false);
-            this.notificationService.success('Import Finished', `Imported: ${successCount}, Failed: ${failedCount}.`);
-            this.cdr.markForCheck();
+      validRecords.forEach(record => {
+        this.inventoryApi.createItem({
+          itemCode: record.itemCode,
+          itemName: record.itemName,
+          category: record.category || '',
+          uom: record.uom || 'EA',
+          quantity: record.quantity,
+          unitPrice: record.unitPrice,
+          minQuantity: record.minQuantity,
+          location: record.location || ''
+        }).subscribe({
+          next: created => {
+            this.inventory.update(list => [mapApiItem(created), ...list]);
+            successCount++;
+            processed++;
+            this.checkImportDone(processed, totalRecords, successCount, failedCount);
+          },
+          error: (err: any) => {
+            failedCount++;
+            processed++;
+            this.checkImportDone(processed, totalRecords, successCount, failedCount);
           }
-        },
-        error: () => { done++; }
-      }));
+        });
+      });
     } else {
-      this.mockDataService.addBulkImportHistory({ importedBy: 'Current User', numberOfRecords: successCount, status: failedCount > 0 ? 'Failed' : 'Success', module: 'Assets' });
+      this.mockDataService.addBulkImportHistory({
+        importedBy: this.authService.currentUser()?.fullName || 'Current User',
+        numberOfRecords: validRecords.length,
+        status: 'Success',
+        module: 'Assets'
+      });
       this.isImportModalOpen.set(false);
-      this.notificationService.success('Import Finished', `Imported: ${successCount}, Failed: ${failedCount}.`);
+      this.notificationService.success('Import Finished', `Imported: ${validRecords.length} assets.`);
+    }
+  }
+
+  private checkImportDone(processed: number, total: number, successCount: number, failedCount: number) {
+    if (processed >= total) {
+      this.isUploading.set(false);
+      this.mockDataService.addBulkImportHistory({
+        importedBy: this.authService.currentUser()?.fullName || 'Current User',
+        numberOfRecords: successCount,
+        status: failedCount > 0 ? 'Failed' : 'Success',
+        module: 'Inventory'
+      });
+      this.isImportModalOpen.set(false);
+      this.loadAll(); // Refresh inventory items & KPIs from backend
+
+      if (failedCount === 0) {
+        this.notificationService.success('Import Finished', `Successfully imported ${successCount} item(s) to inventory.`);
+      } else {
+        this.notificationService.warning('Import Completed with Warnings', `Imported: ${successCount}, Failed: ${failedCount}. Check duplicates or validation errors.`);
+      }
+      this.cdr.markForCheck();
     }
   }
 
@@ -1197,5 +1513,262 @@ export class InventoryComponent implements OnInit {
   releaseReservation(id: string) {
     this.mockDataService.releaseReservation(id);
     this.notificationService.warning('inventory.reservation_released_title', 'inventory.reservation_released_desc');
+  }
+
+  // ─── OPENING STOCK METHODS ────────────────────────────────────────────────
+
+  loadOpeningStocks() {
+    this.isLoadingOpeningStock.set(true);
+    this.inventoryApi.getOpeningStocks({ limit: 500 })
+      .pipe(finalize(() => { this.isLoadingOpeningStock.set(false); this.cdr.markForCheck(); }))
+      .subscribe({
+        next: res => {
+          const raw: any[] = Array.isArray(res) ? res : extractApiArray(res);
+          this.openingStocks.set(raw.map(mapApiOpeningStock));
+          this.cdr.markForCheck();
+        },
+        error: err => {
+          console.error('Failed to load opening stock from API:', err);
+          this.openingStocks.set([]);
+          this.cdr.markForCheck();
+        }
+      });
+  }
+
+  openAddOpeningStock() {
+    const defaultWh = this.warehouses()[0]?.code || '';
+    this.openingStockForm = {
+      itemCode: '',
+      warehouseCode: defaultWh,
+      openingQuantity: 1,
+      unitOfMeasure: 'EA',
+      location: '',
+      batchNumber: '',
+      serialNumber: '',
+      condition: 'New',
+      notes: '',
+      openingDate: new Date().toISOString().split('T')[0]
+    };
+    this.isOpeningStockModalOpen.set(true);
+  }
+
+  onOpeningStockItemSelect() {
+    const matched = this.inventory().find(i => i.itemCode === this.openingStockForm.itemCode);
+    if (matched) {
+      if (matched.uom) this.openingStockForm.unitOfMeasure = matched.uom;
+      if (matched.location && !this.openingStockForm.location) this.openingStockForm.location = matched.location;
+    }
+  }
+
+  saveOpeningStock() {
+    if (!this.openingStockForm.itemCode || !this.openingStockForm.warehouseCode) {
+      this.notificationService.danger('common.validation_error', 'inventory.opening_stock_required_fields');
+      return;
+    }
+
+    if (this.openingStockForm.openingQuantity === null || this.openingStockForm.openingQuantity === undefined || this.openingStockForm.openingQuantity < 0) {
+      this.notificationService.danger('common.validation_error', 'inventory.invalid_quantity');
+      return;
+    }
+
+    if (!this.openingStockForm.unitOfMeasure) {
+      this.notificationService.danger('common.validation_error', 'inventory.uom_required');
+      return;
+    }
+
+    this.isLoading.set(true);
+    this.inventoryApi.createOpeningStock(this.openingStockForm)
+      .pipe(finalize(() => { this.isLoading.set(false); this.cdr.markForCheck(); }))
+      .subscribe({
+        next: created => {
+          const mapped = mapApiOpeningStock(created);
+          this.openingStocks.update(list => [mapped, ...list]);
+          this.auditService.log('Create', 'Inventory', 'OpeningStock', mapped.openingNumber || mapped.id, '', JSON.stringify(mapped), `Created opening stock for item ${mapped.itemCode}`);
+          this.isOpeningStockModalOpen.set(false);
+          this.notificationService.success('common.success', 'inventory.opening_stock_created_success');
+          this.loadOpeningStocks();
+        },
+        error: (err: any) => {
+          const msg = err?.error?.message || err?.message || 'inventory.failed_to_create_opening_stock';
+          this.notificationService.danger('common.error', msg);
+        }
+      });
+  }
+
+  openViewOpeningStock(item: OpeningStockItem) {
+    this.selectedOpeningStock.set(item);
+    this.isViewOpeningStockModalOpen.set(true);
+  }
+
+  postOpeningStock(item: OpeningStockItem) {
+    if (item.status === 'Posted') {
+      this.notificationService.warning('common.warning', 'inventory.opening_stock_already_posted');
+      return;
+    }
+
+    const confirmMsg = this.translate.instant('inventory.confirm_post_opening_stock', {
+      number: item.openingNumber || item.itemCode,
+      qty: item.openingQuantity,
+      item: item.itemCode
+    });
+    if (!confirm(confirmMsg)) return;
+
+    this.isLoading.set(true);
+    this.inventoryApi.postOpeningStock(item.id)
+      .pipe(finalize(() => { this.isLoading.set(false); this.cdr.markForCheck(); }))
+      .subscribe({
+        next: () => {
+          this.auditService.log('Status Change', 'Inventory', 'OpeningStock', item.id, 'Draft', 'Posted', `Posted opening stock ${item.openingNumber}`);
+          this.notificationService.success('common.success', 'inventory.opening_stock_posted_success');
+          // Refresh Opening Stocks, Inventory Items, and Dashboard Summary
+          this.loadOpeningStocks();
+          this.loadItems();
+          this.loadSummary();
+        },
+        error: (err: any) => {
+          const msg = err?.error?.message || err?.message || 'inventory.failed_to_post_opening_stock';
+          this.notificationService.danger('common.error', msg);
+        }
+      });
+  }
+
+  deleteOpeningStock(item: OpeningStockItem) {
+    const isPosted = item.status === 'Posted' || item.status === 'POSTED';
+    const confirmPrompt = isPosted
+      ? `هل أنت متأكد من إلغاء الرصيد الافتتاحي المرحّل (${item.openingNumber || item.itemCode})؟ سيتم عكس الأثر المخزني وخصم الكمية من رصيد الصنف تلقائياً.`
+      : `هل أنت متأكد من حذف مسودة الرصيد الافتتاحي (${item.openingNumber || item.itemCode})؟`;
+
+    if (!confirm(confirmPrompt)) return;
+
+    this.isLoading.set(true);
+    this.inventoryApi.deleteOpeningStock(item.id)
+      .pipe(finalize(() => { this.isLoading.set(false); this.cdr.markForCheck(); }))
+      .subscribe({
+        next: (res: any) => {
+          const msg = res?.message || (isPosted ? 'تم إلغاء الرصيد وعكس أثر المخزون بنجاح' : 'تم حذف مسودة الرصيد الافتتاحي');
+          this.notificationService.success('common.success', msg);
+          this.loadOpeningStocks();
+          this.loadItems();
+          this.loadSummary();
+        },
+        error: (err: any) => {
+          const msg = err?.error?.message || err?.message || 'Failed to delete opening stock';
+          this.notificationService.danger('common.error', msg);
+        }
+      });
+  }
+
+  // ─── EXCEL IMPORT OPENING STOCK ───────────────────────────────────────────
+
+  openImportOpeningStock() {
+    this.openingStockImportFile.set(null);
+    this.importSuccessSummary.set(null);
+    this.importErrors.set([]);
+    this.isImportOpeningStockModalOpen.set(true);
+  }
+
+  onOpeningStockFileSelected(event: any) {
+    const input = event.target as HTMLInputElement;
+    if (input.files && input.files.length > 0) {
+      const file = input.files[0];
+      const validExtensions = ['.xlsx', '.xls', '.csv'];
+      const fileExt = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
+      if (!validExtensions.includes(fileExt)) {
+        this.notificationService.danger('common.validation_error', 'inventory.invalid_file_format');
+        input.value = '';
+        return;
+      }
+      this.openingStockImportFile.set(file);
+      this.importSuccessSummary.set(null);
+      this.importErrors.set([]);
+    }
+  }
+
+  downloadOpeningStockTemplate() {
+    const headers = [
+      'Item Code',
+      'Item Name',
+      'Quantity',
+      'Warehouse',
+      'Unit Cost',
+      'Category',
+      'Unit of Measure',
+      'Location / Bin',
+      'Batch / Lot No.',
+      'Serial No.',
+      'Condition',
+      'Notes'
+    ];
+
+    const exampleRow = [
+      'ITM-001',
+      'Drill Bit 8.5in',
+      '100',
+      this.warehouses()[0]?.code || 'WH-01',
+      '450.00',
+      'Drilling Tools',
+      'EA',
+      'Shelf A-1',
+      'BATCH-2026-01',
+      'SN-001',
+      'New',
+      'Initial balance from physical count'
+    ];
+
+    const csvContent = '\uFEFF' + headers.join(',') + '\n' + exampleRow.join(',') + '\n';
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', 'opening_stock_template.csv');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  }
+
+  submitOpeningStockImport() {
+    const file = this.openingStockImportFile();
+    if (!file) {
+      this.notificationService.danger('common.validation_error', 'inventory.please_select_file');
+      return;
+    }
+
+    this.isImportingOpeningStock.set(true);
+    this.importSuccessSummary.set(null);
+    this.importErrors.set([]);
+
+    this.inventoryApi.importOpeningStock(file)
+      .pipe(finalize(() => { this.isImportingOpeningStock.set(false); this.cdr.markForCheck(); }))
+      .subscribe({
+        next: (res: OpeningStockImportResponse) => {
+          if (res.success) {
+            const total = res.totalRows ?? res.data?.totalItems ?? res.successCount ?? 0;
+            const success = res.successCount ?? res.data?.totalItems ?? total;
+            const failed = res.failedCount ?? 0;
+            this.importSuccessSummary.set({
+              totalRows: total,
+              successCount: success,
+              failedCount: failed,
+              message: res.message || 'Opening stock imported and posted successfully'
+            });
+            this.notificationService.success('common.success', res.message || 'inventory.opening_stock_posted_success');
+            this.loadOpeningStocks();
+            this.loadItems();
+            this.loadSummary();
+          } else {
+            this.importErrors.set(res.errors || []);
+            this.notificationService.danger('common.error', res.message || 'inventory.import_failed');
+          }
+        },
+        error: (err: any) => {
+          const res = err?.error;
+          if (res && res.errors && Array.isArray(res.errors)) {
+            this.importErrors.set(res.errors);
+          }
+          const msg = res?.message || err?.message || 'inventory.import_failed';
+          this.notificationService.danger('common.error', msg);
+        }
+      });
   }
 }

@@ -604,7 +604,7 @@
                     >
                       {{ 'procurement.purchase_requests.view_details' | translate }}
                     </button>
-                    @if (pr.status === 'Pending Approval') {
+                    @if (pr.status === 'Draft' || pr.status === 'Pending Approval') {
                       <button 
                         (click)="approveRequisition(pr.id)"
                         class="px-2.5 py-1.5 rounded-md bg-green-50 hover:bg-green-100 text-success font-bold border border-green-100 transition-colors"
@@ -795,13 +795,26 @@
         </div>
 
         <!-- Action inside drawer -->
-        <div class="pt-4 border-t border-slate-150 flex justify-end">
+        <div class="pt-4 border-t border-slate-150 flex items-center gap-2 justify-end">
           @if (selectedPR()?.status === 'Approved') {
             <button 
               (click)="createRFQForPR(selectedPR()!)"
               class="w-full py-2.5 bg-accent text-primary font-bold rounded-lg hover:bg-amber-400 transition-colors shadow-sm"
             >
               {{ 'procurement.purchase_requests.generate_rfq_btn' | translate }}
+            </button>
+          } @else if (selectedPR()?.status === 'Draft' || selectedPR()?.status === 'Pending Approval') {
+            <button 
+              (click)="approveRequisition(selectedPR()!.id); closeDetails()" 
+              class="flex-1 py-2.5 bg-green-600 hover:bg-green-700 text-white font-bold text-xs rounded-lg transition-colors shadow-sm"
+            >
+              {{ 'procurement.purchase_requests.approve' | translate }}
+            </button>
+            <button 
+              (click)="closeDetails()" 
+              class="px-4 py-2.5 border border-slate-200 rounded-lg hover:bg-slate-50 text-slate-600 font-bold text-xs transition-colors"
+            >
+              {{ 'procurement.purchase_requests.close_panel' | translate }}
             </button>
           } @else {
             <button 

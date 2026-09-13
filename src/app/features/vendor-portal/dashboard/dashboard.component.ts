@@ -1,10 +1,10 @@
-import { Component, OnInit, signal, computed, inject, ChangeDetectionStrategy } from '@angular/core';
+﻿import { Component, OnInit, signal, computed, inject, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
-import { MockDataService } from '../../../core/services/mock-data.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { BreadcrumbService } from '../../../core/services/breadcrumb.service';
+import { VendorApiService } from '../../../core/services/vendor-api.service';
 
 @Component({
   selector: 'app-vendor-dashboard',
@@ -14,52 +14,35 @@ import { BreadcrumbService } from '../../../core/services/breadcrumb.service';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class DashboardComponent implements OnInit {
-  private readonly mockDataService = inject(MockDataService);
   readonly authService = inject(AuthService);
   private readonly breadcrumbService = inject(BreadcrumbService);
   private readonly translate = inject(TranslateService);
+  private readonly vendorApi = inject(VendorApiService);
 
-  readonly rfqList = this.mockDataService.rfqs;
+  readonly apiDashboardData = signal<any | null>(null);
+  readonly apiRFQs = signal<any[]>([]);
 
-  // Filter RFQs assigned to the logged-in vendor
+  // Filter RFQs strictly from Backend API
   readonly myRFQs = computed(() => {
-    const vId = this.authService.currentUser()?.vendorId;
-    if (!vId) return [];
-    return this.rfqList().filter(rfq => 
-      rfq.vendors.some(v => v.vendorId === vId)
-    );
+    return this.apiRFQs();
   });
 
-  // Calculate KPIs
+  // Calculate KPIs strictly from Backend API
   readonly kpis = computed(() => {
-    const vId = this.authService.currentUser()?.vendorId;
-    const list = this.myRFQs();
-    
-    let openCount = 0;
-    let submittedCount = 0;
-    let awardedCount = 0;
-    let rejectedCount = 0;
-
-    list.forEach(rfq => {
-      const vState = rfq.vendors.find(v => v.vendorId === vId);
-      if (!vState) return;
-
-      if (vState.status === 'Pending' || vState.status === 'Revision Requested') {
-        openCount++;
-      } else if (vState.status === 'Submitted') {
-        submittedCount++;
-      } else if (vState.status === 'Accepted') {
-        awardedCount++;
-      } else if (vState.status === 'Rejected') {
-        rejectedCount++;
-      }
-    });
-
+    const api = this.apiDashboardData();
+    if (api) {
+      return {
+        open: api.openRFQs ?? 0,
+        submitted: api.submittedBids ?? 0,
+        awarded: api.awardedContracts ?? 0,
+        rejected: api.rejectedBids ?? 0
+      };
+    }
     return {
-      open: openCount,
-      submitted: submittedCount,
-      awarded: awardedCount,
-      rejected: rejectedCount
+      open: 0,
+      submitted: 0,
+      awarded: 0,
+      rejected: 0
     };
   });
 
@@ -73,19 +56,36 @@ export class DashboardComponent implements OnInit {
       { label: this.translate.instant('vendor.portal.breadcrumb_home') || 'Vendor Portal' },
       { label: this.translate.instant('vendor.dashboard.breadcrumb') || 'Dashboard' }
     ]);
+
+    this.loadBackendData();
+  }
+
+  loadBackendData() {
+    this.vendorApi.getPortalDashboard().subscribe({
+      next: (res) => {
+        if (res?.data) this.apiDashboardData.set(res.data);
+      },
+      error: () => {}
+    });
+
+    this.vendorApi.getPortalRFQs().subscribe({
+      next: (res) => {
+        const items = res?.data ?? [];
+        this.apiRFQs.set(items);
+      },
+      error: () => {
+        this.apiRFQs.set([]);
+      }
+    });
   }
 
   getVendorStatus(rfq: any): string {
-    const vId = this.authService.currentUser()?.vendorId;
-    const v = rfq.vendors.find((item: any) => item.vendorId === vId);
-    return v ? v.status : 'Pending';
+    return rfq.myStatus || rfq.status || 'Pending';
   }
 
   getQuotationAmount(rfqId: string): number | null {
-    const vId = this.authService.currentUser()?.vendorId;
-    const rfq = this.rfqList().find(r => r.id === rfqId);
+    const rfq = this.myRFQs().find(r => (r._id ?? r.id) === rfqId);
     if (!rfq) return null;
-    const q = rfq.quotations.find(item => item.vendorId === vId);
-    return q ? q.totalAmount : null;
+    return rfq.myQuotation?.totalAmount ?? null;
   }
 }

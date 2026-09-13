@@ -10,6 +10,8 @@ import { RFQ, RFQVendor, RFQQuotation } from '../../../shared/interfaces/rfq.int
 import { PurchaseRequest, PurchaseRequestItem } from '../../../shared/interfaces/purchase-request.interface';
 import { ProcurementChainComponent } from '../../../shared/components/procurement-chain/procurement-chain.component';
 import { ProcurementService } from '../../../core/services/procurement.service';
+import { InventoryApiService, extractApiArray } from '../../../core/services/inventory-api.service';
+import { MockDataService } from '../../../core/services/mock-data.service';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../../environments/environment';
 import { finalize } from 'rxjs/operators';
@@ -104,6 +106,7 @@ export class RfqsComponent implements OnInit {
   private readonly router              = inject(Router);
   private readonly translate           = inject(TranslateService);
   private readonly cdr                 = inject(ChangeDetectorRef);
+  private readonly mockDataService     = inject(MockDataService);
   private readonly vendorsApiUrl       = `${environment.apiUrl}/vendors`;
 
   // ── State ─────────────────────────────────────────────────────────────────
@@ -194,10 +197,11 @@ export class RfqsComponent implements OnInit {
     this.route.queryParams.subscribe(params => {
       const prId = params['createForPR'];
       if (prId) {
-        // انتظر تحميل الـ PRs ثم افتح النموذج
+        let attempts = 0;
         const tryOpen = () => {
-          const pr = this.purchaseRequests().find(p => p.id === prId);
-          if (pr && (pr.status === 'Approved' || pr.status === 'Pending Approval' || pr.status === 'RFQ Created')) {
+          attempts++;
+          const pr = this.purchaseRequests().find(p => p.id === prId || (p as any)._id === prId || p.requestNumber === prId);
+          if (pr) {
             this.selectedPRSource.set(pr);
             this.formRFQ.title = this.translate.instant('procurement.rfqs.rfq_for_title', {
               pr: pr.requestNumber, dept: pr.department
@@ -205,11 +209,8 @@ export class RfqsComponent implements OnInit {
             this.formRFQ.invitedVendorIds.clear();
             this.isFormView.set(true);
             this.cdr.markForCheck();
-          } else if (!pr) {
-            // أعد المحاولة بعد 500ms إن لم تكن الـ PRs محملة بعد
-            setTimeout(tryOpen, 500);
-          } else {
-            this.router.navigate([], { queryParams: {} });
+          } else if (attempts < 10) {
+            setTimeout(tryOpen, 300);
           }
         };
         tryOpen();
@@ -246,7 +247,7 @@ export class RfqsComponent implements OnInit {
       .pipe(finalize(() => { this.isLoading.set(false); this.cdr.markForCheck(); }))
       .subscribe({
         next: res => {
-          const raw = res?.items ?? (Array.isArray(res) ? res : []);
+          const raw = extractApiArray(res);
           this.rfqs.set(raw.map(mapApiRFQ));
         },
         error: err => {
@@ -259,24 +260,30 @@ export class RfqsComponent implements OnInit {
   private loadPRs() {
     this.procurementService.getPRs({ limit: 200 }).subscribe({
       next: res => {
-        const raw = res?.items ?? (Array.isArray(res) ? res : []);
-        // نقوم بـ import inline للـ mapper من الـ PR component
+        const raw = extractApiArray(res);
         this.purchaseRequests.set(raw.map((r: any) => ({
           id:             r._id ?? r.id,
-          requestNumber:  r.requestNumber ?? r.prNumber ?? '',
-          documentNumber: r.documentNumber ?? '',
+          requestNumber:  r.requestNumber ?? r.prNumber ?? r.documentNumber ?? '',
+          documentNumber: r.documentNumber ?? r.requestNumber ?? '',
           procurementChain: r.procurementChain ?? '',
           rootProcurementNumber: r.rootProcurementNumber ?? '',
           chainId:        r.chainId ?? r._id ?? r.id,
           department:     r.department ?? '',
           costCenter:     r.costCenter ?? '',
           chargeType:     r.chargeType ?? 'General Overhead',
-          requestDate:    r.createdAt ?? '',
+          requestDate:    r.requestDate ?? r.createdAt ?? '',
           requiredDate:   r.requiredDate ?? '',
           status:         r.status ?? 'Draft',
           description:    r.description ?? '',
           requestedBy:    r.requestedBy ?? '',
-          items:          r.items ?? [],
+          items:          (r.items ?? []).map((i: any) => ({
+            id:          i._id ?? i.id ?? `item-${Math.random()}`,
+            itemCode:    i.itemCode ?? '',
+            itemName:    i.itemName ?? i.description ?? i.itemDescription ?? 'Item',
+            quantity:    i.quantity ?? 1,
+            uom:         i.uom ?? 'EA',
+            notes:       i.notes ?? ''
+          })),
         })));
         this.cdr.markForCheck();
       },
@@ -285,26 +292,48 @@ export class RfqsComponent implements OnInit {
   }
 
   private loadVendors() {
-    this.http.get<any>(`${this.vendorsApiUrl}?limit=200&status=Approved`).subscribe({
+    this.http.get<any>(`${this.vendorsApiUrl}?limit=200`).subscribe({
       next: res => {
-        const raw = res?.items ?? res?.data ?? (Array.isArray(res) ? res : []);
-        this.vendors.set(raw.map((v: any) => ({
-          id:         v._id ?? v.id,
-          vendorId:   v._id ?? v.id,
-          vendorCode: v.vendorCode ?? v.code ?? '',
-          vendorName: v.vendorName ?? v.name ?? '',
-          arabicName: v.arabicName ?? '',
-          category:   v.category ?? '',
-          contactEmail: v.contactEmail ?? v.email ?? '',
-          status:     v.status ?? 'Active',
-        })));
+        const raw = extractApiArray(res);
+        if (raw.length > 0) {
+          this.vendors.set(raw.map((v: any) => ({
+            id:           v._id ?? v.id,
+            vendorId:     v._id ?? v.id,
+            vendorCode:   v.vendorCode ?? v.code ?? '',
+            vendorName:   v.vendorName ?? v.name ?? '',
+            arabicName:   v.arabicName ?? '',
+            category:     v.category ?? '',
+            contactEmail: v.contactEmail ?? v.email ?? '',
+            status:       v.status ?? 'Active',
+            rating:       v.performanceScore ?? v.rating ?? 4.5,
+            country:      v.country ?? 'Saudi Arabia'
+          })));
+        } else {
+          this.useMockVendorsFallback();
+        }
         this.cdr.markForCheck();
       },
-      error: err => {
-        console.warn('Could not load vendors from API, list will be empty:', err);
+      error: () => {
+        this.useMockVendorsFallback();
         this.cdr.markForCheck();
       }
     });
+  }
+
+  private useMockVendorsFallback() {
+    const mock = this.mockDataService.vendors();
+    this.vendors.set(mock.map(v => ({
+      id:           v.id,
+      vendorId:     v.id,
+      vendorCode:   v.vendorCode,
+      vendorName:   v.vendorName,
+      arabicName:   v.arabicName || '',
+      category:     v.category || 'General',
+      contactEmail: v.contactEmail || '',
+      status:       v.status || 'Active',
+      rating:       v.rating || 4.5,
+      country:      v.country || 'Saudi Arabia'
+    })));
   }
 
 

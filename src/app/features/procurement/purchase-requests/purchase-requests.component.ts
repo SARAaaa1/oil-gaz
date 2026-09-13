@@ -10,7 +10,7 @@ import { AuditService } from '../../../core/services/audit.service';
 import { ApprovalHistoryComponent } from '../../../shared/components/approval-history/approval-history.component';
 import { ProcurementChainComponent } from '../../../shared/components/procurement-chain/procurement-chain.component';
 import { ProcurementService } from '../../../core/services/procurement.service';
-import { InventoryApiService } from '../../../core/services/inventory-api.service';
+import { InventoryApiService, extractApiArray } from '../../../core/services/inventory-api.service';
 import { CostCenterStoreService } from '../../../core/services/cost-center-store.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { WorkflowApiService } from '../../../core/services/workflow-api.service';
@@ -235,9 +235,10 @@ export class PurchaseRequestsComponent implements OnInit {
       .pipe(finalize(() => { this.isLoading.set(false); this.cdr.markForCheck(); }))
       .subscribe({
         next: res => {
-          const raw = res?.items ?? res ?? [];
-          const mapped = (Array.isArray(raw) ? raw : []).map(mapApiPR);
+          const raw = extractApiArray(res);
+          const mapped = raw.map(mapApiPR);
           this.purchaseRequests.set(mapped);
+          this.cdr.markForCheck();
         },
         error: err => {
           console.error('Failed to load Purchase Requests:', err);
@@ -250,8 +251,8 @@ export class PurchaseRequestsComponent implements OnInit {
     this.inventoryApiService.getItems({ limit: 200 })
       .subscribe({
         next: res => {
-          const raw = res?.items ?? res ?? [];
-          this.inventory.set(Array.isArray(raw) ? raw : []);
+          const raw = extractApiArray(res);
+          this.inventory.set(raw);
           this.cdr.markForCheck();
         },
         error: err => console.error('Failed to load inventory items:', err)

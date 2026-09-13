@@ -3,6 +3,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
+import { CreateOpeningStockDto, OpeningStockImportResponse } from '../../shared/interfaces/inventory.interface';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -492,4 +493,82 @@ export class InventoryApiService {
       catchError(err => throwError(() => err))
     );
   }
+
+  // ── Opening Stock — الرصيد الافتتاحي (v3.1 Auto-Posting & Reversal) ──────────
+
+  /** GET /inventory/opening-stock */
+  getOpeningStocks(params: {
+    status?: string;
+    warehouseCode?: string;
+    itemCode?: string;
+    page?: number;
+    limit?: number;
+  } = {}): Observable<any[]> {
+    let httpParams = new HttpParams();
+    if (params.status && params.status !== 'ALL') httpParams = httpParams.set('status', params.status);
+    if (params.warehouseCode && params.warehouseCode !== 'ALL') httpParams = httpParams.set('warehouseCode', params.warehouseCode);
+    if (params.itemCode) httpParams = httpParams.set('itemCode', params.itemCode);
+    if (params.page) httpParams = httpParams.set('page', String(params.page));
+    if (params.limit) httpParams = httpParams.set('limit', String(params.limit));
+
+    return this.http.get<ApiResponse<any>>(
+      `${this.baseUrl}/opening-stock`,
+      { params: httpParams }
+    ).pipe(
+      map(res => extractApiArray(res)),
+      catchError(err => throwError(() => err))
+    );
+  }
+
+  /** POST /inventory/opening-stock */
+  createOpeningStock(body: CreateOpeningStockDto): Observable<any> {
+    return this.http.post<ApiResponse<any>>(
+      `${this.baseUrl}/opening-stock`,
+      body
+    ).pipe(
+      map(res => res.data ?? res),
+      catchError(err => throwError(() => err))
+    );
+  }
+
+  /**
+   * POST /inventory/opening-stock/import
+   * Auto-Posts opening stock and updates inventory balances automatically!
+   */
+  importOpeningStock(file: File): Observable<OpeningStockImportResponse> {
+    const formData = new FormData();
+    formData.append('file', file, file.name);
+
+    return this.http.post<OpeningStockImportResponse>(
+      `${this.baseUrl}/opening-stock/import`,
+      formData
+    ).pipe(
+      catchError(err => throwError(() => err))
+    );
+  }
+
+  /** PATCH /inventory/opening-stock/:id/post */
+  postOpeningStock(id: string): Observable<any> {
+    return this.http.patch<ApiResponse<any>>(
+      `${this.baseUrl}/opening-stock/${id}/post`,
+      {}
+    ).pipe(
+      map(res => res.data ?? res),
+      catchError(err => throwError(() => err))
+    );
+  }
+
+  /**
+   * DELETE /inventory/opening-stock/:id
+   * Cancels/deletes opening stock and automatically reverses stock impact if POSTED!
+   */
+  deleteOpeningStock(id: string): Observable<any> {
+    return this.http.delete<ApiResponse<any>>(
+      `${this.baseUrl}/opening-stock/${id}`
+    ).pipe(
+      map(res => res.data ?? res),
+      catchError(err => throwError(() => err))
+    );
+  }
 }
+

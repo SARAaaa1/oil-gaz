@@ -96,6 +96,15 @@
       >
         {{ 'inventory.tab_warehouses' | translate }}
       </button>
+      <button 
+        (click)="activeTab.set('opening-stock')" 
+        [class.border-slate-800]="activeTab() === 'opening-stock'" 
+        [class.text-slate-900]="activeTab() === 'opening-stock'"
+        [class.font-bold]="activeTab() === 'opening-stock'"
+        class="pb-3 px-3 border-b-2 border-transparent text-xs text-slate-500 font-medium hover:text-slate-800 transition-all cursor-pointer whitespace-nowrap"
+      >
+        {{ 'inventory.tab_opening_stock' | translate }}
+      </button>
       <a 
         routerLink="/inventory/goods-receipts" 
         class="pb-3 px-3 border-b-2 border-transparent text-xs text-slate-500 font-medium hover:text-slate-800 transition-all cursor-pointer"
@@ -239,9 +248,9 @@
             class="bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-700 focus:outline-none"
           >
             <option value="ALL">{{ 'inventory.all_warehouses' | translate }}</option>
-            <option value="Warehouse A">Warehouse A</option>
-            <option value="Warehouse B">Warehouse B</option>
-            <option value="Pipe Yard 1">Pipe Yard 1</option>
+            @for (wh of warehouses(); track wh.id || wh.code || $index) {
+              <option [value]="wh.name">{{ wh.name }}</option>
+            }
           </select>
         </div>
       </div>
@@ -296,31 +305,63 @@
   @if (activeTab() === 'warehouses') {
     <div class="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden animate-fade-in">
       <div class="p-4 bg-slate-50/50 border-b border-slate-100 flex items-center justify-between">
-        <h3 class="text-xs font-bold text-slate-800 uppercase">Warehouses Master List</h3>
-        <button (click)="openAddWarehouse()" class="px-3 py-1.5 bg-slate-900 text-white rounded-lg text-xs font-bold hover:bg-slate-850 transition-colors">
-          Add Warehouse
-        </button>
+        <h3 class="text-xs font-bold text-slate-800 uppercase">{{ 'inventory.tab_warehouses' | translate }}</h3>
+        @if (canEditInventory()) {
+          <button (click)="openAddWarehouse()" class="px-3 py-1.5 bg-slate-900 text-white rounded-lg text-xs font-bold hover:bg-slate-850 transition-colors flex items-center gap-1.5">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+            {{ 'inventory.add_warehouse' | translate }}
+          </button>
+        }
       </div>
       <div class="overflow-x-auto">
         <table class="w-full text-left border-collapse text-xs">
           <thead>
             <tr class="text-slate-400 font-bold border-b border-slate-100 bg-slate-50/20">
-              <th class="p-4 py-3">Code</th>
-              <th class="p-4 py-3">Warehouse Name</th>
-              <th class="p-4 py-3">Geographic Location</th>
-              <th class="p-4 py-3 text-center">Status</th>
+              <th class="p-4 py-3">{{ 'inventory.warehouse_code' | translate }}</th>
+              <th class="p-4 py-3">{{ 'inventory.warehouse_name' | translate }}</th>
+              <th class="p-4 py-3">{{ 'inventory.geographic_location' | translate }}</th>
+              <th class="p-4 py-3 text-center">{{ 'inventory.status' | translate }}</th>
+              <th class="p-4 py-3 text-center">{{ 'common.actions' | translate }}</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-50 font-medium text-slate-700">
-            @for (wh of warehouses(); track wh.id) {
+            @for (wh of warehouses(); track wh.id || wh.code || $index) {
               <tr class="hover:bg-slate-50/50 transition-colors">
                 <td class="p-4 font-mono font-bold text-slate-500">{{ wh.code }}</td>
                 <td class="p-4 font-bold text-slate-900">{{ wh.name }}</td>
-                <td class="p-4 text-slate-650">{{ wh.location }}</td>
+                <td class="p-4 text-slate-650">{{ wh.location || '—' }}</td>
                 <td class="p-4 text-center">
-                  <span class="px-2.5 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider bg-green-50 text-success">
+                  <span class="px-2.5 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider"
+                    [class.bg-green-50]="wh.status === 'Active'" [class.text-success]="wh.status === 'Active'"
+                    [class.bg-slate-100]="wh.status === 'Inactive'" [class.text-slate-500]="wh.status === 'Inactive'">
                     {{ wh.status }}
                   </span>
+                </td>
+                <td class="p-4 text-center space-x-2">
+                  @if (canEditInventory()) {
+                    <button 
+                      (click)="openEditWarehouse(wh)" 
+                      class="px-2 py-1 text-slate-700 hover:bg-slate-100 rounded text-xs font-semibold transition-colors"
+                      [title]="'common.edit' | translate"
+                    >
+                      {{ 'common.edit' | translate }}
+                    </button>
+                  }
+                  @if (canDeleteWarehouse()) {
+                    <button 
+                      (click)="deleteWarehouse(wh)" 
+                      class="px-2 py-1 text-red-600 hover:bg-red-50 rounded text-xs font-semibold transition-colors"
+                      [title]="'inventory.deactivate_warehouse' | translate"
+                    >
+                      {{ 'inventory.deactivate_warehouse' | translate }}
+                    </button>
+                  }
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="5" class="p-8 text-center text-slate-400">
+                  <p class="font-bold text-slate-600">{{ 'inventory.no_warehouses_found' | translate }}</p>
                 </td>
               </tr>
             }
@@ -664,6 +705,177 @@
     </div>
   }
 
+  <!-- 10. OPENING STOCK VIEW -->
+  @if (activeTab() === 'opening-stock') {
+    <div class="space-y-4 animate-fade-in">
+      <!-- Actions Bar -->
+      <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-sm flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+          <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider">{{ 'inventory.opening_stock_list' | translate }}</h3>
+          <p class="text-[11px] text-slate-400 mt-0.5">{{ 'inventory.opening_stock_subtitle' | translate }}</p>
+        </div>
+        <div class="flex items-center gap-2">
+          @if (canEditInventory()) {
+            <button 
+              (click)="openAddOpeningStock()" 
+              class="px-3.5 py-2 bg-slate-900 text-white rounded-lg text-xs font-bold hover:bg-slate-850 transition-colors flex items-center gap-1.5 shadow-sm"
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+              {{ 'inventory.add_opening_stock' | translate }}
+            </button>
+            <button 
+              (click)="openImportOpeningStock()" 
+              class="px-3.5 py-2 border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 rounded-lg text-xs font-bold transition-colors flex items-center gap-1.5"
+            >
+              <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+              {{ 'inventory.import_opening_stock' | translate }}
+            </button>
+          }
+        </div>
+      </div>
+
+      <!-- Filters & Search -->
+      <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-sm grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+        <div class="relative">
+          <input 
+            type="text" 
+            [placeholder]="'inventory.search_opening_stock' | translate" 
+            (input)="openingStockSearchQuery.set($any($event.target).value)"
+            class="w-full bg-white border border-slate-200 rounded-lg pl-8 pr-3 py-2 text-slate-800 focus:outline-none focus:border-slate-400"
+          >
+          <svg class="w-4 h-4 text-slate-400 absolute left-2.5 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+        </div>
+
+        <div>
+          <select 
+            (change)="openingStockFilterWarehouse.set($any($event.target).value)"
+            class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-slate-700 focus:outline-none focus:border-slate-400"
+          >
+            <option value="ALL">{{ 'inventory.all_warehouses' | translate }}</option>
+            @for (wh of warehouses(); track wh.id) {
+              <option [value]="wh.code">{{ wh.name }} ({{ wh.code }})</option>
+            }
+          </select>
+        </div>
+
+        <div>
+          <select 
+            (change)="openingStockFilterStatus.set($any($event.target).value)"
+            class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-slate-700 focus:outline-none focus:border-slate-400"
+          >
+            <option value="ALL">{{ 'common.all_statuses' | translate }}</option>
+            <option value="Draft">{{ 'inventory.status_draft' | translate }}</option>
+            <option value="Posted">{{ 'inventory.status_posted' | translate }}</option>
+            <option value="CANCELLED">ملغي (CANCELLED)</option>
+          </select>
+        </div>
+
+        <div class="flex items-center justify-end">
+          <span class="text-[11px] font-bold text-slate-400 bg-slate-50 px-2.5 py-1.5 rounded-lg border border-slate-100">
+            {{ filteredOpeningStocks().length }} {{ 'inventory.records_count' | translate }}
+          </span>
+        </div>
+      </div>
+
+      <!-- Opening Stock Table -->
+      <div class="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse text-xs">
+            <thead>
+              <tr class="text-slate-400 font-bold border-b border-slate-100 bg-slate-50/20">
+                <th class="p-4 py-3">{{ 'inventory.opening_number' | translate }}</th>
+                <th class="p-4 py-3">{{ 'inventory.item' | translate }}</th>
+                <th class="p-4 py-3">{{ 'inventory.warehouse' | translate }}</th>
+                <th class="p-4 py-3 text-right">{{ 'inventory.opening_quantity' | translate }}</th>
+                <th class="p-4 py-3">{{ 'inventory.location_bin' | translate }}</th>
+                <th class="p-4 py-3">{{ 'inventory.batch_serial' | translate }}</th>
+                <th class="p-4 py-3">{{ 'inventory.opening_date' | translate }}</th>
+                <th class="p-4 py-3 text-center">{{ 'inventory.status' | translate }}</th>
+                <th class="p-4 py-3 text-center">{{ 'common.actions' | translate }}</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-50 font-medium text-slate-700">
+              @for (os of filteredOpeningStocks(); track os.id || os.openingNumber || $index) {
+                <tr class="hover:bg-slate-50/50 transition-colors">
+                  <td class="p-4 font-mono font-bold text-slate-900">{{ os.openingNumber || '—' }}</td>
+                  <td class="p-4">
+                    <p class="font-bold text-slate-900">{{ os.itemName || os.itemCode }}</p>
+                    <p class="text-[10px] text-slate-400 font-mono">{{ os.itemCode }}</p>
+                  </td>
+                  <td class="p-4">
+                    <span class="font-mono text-slate-600">{{ os.warehouseCode }}</span>
+                    @if (os.warehouseName) {
+                      <span class="text-slate-400 text-[10px] block">({{ os.warehouseName }})</span>
+                    }
+                  </td>
+                  <td class="p-4 text-right font-mono font-bold text-slate-800">
+                    {{ os.openingQuantity | number }} <span class="text-[10px] text-slate-400 font-normal">{{ os.unitOfMeasure }}</span>
+                  </td>
+                  <td class="p-4 text-slate-600">{{ os.location || '—' }}</td>
+                  <td class="p-4 text-[11px]">
+                    @if (os.batchNumber) {
+                      <span class="block text-slate-700">B: <span class="font-mono">{{ os.batchNumber }}</span></span>
+                    }
+                    @if (os.serialNumber) {
+                      <span class="block text-slate-500 text-[10px]">SN: <span class="font-mono">{{ os.serialNumber }}</span></span>
+                    }
+                    @if (!os.batchNumber && !os.serialNumber) {
+                      <span class="text-slate-400">—</span>
+                    }
+                  </td>
+                  <td class="p-4 text-slate-500">{{ os.openingDate ? (os.openingDate | date:'mediumDate') : '—' }}</td>
+                  <td class="p-4 text-center">
+                    <span class="px-2.5 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider"
+                      [class.bg-slate-100]="os.status === 'Draft'" [class.text-slate-600]="os.status === 'Draft'"
+                      [class.bg-green-50]="os.status === 'Posted' || os.status === 'POSTED'" [class.text-success]="os.status === 'Posted' || os.status === 'POSTED'"
+                      [class.bg-red-50]="os.status === 'Cancelled' || os.status === 'CANCELLED'" [class.text-danger]="os.status === 'Cancelled' || os.status === 'CANCELLED'">
+                      {{ (os.status === 'Cancelled' || os.status === 'CANCELLED' ? 'ملغي' : (os.status === 'Posted' || os.status === 'POSTED' ? 'inventory.status_posted' : 'inventory.status_draft')) | translate }}
+                    </span>
+                  </td>
+                  <td class="p-4 text-center space-x-1.5">
+                    <button 
+                      (click)="openViewOpeningStock(os)" 
+                      class="px-2 py-1 text-slate-700 hover:bg-slate-100 rounded text-xs font-semibold transition-colors"
+                    >
+                      {{ 'common.view' | translate }}
+                    </button>
+                    @if (os.status === 'Draft' && canEditInventory()) {
+                      <button 
+                        (click)="postOpeningStock(os)" 
+                        class="px-2.5 py-1 bg-slate-900 hover:bg-slate-800 text-white rounded text-xs font-bold transition-colors"
+                      >
+                        {{ 'inventory.post_opening_stock' | translate }}
+                      </button>
+                    }
+                    @if ((os.status !== 'Cancelled' && os.status !== 'CANCELLED') && canEditInventory()) {
+                      <button 
+                        (click)="deleteOpeningStock(os)" 
+                        [title]="(os.status === 'Posted' || os.status === 'POSTED') ? 'إلغاء وعكس الأثر المخزني' : 'حذف المسودة'"
+                        class="px-2 py-1 text-red-600 hover:bg-red-50 rounded text-xs font-bold transition-colors"
+                      >
+                        {{ (os.status === 'Posted' || os.status === 'POSTED') ? 'إلغاء وعكس' : 'حذف' }}
+                      </button>
+                    }
+                  </td>
+                </tr>
+              } @empty {
+                <tr>
+                  <td colspan="9" class="p-12 text-center text-slate-400">
+                    <div class="flex flex-col items-center justify-center space-y-2">
+                      <svg class="w-8 h-8 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+                      <p class="font-bold text-slate-600 text-sm">{{ 'inventory.no_opening_stocks_found' | translate }}</p>
+                      <p class="text-xs text-slate-400">{{ 'inventory.no_opening_stocks_desc' | translate }}</p>
+                    </div>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  }
+
 </div>
 
 <!-- ==============================================
@@ -698,18 +910,35 @@
 
         <div class="grid grid-cols-2 gap-4">
           <div>
-            <label class="block text-slate-400 mb-1">Category</label>
-            <select [(ngModel)]="itemForm.category" name="category" [disabled]="isViewMode()" class="w-full bg-white border border-slate-200 rounded-lg px-2 py-2 text-slate-800 focus:outline-none">
-              <option value="Drilling Consumables">Drilling Consumables</option>
-              <option value="Machinery Spares">Machinery Spares</option>
-              <option value="HSE Equipment">HSE Equipment</option>
-              <option value="Lubricants">Lubricants</option>
-              <option value="Tubulars">Tubulars</option>
-            </select>
+            <label class="block text-slate-400 mb-1">{{ 'inventory.category' | translate }}</label>
+            <input 
+              type="text" 
+              [(ngModel)]="itemForm.category" 
+              name="category" 
+              [disabled]="isViewMode()" 
+              class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-slate-800 focus:outline-none" 
+              placeholder="e.g. Drilling Consumables"
+            >
           </div>
           <div>
-            <label class="block text-slate-400 mb-1">Unit of Measure (UOM)</label>
-            <input type="text" [(ngModel)]="itemForm.uom" name="uom" [disabled]="isViewMode()" class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-slate-800 focus:outline-none">
+            <label class="block text-slate-400 mb-1">{{ 'inventory.col_uom' | translate }}</label>
+            <select 
+              [(ngModel)]="itemForm.uom" 
+              name="uom" 
+              [disabled]="isViewMode()" 
+              class="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-2 text-slate-800 focus:outline-none"
+            >
+              <option value="EA">EA (Each)</option>
+              <option value="PCS">PCS (Pieces)</option>
+              <option value="KG">KG (Kilograms)</option>
+              <option value="MTR">MTR (Meters)</option>
+              <option value="LTR">LTR (Liters)</option>
+              <option value="BOX">BOX (Box)</option>
+              <option value="SET">SET (Set)</option>
+              <option value="BAGS">BAGS (Bags)</option>
+              <option value="DRUMS">DRUMS (Drums)</option>
+              <option value="JOINTS">JOINTS (Joints)</option>
+            </select>
           </div>
         </div>
 
@@ -729,11 +958,16 @@
         </div>
 
         <div>
-          <label class="block text-slate-400 mb-1">Warehouse Location</label>
-          <select [(ngModel)]="itemForm.location" name="location" [disabled]="isViewMode()" class="w-full bg-white border border-slate-200 rounded-lg px-2 py-2 text-slate-800 focus:outline-none">
-            <option value="Warehouse A">Warehouse A</option>
-            <option value="Warehouse B">Warehouse B</option>
-            <option value="Pipe Yard 1">Pipe Yard 1</option>
+          <label class="block text-slate-400 mb-1">{{ 'inventory.warehouse_location' | translate }}</label>
+          <select 
+            [(ngModel)]="itemForm.location" 
+            name="location" 
+            [disabled]="isViewMode()" 
+            class="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-2 text-slate-800 focus:outline-none"
+          >
+            @for (wh of warehouses(); track wh.id || wh.code || $index) {
+              <option [value]="wh.name">{{ wh.name }} ({{ wh.code }})</option>
+            }
           </select>
         </div>
 
@@ -753,27 +987,43 @@
   <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
     <div class="bg-white rounded-xl border border-slate-200 shadow-2xl w-full max-w-md overflow-hidden animate-fade-in">
       <div class="p-4 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
-        <h3 class="text-sm font-black text-slate-850">Register New Warehouse</h3>
+        <h3 class="text-sm font-black text-slate-850">
+          {{ (isWarehouseEditMode() ? 'inventory.edit_warehouse' : 'inventory.register_new_warehouse') | translate }}
+        </h3>
         <button (click)="isWarehouseModalOpen.set(false)" class="text-slate-400 hover:text-slate-600">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
         </button>
       </div>
       <form (submit)="saveWarehouse()" class="p-6 space-y-4 text-xs font-semibold text-slate-700">
         <div>
-          <label class="block text-slate-400 mb-1">Warehouse Code *</label>
-          <input type="text" [(ngModel)]="warehouseForm.code" name="code" class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 focus:outline-none" placeholder="e.g. WH-C" required>
+          <label class="block text-slate-400 mb-1">{{ 'inventory.warehouse_code' | translate }} *</label>
+          <input type="text" [(ngModel)]="warehouseForm.code" name="code" class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 focus:outline-none" placeholder="e.g. WH-01" required>
         </div>
         <div>
-          <label class="block text-slate-400 mb-1">Warehouse Name *</label>
+          <label class="block text-slate-400 mb-1">{{ 'inventory.warehouse_name' | translate }} *</label>
           <input type="text" [(ngModel)]="warehouseForm.name" name="name" class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 focus:outline-none" placeholder="e.g. Main Repair Yard" required>
         </div>
         <div>
-          <label class="block text-slate-400 mb-1">Location Details</label>
+          <label class="block text-slate-400 mb-1">{{ 'inventory.geographic_location' | translate }}</label>
           <input type="text" [(ngModel)]="warehouseForm.location" name="location" class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 focus:outline-none" placeholder="e.g. Basra Block 9">
         </div>
+        @if (isWarehouseEditMode()) {
+          <div>
+            <label class="block text-slate-400 mb-1">{{ 'inventory.status' | translate }}</label>
+            <select [(ngModel)]="warehouseForm.status" name="status" class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 focus:outline-none">
+              <option value="Active">{{ 'inventory.status_active' | translate }}</option>
+              <option value="Inactive">{{ 'inventory.status_inactive' | translate }}</option>
+            </select>
+          </div>
+        }
         <div class="flex justify-end gap-2 border-t border-slate-100 pt-4">
-          <button type="button" (click)="isWarehouseModalOpen.set(false)" class="px-4 py-2 border border-slate-200 bg-white text-slate-700 rounded-lg">Cancel</button>
-          <button type="submit" class="px-4 py-2 bg-slate-900 text-white rounded-lg">Save Warehouse</button>
+          <button type="button" (click)="isWarehouseModalOpen.set(false)" class="px-4 py-2 border border-slate-200 bg-white text-slate-700 rounded-lg">{{ 'common.cancel' | translate }}</button>
+          <button type="submit" [disabled]="isLoading()" class="px-4 py-2 bg-slate-900 text-white rounded-lg hover:bg-slate-850 disabled:opacity-50 flex items-center gap-1.5">
+            @if (isLoading()) {
+              <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+            }
+            {{ (isWarehouseEditMode() ? 'common.save_changes' : 'inventory.save_warehouse') | translate }}
+          </button>
         </div>
       </form>
     </div>
@@ -1204,22 +1454,39 @@
               </div>
             }
 
-            <h4 class="font-bold text-slate-800">{{ 'inventory.preview_records' | translate }}</h4>
-            <div class="border border-slate-150 rounded-xl overflow-hidden max-h-56 overflow-y-auto">
-              <table class="w-full text-left border-collapse">
+            <div class="flex items-center justify-between">
+              <h4 class="font-bold text-slate-800">{{ 'inventory.preview_records' | translate }}</h4>
+              <span class="text-[11px] text-slate-500 font-semibold">Total: {{ importPreviewRecords().length }} records</span>
+            </div>
+            <div class="border border-slate-150 rounded-xl overflow-x-auto max-h-64 overflow-y-auto">
+              <table class="w-full text-left border-collapse text-xs">
                 <thead>
-                  <tr class="bg-slate-50 text-slate-400 border-b border-slate-100 font-bold">
-                    <th class="p-3">{{ (isEquipmentImport() ? 'Equipment Code' : 'Item Code') }}</th>
-                    <th class="p-3">{{ (isEquipmentImport() ? 'Equipment Name' : 'Item Name') }}</th>
-                    <th class="p-3 text-center">Status</th>
+                  <tr class="bg-slate-50 text-slate-500 border-b border-slate-100 font-bold">
+                    <th class="p-2.5">Code</th>
+                    <th class="p-2.5">Name</th>
+                    @if (!isEquipmentImport()) {
+                      <th class="p-2.5">Category</th>
+                      <th class="p-2.5">Location</th>
+                      <th class="p-2.5 text-right">Qty</th>
+                      <th class="p-2.5">UOM</th>
+                      <th class="p-2.5 text-right">Unit Price</th>
+                    }
+                    <th class="p-2.5 text-center">Status</th>
                   </tr>
                 </thead>
                 <tbody>
-                  @for (record of importPreviewRecords(); track record.equipmentCode || record.itemCode) {
-                    <tr class="border-b border-slate-50 text-slate-700 font-medium" [ngClass]="{'bg-red-50': !record.isValid}">
-                      <td class="p-3 font-mono font-bold">{{ record.equipmentCode || record.itemCode || 'MISSING' }}</td>
-                      <td class="p-3 font-bold">{{ record.equipmentName || record.itemName }}</td>
-                      <td class="p-3 text-center">
+                  @for (record of importPreviewRecords(); track $index) {
+                    <tr class="border-b border-slate-50 text-slate-700 font-medium" [ngClass]="{'bg-red-50/50': !record.isValid}">
+                      <td class="p-2.5 font-mono font-bold">{{ record.equipmentCode || record.itemCode || 'MISSING' }}</td>
+                      <td class="p-2.5 font-bold">{{ record.equipmentName || record.itemName }}</td>
+                      @if (!isEquipmentImport()) {
+                        <td class="p-2.5 text-slate-500">{{ record.category || '—' }}</td>
+                        <td class="p-2.5 text-slate-500">{{ record.location || '—' }}</td>
+                        <td class="p-2.5 text-right font-mono font-bold">{{ record.quantity }}</td>
+                        <td class="p-2.5 font-mono text-[10px]">{{ record.uom }}</td>
+                        <td class="p-2.5 text-right font-mono">${{ record.unitPrice | number:'1.2-2' }}</td>
+                      }
+                      <td class="p-2.5 text-center">
                         <span class="px-2 py-0.5 rounded text-[10px] font-black uppercase"
                           [class.bg-green-100]="record.isValid" [class.text-green-700]="record.isValid"
                           [class.bg-red-100]="!record.isValid" [class.text-red-750]="!record.isValid">
@@ -1819,3 +2086,429 @@
       </div>
     </div>
   }
+
+<!-- ==============================================
+     OPENING STOCK MODALS
+     ============================================== -->
+
+<!-- 1. Add Opening Stock Modal -->
+@if (isOpeningStockModalOpen()) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 overflow-y-auto">
+    <div class="bg-white rounded-xl border border-slate-200 shadow-2xl w-full max-w-lg overflow-hidden animate-fade-in my-8">
+      <div class="p-4 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
+        <div>
+          <h3 class="text-sm font-black text-slate-850">{{ 'inventory.add_opening_stock' | translate }}</h3>
+          <p class="text-[10px] text-slate-400 font-semibold">{{ 'inventory.add_opening_stock_subtitle' | translate }}</p>
+        </div>
+        <button (click)="isOpeningStockModalOpen.set(false)" class="text-slate-400 hover:text-slate-600">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <form (submit)="saveOpeningStock()" class="p-6 space-y-4 text-xs font-semibold text-slate-700">
+        <!-- Item & Warehouse -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-slate-400 mb-1">{{ 'inventory.select_item' | translate }} *</label>
+            <select 
+              [(ngModel)]="openingStockForm.itemCode" 
+              (change)="onOpeningStockItemSelect()"
+              name="itemCode" 
+              class="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-2 text-slate-800 focus:outline-none focus:border-slate-400" 
+              required
+            >
+              <option value="" disabled>{{ 'inventory.select_item' | translate }}</option>
+              @for (item of inventory(); track item.id) {
+                <option [value]="item.itemCode">{{ item.itemCode }} — {{ item.itemName }}</option>
+              }
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-slate-400 mb-1">{{ 'inventory.select_warehouse' | translate }} *</label>
+            <select 
+              [(ngModel)]="openingStockForm.warehouseCode" 
+              name="warehouseCode" 
+              class="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-2 text-slate-800 focus:outline-none focus:border-slate-400" 
+              required
+            >
+              <option value="" disabled>{{ 'inventory.select_warehouse' | translate }}</option>
+              @for (wh of warehouses(); track wh.id) {
+                <option [value]="wh.code">{{ wh.name }} ({{ wh.code }})</option>
+              }
+            </select>
+          </div>
+        </div>
+
+        <!-- Quantity & UOM -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-slate-400 mb-1">{{ 'inventory.opening_quantity' | translate }} *</label>
+            <input 
+              type="number" 
+              [(ngModel)]="openingStockForm.openingQuantity" 
+              name="openingQuantity" 
+              min="0" 
+              step="any"
+              class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-slate-800 focus:outline-none focus:border-slate-400" 
+              required
+            >
+          </div>
+
+          <div>
+            <label class="block text-slate-400 mb-1">{{ 'inventory.uom' | translate }} *</label>
+            <select 
+              [(ngModel)]="openingStockForm.unitOfMeasure" 
+              name="unitOfMeasure" 
+              class="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-2 text-slate-800 focus:outline-none focus:border-slate-400"
+              required
+            >
+              <option value="EA">EA (Each)</option>
+              <option value="PCS">PCS (Pieces)</option>
+              <option value="KG">KG (Kilograms)</option>
+              <option value="MTR">MTR (Meters)</option>
+              <option value="LTR">LTR (Liters)</option>
+              <option value="BOX">BOX (Box)</option>
+              <option value="SET">SET (Set)</option>
+              <option value="BAGS">BAGS (Bags)</option>
+              <option value="DRUMS">DRUMS (Drums)</option>
+              <option value="JOINTS">JOINTS (Joints)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Location & Condition -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-slate-400 mb-1">{{ 'inventory.location_bin' | translate }}</label>
+            <input 
+              type="text" 
+              [(ngModel)]="openingStockForm.location" 
+              name="location" 
+              class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-slate-800 focus:outline-none focus:border-slate-400" 
+              placeholder="e.g. Aisle 3, Rack B"
+            >
+          </div>
+
+          <div>
+            <label class="block text-slate-400 mb-1">{{ 'inventory.condition' | translate }}</label>
+            <select 
+              [(ngModel)]="openingStockForm.condition" 
+              name="condition" 
+              class="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-2 text-slate-800 focus:outline-none focus:border-slate-400"
+            >
+              <option value="New">{{ 'inventory.condition_new' | translate }}</option>
+              <option value="Used">{{ 'inventory.condition_used' | translate }}</option>
+              <option value="Refurbished">{{ 'inventory.condition_refurbished' | translate }}</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Batch & Serial -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-slate-400 mb-1">{{ 'inventory.batch_lot_no' | translate }}</label>
+            <input 
+              type="text" 
+              [(ngModel)]="openingStockForm.batchNumber" 
+              name="batchNumber" 
+              class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-slate-800 focus:outline-none focus:border-slate-400" 
+              placeholder="e.g. BATCH-2026-A"
+            >
+          </div>
+
+          <div>
+            <label class="block text-slate-400 mb-1">{{ 'inventory.serial_no' | translate }}</label>
+            <input 
+              type="text" 
+              [(ngModel)]="openingStockForm.serialNumber" 
+              name="serialNumber" 
+              class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-slate-800 focus:outline-none focus:border-slate-400" 
+              placeholder="e.g. SN-998877"
+            >
+          </div>
+        </div>
+
+        <!-- Opening Date -->
+        <div>
+          <label class="block text-slate-400 mb-1">{{ 'inventory.opening_date' | translate }}</label>
+          <input 
+            type="date" 
+            [(ngModel)]="openingStockForm.openingDate" 
+            name="openingDate" 
+            class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-slate-800 focus:outline-none focus:border-slate-400"
+          >
+        </div>
+
+        <!-- Notes -->
+        <div>
+          <label class="block text-slate-400 mb-1">{{ 'inventory.notes' | translate }}</label>
+          <textarea 
+            [(ngModel)]="openingStockForm.notes" 
+            name="notes" 
+            rows="2" 
+            class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-slate-800 focus:outline-none focus:border-slate-400 resize-none" 
+            placeholder="e.g. Opening stock from physical inventory count"
+          ></textarea>
+        </div>
+
+        <div class="flex justify-end gap-2 border-t border-slate-100 pt-4">
+          <button type="button" (click)="isOpeningStockModalOpen.set(false)" class="px-4 py-2 border border-slate-200 bg-white text-slate-700 rounded-lg">{{ 'common.cancel' | translate }}</button>
+          <button type="submit" [disabled]="isLoading()" class="px-4 py-2 bg-slate-900 text-white rounded-lg hover:bg-slate-850 disabled:opacity-50 flex items-center gap-1.5">
+            @if (isLoading()) {
+              <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+            }
+            {{ 'inventory.save_opening_stock' | translate }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}
+
+<!-- 2. View Opening Stock Modal -->
+@if (isViewOpeningStockModalOpen() && selectedOpeningStock()) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+    <div class="bg-white rounded-xl border border-slate-200 shadow-2xl w-full max-w-lg overflow-hidden animate-fade-in">
+      <div class="p-4 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
+        <div>
+          <h3 class="text-sm font-black text-slate-850">{{ 'inventory.view_opening_stock_title' | translate }}</h3>
+          <p class="text-[10px] text-slate-400 font-mono">{{ selectedOpeningStock()!.openingNumber }}</p>
+        </div>
+        <button (click)="isViewOpeningStockModalOpen.set(false)" class="text-slate-400 hover:text-slate-600">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <div class="p-6 space-y-4 text-xs">
+        <div class="grid grid-cols-2 gap-4">
+          <div class="p-3 bg-slate-50 rounded-lg">
+            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">{{ 'inventory.item' | translate }}</span>
+            <p class="font-bold text-slate-900">{{ selectedOpeningStock()!.itemName || selectedOpeningStock()!.itemCode }}</p>
+            <p class="font-mono text-[10px] text-slate-400">{{ selectedOpeningStock()!.itemCode }}</p>
+          </div>
+
+          <div class="p-3 bg-slate-50 rounded-lg">
+            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">{{ 'inventory.warehouse' | translate }}</span>
+            <p class="font-bold text-slate-900">{{ selectedOpeningStock()!.warehouseCode }}</p>
+            @if (selectedOpeningStock()!.warehouseName) {
+              <p class="text-[10px] text-slate-400">{{ selectedOpeningStock()!.warehouseName }}</p>
+            }
+          </div>
+        </div>
+
+        <div class="grid grid-cols-3 gap-3">
+          <div class="p-3 bg-slate-50 rounded-lg">
+            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">{{ 'inventory.opening_quantity' | translate }}</span>
+            <p class="font-black text-slate-900 text-sm">{{ selectedOpeningStock()!.openingQuantity | number }} {{ selectedOpeningStock()!.unitOfMeasure }}</p>
+          </div>
+          <div class="p-3 bg-slate-50 rounded-lg">
+            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">{{ 'inventory.condition' | translate }}</span>
+            <p class="font-bold text-slate-700">{{ selectedOpeningStock()!.condition || '—' }}</p>
+          </div>
+          <div class="p-3 bg-slate-50 rounded-lg">
+            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">{{ 'inventory.status' | translate }}</span>
+            <span class="px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase"
+              [class.bg-slate-100]="selectedOpeningStock()!.status === 'Draft'"
+              [class.bg-green-50]="selectedOpeningStock()!.status === 'Posted'" [class.text-success]="selectedOpeningStock()!.status === 'Posted'">
+              {{ selectedOpeningStock()!.status }}
+            </span>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">{{ 'inventory.location_bin' | translate }}</span>
+            <p class="text-slate-700">{{ selectedOpeningStock()!.location || '—' }}</p>
+          </div>
+          <div>
+            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">{{ 'inventory.opening_date' | translate }}</span>
+            <p class="text-slate-700">{{ selectedOpeningStock()!.openingDate ? (selectedOpeningStock()!.openingDate | date:'mediumDate') : '—' }}</p>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">{{ 'inventory.batch_lot_no' | translate }}</span>
+            <p class="font-mono text-slate-700">{{ selectedOpeningStock()!.batchNumber || '—' }}</p>
+          </div>
+          <div>
+            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">{{ 'inventory.serial_no' | translate }}</span>
+            <p class="font-mono text-slate-700">{{ selectedOpeningStock()!.serialNumber || '—' }}</p>
+          </div>
+        </div>
+
+        @if (selectedOpeningStock()!.notes) {
+          <div>
+            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">{{ 'inventory.notes' | translate }}</span>
+            <p class="p-2.5 bg-slate-50 rounded-lg text-slate-600 text-xs">{{ selectedOpeningStock()!.notes }}</p>
+          </div>
+        }
+
+        <div class="flex justify-end gap-2 border-t border-slate-100 pt-4">
+          <button (click)="isViewOpeningStockModalOpen.set(false)" class="px-4 py-2 border border-slate-200 bg-white text-slate-700 rounded-lg">{{ 'common.close' | translate }}</button>
+          @if (selectedOpeningStock()!.status === 'Draft' && canEditInventory()) {
+            <button 
+              (click)="postOpeningStock(selectedOpeningStock()!); isViewOpeningStockModalOpen.set(false)" 
+              class="px-4 py-2 bg-slate-900 text-white rounded-lg hover:bg-slate-850 font-bold"
+            >
+              {{ 'inventory.post_opening_stock' | translate }}
+            </button>
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- 3. Excel Import Opening Stock Modal -->
+@if (isImportOpeningStockModalOpen()) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 overflow-y-auto">
+    <div class="bg-white rounded-xl border border-slate-200 shadow-2xl w-full max-w-2xl overflow-hidden animate-fade-in my-8">
+      <div class="p-4 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
+        <div>
+          <h3 class="text-sm font-black text-slate-850">{{ 'inventory.import_opening_stock' | translate }}</h3>
+          <p class="text-[10px] text-slate-400 font-semibold">{{ 'inventory.import_excel_instructions' | translate }}</p>
+        </div>
+        <button (click)="isImportOpeningStockModalOpen.set(false)" class="text-slate-400 hover:text-slate-600">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <div class="p-6 space-y-5 text-xs">
+        <!-- Template Download Banner -->
+        <div class="p-3.5 bg-blue-50/60 border border-blue-100 rounded-xl flex items-center justify-between">
+          <div class="flex items-center gap-2.5">
+            <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+            <div>
+              <p class="font-bold text-slate-800">{{ 'inventory.download_template' | translate }}</p>
+              <p class="text-[10px] text-slate-500">{{ 'inventory.template_description' | translate }}</p>
+            </div>
+          </div>
+          <button 
+            (click)="downloadOpeningStockTemplate()" 
+            class="px-3 py-1.5 bg-white border border-blue-200 text-blue-700 hover:bg-blue-50 rounded-lg text-xs font-bold transition-colors shadow-xs"
+          >
+            {{ 'inventory.download_csv_template' | translate }}
+          </button>
+        </div>
+
+        <!-- File Upload Area -->
+        <div class="border-2 border-dashed border-slate-200 hover:border-slate-400 rounded-xl p-6 text-center transition-colors bg-slate-50/50">
+          <input 
+            type="file" 
+            #openingStockFileInput 
+            (change)="onOpeningStockFileSelected($event)" 
+            accept=".xlsx, .xls, .csv" 
+            class="hidden"
+          >
+          <div class="space-y-2">
+            <svg class="w-8 h-8 text-slate-400 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+            @if (!openingStockImportFile()) {
+              <div>
+                <button 
+                  type="button" 
+                  (click)="openingStockFileInput.click()" 
+                  class="text-blue-600 font-bold hover:underline"
+                >
+                  {{ 'inventory.choose_file' | translate }}
+                </button>
+                <p class="text-[10px] text-slate-400 mt-1">{{ 'inventory.supported_formats_excel' | translate }}</p>
+              </div>
+            } @else {
+              <div class="p-3 bg-white border border-slate-200 rounded-lg inline-flex items-center gap-3 text-left">
+                <div class="p-2 bg-green-50 text-success rounded-md font-bold">📄</div>
+                <div>
+                  <p class="font-bold text-slate-900">{{ openingStockImportFile()!.name }}</p>
+                  <p class="text-[10px] text-slate-400 font-mono">{{ (openingStockImportFile()!.size / 1024) | number:'1.1-1' }} KB</p>
+                </div>
+                <button 
+                  type="button" 
+                  (click)="openingStockImportFile.set(null); openingStockFileInput.value = ''" 
+                  class="ml-2 text-slate-400 hover:text-red-500 font-bold"
+                >✕</button>
+              </div>
+            }
+          </div>
+        </div>
+
+        <!-- Success Summary -->
+        @if (importSuccessSummary()) {
+          <div class="p-4 bg-green-50 border border-green-200 rounded-xl space-y-2">
+            <div class="flex items-center gap-2">
+              <svg class="w-5 h-5 text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              <h4 class="font-bold text-green-900 text-xs">{{ importSuccessSummary()!.message }}</h4>
+            </div>
+            <div class="grid grid-cols-3 gap-2 pt-2 text-center text-[11px]">
+              <div class="p-2 bg-white rounded-lg border border-green-100">
+                <span class="text-slate-400 block">{{ 'inventory.total_rows' | translate }}</span>
+                <span class="font-black text-slate-800 text-sm">{{ importSuccessSummary()!.totalRows }}</span>
+              </div>
+              <div class="p-2 bg-white rounded-lg border border-green-100">
+                <span class="text-success block">{{ 'inventory.successful_rows' | translate }}</span>
+                <span class="font-black text-success text-sm">{{ importSuccessSummary()!.successCount }}</span>
+              </div>
+              <div class="p-2 bg-white rounded-lg border border-green-100">
+                <span class="text-slate-400 block">{{ 'inventory.failed_rows' | translate }}</span>
+                <span class="font-black text-slate-800 text-sm">{{ importSuccessSummary()!.failedCount }}</span>
+              </div>
+            </div>
+          </div>
+        }
+
+        <!-- Row-level Errors Table -->
+        @if (importErrors().length > 0) {
+          <div class="space-y-2 border border-red-200 bg-red-50/40 rounded-xl p-3.5">
+            <div class="flex items-center gap-2 text-red-700">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+              <h4 class="font-bold text-xs">{{ 'inventory.import_failed_no_records_saved' | translate }}</h4>
+            </div>
+            <div class="overflow-x-auto max-h-48 border border-red-100 rounded-lg bg-white">
+              <table class="w-full text-left text-[11px] border-collapse">
+                <thead class="bg-red-50 text-red-800 font-bold border-b border-red-100 sticky top-0">
+                  <tr>
+                    <th class="p-2">{{ 'inventory.row' | translate }}</th>
+                    <th class="p-2">{{ 'inventory.item_code' | translate }}</th>
+                    <th class="p-2">{{ 'inventory.warehouse' | translate }}</th>
+                    <th class="p-2">{{ 'inventory.reason_error' | translate }}</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-red-50 font-medium text-slate-700">
+                  @for (err of importErrors(); track $index) {
+                    <tr class="hover:bg-red-50/30">
+                      <td class="p-2 font-mono font-bold text-red-600">#{{ err.row }}</td>
+                      <td class="p-2 font-mono">{{ err.itemCode || '—' }}</td>
+                      <td class="p-2 font-mono">{{ err.warehouseCode || '—' }}</td>
+                      <td class="p-2 text-red-700">{{ err.reason }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </div>
+        }
+
+        <div class="flex justify-end gap-2 border-t border-slate-100 pt-4">
+          <button 
+            type="button" 
+            (click)="isImportOpeningStockModalOpen.set(false)" 
+            class="px-4 py-2 border border-slate-200 bg-white text-slate-700 rounded-lg"
+          >
+            {{ 'common.cancel' | translate }}
+          </button>
+          <button 
+            type="button" 
+            (click)="submitOpeningStockImport()" 
+            [disabled]="!openingStockImportFile() || isImportingOpeningStock()" 
+            class="px-4 py-2 bg-slate-900 text-white rounded-lg hover:bg-slate-850 disabled:opacity-50 font-bold flex items-center gap-1.5"
+          >
+            @if (isImportingOpeningStock()) {
+              <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+            }
+            {{ 'inventory.import_now' | translate }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+}

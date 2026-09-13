@@ -1,10 +1,9 @@
-import { Component, OnInit, signal, computed, inject, ChangeDetectionStrategy } from '@angular/core';
+﻿import { Component, OnInit, signal, computed, inject, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink, ActivatedRoute } from '@angular/router';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
-import { MockDataService } from '../../../core/services/mock-data.service';
-import { AuthService } from '../../../core/services/auth.service';
 import { BreadcrumbService } from '../../../core/services/breadcrumb.service';
+import { VendorApiService } from '../../../core/services/vendor-api.service';
 
 @Component({
   selector: 'app-vendor-rfq-details',
@@ -14,39 +13,37 @@ import { BreadcrumbService } from '../../../core/services/breadcrumb.service';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class RfqDetailsComponent implements OnInit {
-  private readonly mockDataService = inject(MockDataService);
-  private readonly authService = inject(AuthService);
   private readonly breadcrumbService = inject(BreadcrumbService);
   private readonly translate = inject(TranslateService);
   private readonly route = inject(ActivatedRoute);
+  private readonly vendorApi = inject(VendorApiService);
 
   readonly rfqId = signal<string | null>(null);
+  readonly apiRFQ = signal<any | null>(null);
+  readonly isLoading = signal<boolean>(false);
 
   readonly activeRFQ = computed(() => {
-    const id = this.rfqId();
-    if (!id) return null;
-    return this.mockDataService.rfqs().find(r => r.id === id) || null;
+    return this.apiRFQ();
   });
 
   readonly activePR = computed(() => {
-    const rfq = this.activeRFQ();
+    const rfq = this.apiRFQ();
     if (!rfq) return null;
-    return this.mockDataService.purchaseRequests().find(p => p.id === rfq.purchaseRequestId) || null;
+    return {
+      items: rfq.items || rfq.purchaseRequest?.items || []
+    };
   });
 
   readonly vendorStatus = computed(() => {
-    const rfq = this.activeRFQ();
-    const vId = this.authService.currentUser()?.vendorId;
-    if (!rfq || !vId) return 'Pending';
-    const v = rfq.vendors.find(item => item.vendorId === vId);
-    return v ? v.status : 'Pending';
+    const rfq = this.apiRFQ();
+    if (!rfq) return 'Pending';
+    return rfq.myStatus || rfq.status || 'Pending';
   });
 
   readonly myQuotation = computed(() => {
-    const rfq = this.activeRFQ();
-    const vId = this.authService.currentUser()?.vendorId;
-    if (!rfq || !vId) return null;
-    return rfq.quotations.find(q => q.vendorId === vId) || null;
+    const rfq = this.apiRFQ();
+    if (!rfq) return null;
+    return rfq.myQuotation || null;
   });
 
   ngOnInit() {
@@ -59,6 +56,25 @@ export class RfqDetailsComponent implements OnInit {
     this.route.paramMap.subscribe(params => {
       const id = params.get('id');
       this.rfqId.set(id);
+      if (id) {
+        this.loadDetails(id);
+      }
+    });
+  }
+
+  loadDetails(id: string) {
+    this.isLoading.set(true);
+    this.vendorApi.getPortalRFQDetails(id).subscribe({
+      next: (res) => {
+        if (res?.data) {
+          this.apiRFQ.set(res.data);
+        }
+        this.isLoading.set(false);
+      },
+      error: () => {
+        this.apiRFQ.set(null);
+        this.isLoading.set(false);
+      }
     });
   }
 }

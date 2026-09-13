@@ -1,12 +1,10 @@
-import { Component, OnInit, inject, signal, computed, ChangeDetectionStrategy } from '@angular/core';
+﻿import { Component, OnInit, inject, signal, computed, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { MockDataService } from '../../core/services/mock-data.service';
 import { BreadcrumbService } from '../../core/services/breadcrumb.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { TranslateModule } from '@ngx-translate/core';
-import { HttpClient } from '@angular/common/http';
-import { environment } from '../../../environments/environment';
+import { VendorApiService } from '../../core/services/vendor-api.service';
 import { 
   Vendor, BankAccount, ContactPerson, 
   VendorTimelineEvent, VendorLedgerEntry, VendorDocument, 
@@ -21,16 +19,15 @@ import {
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class VendorsComponent implements OnInit {
-  private readonly mockDataService = inject(MockDataService);
   private readonly breadcrumbService = inject(BreadcrumbService);
   private readonly notificationService = inject(NotificationService);
-  private readonly http = inject(HttpClient);
-  private readonly vendorsApiUrl = `${environment.apiUrl}/vendors`;
+  private readonly vendorApi = inject(VendorApiService);
 
   readonly isConnectedToApi = signal(false);
   readonly isApiLoading = signal(false);
 
-  readonly vendors = signal<Vendor[]>(this.mockDataService.vendors());
+  // Pure Backend State - No Mock Data
+  readonly vendors = signal<Vendor[]>([]);
 
   // Top-Level UI Tabs
   readonly activeTab = signal<'list' | 'categories' | 'evaluation'>('list');
@@ -41,6 +38,14 @@ export class VendorsComponent implements OnInit {
   readonly selectedVendor = signal<Vendor | null>(null);
   readonly searchQuery = signal<string>('');
   readonly isEditing = signal<boolean>(false);
+
+  // Backend Detail Signals
+  readonly apiTimeline = signal<VendorTimelineEvent[]>([]);
+  readonly apiLedger = signal<VendorLedgerEntry[]>([]);
+  readonly apiDocuments = signal<VendorDocument[]>([]);
+  readonly apiPerformance = signal<any | null>(null);
+  readonly apiKpis = signal<{ total: number; active: number; approved: number; blacklisted: number } | null>(null);
+  readonly leaderboardVendors = signal<any[]>([]);
 
   // ── Registration Drawer ─────────────────────────────────────────────────────
   readonly showRegDrawer = signal<boolean>(false);
@@ -131,48 +136,39 @@ export class VendorsComponent implements OnInit {
     { code: 'ENG', name: 'Engineering Services' }
   ];
 
-  // Dynamic signals from MockDataService
+  // Dynamic signals strictly from Backend state
   readonly vendorTimeline = computed(() => {
-    const v = this.selectedVendor();
-    if (!v) return [];
-    return this.mockDataService.vendorTimeline().filter(t => t.vendorId === v.id)
-      .sort((a, b) => b.date.localeCompare(a.date));
+    return this.apiTimeline();
   });
 
   readonly vendorLedger = computed(() => {
-    const v = this.selectedVendor();
-    if (!v) return [];
-    const entries = [...this.mockDataService.vendorLedger().filter(l => l.vendorId === v.id)]
-      .sort((a, b) => a.date.localeCompare(b.date));
-    let balance = 0;
-    return entries.map(entry => {
-      balance = balance + entry.debit - entry.credit;
-      return { ...entry, balance };
-    });
+    return this.apiLedger();
   });
 
   readonly vendorDocuments = computed(() => {
-    const v = this.selectedVendor();
-    if (!v) return [];
-    return this.mockDataService.vendorDocuments().filter(d => d.vendorId === v.id);
+    return this.apiDocuments();
   });
 
-  readonly vendorKPIs = computed(() => ({
-    total: this.vendors().length,
-    active: this.vendors().filter(v => v.status === 'Active').length,
-    approved: this.vendors().filter(v => v.approvalStatus === 'Approved').length,
-    blacklisted: this.vendors().filter(v => v.approvalStatus === 'Blacklisted').length
-  }));
+  readonly vendorKPIs = computed(() => {
+    const api = this.apiKpis();
+    if (api) return api;
+    return {
+      total: this.vendors().length,
+      active: this.vendors().filter(v => v.status === 'Active').length,
+      approved: this.vendors().filter(v => v.approvalStatus === 'Approved').length,
+      blacklisted: this.vendors().filter(v => v.approvalStatus === 'Blacklisted').length
+    };
+  });
 
   readonly filteredVendors = computed(() => {
     let list = this.vendors();
     const query = this.searchQuery().trim().toLowerCase();
     if (query) {
       list = list.filter(v =>
-        v.vendorName.toLowerCase().includes(query) ||
-        v.vendorCode.toLowerCase().includes(query) ||
-        v.arabicName.includes(query) ||
-        v.taxNumber.toLowerCase().includes(query) ||
+        v.vendorName?.toLowerCase().includes(query) ||
+        v.vendorCode?.toLowerCase().includes(query) ||
+        v.arabicName?.includes(query) ||
+        v.taxNumber?.toLowerCase().includes(query) ||
         (v.category && v.category.toLowerCase().includes(query)) ||
         (v.country && v.country.toLowerCase().includes(query))
       );
@@ -180,8 +176,17 @@ export class VendorsComponent implements OnInit {
     return list;
   });
 
-  // Performance Engine
+  // Performance Engine from Backend
   readonly selectedVendorPerformance = computed(() => {
+    const perf = this.apiPerformance();
+    if (perf) {
+      return {
+        deliveryScore: parseFloat(perf.onTimeDeliveryRate) || 0,
+        qualityScore: parseFloat(perf.qualityAcceptanceRate) || 0,
+        priceScore: parseFloat(perf.winRate) || 0,
+        overallRating: perf.rating || 0
+      };
+    }
     const v = this.selectedVendor();
     if (!v) return { deliveryScore: 0, qualityScore: 0, priceScore: 0, overallRating: 0 };
     
@@ -203,40 +208,87 @@ export class VendorsComponent implements OnInit {
     Math.round((this.evaluationDeliveryScore + this.evaluationQualityScore + this.evaluationPriceScore + this.evaluationCommunicationScore) / 4)
   );
 
-  readonly rankedVendors = computed(() =>
-    [...this.vendors()].sort((a, b) => b.rating - a.rating)
-  );
+  readonly rankedVendors = computed(() => {
+    if (this.leaderboardVendors().length > 0) {
+      return this.leaderboardVendors();
+    }
+    return [...this.vendors()].sort((a, b) => b.rating - a.rating);
+  });
 
   ngOnInit() {
     this.breadcrumbService.setBreadcrumbs([{ label: 'navigation.vendors' }]);
     this.loadFromApi();
+    this.loadKpis();
+    this.loadLeaderboard();
+  }
+
+  loadKpis() {
+    this.vendorApi.getVendorKpis().subscribe({
+      next: (res) => {
+        if (res?.data) {
+          this.apiKpis.set({
+            total: res.data.total ?? 0,
+            active: res.data.active ?? 0,
+            approved: res.data.approved ?? 0,
+            blacklisted: res.data.blacklisted ?? 0
+          });
+        }
+      },
+      error: () => {}
+    });
+  }
+
+  loadLeaderboard() {
+    this.vendorApi.getLeaderboard(10).subscribe({
+      next: (res) => {
+        const items = res?.data ?? [];
+        if (items.length > 0) {
+          this.leaderboardVendors.set(items.map((v: any) => ({
+            ...v,
+            id: v._id ?? v.id,
+            rating: v.rating ?? 0
+          })));
+        } else {
+          this.leaderboardVendors.set([]);
+        }
+      },
+      error: () => {
+        this.leaderboardVendors.set([]);
+      }
+    });
   }
 
   loadFromApi() {
     this.isApiLoading.set(true);
-    this.http.get<any>(this.vendorsApiUrl + '?limit=200').subscribe({
+    this.vendorApi.getVendors({ limit: 100 }).subscribe({
       next: (res) => {
         const list = res.data ?? res.items ?? (Array.isArray(res) ? res : []);
-        if (list.length > 0) {
-          // Map API response to match the existing vendor interface
-          this.vendors.set(list.map((v: any) => ({
-            ...v,
-            id: v._id ?? v.id,
-            vendorName: v.vendorName,
-            vendorCode: v.vendorCode,
-            status: v.status ?? 'Active',
-            category: v.category ?? 'General',
-            contactPerson: v.contactPerson ?? '',
-            contactEmail: v.contactEmail ?? '',
-            contactPhone: v.contactPhone ?? '',
-            rating: v.performanceScore ?? v.rating ?? 0,
-          })));
-          this.isConnectedToApi.set(true);
-        }
+        // Strictly set whatever backend returned, even if empty []
+        this.vendors.set(list.map((v: any) => ({
+          ...v,
+          id: v._id ?? v.id,
+          vendorName: v.vendorName || '',
+          vendorCode: v.vendorCode || '',
+          arabicName: v.arabicName || '',
+          status: v.status ?? 'Active',
+          approvalStatus: v.approvalStatus ?? 'Pending',
+          category: v.category ?? 'General',
+          country: v.country || '',
+          taxNumber: v.taxNumber || '',
+          totalOrders: v.totalOrders ?? 0,
+          totalSpend: v.totalSpend ?? 0,
+          contactPerson: v.contactPerson ?? '',
+          contactEmail: v.contactEmail ?? '',
+          contactPhone: v.contactPhone ?? '',
+          rating: v.performanceScore ?? v.rating ?? 0,
+          bankAccounts: v.bankAccounts || [],
+          contactPersons: v.contactPersons || []
+        })));
+        this.isConnectedToApi.set(true);
         this.isApiLoading.set(false);
       },
       error: () => {
-        // Backend not ready yet - keep mock data silently
+        this.vendors.set([]);
         this.isApiLoading.set(false);
       }
     });
@@ -246,11 +298,72 @@ export class VendorsComponent implements OnInit {
     this.selectedVendor.set(vendor);
     this.activeDetailTab.set('overview');
     this.isEditing.set(false);
+    this.loadVendorDetails(vendor);
+  }
+
+  loadVendorDetails(vendor: Vendor) {
+    const id = (vendor as any)._id ?? vendor.id;
+    if (!id) return;
+
+    // 1. Timeline strictly from API
+    this.vendorApi.getVendorTimeline(id).subscribe({
+      next: (res) => {
+        const events = res?.data ?? [];
+        this.apiTimeline.set(events.map((e: any) => ({
+          ...e,
+          id: e._id ?? e.id,
+          vendorId: id,
+          date: e.date ? String(e.date).split('T')[0] : ''
+        })));
+      },
+      error: () => this.apiTimeline.set([])
+    });
+
+    // 2. Ledger strictly from API
+    this.vendorApi.getVendorLedger(id).subscribe({
+      next: (res) => {
+        const ledgerData = res?.data;
+        const entries = ledgerData?.entries ?? (Array.isArray(ledgerData) ? ledgerData : []);
+        this.apiLedger.set(entries.map((e: any) => ({
+          ...e,
+          id: e._id ?? e.id,
+          vendorId: id,
+          date: e.date ? String(e.date).split('T')[0] : ''
+        })));
+      },
+      error: () => this.apiLedger.set([])
+    });
+
+    // 3. Documents strictly from API
+    this.vendorApi.getVendorDocuments(id).subscribe({
+      next: (res) => {
+        const docs = res?.data ?? [];
+        this.apiDocuments.set(docs.map((d: any) => ({
+          ...d,
+          id: d._id ?? d.id,
+          vendorId: id
+        })));
+      },
+      error: () => this.apiDocuments.set([])
+    });
+
+    // 4. Performance strictly from API
+    this.vendorApi.getVendorPerformance(id).subscribe({
+      next: (res) => {
+        if (res?.data) this.apiPerformance.set(res.data);
+        else this.apiPerformance.set(null);
+      },
+      error: () => this.apiPerformance.set(null)
+    });
   }
 
   closeDetails() {
     this.selectedVendor.set(null);
     this.isEditing.set(false);
+    this.apiTimeline.set([]);
+    this.apiLedger.set([]);
+    this.apiDocuments.set([]);
+    this.apiPerformance.set(null);
   }
 
   // ── Registration Drawer Methods ──────────────────────────────────────────
@@ -307,6 +420,7 @@ export class VendorsComponent implements OnInit {
     this.regLoading.set(true);
     this.regError.set(null);
     const body = {
+      companyName: this.regCompanyName,
       vendorName: this.regCompanyName,
       arabicName: this.regArabicName || undefined,
       category: this.regCategory,
@@ -316,6 +430,7 @@ export class VendorsComponent implements OnInit {
       country: this.regCountry,
       address: this.regAddress,
       contactPerson: this.regContactName,
+      contactTitle: this.regContactTitle || 'Primary Contact',
       contactEmail: this.regContactEmail,
       contactPhone: this.regContactPhone,
       paymentTerms: this.regPaymentTerms,
@@ -333,31 +448,32 @@ export class VendorsComponent implements OnInit {
         phone: this.regContactPhone
       }] : []
     };
-    this.http.post<any>(this.vendorsApiUrl, body).subscribe({
-      next: (created) => {
-        const normalized: any = {
-          ...created,
-          id: created._id ?? created.id,
-          vendorCode: created.vendorCode ?? `VND-${Date.now()}`,
-          arabicName: created.arabicName ?? this.regArabicName,
-          approvalStatus: created.approvalStatus ?? 'Pending',
-          status: created.status ?? 'Pending',
-          rating: 0,
-          totalOrders: 0, totalSpend: 0, totalRFQs: 0, awardedRFQs: 0,
-          participatedRFQs: 0, totalDeliveries: 0, onTimeDeliveries: 0,
-          totalDeliveredQty: 0, acceptedQty: 0, lateDeliveries: 0,
-          rejectedDeliveries: 0, openInvoices: 0, paidInvoices: 0, evaluationScore: 0,
-          bankAccounts: body.bankAccounts,
-          contactPersons: body.contactPersons
-        };
-        this.vendors.update(list => [normalized, ...list]);
-        this.regCredentials.set({ username: created.vendorCode ?? normalized.vendorCode, password: 'Welcome@123' });
+
+    this.vendorApi.registerPublicVendor(body).subscribe({
+      next: (res) => {
+        const data = res?.data ?? {};
+        this.regCredentials.set(data.credentials || { username: `${this.regContactEmail.split('@')[0]}_vendor`, password: 'Welcome@2026' });
         this.regStep.set(4);
         this.regLoading.set(false);
+        this.loadFromApi();
+        this.loadKpis();
       },
-      error: (err) => {
-        this.regError.set(err?.error?.message || 'Registration failed. Please try again.');
-        this.regLoading.set(false);
+      error: () => {
+        // Fallback: create via internal API
+        this.vendorApi.createVendor(body).subscribe({
+          next: (created) => {
+            const data = created?.data ?? created;
+            this.regCredentials.set({ username: data.vendorCode ?? 'vendor_user', password: 'Welcome@123' });
+            this.regStep.set(4);
+            this.regLoading.set(false);
+            this.loadFromApi();
+            this.loadKpis();
+          },
+          error: (err) => {
+            this.regError.set(err?.error?.message || 'Registration failed. Please try again.');
+            this.regLoading.set(false);
+          }
+        });
       }
     });
   }
@@ -399,8 +515,9 @@ export class VendorsComponent implements OnInit {
       bankAccounts: this.bankAccounts,
       contactPersons: this.contactPersons
     };
-    this.http.put<any>(`${this.vendorsApiUrl}/${id}`, body).subscribe({
-      next: (updated) => {
+    this.vendorApi.updateVendor(id, body).subscribe({
+      next: (res) => {
+        const updated = res?.data ?? res;
         const normalized = { ...vendor, ...updated, id: vendor.id };
         this.vendors.update(list => list.map(v => v.id === vendor.id ? normalized : v));
         this.selectedVendor.set(normalized);
@@ -408,15 +525,7 @@ export class VendorsComponent implements OnInit {
         this.notificationService.success('Saved', `${normalized.vendorName} updated successfully`);
       },
       error: (err) => {
-        // Fallback: update locally
-        const updated = { ...vendor, vendorName: this.vendorName, arabicName: this.arabicName,
-          contactPerson: this.contactPerson, contactEmail: this.contactEmail,
-          contactPhone: this.contactPhone, status: this.status, bankAccounts: this.bankAccounts,
-          contactPersons: this.contactPersons };
-        this.vendors.update(list => list.map(v => v.id === vendor.id ? updated : v));
-        this.selectedVendor.set(updated);
-        this.isEditing.set(false);
-        this.notificationService.success('Saved', `${updated.vendorName} updated (offline)`);
+        this.notificationService.danger('Error', err?.error?.message || 'Failed to update vendor');
       }
     });
   }
@@ -427,7 +536,7 @@ export class VendorsComponent implements OnInit {
 
   approveVendor(vendor: Vendor): void {
     const id = (vendor as any)._id ?? vendor.id;
-    this.http.patch<any>(`${this.vendorsApiUrl}/${id}/status`, { status: 'Active' }).subscribe({
+    this.vendorApi.updateVendorStatus(id, { status: 'Active', approvalStatus: 'Approved' }).subscribe({
       next: () => {
         this.vendors.update(list => list.map(v =>
           v.id === vendor.id ? { ...v, status: 'Active' as any, approvalStatus: 'Approved' as any } : v
@@ -436,6 +545,7 @@ export class VendorsComponent implements OnInit {
           this.selectedVendor.update(v => v ? { ...v, status: 'Active' as any, approvalStatus: 'Approved' as any } : v);
         }
         this.notificationService.success('Approved', `${vendor.vendorName} approved successfully`);
+        this.loadKpis();
       },
       error: (err) => this.notificationService.danger('Error', err?.error?.message || 'Approval failed')
     });
@@ -443,8 +553,8 @@ export class VendorsComponent implements OnInit {
 
   blacklistVendor(vendor: Vendor): void {
     const id = (vendor as any)._id ?? vendor.id;
-    const reason = prompt('Reason for blacklisting:') || 'Policy violation';
-    this.http.patch<any>(`${this.vendorsApiUrl}/${id}/status`, { status: 'Blacklisted', reason }).subscribe({
+    const reason = prompt('Reason for blacklisting (Required):') || 'Policy and compliance violation';
+    this.vendorApi.updateVendorStatus(id, { status: 'Inactive', approvalStatus: 'Blacklisted', reason }).subscribe({
       next: () => {
         this.vendors.update(list => list.map(v =>
           v.id === vendor.id ? { ...v, status: 'Inactive' as any, approvalStatus: 'Blacklisted' as any } : v
@@ -453,6 +563,7 @@ export class VendorsComponent implements OnInit {
           this.selectedVendor.update(v => v ? { ...v, status: 'Inactive' as any, approvalStatus: 'Blacklisted' as any } : v);
         }
         this.notificationService.success('Blacklisted', `${vendor.vendorName} blacklisted`);
+        this.loadKpis();
       },
       error: (err) => this.notificationService.danger('Error', err?.error?.message || 'Blacklist failed')
     });
@@ -464,17 +575,33 @@ export class VendorsComponent implements OnInit {
       this.notificationService.danger('common.validation_error', 'vendors.select_vendor_first');
       return;
     }
-    const score = this.compositeEvalScore();
-    this.mockDataService.vendors.update(list => list.map(v =>
-      v.id === vendorId ? { ...v, rating: Math.round((score / 20) * 10) / 10, evaluationScore: score } as any : v
-    ));
-    
-    const updated = this.vendors().find(v => v.id === vendorId);
-    if (updated && this.selectedVendor()?.id === vendorId) {
-      this.selectedVendor.set(updated);
-    }
-    
-    this.notificationService.success('vendors.evaluation_saved_title', 'vendors.evaluation_saved_desc');
+
+    const payload = {
+      deliveryScore: this.evaluationDeliveryScore,
+      qualityScore: this.evaluationQualityScore,
+      priceScore: this.evaluationPriceScore,
+      communicationScore: this.evaluationCommunicationScore,
+      period: '2026-Q3',
+      comments: 'Evaluation submitted via Admin Console'
+    };
+
+    this.vendorApi.submitEvaluation(vendorId, payload).subscribe({
+      next: () => {
+        const score = this.compositeEvalScore();
+        const rating = Math.round((score / 20) * 10) / 10;
+        this.vendors.update(list => list.map(v =>
+          v.id === vendorId ? { ...v, rating, evaluationScore: score } as any : v
+        ));
+        if (this.selectedVendor()?.id === vendorId) {
+          this.selectedVendor.update(v => v ? { ...v, rating, evaluationScore: score } as any : v);
+        }
+        this.notificationService.success('vendors.evaluation_saved_title', 'vendors.evaluation_saved_desc');
+        this.loadLeaderboard();
+      },
+      error: (err) => {
+        this.notificationService.danger('Error', err?.error?.message || 'Failed to submit evaluation');
+      }
+    });
   }
 
   addBankAccount() {
