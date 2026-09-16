@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, computed, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnInit, inject, computed, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { MockDataService } from '../../core/services/mock-data.service';
@@ -8,6 +8,8 @@ import { AuditService } from '../../core/services/audit.service';
 import { TranslateModule } from '@ngx-translate/core';
 import { AuthService } from '../../core/services/auth.service';
 import { WorkflowService } from '../../core/services/workflow.service';
+import { DashboardService } from '../../core/services/dashboard.service';
+import { DashboardData } from '../../shared/interfaces/dashboard.interface';
 
 @Component({
   selector: 'app-dashboard',
@@ -18,132 +20,174 @@ import { WorkflowService } from '../../core/services/workflow.service';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class DashboardComponent implements OnInit {
+  private readonly dashboardService = inject(DashboardService);
   private readonly mockDataService = inject(MockDataService);
   private readonly breadcrumbService = inject(BreadcrumbService);
   readonly auditService = inject(AuditService);
   private readonly router = inject(Router);
   readonly authService = inject(AuthService);
   readonly workflowService = inject(WorkflowService);
+  private readonly cdr = inject(ChangeDetectorRef);
 
-  readonly stats = this.mockDataService.stats;
-  readonly bankAccounts = this.mockDataService.bankAccountsDetails;
-  readonly cashAccounts = this.mockDataService.cashAccountsDetails;
-  readonly hseIncidents = this.mockDataService.hseIncidents;
+  // Live Backend Data Signal
+  readonly liveData = this.dashboardService.dashboardData;
+  readonly isLoading = this.dashboardService.isLoading;
+
   readonly currentUser = this.authService.currentUser;
 
-  // Raw data
+  // Fallback Mock Data
   readonly purchaseRequests = this.mockDataService.purchaseRequests;
   readonly rfqs = this.mockDataService.rfqs;
   readonly purchaseOrders = this.mockDataService.purchaseOrders;
   readonly inspectionRequests = this.mockDataService.inspectionRequests;
   readonly mrvs = this.mockDataService.mrvs;
-  readonly supplierInvoices = this.mockDataService.supplierInvoices;
-  readonly apAging = this.mockDataService.apAging;
   readonly inventoryItems = this.mockDataService.inventoryItems;
-  readonly assetTransfers = this.mockDataService.assetTransfers;
   readonly workOrders = this.mockDataService.workOrders;
   readonly equipment = this.mockDataService.equipment;
   readonly rigs = this.mockDataService.rigs;
+  readonly bankAccounts = this.mockDataService.bankAccountsDetails;
+  readonly cashAccounts = this.mockDataService.cashAccountsDetails;
+  readonly apAging = this.mockDataService.apAging;
+  readonly hseIncidents = this.mockDataService.hseIncidents;
 
-  // ─── Derived KPIs ───────────────────────────────────────────────────────────
-  readonly openPRs = computed(() =>
-    this.purchaseRequests().filter(pr => pr.status === 'Pending Approval' || pr.status === 'Draft').length
-  );
-  readonly openRFQs = computed(() =>
-    this.rfqs().filter(r => r.status === 'Sent' || r.status === 'Partially Responded' || r.status === 'Fully Responded').length
-  );
-  readonly openPOs = computed(() =>
-    this.purchaseOrders().filter(po => po.status === 'Pending Approval' || po.status === 'Approved').length
-  );
-  readonly pendingInspections = computed(() =>
-    this.inspectionRequests().filter(i => i.status === 'Pending').length
-  );
-  readonly pendingMRVs = computed(() =>
-    this.mrvs().filter(m => m.status === 'Draft' || m.status === 'Pending Approval').length
-  );
-  readonly inventoryValue = computed(() =>
-    this.inventoryItems().reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0)
-  );
-  readonly criticalStock = computed(() =>
-    this.inventoryItems().filter(i => i.status === 'Out of Stock' || i.status === 'Low Stock').length
-  );
-  readonly totalFuelStock = computed(() =>
-    this.mockDataService.fuelTanks().reduce((s, t) => s + t.currentLevelLiters, 0)
-  );
-  readonly openSupplierInvoices = computed(() =>
-    this.supplierInvoices().filter(i => i.status === 'Unpaid' || i.status === 'Partially Paid').length
-  );
-  readonly totalAPBalance = computed(() =>
-    this.apAging().reduce((sum, entry) => sum + entry.totalDue, 0)
-  );
-  readonly totalLiquidity = computed(() => {
-    const bankUSD = this.bankAccounts().reduce((s, b) => s + (b.currency === 'SAR' ? b.balance / 3.75 : b.balance), 0);
-    const cashUSD = this.cashAccounts().reduce((s, c) => s + (c.currency === 'SAR' ? c.balance / 3.75 : c.balance), 0);
-    return bankUSD + cashUSD;
+  // ─── Real / Dynamic KPIs ───────────────────────────────────────────────────
+
+  readonly inventoryValue = computed(() => {
+    const live = this.liveData();
+    if (live?.kpis && typeof live.kpis.inventoryValue === 'number') {
+      return live.kpis.inventoryValue;
+    }
+    return this.inventoryItems().reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
   });
-  readonly openWorkOrders = computed(() =>
-    this.workOrders().filter(wo => wo.status === 'Open' || wo.status === 'In Progress').length
-  );
-  readonly ltiFreeDays = computed(() =>
-    this.hseIncidents().filter(i => i.type === 'LTI').length === 0 ? 365 : 12
-  );
-  readonly activeRigs = computed(() => this.rigs().slice(0, 4));
-  readonly recentLogCount = computed(() => this.auditService.logs().length);
 
-  // ─── My Tasks ────────────────────────────────────────────────────────────────
-  readonly pendingPRs = computed(() =>
-    this.purchaseRequests().filter(pr => pr.status === 'Pending Approval')
-  );
-  readonly biddedRFQs = computed(() =>
-    this.rfqs().filter(rfq => rfq.status === 'Partially Responded' || rfq.status === 'Fully Responded')
-  );
-  readonly pendingPOs = computed(() =>
-    this.purchaseOrders().filter(po => po.status === 'Pending Approval')
-  );
-  readonly pendingWCCs = computed(() =>
-    this.workflowService.wccs().filter(w => w.status === 'Draft' || w.status === 'Pending Approval')
-  );
-  readonly pendingInspectionsList = computed(() =>
-    this.inspectionRequests().filter(i => i.status === 'Pending')
-  );
+  readonly openPOs = computed(() => {
+    const live = this.liveData();
+    if (live?.kpis && typeof live.kpis.openPurchaseOrdersCount === 'number') {
+      return live.kpis.openPurchaseOrdersCount;
+    }
+    return this.purchaseOrders().filter(po => po.status === 'Pending Approval' || po.status === 'Approved').length;
+  });
 
-  // ─── Critical Alerts ─────────────────────────────────────────────────────────
-  readonly criticalStockItems = computed(() =>
-    this.inventoryItems().filter(i => i.status === 'Out of Stock' || i.status === 'Low Stock').slice(0, 4)
-  );
-  readonly breakdownWorkOrders = computed(() =>
-    this.workOrders().filter(wo => wo.type === 'Breakdown' && wo.status !== 'Completed').slice(0, 4)
-  );
-  readonly expiredPermits = computed(() =>
-    this.mockDataService.ptws().filter(p => p.status === 'Expired').slice(0, 3)
-  );
-  readonly criticalAlertsCount = computed(() =>
-    this.criticalStock() + this.breakdownWorkOrders().length + this.expiredPermits().length
-  );
+  readonly criticalStock = computed(() => {
+    const live = this.liveData();
+    if (live?.kpis && typeof live.kpis.criticalStockCount === 'number') {
+      return live.kpis.criticalStockCount;
+    }
+    return this.inventoryItems().filter(i => i.status === 'Out of Stock' || i.status === 'Low Stock').length;
+  });
 
-  // ─── CHART 1: Procurement Pipeline (horizontal bars) ────────────────────────
-  // Shows the volume in each procurement stage as %‑of‑total
+  // ─── Procurement Pipeline ──────────────────────────────────────────────────
+
+  readonly totalPipelineRecords = computed(() => {
+    const live = this.liveData();
+    if (live?.procurementPipeline) {
+      const p = live.procurementPipeline;
+      return (p.purchaseRequestsCount || 0) + (p.rfqsCount || 0) + (p.purchaseOrdersCount || 0);
+    }
+    return this.purchaseRequests().length + this.rfqs().length + this.purchaseOrders().length;
+  });
+
+  readonly openPRs = computed(() => {
+    const live = this.liveData();
+    if (live?.procurementPipeline?.stageSummary && typeof live.procurementPipeline.stageSummary.openPRs === 'number') {
+      return live.procurementPipeline.stageSummary.openPRs;
+    }
+    return this.purchaseRequests().filter(pr => pr.status === 'Pending Approval' || pr.status === 'Draft').length;
+  });
+
+  readonly openRFQs = computed(() => {
+    const live = this.liveData();
+    if (live?.procurementPipeline?.stageSummary && typeof live.procurementPipeline.stageSummary.activeRFQs === 'number') {
+      return live.procurementPipeline.stageSummary.activeRFQs;
+    }
+    return this.rfqs().filter(r => r.status === 'Sent' || r.status === 'Partially Responded' || r.status === 'Fully Responded').length;
+  });
+
+  readonly pendingInspections = computed(() => {
+    const live = this.liveData();
+    if (live?.procurementPipeline?.stageSummary && typeof live.procurementPipeline.stageSummary.queueInspections === 'number') {
+      return live.procurementPipeline.stageSummary.queueInspections;
+    }
+    return this.inspectionRequests().filter(i => i.status === 'Pending').length;
+  });
+
+  readonly pendingMRVs = computed(() => {
+    const live = this.liveData();
+    if (live?.procurementPipeline?.stageSummary && typeof live.procurementPipeline.stageSummary.pendingMRVs === 'number') {
+      return live.procurementPipeline.stageSummary.pendingMRVs;
+    }
+    return this.mrvs().filter(m => m.status === 'Draft' || m.status === 'Pending Approval').length;
+  });
+
   readonly procurementPipeline = computed(() => {
+    const live = this.liveData();
+    let prCount = this.purchaseRequests().length;
+    let rfqCount = this.rfqs().length;
+    let poCount = this.purchaseOrders().length;
+    let inspectCount = this.inspectionRequests().length;
+    let mrvCount = this.mrvs().length;
+
+    if (live?.procurementPipeline) {
+      const p = live.procurementPipeline;
+      prCount = p.purchaseRequestsCount ?? prCount;
+      rfqCount = p.rfqsCount ?? rfqCount;
+      poCount = p.purchaseOrdersCount ?? poCount;
+      inspectCount = p.inspectionsCount ?? inspectCount;
+      mrvCount = p.goodsReceiptsCount ?? mrvCount;
+    }
+
     const stages = [
-      { label: 'Purchase Requests', labelAr: 'طلبات الشراء', count: this.purchaseRequests().length, color: '#f59e0b', icon: '📋' },
-      { label: 'RFQs Sent', labelAr: 'طلبات عروض أسعار', count: this.rfqs().length, color: '#6366f1', icon: '📩' },
-      { label: 'Purchase Orders', labelAr: 'أوامر الشراء', count: this.purchaseOrders().length, color: '#0ea5e9', icon: '🛒' },
-      { label: 'Inspections', labelAr: 'الفحص والاستلام', count: this.inspectionRequests().length, color: '#10b981', icon: '🔍' },
-      { label: 'Goods Receipts', labelAr: 'إذن إضافة مخزن', count: this.mrvs().length, color: '#8b5cf6', icon: '📦' },
+      { label: 'Purchase Requests', labelAr: 'طلبات الشراء', count: prCount, color: '#f59e0b', icon: '📋' },
+      { label: 'RFQs Sent', labelAr: 'طلبات عروض أسعار', count: rfqCount, color: '#6366f1', icon: '📩' },
+      { label: 'Purchase Orders', labelAr: 'أوامر الشراء', count: poCount, color: '#0ea5e9', icon: '🛒' },
+      { label: 'Inspections', labelAr: 'الفحص والاستلام', count: inspectCount, color: '#10b981', icon: '🔍' },
+      { label: 'Goods Receipts', labelAr: 'إذن إضافة مخزن', count: mrvCount, color: '#8b5cf6', icon: '📦' },
     ];
     const max = Math.max(...stages.map(s => s.count), 1);
     return stages.map(s => ({ ...s, pct: Math.round((s.count / max) * 100) }));
   });
 
-  // ─── CHART 2: Inventory Health Donut ────────────────────────────────────────
+  // ─── Inventory Health Donut ────────────────────────────────────────────────
+
   readonly inventoryDonut = computed(() => {
+    const live = this.liveData();
+    const circ = 251.32;
+
+    if (live?.inventoryHealth) {
+      const h = live.inventoryHealth;
+      const total = h.totalItems || 1;
+      const inStock = h.inStock ?? 0;
+      const lowStock = h.lowStock ?? 0;
+      const outOfStock = h.outOfStock ?? 0;
+
+      const inPct = inStock / total;
+      const lowPct = lowStock / total;
+      const outPct = outOfStock / total;
+
+      return {
+        total,
+        inStock,
+        lowStock,
+        outOfStock,
+        inStrokePct: h.inStockPercentage ?? Math.round(inPct * 100),
+        lowStrokePct: h.lowStockPercentage ?? Math.round(lowPct * 100),
+        outStrokePct: h.outOfStockPercentage ?? Math.round(outPct * 100),
+        circ,
+        inStroke: inPct * circ,
+        lowStroke: lowPct * circ,
+        outStroke: outPct * circ,
+        inOffset: 0,
+        lowOffset: circ - inPct * circ,
+        outOffset: circ - inPct * circ - lowPct * circ,
+      };
+    }
+
     const items = this.inventoryItems();
     const total = items.length || 1;
     const inStock = items.filter(i => i.status === 'In Stock').length;
     const lowStock = items.filter(i => i.status === 'Low Stock').length;
     const outOfStock = items.filter(i => i.status === 'Out of Stock').length;
 
-    const circ = 251.32;
     const inPct = inStock / total;
     const lowPct = lowStock / total;
     const outPct = outOfStock / total;
@@ -164,74 +208,95 @@ export class DashboardComponent implements OnInit {
     };
   });
 
-  // ─── CHART 3: Equipment Fleet Donut ─────────────────────────────────────────
-  readonly equipmentDonut = computed(() => {
-    const list = this.equipment();
-    const total = list.length || 1;
-    const active = list.filter(e => e.status === 'Active').length;
-    const maintenance = list.filter(e => e.status === 'Maintenance').length;
-    const standby = list.filter(e => e.status === 'Standby').length;
-    const outOfService = list.filter(e => e.status === 'Out Of Service').length;
+  // ─── My Tasks ──────────────────────────────────────────────────────────────
 
-    const circ = 251.32;
-    const ap = active / total, mp = maintenance / total, sp = standby / total;
-
-    return {
-      total, active, maintenance, standby, outOfService,
-      activePct: Math.round(ap * 100),
-      maintPct: Math.round(mp * 100),
-      standbyPct: Math.round(sp * 100),
-      outPct: Math.round((outOfService / total) * 100),
-      circ,
-      activeStroke: ap * circ,
-      maintStroke: mp * circ,
-      standbyStroke: sp * circ,
-      outStroke: (outOfService / total) * circ,
-      activeOffset: 0,
-      maintOffset: circ - ap * circ,
-      standbyOffset: circ - ap * circ - mp * circ,
-      outOffset: circ - ap * circ - mp * circ - sp * circ,
-    };
+  readonly pendingPRs = computed(() => {
+    const live = this.liveData();
+    if (live?.myTasks?.pendingPRs && Array.isArray(live.myTasks.pendingPRs)) {
+      return live.myTasks.pendingPRs;
+    }
+    return this.purchaseRequests().filter(pr => pr.status === 'Pending Approval');
   });
 
-  // ─── CHART 4: Financial Overview bars (normalised to max) ───────────────────
-  readonly financialBars = computed(() => {
-    const vals = [
-      { label: 'Cash & Bank Liquidity', labelAr: 'السيولة النقدية والبنكية', value: this.totalLiquidity(), color: '#10b981', unit: '$' },
-      { label: 'Inventory Value', labelAr: 'قيمة المخزون', value: this.inventoryValue(), color: '#6366f1', unit: '$' },
-      { label: 'AP Outstanding', labelAr: 'الذمم الدائنة', value: this.totalAPBalance(), color: '#ef4444', unit: '$' },
-    ];
-    const max = Math.max(...vals.map(v => v.value), 1);
-    return vals.map(v => ({ ...v, pct: Math.round((v.value / max) * 100) }));
+  readonly pendingInspectionsList = computed(() => {
+    const live = this.liveData();
+    if (live?.myTasks?.pendingInspections && Array.isArray(live.myTasks.pendingInspections)) {
+      return live.myTasks.pendingInspections;
+    }
+    return this.inspectionRequests().filter(i => i.status === 'Pending');
   });
 
-  // ─── CHART 5: Work Orders Status Donut ──────────────────────────────────────
-  readonly woDonut = computed(() => {
-    const list = this.workOrders();
-    const total = list.length || 1;
-    const open = list.filter(w => w.status === 'Open').length;
-    const inProgress = list.filter(w => w.status === 'In Progress').length;
-    const completed = list.filter(w => w.status === 'Completed').length;
+  // ─── Critical Alerts ───────────────────────────────────────────────────────
 
-    const circ = 251.32;
-    const op = open / total, ip = inProgress / total;
-
-    return {
-      total, open, inProgress, completed,
-      openPct: Math.round(op * 100),
-      inProgressPct: Math.round(ip * 100),
-      completedPct: Math.round((completed / total) * 100),
-      circ,
-      openStroke: op * circ,
-      inProgressStroke: ip * circ,
-      completedStroke: (completed / total) * circ,
-      openOffset: 0,
-      inProgressOffset: circ - op * circ,
-      completedOffset: circ - op * circ - ip * circ,
-    };
+  readonly criticalStockItems = computed(() => {
+    const live = this.liveData();
+    if (live?.criticalStockAlerts && Array.isArray(live.criticalStockAlerts)) {
+      return live.criticalStockAlerts;
+    }
+    return this.inventoryItems().filter(i => i.status === 'Out of Stock' || i.status === 'Low Stock').slice(0, 4);
   });
+
+  readonly recentLogCount = computed(() => this.auditService.logs().length);
+
+  // Unused / Commented elements fallback
+  readonly pendingWCCs = computed(() =>
+    this.workflowService.wccs().filter(w => w.status === 'Draft' || w.status === 'Pending Approval')
+  );
+  readonly breakdownWorkOrders = computed(() =>
+    this.workOrders().filter(wo => wo.type === 'Breakdown' && wo.status !== 'Completed').slice(0, 4)
+  );
+  readonly expiredPermits = computed(() =>
+    this.mockDataService.ptws().filter(p => p.status === 'Expired').slice(0, 3)
+  );
+  readonly criticalAlertsCount = computed(() => this.criticalStock());
+  readonly totalLiquidity = computed(() => {
+    const bankUSD = this.bankAccounts().reduce((s, b) => s + (b.currency === 'SAR' ? b.balance / 3.75 : b.balance), 0);
+    const cashUSD = this.cashAccounts().reduce((s, c) => s + (c.currency === 'SAR' ? c.balance / 3.75 : c.balance), 0);
+    return bankUSD + cashUSD;
+  });
+  readonly openWorkOrders = computed(() =>
+    this.workOrders().filter(wo => wo.status === 'Open' || wo.status === 'In Progress').length
+  );
+  readonly ltiFreeDays = computed(() =>
+    this.hseIncidents().filter(i => i.type === 'LTI').length === 0 ? 365 : 12
+  );
+  readonly activeRigs = computed(() => this.rigs().slice(0, 4));
+  readonly totalFuelStock = computed(() =>
+    this.mockDataService.fuelTanks().reduce((s, t) => s + t.currentLevelLiters, 0)
+  );
+  readonly openSupplierInvoices = computed(() =>
+    this.mockDataService.supplierInvoices().filter(i => i.status === 'Unpaid' || i.status === 'Partially Paid').length
+  );
+  readonly financialBars = computed<{ label: string; unit: string; value: number; pct: number; color: string }[]>(() => []);
+  readonly equipmentDonut = computed(() => ({
+    total: 0, active: 0, maintenance: 0, standby: 0, outOfService: 0,
+    activePct: 0, maintPct: 0, standbyPct: 0, outPct: 0,
+    circ: 251.32, activeStroke: 0, maintStroke: 0, standbyStroke: 0, outStroke: 0,
+    activeOffset: 0, maintOffset: 0, standbyOffset: 0, outOffset: 0
+  }));
+  readonly woDonut = computed(() => ({
+    total: 0, open: 0, inProgress: 0, completed: 0,
+    openPct: 0, inProgressPct: 0, completedPct: 0,
+    circ: 251.32, openStroke: 0, inProgressStroke: 0, completedStroke: 0,
+    openOffset: 0, inProgressOffset: 0, completedOffset: 0
+  }));
 
   navigate(path: string) { this.router.navigate([path]); }
 
-  ngOnInit() { this.breadcrumbService.setBreadcrumbs([]); }
+  ngOnInit() {
+    this.breadcrumbService.setBreadcrumbs([]);
+    this.loadRealDashboardData();
+  }
+
+  loadRealDashboardData() {
+    this.dashboardService.getStatistics().subscribe({
+      next: () => {
+        this.cdr.markForCheck();
+      },
+      error: (err) => {
+        console.warn('Dashboard live API fallback to mock data:', err?.message || err);
+        this.cdr.markForCheck();
+      }
+    });
+  }
 }

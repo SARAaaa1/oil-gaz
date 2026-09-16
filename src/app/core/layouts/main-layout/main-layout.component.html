@@ -100,7 +100,7 @@
         </div>
       }
 
-      <!-- SECTION: GENERAL -->
+      <!-- SECTION: GENERAL / DASHBOARD -->
       @if (authService.userRole() !== 'Vendor') {
         <div class="space-y-1">
           @if (!isSidebarCollapsed()) {
@@ -136,6 +136,8 @@
           </div>
         }
 
+        <!-- [COMMENTED OUT FOR CLIENT DEMO] Operations Module -->
+        @if (false) {
         <div *appRole="['Super Admin', 'General Manager', 'Operations Manager', 'Project Manager', 'Employee', 'Finance Manager']" class="space-y-1 animate-fade-in">
           <button 
             (click)="toggleOperationsMenu()"
@@ -288,6 +290,7 @@
             </div>
           }
         </div>
+        }
 
         <!-- Procurement Group (collapsible) -->
         <div *appRole="['Super Admin', 'General Manager', 'Finance Manager', 'Procurement Manager']" class="space-y-1 animate-fade-in">
@@ -481,6 +484,29 @@
           }
         </div>
 
+        <!-- SECTION: USERS (ACTIVE FOR CLIENT DEMO) -->
+        <div class="space-y-1 animate-fade-in">
+          <a 
+            routerLink="/hr/admin/users" 
+            routerLinkActive="active"
+            class="sidebar-menu-item group animate-fade-in"
+          >
+            <div class="flex items-center gap-3">
+              <svg class="w-5 h-5 shrink-0 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+              </svg>
+              <span class="transition-all duration-300" [class.opacity-0]="isSidebarCollapsed()" [class.w-0]="isSidebarCollapsed()" [class.hidden]="isSidebarCollapsed()">
+                {{ 'navigation.users' | translate }}
+              </span>
+            </div>
+          </a>
+        </div>
+
+        <!-- =========================================================================
+             [COMMENTED OUT FOR CLIENT DEMO: Assets, Finance, HR, HSE, Analytics & Admin]
+             All modules below are preserved intact and can be restored by removing @if (false).
+             ========================================================================= -->
+        @if (false) {
         <!-- Assets & Equipment Group (collapsible) -->
         <div *appRole="['Super Admin', 'General Manager', 'Operations Manager']" class="space-y-1 animate-fade-in">
           <button 
@@ -995,9 +1021,11 @@
             {{ 'navigation.hse' | translate }}
           </span>
         </a>
+        } <!-- End of @if (false) for Assets, Finance, HR, HSE -->
       </div>
 
-      <!-- SECTION: ANALYTICS & SYSTEM -->
+      <!-- [COMMENTED OUT FOR CLIENT DEMO] SECTION: ANALYTICS & SYSTEM -->
+      @if (false) {
       <div class="space-y-1">
         @if (!isSidebarCollapsed()) {
           <div class="sidebar-section-label text-[9px] font-bold uppercase tracking-widest px-3 pt-4 pb-1 select-none animate-fade-in">
@@ -1093,6 +1121,7 @@
           }
         </div>
       </div>
+      }
 
     </nav>
     </div>
@@ -1192,7 +1221,8 @@
         <!-- Language Switcher Component -->
         <app-language-switcher></app-language-switcher>
 
-        <!-- Quick Action Trigger: Create PR -->
+        <!-- Quick Action Trigger: Create PR (Hidden for client demo) -->
+        @if (false) {
         <a 
           routerLink="/procurement/purchase-requests" 
           [queryParams]="{ openForm: 'true' }"
@@ -1203,6 +1233,7 @@
           </svg>
           <span>{{ 'common.new_requisition' | translate }}</span>
         </a>
+        }
 
         <!-- NOTIFICATIONS DROPDOWN CONTAINER -->
         <div class="relative">

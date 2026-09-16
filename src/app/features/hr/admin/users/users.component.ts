@@ -1,9 +1,10 @@
 import {
-  Component, OnInit, signal, computed, inject, ChangeDetectionStrategy
+  Component, OnInit, signal, computed, inject, ChangeDetectionStrategy, ChangeDetectorRef
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { TranslateModule } from '@ngx-translate/core';
+import { finalize } from 'rxjs/operators';
 
 import { BreadcrumbService }     from '../../../../core/services/breadcrumb.service';
 import { NotificationService }   from '../../../../core/services/notification.service';
@@ -34,6 +35,7 @@ export class HrAdminUsersComponent implements OnInit {
   private readonly userSvc    = inject(UserManagementService);
   readonly authService        = inject(AuthService);
   private readonly fb         = inject(FormBuilder);
+  private readonly cdr        = inject(ChangeDetectorRef);
 
   // ── Data ──────────────────────────────────────────────────────────────────
 
@@ -55,9 +57,10 @@ export class HrAdminUsersComponent implements OnInit {
     const f = this.filter();
     const q = f.search.toLowerCase().trim();
     return this.allUsers().filter(u => {
-      const matchSearch = !q || u.fullName.toLowerCase().includes(q)
-                               || u.username.toLowerCase().includes(q)
-                               || u.email.toLowerCase().includes(q);
+      const name = (u.fullName || '').toLowerCase();
+      const username = (u.username || '').toLowerCase();
+      const email = (u.email || '').toLowerCase();
+      const matchSearch = !q || name.includes(q) || username.includes(q) || email.includes(q);
       const matchRole   = !f.role   || u.role === f.role;
       const matchDept   = !f.departmentId || u.departmentId === f.departmentId;
       const matchStatus = !f.status || u.status === f.status;
@@ -96,11 +99,30 @@ export class HrAdminUsersComponent implements OnInit {
     this._buildForms();
     this.isLoading.set(true);
 
-    // ✅ TASK 1: تحميل الإحصائيات + المستخدمين + الأدوار + الأقسام
-    this.userSvc.getUserStats().subscribe();
-    this.userSvc.getRoles().subscribe();
-    this.userSvc.getDepartments().subscribe();
-    this.userSvc.getUsers().subscribe(() => this.isLoading.set(false));
+    // تحميل الإحصائيات + المستخدمين + الأدوار + الأقسام
+    this.userSvc.getUserStats().subscribe({
+      next: () => this.cdr.markForCheck(),
+      error: () => {}
+    });
+    this.userSvc.getRoles().subscribe({
+      next: () => this.cdr.markForCheck(),
+      error: () => {}
+    });
+    this.userSvc.getDepartments().subscribe({
+      next: () => this.cdr.markForCheck(),
+      error: () => {}
+    });
+    this.userSvc.getUsers()
+      .pipe(
+        finalize(() => {
+          this.isLoading.set(false);
+          this.cdr.markForCheck();
+        })
+      )
+      .subscribe({
+        next: () => this.cdr.markForCheck(),
+        error: () => this.cdr.markForCheck()
+      });
   }
 
   // ── Form builders ─────────────────────────────────────────────────────────

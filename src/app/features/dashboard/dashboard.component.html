@@ -2,11 +2,13 @@
 
 
   <!-- ══════════════════════════════════════════════════════════════════════════
-       ROW 1 – SIX EXECUTIVE KPI CARDS
+  <!-- ══════════════════════════════════════════════════════════════════════════
+       ROW 1 – EXECUTIVE KPI CARDS (FILTERED: PROCUREMENT & INVENTORY ONLY)
   ════════════════════════════════════════════════════════════════════════════ -->
-  <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+  <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
 
-    <!-- Total Liquidity -->
+    <!-- Total Liquidity (Hidden for client demo) -->
+    @if (false) {
     <div (click)="navigate('/finance/cash-bank')" class="premium-card cursor-pointer group relative overflow-hidden">
       <div class="absolute inset-0 bg-linear-to-br from-emerald-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-3xl"></div>
       <div class="relative z-10">
@@ -20,6 +22,7 @@
         <p class="text-[10px] font-bold text-slate-400 mt-1.5 uppercase tracking-wide">{{ 'dashboard.cash_liquidity' | translate }}</p>
       </div>
     </div>
+    }
 
     <!-- Inventory Value -->
     <div (click)="navigate('/inventory')" class="premium-card cursor-pointer group relative overflow-hidden">
@@ -51,7 +54,8 @@
       </div>
     </div>
 
-    <!-- Open Work Orders -->
+    <!-- Open Work Orders (Hidden for client demo) -->
+    @if (false) {
     <div (click)="navigate('/assets/maintenance')" class="premium-card cursor-pointer group relative overflow-hidden">
       <div class="absolute inset-0 bg-linear-to-br from-amber-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-3xl"></div>
       <div class="relative z-10">
@@ -65,6 +69,7 @@
         <p class="text-[10px] font-bold text-slate-400 mt-1.5 uppercase tracking-wide">{{ 'dashboard.open_work_orders' | translate }}</p>
       </div>
     </div>
+    }
 
     <!-- Critical Stock -->
     <div (click)="navigate('/inventory')" class="premium-card cursor-pointer group relative overflow-hidden">
@@ -81,7 +86,8 @@
       </div>
     </div>
 
-    <!-- LTI Free Days -->
+    <!-- LTI Free Days (Hidden for client demo) -->
+    @if (false) {
     <div (click)="navigate('/hse')" class="premium-card cursor-pointer group relative overflow-hidden">
       <div class="absolute inset-0 bg-linear-to-br from-emerald-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-3xl"></div>
       <div class="relative z-10">
@@ -95,6 +101,7 @@
         <p class="text-[10px] font-bold text-slate-400 mt-1.5 uppercase tracking-wide">{{ 'dashboard.lti_free_days' | translate }}</p>
       </div>
     </div>
+    }
 
   </div>
 
@@ -110,7 +117,7 @@
           <h2 class="text-sm font-black text-slate-800 uppercase tracking-wider">{{ 'dashboard.procurement_pipeline' | translate }}</h2>
           <p class="text-[10px] text-slate-400 font-semibold mt-0.5">{{ 'dashboard.procurement_pipeline_desc' | translate }}</p>
         </div>
-        <span class="text-xs font-bold text-sky-600 bg-sky-50 px-3 py-1 rounded-full">{{ purchaseRequests().length + rfqs().length + purchaseOrders().length }} {{ 'dashboard.total_records' | translate }}</span>
+        <span class="text-xs font-bold text-sky-600 bg-sky-50 px-3 py-1 rounded-full">{{ totalPipelineRecords() }} {{ 'dashboard.total_records' | translate }}</span>
       </div>
 
       <div class="space-y-3.5">
@@ -234,8 +241,9 @@
   </div>
 
   <!-- ══════════════════════════════════════════════════════════════════════════
-       ROW 3 – FINANCIAL OVERVIEW + EQUIPMENT FLEET + WORK ORDERS
+       [COMMENTED OUT FOR CLIENT DEMO] ROW 3 – FINANCIAL OVERVIEW + EQUIPMENT FLEET + WORK ORDERS
   ════════════════════════════════════════════════════════════════════════════ -->
+  @if (false) {
   <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
     <!-- Financial Overview Bars -->
@@ -401,9 +409,10 @@
       </div>
     </div>
   </div>
+  }
 
   <!-- ══════════════════════════════════════════════════════════════════════════
-       ROW 4 – MY TASKS + CRITICAL ALERTS
+       ROW 4 – MY TASKS + CRITICAL ALERTS (FILTERED: PROCUREMENT & INVENTORY)
   ════════════════════════════════════════════════════════════════════════════ -->
   <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
@@ -432,6 +441,8 @@
           </div>
         }
 
+        <!-- Pending WCCs (Hidden for client demo) -->
+        @if (false) {
         @if (pendingWCCs().length > 0) {
           <div class="p-3.5 bg-primary/5 hover:bg-primary/10 rounded-2xl border border-primary/20 transition-colors flex items-center justify-between group">
             <div class="flex items-center space-x-3 rtl:space-x-reverse">
@@ -448,6 +459,7 @@
             </button>
           </div>
         }
+        }
 
         @if (pendingInspectionsList().length > 0) {
           <div class="p-3.5 bg-accent/5 hover:bg-accent/10 rounded-2xl border border-accent/20 transition-colors flex items-center justify-between group">
@@ -457,7 +469,7 @@
               </span>
               <div>
                 <p class="text-xs font-bold text-slate-800">{{ 'dashboard.pending_inspections_list' | translate }} <span class="text-accent">({{ pendingInspectionsList().length }})</span></p>
-                <p class="text-[10px] text-slate-400 font-semibold mt-0.5">HSE and intake quality inspections</p>
+                <p class="text-[10px] text-slate-400 font-semibold mt-0.5">Intake and goods quality inspections</p>
               </div>
             </div>
             <button (click)="navigate('/procurement/inspection')" class="text-accent font-bold text-[10px] uppercase tracking-wider bg-white border border-accent/20 px-3 py-1.5 rounded-xl shadow-xs group-hover:shadow-sm">
@@ -466,7 +478,7 @@
           </div>
         }
 
-        @if (pendingPRs().length === 0 && pendingWCCs().length === 0 && pendingInspectionsList().length === 0) {
+        @if (pendingPRs().length === 0 && pendingInspectionsList().length === 0) {
           <div class="p-8 text-center border border-dashed border-slate-200 rounded-2xl flex-1">
             <span class="inline-block text-emerald-500 bg-emerald-50 p-2.5 rounded-full mb-2">
               <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
@@ -490,9 +502,9 @@
           <h2 class="text-sm font-black text-slate-800 uppercase tracking-wider">{{ 'dashboard.critical_alerts' | translate }}</h2>
           <p class="text-[10px] text-slate-400 font-semibold mt-0.5">{{ 'dashboard.critical_alerts_desc' | translate }}</p>
         </div>
-        @if (criticalAlertsCount() > 0) {
+        @if (criticalStockItems().length > 0) {
           <span class="text-[10px] bg-red-100 text-red-700 px-2.5 py-1 rounded-full font-black animate-pulse">
-            🔴 {{ criticalAlertsCount() }} Active
+            🔴 {{ criticalStockItems().length }} Active
           </span>
         }
       </div>
@@ -511,6 +523,8 @@
           </div>
         }
 
+        <!-- Maintenance & Permits alerts (Hidden for client demo) -->
+        @if (false) {
         @for (wo of breakdownWorkOrders(); track wo.id) {
           <div class="flex items-center justify-between p-3 bg-red-50/40 border border-red-100/60 rounded-2xl text-xs font-semibold">
             <div class="flex items-center space-x-2.5 rtl:space-x-reverse">
@@ -536,30 +550,32 @@
             <span class="text-slate-600 bg-slate-200 px-2 py-0.5 rounded-lg text-[10px] font-bold uppercase shrink-0">Expired</span>
           </div>
         }
+        }
 
-        @if (criticalAlertsCount() === 0) {
+        @if (criticalStockItems().length === 0) {
           <div class="p-8 text-center border border-dashed border-slate-200 rounded-2xl">
             <span class="inline-block text-emerald-500 bg-emerald-50 p-2.5 rounded-full mb-2">
               <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
             </span>
             <p class="text-xs font-bold text-slate-800">{{ 'dashboard.alert_no_warnings' | translate }}</p>
-            <p class="text-[10px] text-slate-400 mt-0.5">All HSE and stock levels are within safe parameters.</p>
+            <p class="text-[10px] text-slate-400 mt-0.5">All stock levels are within safe parameters.</p>
           </div>
         }
       </div>
 
       <div class="mt-4 pt-4 border-t border-slate-100 text-[10px] text-slate-400 font-semibold">
-        Verified against active rigs, HSE & spares systems
+        Verified against inventory and warehouse storage
       </div>
     </div>
   </div>
 
   <!-- ══════════════════════════════════════════════════════════════════════════
-       ROW 5 – HSE STATUS + ACTIVE RIGS + QUICK ACTIONS
+       ROW 5 – QUICK ACTIONS (FILTERED: PROCUREMENT & INVENTORY)
   ════════════════════════════════════════════════════════════════════════════ -->
-  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+  <div class="grid grid-cols-1 gap-6">
 
-    <!-- HSE Safety Status -->
+    <!-- HSE Safety Status (Hidden for client demo) -->
+    @if (false) {
     <div class="premium-card">
       <h2 class="text-sm font-black text-slate-800 uppercase tracking-wider mb-4">{{ 'dashboard.hse_status' | translate }}</h2>
       <div class="grid grid-cols-2 gap-4">
@@ -586,7 +602,7 @@
       </div>
     </div>
 
-    <!-- Active Rigs -->
+    <!-- Active Rigs (Hidden for client demo) -->
     <div class="premium-card">
       <h2 class="text-sm font-black text-slate-800 uppercase tracking-wider mb-4">{{ 'dashboard.active_rigs' | translate }}</h2>
       <div class="space-y-2.5">
@@ -611,40 +627,29 @@
         <button (click)="navigate('/operations/rigs')" class="w-full text-[10px] font-bold text-primary text-center hover:underline">View All Rigs & Equipment →</button>
       </div>
     </div>
+    }
 
     <!-- Quick Actions -->
     <div class="premium-card">
       <h2 class="text-sm font-black text-slate-800 uppercase tracking-wider mb-4">{{ 'dashboard.quick_actions' | translate }}</h2>
-      <div class="grid grid-cols-2 gap-2.5">
-        <button (click)="navigate('/procurement/purchase-requests')" class="flex flex-col items-center justify-center p-3.5 rounded-2xl border border-slate-100 bg-slate-50/50 hover:bg-white hover:border-amber-400 hover:shadow-md transition-all group">
-          <span class="text-amber-500 bg-amber-50 p-2 rounded-xl group-hover:scale-110 transition-transform mb-1.5">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <button (click)="navigate('/procurement/purchase-requests')" class="flex flex-col items-center justify-center p-4 rounded-2xl border border-slate-100 bg-slate-50/50 hover:bg-white hover:border-amber-400 hover:shadow-md transition-all group">
+          <span class="text-amber-500 bg-amber-50 p-2.5 rounded-xl group-hover:scale-110 transition-transform mb-1.5">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
           </span>
-          <span class="text-[10px] font-bold text-slate-700">{{ 'dashboard.create_pr' | translate }}</span>
+          <span class="text-xs font-bold text-slate-700">{{ 'dashboard.create_pr' | translate }}</span>
         </button>
-        <button (click)="navigate('/inventory')" class="flex flex-col items-center justify-center p-3.5 rounded-2xl border border-slate-100 bg-slate-50/50 hover:bg-white hover:border-emerald-400 hover:shadow-md transition-all group">
-          <span class="text-emerald-500 bg-emerald-50 p-2 rounded-xl group-hover:scale-110 transition-transform mb-1.5">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 14v6m-3-3h6M6 10h2a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v2a2 2 0 002 2zm10 0h2a2 2 0 002-2V6a2 2 0 00-2-2h-2a2 2 0 00-2 2v2a2 2 0 002 2zM6 20h2a2 2 0 002-2v-2a2 2 0 00-2-2H6a2 2 0 00-2 2v2a2 2 0 002 2z"/></svg>
+        <button (click)="navigate('/inventory')" class="flex flex-col items-center justify-center p-4 rounded-2xl border border-slate-100 bg-slate-50/50 hover:bg-white hover:border-emerald-400 hover:shadow-md transition-all group">
+          <span class="text-emerald-500 bg-emerald-50 p-2.5 rounded-xl group-hover:scale-110 transition-transform mb-1.5">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 14v6m-3-3h6M6 10h2a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v2a2 2 0 002 2zm10 0h2a2 2 0 002-2V6a2 2 0 00-2-2h-2a2 2 0 00-2 2v2a2 2 0 002 2zM6 20h2a2 2 0 002-2v-2a2 2 0 00-2-2H6a2 2 0 00-2 2v2a2 2 0 002 2z"/></svg>
           </span>
-          <span class="text-[10px] font-bold text-slate-700">{{ 'dashboard.receive_mrv' | translate }}</span>
+          <span class="text-xs font-bold text-slate-700">{{ 'dashboard.receive_mrv' | translate }}</span>
         </button>
-        <button (click)="navigate('/assets/maintenance')" class="flex flex-col items-center justify-center p-3.5 rounded-2xl border border-slate-100 bg-slate-50/50 hover:bg-white hover:border-sky-400 hover:shadow-md transition-all group">
-          <span class="text-sky-500 bg-sky-50 p-2 rounded-xl group-hover:scale-110 transition-transform mb-1.5">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+        <button (click)="navigate('/inventory')" class="flex flex-col items-center justify-center p-4 rounded-2xl border border-slate-100 bg-slate-50/50 hover:bg-white hover:border-navy hover:shadow-md transition-all group">
+          <span class="text-navy bg-navy/10 p-2.5 rounded-xl group-hover:scale-110 transition-transform mb-1.5">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5a2 2 0 10-2 2h2zm0 8V5"/></svg>
           </span>
-          <span class="text-[10px] font-bold text-slate-700">{{ 'dashboard.create_wo' | translate }}</span>
-        </button>
-        <button (click)="navigate('/hse')" class="flex flex-col items-center justify-center p-3.5 rounded-2xl border border-slate-100 bg-slate-50/50 hover:bg-white hover:border-red-400 hover:shadow-md transition-all group">
-          <span class="text-red-500 bg-red-50 p-2 rounded-xl group-hover:scale-110 transition-transform mb-1.5">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
-          </span>
-          <span class="text-[10px] font-bold text-slate-700">{{ 'dashboard.apply_ptw' | translate }}</span>
-        </button>
-        <button (click)="navigate('/inventory')" class="col-span-2 flex items-center justify-center gap-2 p-3.5 rounded-2xl border border-slate-100 bg-slate-50/50 hover:bg-white hover:border-navy hover:shadow-md transition-all group">
-          <span class="text-navy bg-navy/10 p-2 rounded-xl group-hover:scale-110 transition-transform">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5a2 2 0 10-2 2h2zm0 8V5"/></svg>
-          </span>
-          <span class="text-[10px] font-bold text-slate-700">{{ 'dashboard.create_miv' | translate }}</span>
+          <span class="text-xs font-bold text-slate-700">{{ 'dashboard.create_miv' | translate }}</span>
         </button>
       </div>
     </div>

@@ -107,59 +107,86 @@ export const ROLE_ARABIC_NAMES: Record<UserRole, string> = {
 
 // ─── Adapters: Backend → Frontend ────────────────────────────────────────────
 
-function toManagedUser(u: BackendUser): ManagedUser {
+function toManagedUser(u: any): ManagedUser {
+  if (!u) return {} as ManagedUser;
+
+  const roleObj = (typeof u.roleId === 'object' && u.roleId !== null) ? u.roleId : null;
+  const roleName: string = roleObj?.name ?? (typeof u.role === 'string' ? u.role : (typeof u.roleId === 'string' ? u.roleId : 'Employee'));
+  const roleArabicName: string = roleObj?.nameAr ?? u.roleName ?? ROLE_ARABIC_NAMES[roleName as UserRole] ?? roleName;
+
+  const deptObj = (typeof u.departmentId === 'object' && u.departmentId !== null)
+    ? u.departmentId
+    : ((typeof u.department === 'object' && u.department !== null) ? u.department : null);
+  const deptId = deptObj?._id ?? deptObj?.id ?? (typeof u.departmentId === 'string' ? u.departmentId : undefined);
+
+  let perms: Permission[] = [];
+  if (Array.isArray(roleObj?.permissions)) {
+    perms = roleObj.permissions.map((p: any) => typeof p === 'string' ? p : (p?.name ?? p?.key ?? ''));
+  } else if (Array.isArray(u.permissions)) {
+    perms = u.permissions;
+  }
+
+  const fullName = u.fullName || u.username || '';
+
   return {
-    id:                  u._id,
-    username:            u.username,
-    email:               u.email,
-    fullName:            u.fullName,
-    fullNameAr:          u.fullNameAr,
-    role:                (u.roleId?.name ?? 'Employee') as UserRole,
-    roleName:            u.roleId?.nameAr,
-    departmentId:        u.departmentId?._id,
-    department:          u.departmentId ? {
-      id:     u.departmentId._id,
-      code:   u.departmentId.code,
-      nameEn: u.departmentId.nameEn,
-      nameAr: u.departmentId.nameAr
+    id:                  u._id ?? u.id ?? '',
+    username:            u.username ?? '',
+    email:               u.email ?? '',
+    fullName:            fullName,
+    fullNameAr:          u.fullNameAr ?? fullName,
+    role:                (roleName as UserRole) || 'Employee',
+    roleName:            roleArabicName,
+    departmentId:        deptId,
+    department:          deptObj ? {
+      id:     deptObj._id ?? deptObj.id ?? '',
+      code:   deptObj.code ?? '',
+      nameEn: deptObj.nameEn ?? '',
+      nameAr: deptObj.nameAr ?? deptObj.nameEn ?? ''
     } : undefined,
-    employeeId:          u.employeeId,
-    avatar:              u.avatar,
+    employeeId:          u.employeeId ?? '',
+    vendorId:            u.vendorId ?? '',
+    companyName:         u.companyName ?? '',
+    avatar:              u.avatar || fullName.split(' ').map((n: string) => n[0]).slice(0, 2).join('').toUpperCase() || 'U',
     avatarUrl:           u.avatarUrl ?? undefined,
-    status:              u.status as UserStatus,
-    preferredLanguage:   u.preferredLanguage as 'ar' | 'en',
-    timezone:            u.timezone,
-    emailNotifications:  u.emailNotifications,
-    mustChangePassword:  u.mustChangePassword,
+    status:              (u.status ?? 'Active') as UserStatus,
+    preferredLanguage:   (u.preferredLanguage ?? 'ar') as 'ar' | 'en',
+    timezone:            u.timezone ?? 'Asia/Riyadh',
+    emailNotifications:  u.emailNotifications ?? true,
+    mustChangePassword:  u.mustChangePassword ?? false,
     lastLogin:           u.lastLogin,
     createdAt:           u.createdAt,
-    permissions:         (u.roleId?.permissions ?? []) as Permission[]
+    permissions:         perms
   };
 }
 
-function toRole(r: BackendRole): Role {
+function toRole(r: any): Role {
+  if (!r) return {} as Role;
+  const name = r.name ?? '';
   return {
-    id:          r._id,
-    name:        r.name as UserRole,
-    nameAr:      r.nameAr ?? ROLE_ARABIC_NAMES[r.name as UserRole] ?? r.name,
+    id:          r._id ?? r.id ?? '',
+    name:        name as UserRole,
+    nameAr:      r.nameAr ?? ROLE_ARABIC_NAMES[name as UserRole] ?? name,
     description: r.description ?? '',
-    isSystem:    r.isSystem,
-    usersCount:  r.usersCount ?? 0, // ✅ TASK 4 — يأتي من الـ Backend الآن
-    permissions: r.permissions.map((p: BackendPermission) => p.name as Permission),
+    isSystem:    r.isSystem ?? false,
+    usersCount:  r.usersCount ?? 0,
+    permissions: Array.isArray(r.permissions)
+      ? r.permissions.map((p: any) => typeof p === 'string' ? p : (p?.name ?? p?.key ?? ''))
+      : [],
     createdAt:   r.createdAt
   };
 }
 
-function toDepartment(d: BackendDepartment): Department {
+function toDepartment(d: any): Department {
+  if (!d) return {} as Department;
   return {
-    id:          d._id,
-    code:        d.code,
-    nameEn:      d.nameEn,
-    nameAr:      d.nameAr,
-    parentId:    (d.parentId as any)?._id ?? d.parentId as any,
-    managerId:   (d.managerId as any)?._id ?? d.managerId as any,
-    managerName: (d.managerId as any)?.fullName,
-    usersCount:  d.usersCount ?? 0  // ✅ TASK 3 — يأتي من الـ Backend الآن
+    id:          d._id ?? d.id ?? '',
+    code:        d.code ?? '',
+    nameEn:      d.nameEn ?? '',
+    nameAr:      d.nameAr ?? d.nameEn ?? '',
+    parentId:    (d.parentId as any)?._id ?? (d.parentId as any)?.id ?? d.parentId,
+    managerId:   (d.managerId as any)?._id ?? (d.managerId as any)?.id ?? d.managerId,
+    managerName: (d.managerId as any)?.fullName ?? (d.managerId as any)?.name,
+    usersCount:  d.usersCount ?? 0
   };
 }
 
@@ -175,26 +202,45 @@ export class UserManagementService {
   readonly users       = signal<ManagedUser[]>([]);
   readonly roles       = signal<Role[]>([]);
   readonly departments = signal<Department[]>([]);
-  /** ✅ TASK 1 — إحصائيات المستخدمين من /admin/users/stats */
+  /** إحصائيات المستخدمين من /admin/users/stats */
   readonly stats       = signal<UserStats>({ total: 0, active: 0, inactive: 0, suspended: 0, pending: 0 });
 
-  readonly activeCount   = computed(() => this.stats().active);
-  readonly inactiveCount = computed(() => this.stats().inactive + this.stats().suspended);
-  readonly totalCount    = computed(() => this.stats().total);
+  readonly activeCount   = computed(() => {
+    const fromStats = this.stats().active;
+    if (fromStats > 0) return fromStats;
+    return this.users().filter(u => u.status === 'Active').length;
+  });
 
-  // ─── ✅ TASK 1: Users Stats ────────────────────────────────────────────
+  readonly inactiveCount = computed(() => {
+    const fromStats = this.stats().inactive + this.stats().suspended;
+    if (fromStats > 0) return fromStats;
+    return this.users().filter(u => u.status !== 'Active').length;
+  });
+
+  readonly totalCount    = computed(() => {
+    const fromStats = this.stats().total;
+    if (fromStats > 0) return fromStats;
+    return this.users().length;
+  });
+
+  // ─── Users Stats ──────────────────────────────────────────────────────────
 
   /**
    * GET /admin/users/stats
-   * يُرجع { total, active, inactive, suspended, pending }
-   * مسجَّل قبل /:id في الـ Backend لتجنب التعارض
    */
   getUserStats(): Observable<UserStats> {
     return this.http
-      .get<ApiWrapper<UserStats>>(`${BASE}/users/stats`)
+      .get<any>(`${BASE}/users/stats`)
       .pipe(
-        map(wrapper => wrapper.data),
-        tap(s => this.stats.set(s)),
+        map(res => {
+          const s = res?.data ?? res ?? { total: 0, active: 0, inactive: 0, suspended: 0, pending: 0 };
+          return s;
+        }),
+        tap(s => {
+          if (s && typeof s.total === 'number') {
+            this.stats.set(s);
+          }
+        }),
         catchError(this._handleError)
       );
   }
@@ -203,9 +249,10 @@ export class UserManagementService {
 
   /**
    * GET /admin/users
-   * الـ Response مغلّف: ApiWrapper<PaginatedData<BackendUser>>
-   *   → wrapper.data.data = المصفوفة
-   *   → wrapper.data.meta = { total, page, limit, totalPages }
+   * يدعم كلا الحالتين:
+   *   1. wrapper.data كـ مصفوفة مباشرة [BackendUser, ...]
+   *   2. wrapper.data كـ كائن ترقيم { data: BackendUser[], meta: {...} }
+   *   3. مصفوفة مباشرة بدون تغليف
    */
   getUsers(filter?: {
     search?: string;
@@ -224,18 +271,41 @@ export class UserManagementService {
     params = params.set('limit', String(filter?.limit ?? 50));
 
     return this.http
-      .get<ApiWrapper<PaginatedData<BackendUser>>>(`${BASE}/users`, { params })
+      .get<any>(`${BASE}/users`, { params })
       .pipe(
-        map(wrapper => {
-          const paginated = wrapper.data;           // { data: [], meta: {} }
-          const items = paginated.data.map(toManagedUser);
+        map(res => {
+          let rawList: any[] = [];
+          let total = 0;
+          let page = Number(filter?.page ?? 1);
+          let limit = Number(filter?.limit ?? 50);
+          let totalPages = 1;
+
+          if (Array.isArray(res)) {
+            rawList = res;
+            total = rawList.length;
+          } else if (Array.isArray(res?.data)) {
+            // الحالة الشائعة في الـ Backend: data هي المصفوفة مباشرة
+            rawList = res.data;
+            total = res.meta?.total ?? res.total ?? rawList.length;
+            page = res.meta?.page ?? res.page ?? page;
+            totalPages = res.meta?.totalPages ?? res.totalPages ?? (Math.ceil(total / limit) || 1);
+          } else if (res?.data && Array.isArray(res.data.data)) {
+            // PaginatedData: data.data = [], data.meta = {}
+            rawList = res.data.data;
+            const meta = res.data.meta || {};
+            total = meta.total ?? rawList.length;
+            page = meta.page ?? page;
+            totalPages = meta.totalPages ?? (Math.ceil(total / limit) || 1);
+          } else if (Array.isArray(res?.items)) {
+            rawList = res.items;
+            total = res.total ?? rawList.length;
+            page = res.page ?? page;
+            totalPages = res.totalPages ?? (Math.ceil(total / limit) || 1);
+          }
+
+          const items = rawList.map(toManagedUser);
           this.users.set(items);
-          return {
-            items,
-            total:      paginated.meta.total,
-            page:       paginated.meta.page,
-            totalPages: paginated.meta.totalPages
-          };
+          return { items, total, page, totalPages };
         }),
         catchError(this._handleError)
       );
@@ -373,9 +443,12 @@ export class UserManagementService {
    */
   getRoles(): Observable<Role[]> {
     return this.http
-      .get<ApiWrapper<BackendRole[]>>(`${BASE}/roles`)
+      .get<any>(`${BASE}/roles`)
       .pipe(
-        map(wrapper => wrapper.data.map(toRole)),
+        map(res => {
+          const list: any[] = Array.isArray(res) ? res : (Array.isArray(res?.data) ? res.data : []);
+          return list.map(toRole);
+        }),
         tap(roles => this.roles.set(roles)),
         catchError(this._handleError)
       );
@@ -384,9 +457,9 @@ export class UserManagementService {
   /** GET /admin/roles/permissions */
   getAllPermissions(): Observable<BackendPermission[]> {
     return this.http
-      .get<ApiWrapper<BackendPermission[]>>(`${BASE}/roles/permissions`)
+      .get<any>(`${BASE}/roles/permissions`)
       .pipe(
-        map(wrapper => wrapper.data),
+        map(res => Array.isArray(res) ? res : (Array.isArray(res?.data) ? res.data : [])),
         catchError(this._handleError)
       );
   }
@@ -394,9 +467,9 @@ export class UserManagementService {
   /** GET /admin/roles/:id */
   getRoleById(id: string): Observable<Role> {
     return this.http
-      .get<ApiWrapper<BackendRole>>(`${BASE}/roles/${id}`)
+      .get<any>(`${BASE}/roles/${id}`)
       .pipe(
-        map(wrapper => toRole(wrapper.data)),
+        map(res => toRole(res?.data ?? res)),
         catchError(this._handleError)
       );
   }
@@ -407,9 +480,9 @@ export class UserManagementService {
    */
   getRoleUsers(roleId: string): Observable<BackendRoleUser[]> {
     return this.http
-      .get<ApiWrapper<BackendRoleUser[]>>(`${BASE}/roles/${roleId}/users`)
+      .get<any>(`${BASE}/roles/${roleId}/users`)
       .pipe(
-        map(wrapper => wrapper.data),
+        map(res => Array.isArray(res) ? res : (Array.isArray(res?.data) ? res.data : [])),
         catchError(this._handleError)
       );
   }
@@ -422,9 +495,12 @@ export class UserManagementService {
    */
   getDepartments(): Observable<Department[]> {
     return this.http
-      .get<ApiWrapper<BackendDepartment[]>>(`${BASE}/departments`)
+      .get<any>(`${BASE}/departments`)
       .pipe(
-        map(wrapper => wrapper.data.map(toDepartment)),
+        map(res => {
+          const list: any[] = Array.isArray(res) ? res : (Array.isArray(res?.data) ? res.data : []);
+          return list.map(toDepartment);
+        }),
         tap(depts => this.departments.set(depts)),
         catchError(this._handleError)
       );

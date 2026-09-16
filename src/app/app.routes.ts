@@ -20,7 +20,9 @@ export const routes: Routes = [
     canActivate: [authGuard],
     canActivateChild: [permissionGuard],
     children: [
-      { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
+      // [CLIENT DEMO] Default route redirected to inventory
+      // { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
+      { path: '', redirectTo: 'inventory', pathMatch: 'full' },
       {
         path: 'dashboard',
         loadComponent: () => import('./features/dashboard/dashboard.component').then(m => m.DashboardComponent),
