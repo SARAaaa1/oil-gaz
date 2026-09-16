@@ -315,6 +315,27 @@ export class InventoryApiService {
     );
   }
 
+  /** POST /api/v1/inventory/mrvs/:id/post — Posts MRV and updates stock & PO status */
+  postMRV(id: string, body: { postedBy?: string; postingDate?: string } = {}): Observable<any> {
+    return this.http.post<ApiResponse<any>>(
+      `${this.baseUrl}/mrvs/${id}/post`,
+      body
+    ).pipe(
+      map(res => res.data ?? res),
+      catchError(err => throwError(() => err))
+    );
+  }
+
+  /** GET /api/v1/inventory/item-ledger/:itemCode */
+  getItemLedgerByCode(itemCode: string): Observable<any> {
+    return this.http.get<ApiResponse<any>>(
+      `${this.baseUrl}/item-ledger/${encodeURIComponent(itemCode)}`
+    ).pipe(
+      map(res => res.data ?? res),
+      catchError(err => throwError(() => err))
+    );
+  }
+
   /** DELETE /api/v1/inventory/mrvs/:id */
   deleteMRV(id: string): Observable<any> {
     return this.http.delete<any>(

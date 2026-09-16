@@ -1,7 +1,8 @@
-import { Component, OnInit, signal, computed, inject, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnInit, signal, computed, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TranslateModule } from '@ngx-translate/core';
+import { finalize } from 'rxjs/operators';
 import { MockDataService } from '../../../core/services/mock-data.service';
 import { BreadcrumbService } from '../../../core/services/breadcrumb.service';
 import { AuditService } from '../../../core/services/audit.service';
@@ -28,6 +29,7 @@ export class GoodsReceiptsComponent implements OnInit {
   private readonly notificationService = inject(NotificationService);
   private readonly inventoryApi = inject(InventoryApiService);
   private readonly procurementService = inject(ProcurementService);
+  private readonly cdr = inject(ChangeDetectorRef);
 
   readonly warehouses = signal<any[]>([]);
   readonly purchaseOrders = signal<any[]>([]);
@@ -35,6 +37,7 @@ export class GoodsReceiptsComponent implements OnInit {
 
   readonly selectedMRV = signal<MRV | null>(null);
   readonly isMRVModalOpen = signal(false);
+  readonly isPosting = signal(false);
 
   searchQuery = '';
   statusFilter = 'ALL';
@@ -81,7 +84,22 @@ export class GoodsReceiptsComponent implements OnInit {
     });
 
     this.inventoryApi.getMRVs({}).subscribe({
-      next: (res: any) => this.mrvs.set(extractApiArray(res)),
+      next: (res: any) => {
+        const raw = extractApiArray(res);
+        const mapped = raw.map((m: any) => ({
+          ...m,
+          id: m._id || m.id,
+          voucherNumber: m.voucherNumber || m.mrvNumber || 'MRV-UNKNOWN',
+          poNumber: m.poNumber || (typeof m.poId === 'object' ? m.poId?.poNumber : '') || '',
+          warehouseId: typeof m.warehouseId === 'object' ? (m.warehouseId?._id || m.warehouseId?.name) : m.warehouseId,
+          supplierName: m.supplierName || m.vendorName || '',
+          items: (m.items || []).map((i: any) => ({
+            ...i,
+            totalPrice: i.totalPrice ?? ((i.quantityReceived || 0) * (i.unitPrice || 0))
+          }))
+        }));
+        this.mrvs.set(mapped);
+      },
       error: () => this.mrvs.set([])
     });
   }
@@ -407,6 +425,74 @@ export class GoodsReceiptsComponent implements OnInit {
     } catch (e: any) {
       this.notificationService.danger('GL Posting Error', e.message);
     }
+  }
+
+  postMRVToInventory(mrv: MRV) {
+    if (!mrv || !mrv.id) {
+      this.notificationService.danger('Error', 'Invalid MRV reference.');
+      return;
+    }
+
+    this.isPosting.set(true);
+    this.inventoryApi.postMRV(mrv.id, {
+      postedBy: 'Store Manager',
+      postingDate: new Date().toISOString()
+    })
+    .pipe(finalize(() => {
+      this.isPosting.set(false);
+      this.cdr.markForCheck();
+    }))
+    .subscribe({
+      next: (res: any) => {
+        const data = res?.data ?? res;
+        const voucherNo = data?.voucherNumber || mrv.voucherNumber;
+        const poStatus = data?.poStatus ? `(PO: ${data.poStatus})` : '';
+
+        // Update local state
+        this.mrvs.update(list =>
+          list.map(m => m.id === mrv.id ? { ...m, status: 'Posted' as const } : m)
+        );
+        if (this.selectedMRV()?.id === mrv.id) {
+          this.selectedMRV.update(curr => curr ? { ...curr, status: 'Posted' as const } : null);
+        }
+
+        this.notificationService.success(
+          'تم الترحيل بنجاح',
+          `تم ترحيل إذن الإضافة ${voucherNo} للمخزن وتحديث الرصيد الفعلي ${poStatus}`
+        );
+
+        this.auditService.log({
+          action: 'Status Change',
+          module: 'Inventory',
+          entityName: 'MRV',
+          entityId: voucherNo,
+          details: `MRV ${voucherNo} posted to warehouse inventory. Stock updated.`
+        });
+      },
+      error: (err: any) => {
+        console.error('Failed to post MRV:', err);
+        const status = err?.status;
+        const errMsg = err?.error?.message ?? err?.message;
+
+        if (status === 409) {
+          this.notificationService.warning(
+            'تم الترحيل مسبقاً',
+            'إذن الإضافة هذا تم ترحيله بالفعل إلى المخزن.'
+          );
+          this.mrvs.update(list =>
+            list.map(m => m.id === mrv.id ? { ...m, status: 'Posted' as const } : m)
+          );
+        } else if (status === 400) {
+          this.notificationService.danger(
+            'خطأ في الكمية المستلمة',
+            errMsg || 'الكمية المستلمة تتجاوز الكمية المتبقية في أمر الشراء.'
+          );
+        } else {
+          // Fallback to local mock posting if backend route is not available or errors
+          this.approveFinanceMRV(mrv);
+        }
+      }
+    });
   }
 
   viewMRV(mrv: MRV) {

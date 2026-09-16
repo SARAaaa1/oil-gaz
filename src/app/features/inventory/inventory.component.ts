@@ -11,6 +11,8 @@ import { MockDataService } from '../../core/services/mock-data.service';
 import { InventoryApiService, extractApiArray } from '../../core/services/inventory-api.service';
 import { ProcurementService } from '../../core/services/procurement.service';
 import { AuthService } from '../../core/services/auth.service';
+import { WorkflowApiService } from '../../core/services/workflow-api.service';
+import { CostCenterStoreService } from '../../core/services/cost-center-store.service';
 import {
   InventoryItem, Warehouse, MRV, MRVItem, MIV, MIVItem,
   InternalTransfer, InternalTransferItem, StockAdjustment, StockAdjustmentItem,
@@ -92,6 +94,7 @@ function mapApiMIV(raw: any): MIV {
   return {
     id:             raw._id ?? raw.id,
     voucherNumber:  raw.documentNumber ?? raw.mivNumber ?? raw.voucherNumber ?? '',
+    warehouseId:    typeof raw.warehouseId === 'object' ? (raw.warehouseId?._id || raw.warehouseId?.code) : raw.warehouseId,
     issueTo:        raw.issueTo ?? 'Cost Center',
     destinationId:  raw.destinationId ?? raw.departmentId ?? '',
     referenceNumber: raw.referenceNumber ?? '',
@@ -198,6 +201,8 @@ export class InventoryComponent implements OnInit {
   private readonly cdr                 = inject(ChangeDetectorRef);
   private readonly procurementService = inject(ProcurementService);
   private readonly authService         = inject(AuthService);
+  private readonly workflowApi         = inject(WorkflowApiService);
+  private readonly costCenterStore     = inject(CostCenterStoreService);
 
   readonly canEditInventory = computed(() =>
     this.authService.hasPermission('edit:inventory' as any) ||
@@ -217,6 +222,9 @@ export class InventoryComponent implements OnInit {
   readonly adjustments = signal<StockAdjustment[]>([]);
   readonly counts      = signal<StockCount[]>([]);
   readonly openingStocks = signal<OpeningStockItem[]>([]);
+  readonly projects    = signal<{ id: string; name: string }[]>([]);
+
+  readonly costCenters = computed(() => this.costCenterStore.costCenters());
 
   // KPI summary from API
   readonly apiSummary = signal<{ totalItems: number; totalValue: number; lowStockCount: number; outOfStockCount: number } | null>(null);
@@ -359,6 +367,7 @@ export class InventoryComponent implements OnInit {
   };
 
   mivForm = {
+    warehouseId: '',
     issueTo: 'Project' as 'Project' | 'Cost Center' | 'Rig' | 'Workshop' | 'Vehicle' | 'Camp',
     destinationId: '', referenceNumber: '', requestedBy: '', items: [] as MIVItem[]
   };
@@ -414,6 +423,23 @@ export class InventoryComponent implements OnInit {
     this.loadAdjustments();
     this.loadSummary();
     this.loadPOs();
+    this.loadProjects();
+  }
+
+  private loadProjects() {
+    this.workflowApi.getProjects({ limit: 200 }).subscribe({
+      next: (res: any) => {
+        const rawList = res?.items ?? res?.data ?? (Array.isArray(res) ? res : []);
+        if (Array.isArray(rawList) && rawList.length > 0) {
+          this.projects.set(rawList.map((p: any) => ({
+            id: p.code || p.projectCode || p._id || p.id,
+            name: p.name || p.projectName || p.title || 'Project'
+          })));
+          this.cdr.markForCheck();
+        }
+      },
+      error: () => {}
+    });
   }
 
   private loadPOs() {
@@ -475,7 +501,20 @@ export class InventoryComponent implements OnInit {
   private loadMIVs() {
     this.inventoryApi.getMIVs({ limit: 200 }).subscribe({
       next: res => {
-        const raw = extractApiArray(res);
+        let raw: any[] = [];
+        if (Array.isArray(res)) {
+          raw = res;
+        } else if (Array.isArray(res?.data)) {
+          raw = res.data;
+        } else if (Array.isArray(res?.data?.items)) {
+          raw = res.data.items;
+        } else if (Array.isArray(res?.items)) {
+          raw = res.items;
+        } else if (Array.isArray(res?.docs)) {
+          raw = res.docs;
+        } else {
+          raw = extractApiArray(res);
+        }
         this.mivs.set(raw.map(mapApiMIV));
         this.cdr.markForCheck();
       },
@@ -843,7 +882,9 @@ export class InventoryComponent implements OnInit {
   // ─── MIV (MATERIAL ISSUE) METHODS ─────────────────────────────────────────
 
   openAddMIV() {
+    const defaultWh = this.warehouses().length > 0 ? this.warehouses()[0].id : '';
     this.mivForm = {
+      warehouseId: defaultWh,
       issueTo: 'Project', destinationId: '', referenceNumber: '',
       requestedBy: '', items: []
     };
@@ -875,24 +916,42 @@ export class InventoryComponent implements OnInit {
   }
 
   saveMIV() {
+    if (!this.mivForm.warehouseId) {
+      this.notificationService.danger('Validation Error', 'Please select source warehouse.');
+      return;
+    }
+
     const invalid = this.mivForm.items.some(i => !i.itemCode || i.quantityIssued <= 0);
     if (invalid) {
       this.notificationService.danger('Validation Error', 'Please select valid items and issue quantities.');
       return;
     }
 
+    const totalAmount = this.mivForm.items.reduce((acc, i) => acc + (i.totalPrice || (i.quantityIssued * (i.unitPrice || 0))), 0);
+
     const payload = {
+      warehouseId:     this.mivForm.warehouseId,
       issueTo:         this.mivForm.issueTo,
       destinationId:   this.mivForm.destinationId,
       referenceNumber: this.mivForm.referenceNumber,
       requestedBy:     this.mivForm.requestedBy,
+      totalAmount:     totalAmount,
       remarks:         `MIV created via ERP`,
-      items:           this.mivForm.items.map(i => ({
-        itemCode: i.itemCode,
-        itemName: i.itemName,
-        quantity: i.quantityIssued,
-        uom:      i.uom,
-      }))
+      items:           this.mivForm.items.map(i => {
+        const matchedItem = this.inventory().find(inv => inv.itemCode === i.itemCode);
+        return {
+          itemId:      matchedItem?.id,
+          itemCode:    i.itemCode,
+          itemName:    i.itemName,
+          quantity:    i.quantityIssued,
+          quantityIssued: i.quantityIssued,
+          unitPrice:   i.unitPrice || 0,
+          totalPrice:  i.totalPrice || (i.quantityIssued * (i.unitPrice || 0)),
+          uom:         i.uom || 'EA',
+          inventoryCreditAcc:  i.inventoryCreditAcc || '131000',
+          consumptionDebitAcc: i.consumptionDebitAcc || '511000'
+        };
+      })
     };
 
     this.isLoading.set(true);
@@ -904,6 +963,8 @@ export class InventoryComponent implements OnInit {
           this.mivs.update(list => [mapped, ...list]);
           this.isMIVModalOpen.set(false);
           this.notificationService.success('Draft Saved', `MIV ${mapped.voucherNumber} created.`);
+          this.loadItems();
+          this.loadMIVs();
         },
         error: err => this.notificationService.danger('Error', err?.error?.message ?? 'Failed to create MIV.')
       });

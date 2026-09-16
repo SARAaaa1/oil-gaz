@@ -56,7 +56,7 @@ export interface MRV {
   receivedDate: string;
   receivedBy: string;
   supplierName: string;
-  status: 'Draft' | 'Pending Approval' | 'Approved' | 'Posted' | 'Cancelled';
+  status: 'Draft' | 'Pending Approval' | 'Approved' | 'Inspected' | 'Posted' | 'Cancelled';
   items: MRVItem[];
   totalAmount: number;
 
@@ -85,6 +85,7 @@ export interface MIVItem {
 export interface MIV {
   id: string;
   voucherNumber: string;
+  warehouseId?: string;
   issueTo: 'Project' | 'Cost Center' | 'Rig' | 'Workshop' | 'Vehicle' | 'Camp';
   destinationId: string; // ProjectCode, CostCenter, RigCode, etc.
   referenceNumber: string;

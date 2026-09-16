@@ -343,9 +343,16 @@ export class ItemLedgerComponent implements OnInit {
   readonly selectedWarehouseId = signal<string>('all');
   readonly selectedProjectId = signal<string>('all');
   
-  // Date signals - initialize to June 2026 to show data instantly
-  readonly dateFrom = signal<string>('2026-06-01');
-  readonly dateTo = signal<string>('2026-06-30');
+  // Date signals - Dynamic from start of current year to today
+  private static getInitialDates() {
+    const today = new Date();
+    const todayStr = today.toISOString().split('T')[0];
+    const year = today.getFullYear();
+    return { from: `${year}-01-01`, to: todayStr };
+  }
+
+  readonly dateFrom = signal<string>(ItemLedgerComponent.getInitialDates().from);
+  readonly dateTo = signal<string>(ItemLedgerComponent.getInitialDates().to);
 
   // Core Data Stores (Signals from API)
   readonly inventory   = signal<any[]>([]);
@@ -388,62 +395,29 @@ export class ItemLedgerComponent implements OnInit {
         transactions: [],
         closingBalance: 0,
         uom: 'EA',
-        itemName: ''
+        itemName: '',
+        unitPrice: 0
       };
     }
 
     const inventoryRegistry = this.inventory();
-    const itemRegistryInfo = inventoryRegistry.find(i => i.itemCode === itemCode);
+    const itemRegistryInfo = inventoryRegistry.find(i => i.itemCode === itemCode || i.id === itemCode || i._id === itemCode);
     const uom = itemRegistryInfo?.uom || 'EA';
     const itemName = itemRegistryInfo?.itemName || '';
-    const itemLocation = itemRegistryInfo?.location || '';
-    
-    let itemHomeWarehouseId = '';
-    if (itemLocation === 'Warehouse A') itemHomeWarehouseId = 'w1';
-    else if (itemLocation === 'Warehouse B') itemHomeWarehouseId = 'w2';
-
-    let inceptionStock = 0;
-    if (itemCode === 'DR-BIT-8.5-PDC') {
-      inceptionStock = 9;
-    } else if (itemCode === 'HY-PUMP-HP450') {
-      inceptionStock = 0;
-    } else if (itemCode === 'HSE-HARN-CLA') {
-      inceptionStock = 55;
-    } else if (itemCode === 'HSE-DET-GAS') {
-      inceptionStock = 0;
-    } else if (itemCode === 'LUB-GRE-DRUM') {
-      inceptionStock = 13;
-    } else if (itemCode === 'TUB-PIPE-5IN') {
-      inceptionStock = 180;
-    } else {
-      inceptionStock = itemRegistryInfo?.quantity || 0;
-    }
-
-    let baseStock = 0;
-    if (warehouseId === 'all') {
-      baseStock = inceptionStock;
-    } else {
-      if (warehouseId === 'w1') {
-        if (itemCode === 'DR-BIT-8.5-PDC') baseStock = 9;
-        else if (itemCode === 'HSE-HARN-CLA') baseStock = 55;
-        else if (itemLocation === 'Warehouse A' || itemLocation === 'Houston Main Station') baseStock = inceptionStock;
-        else baseStock = 0;
-      } else if (warehouseId === 'w2') {
-        if (itemCode === 'LUB-GRE-DRUM') baseStock = 13;
-        else if (itemLocation === 'Warehouse B' || itemLocation === 'Permian Base Yard') baseStock = inceptionStock;
-        else baseStock = 0;
-      } else {
-        baseStock = 0;
-      }
-    }
+    const unitPrice = itemRegistryInfo?.unitPrice || 0;
+    const currentTotalQty = Number(itemRegistryInfo?.quantity ?? 0);
 
     const allEvents: any[] = [];
+
+    // Helper for warehouse ID normalization
+    const getWhId = (w: any) => (typeof w === 'object' && w ? (w._id || w.id) : w);
 
     // 1. MRV (Receipts)
     const mrvsList = this.mrvs();
     mrvsList.forEach(m => {
       if (m.status !== 'Posted' && m.status !== 'Approved') return;
-      if (warehouseId !== 'all' && m.warehouseId !== warehouseId) return;
+      const wh = getWhId(m.warehouseId);
+      if (warehouseId !== 'all' && wh && wh !== warehouseId) return;
 
       if (projectId !== 'all') {
         const matchProj = m.projectId === projectId || m.projectName === projectId;
@@ -451,18 +425,19 @@ export class ItemLedgerComponent implements OnInit {
       }
 
       (m.items || []).forEach((it: any) => {
-        if (it.itemCode === itemCode) {
+        const matchesItem = it.itemCode === itemCode || (itemRegistryInfo && (it.itemId === itemRegistryInfo._id || it.itemId === itemRegistryInfo.id));
+        if (matchesItem) {
           allEvents.push({
             date: m.receivedDate || m.createdAt,
             type: 'Purchase Receipt',
             docNo: m.voucherNumber || m.documentNumber || m.mrvNumber || 'MRV',
             ref: m.poNumber || 'N/A',
             description: `Purchased from ${m.supplierName || 'Supplier'}`,
-            qtyIn: it.quantityReceived || it.quantity || 0,
+            qtyIn: Number(it.quantityReceived || it.quantity || 0),
             qtyOut: 0,
-            unitPrice: it.unitPrice || 0,
-            totalPrice: it.totalPrice || 0,
-            warehouseId: m.warehouseId,
+            unitPrice: Number(it.unitPrice || unitPrice || 0),
+            totalPrice: Number(it.totalPrice || (it.quantityReceived || it.quantity || 0) * (it.unitPrice || unitPrice || 0)),
+            warehouseId: wh,
             projectId: m.projectId || ''
           });
         }
@@ -473,20 +448,20 @@ export class ItemLedgerComponent implements OnInit {
     const mivsList = this.mivs();
     mivsList.forEach(m => {
       if (m.status !== 'Posted' && m.status !== 'Approved') return;
+      const wh = getWhId(m.warehouseId);
+      if (warehouseId !== 'all' && wh && wh !== warehouseId) return;
 
       if (projectId !== 'all') {
         const matchProj = m.destinationId === projectId || (m.destinationId && m.destinationId.includes(projectId));
         if (!matchProj) return;
       }
 
-      if (warehouseId !== 'all' && itemHomeWarehouseId && itemHomeWarehouseId !== warehouseId) {
-        return;
-      }
-
       (m.items || []).forEach((it: any) => {
-        if (it.itemCode === itemCode) {
+        const matchesItem = it.itemCode === itemCode || (itemRegistryInfo && (it.itemId === itemRegistryInfo._id || it.itemId === itemRegistryInfo.id));
+        if (matchesItem) {
           const isContractor = m.issueTo === 'Project' && (m.destinationId?.toLowerCase().includes('contractor') || m.requestedBy?.toLowerCase().includes('contractor'));
           const type = isContractor ? 'Contractor Issue' : 'Consumption';
+          const qty = Number(it.quantityIssued || it.quantity || 0);
           allEvents.push({
             date: m.issueDate || m.createdAt,
             type: type,
@@ -494,10 +469,10 @@ export class ItemLedgerComponent implements OnInit {
             ref: m.referenceNumber || 'N/A',
             description: `Issued to ${m.issueTo || 'Department'}: ${m.destinationId || ''}`,
             qtyIn: 0,
-            qtyOut: it.quantityIssued || it.quantity || 0,
-            unitPrice: it.unitPrice || 0,
-            totalPrice: it.totalPrice || 0,
-            warehouseId: itemHomeWarehouseId,
+            qtyOut: qty,
+            unitPrice: Number(it.unitPrice || unitPrice || 0),
+            totalPrice: Number(it.totalPrice || qty * (it.unitPrice || unitPrice || 0)),
+            warehouseId: wh,
             projectId: m.issueTo === 'Project' ? m.destinationId : ''
           });
         }
@@ -508,12 +483,15 @@ export class ItemLedgerComponent implements OnInit {
     const transfersList = this.transfers();
     transfersList.forEach(x => {
       if (x.status !== 'Posted' && x.status !== 'Approved') return;
+      const fromWh = getWhId(x.fromWarehouseId);
+      const toWh = getWhId(x.toWarehouseId);
 
       (x.items || []).forEach((it: any) => {
-        if (it.itemCode !== itemCode) return;
+        const matchesItem = it.itemCode === itemCode || (itemRegistryInfo && (it.itemId === itemRegistryInfo._id || it.itemId === itemRegistryInfo.id));
+        if (!matchesItem) return;
         if (projectId !== 'all') return;
 
-        const qty = it.quantity || 0;
+        const qty = Number(it.quantity || 0);
 
         if (warehouseId === 'all') {
           allEvents.push({
@@ -521,10 +499,12 @@ export class ItemLedgerComponent implements OnInit {
             type: 'Transfer Out',
             docNo: x.transferNumber || x.documentNumber || 'XFER',
             ref: 'Internal',
-            description: `Transferred from WH-A to WH-B`,
+            description: `Internal Transfer`,
             qtyIn: 0,
             qtyOut: qty,
-            warehouseId: x.fromWarehouseId,
+            unitPrice: Number(it.unitPrice || unitPrice || 0),
+            totalPrice: qty * Number(it.unitPrice || unitPrice || 0),
+            warehouseId: fromWh,
             projectId: ''
           });
           allEvents.push({
@@ -532,35 +512,41 @@ export class ItemLedgerComponent implements OnInit {
             type: 'Transfer In',
             docNo: x.transferNumber || x.documentNumber || 'XFER',
             ref: 'Internal',
-            description: `Transferred from WH-A to WH-B`,
+            description: `Internal Transfer`,
             qtyIn: qty,
             qtyOut: 0,
-            warehouseId: x.toWarehouseId,
+            unitPrice: Number(it.unitPrice || unitPrice || 0),
+            totalPrice: qty * Number(it.unitPrice || unitPrice || 0),
+            warehouseId: toWh,
             projectId: ''
           });
         } else {
-          if (x.fromWarehouseId === warehouseId) {
+          if (fromWh === warehouseId) {
             allEvents.push({
               date: x.transferDate || x.createdAt,
               type: 'Transfer Out',
               docNo: x.transferNumber || x.documentNumber || 'XFER',
               ref: 'Internal',
-              description: `Transferred to Destination Warehouse`,
+              description: `Transfer Out to Destination`,
               qtyIn: 0,
               qtyOut: qty,
-              warehouseId: x.fromWarehouseId,
+              unitPrice: Number(it.unitPrice || unitPrice || 0),
+              totalPrice: qty * Number(it.unitPrice || unitPrice || 0),
+              warehouseId: fromWh,
               projectId: ''
             });
-          } else if (x.toWarehouseId === warehouseId) {
+          } else if (toWh === warehouseId) {
             allEvents.push({
               date: x.transferDate || x.createdAt,
               type: 'Transfer In',
               docNo: x.transferNumber || x.documentNumber || 'XFER',
               ref: 'Internal',
-              description: `Transferred from Source Warehouse`,
+              description: `Transfer In from Source`,
               qtyIn: qty,
               qtyOut: 0,
-              warehouseId: x.toWarehouseId,
+              unitPrice: Number(it.unitPrice || unitPrice || 0),
+              totalPrice: qty * Number(it.unitPrice || unitPrice || 0),
+              warehouseId: toWh,
               projectId: ''
             });
           }
@@ -572,12 +558,14 @@ export class ItemLedgerComponent implements OnInit {
     const adjustmentsList = this.adjustments();
     adjustmentsList.forEach(a => {
       if (a.status !== 'Posted' && a.status !== 'Approved') return;
-      if (warehouseId !== 'all' && a.warehouseId !== warehouseId) return;
+      const wh = getWhId(a.warehouseId);
+      if (warehouseId !== 'all' && wh !== warehouseId) return;
       if (projectId !== 'all') return;
 
       (a.items || []).forEach((it: any) => {
-        if (it.itemCode === itemCode) {
-          const qty = Math.abs(it.adjustedQuantity || it.quantity || 0);
+        const matchesItem = it.itemCode === itemCode || (itemRegistryInfo && (it.itemId === itemRegistryInfo._id || it.itemId === itemRegistryInfo.id));
+        if (matchesItem) {
+          const qty = Math.abs(Number(it.adjustedQuantity || it.quantity || 0));
           const isIn = it.adjustmentType === 'Addition' || (it.adjustedQuantity && it.adjustedQuantity > 0);
           const isReturn = (it.reason || '').toLowerCase().includes('return');
           const type = isReturn ? 'Returns' : (isIn ? 'Adjustment Addition' : 'Adjustment Deduction');
@@ -590,9 +578,9 @@ export class ItemLedgerComponent implements OnInit {
             description: it.reason || it.notes || 'Stock Adjustment',
             qtyIn: isIn ? qty : 0,
             qtyOut: isIn ? 0 : qty,
-            unitPrice: it.unitPrice || 0,
-            totalPrice: qty * (it.unitPrice || 0),
-            warehouseId: a.warehouseId,
+            unitPrice: Number(it.unitPrice || unitPrice || 0),
+            totalPrice: qty * Number(it.unitPrice || unitPrice || 0),
+            warehouseId: wh,
             projectId: ''
           });
         }
@@ -606,9 +594,14 @@ export class ItemLedgerComponent implements OnInit {
       return (a.docNo || '').localeCompare(b.docNo || '');
     });
 
+    // Calculate Inception Stock mathematically from recorded historical events:
+    // Total net movements across all events for this filter
+    const totalHistoricalNetMovement = allEvents.reduce((acc, ev) => acc + (ev.qtyIn - ev.qtyOut), 0);
+    // Base stock before recorded transactions:
+    const baseStock = Math.max(0, currentTotalQty - totalHistoricalNetMovement);
+
     // Calculate opening and running balances
     let runningBal = baseStock;
-    const eventsBeforeStart: any[] = [];
     const eventsInPeriod: any[] = [];
 
     const startDate = startStr ? new Date(startStr) : null;
@@ -621,7 +614,6 @@ export class ItemLedgerComponent implements OnInit {
 
       if (beforeStart) {
         runningBal += ev.qtyIn - ev.qtyOut;
-        eventsBeforeStart.push(ev);
       } else if (!afterEnd) {
         eventsInPeriod.push(ev);
       }
@@ -633,7 +625,8 @@ export class ItemLedgerComponent implements OnInit {
       runningBal += ev.qtyIn - ev.qtyOut;
       formattedTransactions.push({
         ...ev,
-        runningBalance: runningBal
+        runningBalance: runningBal,
+        runningValue: runningBal * (ev.unitPrice || unitPrice || 0)
       });
     });
 
@@ -644,7 +637,8 @@ export class ItemLedgerComponent implements OnInit {
       transactions: formattedTransactions,
       closingBalance,
       uom,
-      itemName
+      itemName,
+      unitPrice
     };
   });
 

@@ -107,6 +107,7 @@ export interface RFQ {
   status: RFQStatus;
   vendors: RFQVendor[];
   quotations: RFQQuotation[];
+  items?: any[];
 
   // Award Details
   awardedVendorId?: string;

@@ -10,6 +10,7 @@ import { AuditService } from '../../../core/services/audit.service';
 import { ProcurementChainComponent } from '../../../shared/components/procurement-chain/procurement-chain.component';
 import { ProcurementService } from '../../../core/services/procurement.service';
 import { WorkflowApiService } from '../../../core/services/workflow-api.service';
+import { InventoryApiService, extractApiArray } from '../../../core/services/inventory-api.service';
 import { finalize } from 'rxjs/operators';
 
 // ─── Mapper ───────────────────────────────────────────────────────────────────
@@ -38,15 +39,25 @@ function mapApiPO(raw: any): PurchaseOrder {
     costCenter:            raw.costCenter ?? '',
     paymentTerms:          raw.paymentTerms ?? '',
     status:                raw.status ?? 'Draft',
-    items:                 (raw.items ?? []).map((i: any) => ({
-      id:         i._id ?? i.id ?? '',
-      itemName:   i.itemName ?? '',
-      itemCode:   i.itemCode ?? '',
-      quantity:   i.quantity ?? 0,
-      unitPrice:  i.unitPrice ?? 0,
-      uom:        i.uom ?? 'PCS',
-      totalPrice: i.totalPrice ?? (i.quantity * i.unitPrice) ?? 0,
-    })),
+    items:                 (raw.items ?? []).map((i: any) => {
+      const itemObj   = (i.itemId && typeof i.itemId === 'object') ? i.itemId : null;
+      const itemId    = itemObj ? (itemObj._id ?? itemObj.id) : (i.itemId ?? i._id ?? i.id ?? '');
+      const code      = i.itemCode ?? itemObj?.itemCode ?? itemObj?.code ?? '';
+      const name      = i.itemName ?? itemObj?.itemName ?? itemObj?.name ?? itemObj?.description ?? '';
+      const uom       = i.uom ?? itemObj?.uom ?? 'PCS';
+      const unitPrice = i.unitPrice ?? itemObj?.costPrice ?? itemObj?.price ?? 0;
+      const qty       = i.quantity ?? 1;
+      return {
+        id:         i._id ?? i.id ?? itemId,
+        itemId:     itemId,
+        itemName:   name,
+        itemCode:   code,
+        quantity:   qty,
+        unitPrice:  unitPrice,
+        uom:        uom,
+        totalPrice: i.totalPrice ?? (qty * unitPrice) ?? 0,
+      };
+    }),
     subtotal:              raw.subtotal ?? 0,
     taxPercent:            raw.taxPercent ?? 15,
     taxAmount:             raw.taxAmount ?? 0,
@@ -97,10 +108,12 @@ export class PurchaseOrdersComponent implements OnInit {
   private readonly router              = inject(Router);
   private readonly translate           = inject(TranslateService);
   private readonly cdr                 = inject(ChangeDetectorRef);
+  private readonly inventoryApiService = inject(InventoryApiService);
 
   // ── State ─────────────────────────────────────────────────────────────────
   readonly purchaseOrders = signal<PurchaseOrder[]>([]);
   readonly projects       = signal<{ id: string; name: string }[]>([]);
+  readonly inventory      = signal<any[]>([]);
   readonly isLoading      = signal<boolean>(false);
 
   readonly selectedPOId        = signal<string | null>(null);
@@ -169,6 +182,7 @@ export class PurchaseOrdersComponent implements OnInit {
 
     this.loadPOs();
     this.loadProjects();
+    this.loadInventory();
 
     this.route.queryParams.subscribe(params => {
       const poId = params['poId'];
@@ -189,6 +203,55 @@ export class PurchaseOrdersComponent implements OnInit {
 
   // ── Data Loading ──────────────────────────────────────────────────────────
 
+  private loadInventory() {
+    this.inventoryApiService.getItems({ limit: 500 }).subscribe({
+      next: res => {
+        const raw = extractApiArray(res);
+        this.inventory.set(raw);
+        if (raw.length > 0) {
+          this.purchaseOrders.update(pos => pos.map(po => this.enrichPO(po, raw)));
+          this.cdr.markForCheck();
+        }
+      },
+      error: err => console.error('Failed to load items catalog:', err)
+    });
+  }
+
+  private enrichPO(po: PurchaseOrder, catalog: any[]): PurchaseOrder {
+    if (!po || !po.items || catalog.length === 0) return po;
+    const enrichedItems = po.items.map(item => {
+      const match = catalog.find((c: any) =>
+        (c._id && (c._id === item.id || c._id === (item as any).itemId)) ||
+        (c.id && (c.id === item.id || c.id === (item as any).itemId)) ||
+        (item.itemCode && (c.itemCode === item.itemCode || c.code === item.itemCode))
+      );
+
+      const code = (item.itemCode && item.itemCode.trim() && item.itemCode !== 'ITEM') 
+        ? item.itemCode 
+        : (match?.itemCode || match?.code || (item as any).itemId || 'ITEM');
+      const name = (item.itemName && item.itemName.trim() && item.itemName !== 'Item') 
+        ? item.itemName 
+        : (match?.itemName || match?.name || match?.arabicName || match?.description || 'Item / مادة');
+      const uom = (item.uom && item.uom !== 'PCS') ? item.uom : (match?.uom || item.uom || 'PCS');
+      const unitPrice = item.unitPrice > 0 ? item.unitPrice : (match?.costPrice ?? match?.price ?? 0);
+      const totalPrice = item.totalPrice > 0 ? item.totalPrice : (item.quantity * unitPrice);
+
+      return {
+        ...item,
+        itemCode: code,
+        itemName: name,
+        uom: uom,
+        unitPrice: unitPrice,
+        totalPrice: totalPrice
+      };
+    });
+
+    return {
+      ...po,
+      items: enrichedItems
+    };
+  }
+
   private loadPOs() {
     this.isLoading.set(true);
     this.procurementService.getPOs(1, 200)
@@ -196,7 +259,9 @@ export class PurchaseOrdersComponent implements OnInit {
       .subscribe({
         next: res => {
           const raw = res?.items ?? (Array.isArray(res) ? res : []);
-          this.purchaseOrders.set(raw.map(mapApiPO));
+          const mapped = raw.map(mapApiPO);
+          const catalog = this.inventory();
+          this.purchaseOrders.set(catalog.length > 0 ? mapped.map((p: PurchaseOrder) => this.enrichPO(p, catalog)) : mapped);
         },
         error: err => {
           console.error('Failed to load Purchase Orders:', err);
@@ -258,7 +323,7 @@ export class PurchaseOrdersComponent implements OnInit {
     // جلب تفاصيل كاملة للـ PO من الـ API
     this.procurementService.getPOById(po.id).subscribe({
       next: detail => {
-        const mapped = mapApiPO(detail);
+        const mapped = this.enrichPO(mapApiPO(detail), this.inventory());
         this.purchaseOrders.update(list => list.map(p => p.id === po.id ? mapped : p));
         const nextStep = mapped.approvalWorkflow.find(s => s.status === 'Pending');
         if (nextStep) {

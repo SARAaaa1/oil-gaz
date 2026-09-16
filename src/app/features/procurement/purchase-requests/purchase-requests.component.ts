@@ -48,13 +48,20 @@ function mapApiPR(raw: any): PurchaseRequest {
 }
 
 function mapApiPRItem(raw: any): PurchaseRequestItem {
+  const itemObj = (raw.itemId && typeof raw.itemId === 'object') ? raw.itemId : null;
+  const itemId = itemObj ? (itemObj._id ?? itemObj.id) : (raw.itemId ?? raw._id ?? raw.id ?? `pri-${Date.now()}`);
+  const code = raw.itemCode ?? itemObj?.itemCode ?? itemObj?.code ?? '';
+  const name = raw.itemName ?? itemObj?.itemName ?? itemObj?.name ?? raw.serviceDescription ?? raw.itemDescription ?? '';
+  const uom = raw.uom ?? itemObj?.uom ?? 'PCS';
+
   return {
-    id:                 raw._id ?? raw.id ?? `pri-${Date.now()}`,
+    id:                 itemId,
+    itemId:             itemId,
     itemType:           mapItemType(raw.itemType),
-    itemCode:           raw.itemCode ?? '',
-    itemName:           raw.itemName ?? raw.serviceDescription ?? raw.itemDescription ?? '',
+    itemCode:           code,
+    itemName:           name,
     quantity:           raw.quantity ?? 1,
-    uom:                raw.uom ?? 'PCS',
+    uom:                uom,
     notes:              raw.notes,
     itemDescription:    raw.itemDescription,
     category:           raw.category,
@@ -248,11 +255,29 @@ export class PurchaseRequestsComponent implements OnInit {
   }
 
   private loadInventoryItems() {
-    this.inventoryApiService.getItems({ limit: 200 })
+    this.inventoryApiService.getItems({ limit: 500 })
       .subscribe({
         next: res => {
           const raw = extractApiArray(res);
           this.inventory.set(raw);
+          if (raw.length > 0) {
+            this.purchaseRequests.update(prs => prs.map(pr => ({
+              ...pr,
+              items: pr.items.map(item => {
+                const match = raw.find((c: any) =>
+                  (c._id && (c._id === item.id || c._id === (item as any).itemId)) ||
+                  (c.id && (c.id === item.id || c.id === (item as any).itemId)) ||
+                  (item.itemCode && (c.itemCode === item.itemCode || c.code === item.itemCode))
+                );
+                return {
+                  ...item,
+                  itemCode: (item.itemCode && item.itemCode.trim()) ? item.itemCode : (match?.itemCode || match?.code || (item as any).itemId || 'ITEM'),
+                  itemName: (item.itemName && item.itemName.trim()) ? item.itemName : (match?.itemName || match?.name || match?.arabicName || 'Item / مادة'),
+                  uom: (item.uom && item.uom !== 'PCS') ? item.uom : (match?.uom || item.uom || 'PCS')
+                };
+              })
+            })));
+          }
           this.cdr.markForCheck();
         },
         error: err => console.error('Failed to load inventory items:', err)
@@ -550,7 +575,15 @@ export class PurchaseRequestsComponent implements OnInit {
       };
     });
 
-    const finalCC = this.formPR.costCenter || this.prParentCC();
+    const finalCC = (this.formPR.costCenter || this.prParentCC() || '').trim();
+    if (!finalCC) {
+      this.notificationService.danger(
+        'مركز التكلفة مطلوب (Cost Center Required)',
+        'يرجى اختيار مركز التكلفة الأساسي والفرعي قبل إرسال طلب الشراء.'
+      );
+      return;
+    }
+
     const payload = {
       requesterId:  userId,
       requestedBy:  userName,
@@ -577,7 +610,7 @@ export class PurchaseRequestsComponent implements OnInit {
         next: (created: any) => {
           const newPR = mapApiPR(created);
 
-          // أضف الـ PR الجديد للقائمة مباشرة
+          // أضف الـ PR الجديد للقائمة فقط إذا نجح من الـ Backend
           this.purchaseRequests.update(list => [newPR, ...list]);
 
           this.auditService.log(
@@ -605,35 +638,16 @@ export class PurchaseRequestsComponent implements OnInit {
           }
         },
         error: (err) => {
-          // Fallback UI creation if backend returns error/validation failure
-          const newPRNum = 'PR-2026-' + Math.floor(100 + Math.random()*900);
-          const localPR: PurchaseRequest = {
-            id: 'pr-' + Date.now(),
-            requestNumber: newPRNum,
-            documentNumber: newPRNum,
-            procurementChain: '0001',
-            rootProcurementNumber: newPRNum,
-            chainId: 'pr-' + Date.now(),
-            department: payload.department,
-            costCenter: payload.costCenter || 'CC-OPS-100',
-            chargeType: mapChargeType(payload.chargeType),
-            requestDate: payload.requestDate,
-            requiredDate: payload.requiredDate,
-            description: payload.description,
-            status: 'Pending Approval',
-            requestedBy: payload.requestedBy,
-            items: apiItems as any
-          };
-
-          this.purchaseRequests.update(list => [localPR, ...list]);
-
-          this.notificationService.success(
-            this.translate.instant('procurement.purchase_requests.notif_created_title'),
-            this.translate.instant('procurement.purchase_requests.notif_created_desc', { pr: localPR.requestNumber })
+          let errorMsg = 'Failed to create Purchase Request.';
+          if (err?.error?.message) {
+            errorMsg = Array.isArray(err.error.message) ? err.error.message.join(' | ') : err.error.message;
+          } else if (err?.message) {
+            errorMsg = err.message;
+          }
+          this.notificationService.danger(
+            'فشل إنشاء طلب الشراء (Backend Error)',
+            errorMsg
           );
-
-          this.isFormView.set(false);
-          this.formPR = this.getEmptyForm();
         }
       });
   }

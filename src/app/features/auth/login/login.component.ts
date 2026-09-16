@@ -8,14 +8,18 @@ import { NotificationService } from '../../../core/services/notification.service
 import { TranslateModule } from '@ngx-translate/core';
 import { LanguageSwitcherComponent } from '../../../shared/components/language-switcher/language-switcher.component';
 
+import { LanguageService } from '../../../core/services/language.service';
+
 @Component({
   selector: 'app-login',
   standalone: true,
   imports: [CommonModule, FormsModule, RouterModule, TranslateModule, LanguageSwitcherComponent],
   templateUrl: './login.component.html',
+  styleUrls: ['./login.component.css'],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class LoginComponent implements OnInit {
+  public readonly langService = inject(LanguageService);
   private readonly authService = inject(AuthService);
   private readonly notificationService = inject(NotificationService);
   private readonly router = inject(Router);

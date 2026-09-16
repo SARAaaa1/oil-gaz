@@ -209,7 +209,7 @@ export class InspectionComponent implements OnInit {
     };
 
     this.isLoading.set(true);
-    this.procurementService.submitInspection(req.poId || req.id, payload)
+    this.procurementService.submitInspection(req.id || req.poId, payload)
       .pipe(finalize(() => { this.isLoading.set(false); this.cdr.markForCheck(); }))
       .subscribe({
         next: updated => {
@@ -228,8 +228,8 @@ export class InspectionComponent implements OnInit {
           } else {
             this.showInspectionForm.set(false);
             this.notificationService.success(
-              'procurement.inspection.inspected_title',
-              'procurement.inspection.inspected_desc'
+              'تم الفحص بنجاح',
+              'تم اعتماد فحص الجودة وتوليد مسودة إذن إضافة مخزني (Draft MRV) تلقائياً في شاشة المخازن بالكميات المقبولة.'
             );
           }
         },

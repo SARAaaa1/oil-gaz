@@ -5,6 +5,7 @@ export type ChargeType = 'Project Cost' | 'Asset Cost' | 'General Overhead';
 
 export interface PurchaseRequestItem {
   id: string;
+  itemId?: string;
   itemType: ItemType;
 
   // Inventory Item fields

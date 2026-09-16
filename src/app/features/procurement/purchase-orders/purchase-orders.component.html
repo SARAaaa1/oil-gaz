@@ -241,7 +241,7 @@
               <div class="overflow-x-auto rounded-xl border border-slate-100">
                 <table class="w-full text-left text-xs">
                   <thead>
-                    <tr class="bg-slate-50 text-slate-400 font-bold border-b border-slate-100">
+                    <tr class="bg-slate-100 text-slate-900 font-black border-b border-slate-200">
                       <th class="px-4 py-3">{{ 'procurement.quotation_comparison.col_code' | translate }}</th>
                       <th class="px-4 py-3">{{ 'procurement.purchase_orders.col_description' | translate }}</th>
                       <th class="px-4 py-3 text-right">{{ 'procurement.purchase_orders.col_qty' | translate }}</th>
@@ -250,15 +250,15 @@
                       <th class="px-4 py-3 text-right">{{ 'procurement.purchase_orders.col_total' | translate }}</th>
                     </tr>
                   </thead>
-                  <tbody class="divide-y divide-slate-50 font-semibold text-slate-700 bg-white">
+                  <tbody class="divide-y divide-slate-200 font-semibold text-slate-900 bg-white">
                     @for (item of activePO()?.items; track item.id) {
-                      <tr class="hover:bg-slate-50/50 transition-colors">
-                        <td class="px-4 py-3 font-mono text-slate-400 text-[10px]">{{ item.itemCode }}</td>
-                        <td class="px-4 py-3 font-bold text-slate-800">{{ item.itemName }}</td>
-                        <td class="px-4 py-3 text-right font-mono">{{ item.quantity }}</td>
-                        <td class="px-4 py-3 text-center text-slate-400">{{ item.uom }}</td>
-                        <td class="px-4 py-3 text-right font-mono">${{ item.unitPrice | number:'1.2-2' }}</td>
-                        <td class="px-4 py-3 text-right font-mono font-black text-slate-800">${{ item.totalPrice | number:'1.0-0' }}</td>
+                      <tr class="hover:bg-slate-50 transition-colors">
+                        <td class="px-4 py-3 font-mono font-black text-slate-900 text-xs">{{ item.itemCode }}</td>
+                        <td class="px-4 py-3 font-black text-slate-950 text-xs">{{ item.itemName }}</td>
+                        <td class="px-4 py-3 text-right font-mono font-bold text-slate-900">{{ item.quantity }}</td>
+                        <td class="px-4 py-3 text-center text-slate-700 font-semibold text-xs">{{ item.uom }}</td>
+                        <td class="px-4 py-3 text-right font-mono font-semibold text-slate-900">${{ item.unitPrice | number:'1.2-2' }}</td>
+                        <td class="px-4 py-3 text-right font-mono font-black text-slate-950 text-xs">${{ item.totalPrice | number:'1.0-0' }}</td>
                       </tr>
                     }
                   </tbody>

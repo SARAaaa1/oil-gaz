@@ -107,6 +107,26 @@ import { NotificationService } from '../../../core/services/notification.service
         </div>
       </div>
 
+      <!-- Summary Metrics Cards -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 no-print">
+        <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
+          <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Total Active Items</span>
+          <p class="text-base font-black text-slate-800 font-mono">{{ summaryRows().length }}</p>
+        </div>
+        <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
+          <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Total Stock Quantity</span>
+          <p class="text-base font-black text-blue-600 font-mono">{{ totalClosingQty() }}</p>
+        </div>
+        <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
+          <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Total Inventory Valuation</span>
+          <p class="text-base font-black text-emerald-600 font-mono">&#36;{{ totalValuation() | number:'1.2-2' }}</p>
+        </div>
+        <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
+          <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Low / Out of Stock</span>
+          <p class="text-base font-black text-amber-500 font-mono">{{ lowStockCount() }}</p>
+        </div>
+      </div>
+
       <!-- Report Card Content -->
       <div class="space-y-6 printable-report">
         <!-- Print Header -->
@@ -145,7 +165,7 @@ import { NotificationService } from '../../../core/services/notification.service
                   <th colspan="1" class="p-2 border-r border-slate-100 bg-slate-50/20">Balance</th>
                   <th colspan="3" class="p-2 border-r border-slate-100 bg-green-50/20 text-green-700">Inflows (Receipts)</th>
                   <th colspan="3" class="p-2 border-r border-slate-100 bg-red-50/20 text-red-700">Outflows (Issues)</th>
-                  <th colspan="2" class="p-2 border-r border-slate-100">Ending Stock</th>
+                  <th colspan="3" class="p-2 border-r border-slate-100">Ending Stock</th>
                   <th colspan="3" class="p-2 border-r border-slate-100 bg-indigo-50/20 text-indigo-700">Project-to-Date (PTD)</th>
                   <th class="p-4 py-2 text-left">Status</th>
                 </tr>
@@ -166,7 +186,8 @@ import { NotificationService } from '../../../core/services/notification.service
                   <th class="p-3 text-right border-r border-slate-100 bg-red-50/10 text-red-600">{{ 'inventory.contractors' | translate }}</th>
                   
                   <th class="p-3 text-right font-bold text-slate-800">{{ 'inventory.current_balance' | translate }}</th>
-                  <th class="p-3 text-right border-r border-slate-100 font-bold text-slate-900 bg-slate-100/50">{{ 'inventory.closing_balance' | translate }}</th>
+                  <th class="p-3 text-right font-bold text-slate-900 bg-slate-100/50">{{ 'inventory.closing_balance' | translate }}</th>
+                  <th class="p-3 text-right border-r border-slate-100 font-bold text-emerald-700 bg-emerald-50/20">Valuation ($)</th>
                   
                   <th class="p-3 text-right bg-indigo-50/10 text-indigo-700">{{ 'inventory.ptd_in' | translate }}</th>
                   <th class="p-3 text-right bg-indigo-50/10 text-indigo-700">{{ 'inventory.ptd_out' | translate }}</th>
@@ -193,7 +214,8 @@ import { NotificationService } from '../../../core/services/notification.service
                     <td class="p-3 text-right font-mono text-red-500 bg-red-50/5 border-r border-slate-100">{{ row.contractors }}</td>
                     
                     <td class="p-3 text-right font-mono font-bold text-slate-700">{{ row.currentBalance }}</td>
-                    <td class="p-3 text-right font-mono font-black text-slate-900 border-r border-slate-100 bg-slate-100/20">{{ row.closingBalance }}</td>
+                    <td class="p-3 text-right font-mono font-black text-slate-900 bg-slate-100/20">{{ row.closingBalance }}</td>
+                    <td class="p-3 text-right font-mono font-bold text-emerald-700 bg-emerald-50/10 border-r border-slate-100">&#36;{{ row.totalValue | number:'1.2-2' }}</td>
                     
                     <td class="p-3 text-right font-mono text-indigo-650 bg-indigo-50/5">{{ row.ptdIn }}</td>
                     <td class="p-3 text-right font-mono text-indigo-650 bg-indigo-50/5">{{ row.ptdOut }}</td>
@@ -283,9 +305,16 @@ export class StockSummaryComponent implements OnInit {
   readonly selectedWarehouseId = signal<string>('all');
   readonly selectedProjectId = signal<string>('all');
   
-  // Date signals
-  readonly dateFrom = signal<string>('2026-06-01');
-  readonly dateTo = signal<string>('2026-06-30');
+  // Date signals - Dynamic from start of year to today
+  private static getInitialDates() {
+    const today = new Date();
+    const todayStr = today.toISOString().split('T')[0];
+    const year = today.getFullYear();
+    return { from: `${year}-01-01`, to: todayStr };
+  }
+
+  readonly dateFrom = signal<string>(StockSummaryComponent.getInitialDates().from);
+  readonly dateTo = signal<string>(StockSummaryComponent.getInitialDates().to);
 
   // Core Data Stores (Signals from API)
   readonly inventory   = signal<any[]>([]);
@@ -314,6 +343,11 @@ export class StockSummaryComponent implements OnInit {
     return result;
   });
 
+  // Helper for warehouse ID normalization
+  private getWhId(w: any): string {
+    return typeof w === 'object' && w ? (w._id || w.id) : (w || '');
+  }
+
   // Calculate Stock Summary Grid data
   readonly summaryRows = computed(() => {
     const warehouseId = this.selectedWarehouseId();
@@ -322,54 +356,21 @@ export class StockSummaryComponent implements OnInit {
     const endStr = this.dateTo();
 
     const inventoryRegistry = this.inventory();
+    const mrvsList = this.mrvs();
+    const mivsList = this.mivs();
+    const transfersList = this.transfers();
+    const adjustmentsList = this.adjustments();
+
+    const startDate = startStr ? new Date(startStr) : null;
+    const endDate = endStr ? new Date(endStr) : null;
     
     return inventoryRegistry.map(item => {
       const itemCode = item.itemCode;
       const itemName = item.itemName;
-      const uom = item.uom;
-      const itemLocation = item.location;
-      
-      let itemHomeWarehouseId = '';
-      if (itemLocation === 'Warehouse A') itemHomeWarehouseId = 'w1';
-      else if (itemLocation === 'Warehouse B') itemHomeWarehouseId = 'w2';
+      const uom = item.uom || 'EA';
+      const unitPrice = Number(item.unitPrice || 0);
+      const currentQty = Number(item.quantity || 0);
 
-      // Define Inception stock levels (June 1st, 2026)
-      let inceptionStock = 0;
-      if (itemCode === 'DR-BIT-8.5-PDC') {
-        inceptionStock = 9;
-      } else if (itemCode === 'HY-PUMP-HP450') {
-        inceptionStock = 0;
-      } else if (itemCode === 'HSE-HARN-CLA') {
-        inceptionStock = 55;
-      } else if (itemCode === 'HSE-DET-GAS') {
-        inceptionStock = 0;
-      } else if (itemCode === 'LUB-GRE-DRUM') {
-        inceptionStock = 13;
-      } else if (itemCode === 'TUB-PIPE-5IN') {
-        inceptionStock = 180;
-      } else {
-        inceptionStock = item.quantity || 0;
-      }
-
-      let baseStock = 0;
-      if (warehouseId === 'all') {
-        baseStock = inceptionStock;
-      } else {
-        if (warehouseId === 'w1') {
-          if (itemCode === 'DR-BIT-8.5-PDC') baseStock = 9;
-          else if (itemCode === 'HSE-HARN-CLA') baseStock = 55;
-          else if (itemLocation === 'Warehouse A' || itemLocation === 'Houston Main Station') baseStock = inceptionStock;
-          else baseStock = 0;
-        } else if (warehouseId === 'w2') {
-          if (itemCode === 'LUB-GRE-DRUM') baseStock = 13;
-          else if (itemLocation === 'Warehouse B' || itemLocation === 'Permian Base Yard') baseStock = inceptionStock;
-          else baseStock = 0;
-        } else {
-          baseStock = 0;
-        }
-      }
-
-      let opening = baseStock;
       let purchases = 0;
       let opsIn = 0;
       let transfersIn = 0;
@@ -382,27 +383,30 @@ export class StockSummaryComponent implements OnInit {
       let ptdOut = 0;
       let ptdConsumption = 0;
 
-      const startDate = startStr ? new Date(startStr) : null;
-      const endDate = endStr ? new Date(endStr) : null;
+      let netMovementsAllTime = 0;
+      let netMovementsBeforeStart = 0;
 
       // 1. MRVs (Receipts)
-      const mrvsList = this.mrvs();
       mrvsList.forEach(m => {
         if (m.status !== 'Posted' && m.status !== 'Approved') return;
-        if (warehouseId !== 'all' && m.warehouseId !== warehouseId) return;
+        const wh = this.getWhId(m.warehouseId);
+        if (warehouseId !== 'all' && wh && wh !== warehouseId) return;
         if (projectId !== 'all' && m.projectId !== projectId && m.projectName !== projectId) return;
 
         (m.items || []).forEach((it: any) => {
-          if (it.itemCode === itemCode) {
-            const qty = it.quantityReceived || it.quantity || 0;
+          const matches = it.itemCode === itemCode || (it.itemId && (it.itemId === item._id || it.itemId === item.id));
+          if (matches) {
+            const qty = Number(it.quantityReceived || it.quantity || 0);
             const txDate = new Date(m.receivedDate || m.createdAt);
+
+            netMovementsAllTime += qty;
 
             if (!endDate || txDate <= endDate) {
               ptdIn += qty;
             }
 
             if (startDate && txDate < startDate) {
-              opening += qty;
+              netMovementsBeforeStart += qty;
             } else if ((!startDate || txDate >= startDate) && (!endDate || txDate <= endDate)) {
               purchases += qty;
             }
@@ -411,87 +415,87 @@ export class StockSummaryComponent implements OnInit {
       });
 
       // 2. MIVs (Issues)
-      const mivsList = this.mivs();
       mivsList.forEach(m => {
         if (m.status !== 'Posted' && m.status !== 'Approved') return;
+        const wh = this.getWhId(m.warehouseId);
+        if (warehouseId !== 'all' && wh && wh !== warehouseId) return;
         if (projectId !== 'all' && m.destinationId !== projectId && (m.destinationId && !m.destinationId.includes(projectId))) return;
-        if (warehouseId !== 'all' && itemHomeWarehouseId && itemHomeWarehouseId !== warehouseId) return;
 
         (m.items || []).forEach((it: any) => {
-          if (it.itemCode === itemCode) {
-            const qty = it.quantityIssued || it.quantity || 0;
+          const matches = it.itemCode === itemCode || (it.itemId && (it.itemId === item._id || it.itemId === item.id));
+          if (matches) {
+            const qty = Number(it.quantityIssued || it.quantity || 0);
             const txDate = new Date(m.issueDate || m.createdAt);
             const isContractor = m.issueTo === 'Project' && (m.destinationId?.toLowerCase().includes('contractor') || m.requestedBy?.toLowerCase().includes('contractor'));
 
+            netMovementsAllTime -= qty;
+
             if (!endDate || txDate <= endDate) {
-              if (isContractor) {
-                ptdOut += qty;
-              } else {
-                ptdConsumption += qty;
-              }
+              if (isContractor) ptdOut += qty;
+              else ptdConsumption += qty;
             }
 
             if (startDate && txDate < startDate) {
-              opening -= qty;
+              netMovementsBeforeStart -= qty;
             } else if ((!startDate || txDate >= startDate) && (!endDate || txDate <= endDate)) {
-              if (isContractor) {
-                contractors += qty;
-              } else {
-                consumption += qty;
-              }
+              if (isContractor) contractors += qty;
+              else consumption += qty;
             }
           }
         });
       });
 
-      // 3. Transfers (Internal transfers)
-      const transfersList = this.transfers();
+      // 3. Transfers
       transfersList.forEach(x => {
         if (x.status !== 'Posted' && x.status !== 'Approved') return;
         if (projectId !== 'all') return;
+        const fromWh = this.getWhId(x.fromWarehouseId);
+        const toWh = this.getWhId(x.toWarehouseId);
 
         (x.items || []).forEach((it: any) => {
-          if (it.itemCode !== itemCode) return;
+          const matches = it.itemCode === itemCode || (it.itemId && (it.itemId === item._id || it.itemId === item.id));
+          if (!matches) return;
           
-          const qty = it.quantity || 0;
+          const qty = Number(it.quantity || 0);
           const txDate = new Date(x.transferDate || x.createdAt);
 
-          if (!endDate || txDate <= endDate) {
-            if (warehouseId !== 'all') {
-              if (x.fromWarehouseId === warehouseId) ptdOut += qty;
-              else if (x.toWarehouseId === warehouseId) ptdIn += qty;
+          if (warehouseId !== 'all') {
+            if (fromWh === warehouseId) {
+              netMovementsAllTime -= qty;
+              if (!endDate || txDate <= endDate) ptdOut += qty;
+              if (startDate && txDate < startDate) netMovementsBeforeStart -= qty;
+              else if ((!startDate || txDate >= startDate) && (!endDate || txDate <= endDate)) transfersOut += qty;
+            } else if (toWh === warehouseId) {
+              netMovementsAllTime += qty;
+              if (!endDate || txDate <= endDate) ptdIn += qty;
+              if (startDate && txDate < startDate) netMovementsBeforeStart += qty;
+              else if ((!startDate || txDate >= startDate) && (!endDate || txDate <= endDate)) transfersIn += qty;
             }
-          }
-
-          if (startDate && txDate < startDate) {
-            if (warehouseId !== 'all') {
-              if (x.fromWarehouseId === warehouseId) opening -= qty;
-              else if (x.toWarehouseId === warehouseId) opening += qty;
-            }
-          } else if ((!startDate || txDate >= startDate) && (!endDate || txDate <= endDate)) {
-            if (warehouseId === 'all') {
+          } else {
+            if ((!startDate || txDate >= startDate) && (!endDate || txDate <= endDate)) {
               transfersIn += qty;
               transfersOut += qty;
-            } else {
-              if (x.fromWarehouseId === warehouseId) transfersOut += qty;
-              else if (x.toWarehouseId === warehouseId) transfersIn += qty;
             }
           }
         });
       });
 
       // 4. Adjustments
-      const adjustmentsList = this.adjustments();
       adjustmentsList.forEach(a => {
         if (a.status !== 'Posted' && a.status !== 'Approved') return;
-        if (warehouseId !== 'all' && a.warehouseId !== warehouseId) return;
+        const wh = this.getWhId(a.warehouseId);
+        if (warehouseId !== 'all' && wh && wh !== warehouseId) return;
         if (projectId !== 'all') return;
 
         (a.items || []).forEach((it: any) => {
-          if (it.itemCode === itemCode) {
-            const qty = Math.abs(it.adjustedQuantity || it.quantity || 0);
+          const matches = it.itemCode === itemCode || (it.itemId && (it.itemId === item._id || it.itemId === item.id));
+          if (matches) {
+            const qty = Math.abs(Number(it.adjustedQuantity || it.quantity || 0));
             const isIn = it.adjustmentType === 'Addition' || (it.adjustedQuantity && it.adjustedQuantity > 0);
+            const delta = isIn ? qty : -qty;
             const txDate = new Date(a.adjustmentDate || a.createdAt);
+
+            netMovementsAllTime += delta;
 
             if (!endDate || txDate <= endDate) {
               if (isIn) ptdIn += qty;
@@ -499,7 +503,7 @@ export class StockSummaryComponent implements OnInit {
             }
 
             if (startDate && txDate < startDate) {
-              opening += isIn ? qty : -qty;
+              netMovementsBeforeStart += delta;
             } else if ((!startDate || txDate >= startDate) && (!endDate || txDate <= endDate)) {
               if (isIn) opsIn += qty;
               else opsOut += qty;
@@ -508,12 +512,22 @@ export class StockSummaryComponent implements OnInit {
         });
       });
 
+      // Mathematical base stock before recorded transactions:
+      const baseStock = Math.max(0, currentQty - netMovementsAllTime);
+      const opening = baseStock + netMovementsBeforeStart;
       const closing = opening + purchases + opsIn + transfersIn - consumption - opsOut - transfersOut - contractors;
+      const totalValue = closing * unitPrice;
+
+      const dynamicStatus = closing <= 0 
+        ? 'Out of Stock' 
+        : (closing <= (item.minQuantity || 10) ? 'Low Stock' : 'In Stock');
 
       return {
         itemCode,
         itemName,
         uom,
+        unitPrice,
+        totalValue,
         openingBalance: opening,
         purchases,
         opsIn,
@@ -522,14 +536,27 @@ export class StockSummaryComponent implements OnInit {
         consumption,
         opsOut,
         contractors,
-        currentBalance: item.quantity,
+        currentBalance: currentQty,
         ptdIn,
         ptdOut,
         ptdConsumption,
         closingBalance: closing,
-        status: item.status
+        status: dynamicStatus
       };
     });
+  });
+
+  // Top KPI metrics
+  readonly totalClosingQty = computed(() => {
+    return this.summaryRows().reduce((acc, r) => acc + r.closingBalance, 0);
+  });
+
+  readonly totalValuation = computed(() => {
+    return this.summaryRows().reduce((acc, r) => acc + (r.totalValue || 0), 0);
+  });
+
+  readonly lowStockCount = computed(() => {
+    return this.summaryRows().filter(r => r.status === 'Low Stock' || r.status === 'Out of Stock').length;
   });
 
   ngOnInit() {
@@ -593,9 +620,12 @@ export class StockSummaryComponent implements OnInit {
       'Contractors',
       'Current Balance',
       'Closing Balance',
+      'Unit Cost ($)',
+      'Valuation ($)',
       'PTD In',
       'PTD Out',
-      'PTD Consumption'
+      'PTD Consumption',
+      'Status'
     ];
 
     const rows = this.summaryRows().map(row => [
@@ -611,9 +641,12 @@ export class StockSummaryComponent implements OnInit {
       row.contractors.toString(),
       row.currentBalance.toString(),
       row.closingBalance.toString(),
+      (row.unitPrice || 0).toFixed(2),
+      (row.totalValue || 0).toFixed(2),
       row.ptdIn.toString(),
       row.ptdOut.toString(),
-      row.ptdConsumption.toString()
+      row.ptdConsumption.toString(),
+      row.status
     ]);
 
     let csvContent = 'data:text/csv;charset=utf-8,';

@@ -11,7 +11,6 @@ import { PurchaseRequest, PurchaseRequestItem } from '../../../shared/interfaces
 import { ProcurementChainComponent } from '../../../shared/components/procurement-chain/procurement-chain.component';
 import { ProcurementService } from '../../../core/services/procurement.service';
 import { InventoryApiService, extractApiArray } from '../../../core/services/inventory-api.service';
-import { MockDataService } from '../../../core/services/mock-data.service';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../../environments/environment';
 import { finalize } from 'rxjs/operators';
@@ -106,12 +105,13 @@ export class RfqsComponent implements OnInit {
   private readonly router              = inject(Router);
   private readonly translate           = inject(TranslateService);
   private readonly cdr                 = inject(ChangeDetectorRef);
-  private readonly mockDataService     = inject(MockDataService);
+  private readonly inventoryApiService = inject(InventoryApiService);
   private readonly vendorsApiUrl       = `${environment.apiUrl}/vendors`;
 
   // ── State ─────────────────────────────────────────────────────────────────
   readonly rfqs             = signal<RFQ[]>([]);
   readonly purchaseRequests = signal<PurchaseRequest[]>([]);
+  readonly inventory        = signal<any[]>([]);
   readonly isLoading        = signal<boolean>(false);
 
   // Vendors — loaded from real API
@@ -193,6 +193,7 @@ export class RfqsComponent implements OnInit {
     this.loadRFQs();
     this.loadPRs();
     this.loadVendors();
+    this.loadInventory();
 
     this.route.queryParams.subscribe(params => {
       const prId = params['createForPR'];
@@ -257,10 +258,40 @@ export class RfqsComponent implements OnInit {
       });
   }
 
+  private loadInventory() {
+    this.inventoryApiService.getItems({ limit: 500 }).subscribe({
+      next: res => {
+        const raw = extractApiArray(res);
+        this.inventory.set(raw);
+        if (raw.length > 0) {
+          this.purchaseRequests.update(prs => prs.map(pr => ({
+            ...pr,
+            items: pr.items.map(item => {
+              const match = raw.find((c: any) =>
+                (c._id && (c._id === item.id || c._id === (item as any).itemId)) ||
+                (c.id && (c.id === item.id || c.id === (item as any).itemId)) ||
+                (item.itemCode && (c.itemCode === item.itemCode || c.code === item.itemCode))
+              );
+              return {
+                ...item,
+                itemCode: (item.itemCode && item.itemCode.trim()) ? item.itemCode : (match?.itemCode || match?.code || (item as any).itemId || 'ITEM'),
+                itemName: (item.itemName && item.itemName.trim() && item.itemName !== 'Item') ? item.itemName : (match?.itemName || match?.name || match?.arabicName || 'Item / مادة'),
+                uom: (item.uom && item.uom !== 'EA') ? item.uom : (match?.uom || item.uom || 'EA')
+              };
+            })
+          })));
+          this.cdr.markForCheck();
+        }
+      },
+      error: err => console.error('Failed to load inventory for RFQs:', err)
+    });
+  }
+
   private loadPRs() {
     this.procurementService.getPRs({ limit: 200 }).subscribe({
       next: res => {
         const raw = extractApiArray(res);
+        const catalog = this.inventory();
         this.purchaseRequests.set(raw.map((r: any) => ({
           id:             r._id ?? r.id,
           requestNumber:  r.requestNumber ?? r.prNumber ?? r.documentNumber ?? '',
@@ -276,14 +307,22 @@ export class RfqsComponent implements OnInit {
           status:         r.status ?? 'Draft',
           description:    r.description ?? '',
           requestedBy:    r.requestedBy ?? '',
-          items:          (r.items ?? []).map((i: any) => ({
-            id:          i._id ?? i.id ?? `item-${Math.random()}`,
-            itemCode:    i.itemCode ?? '',
-            itemName:    i.itemName ?? i.description ?? i.itemDescription ?? 'Item',
-            quantity:    i.quantity ?? 1,
-            uom:         i.uom ?? 'EA',
-            notes:       i.notes ?? ''
-          })),
+          items:          (r.items ?? []).map((i: any) => {
+            const itemObj = (i.itemId && typeof i.itemId === 'object') ? i.itemId : null;
+            const itemId = itemObj ? (itemObj._id ?? itemObj.id) : (i.itemId ?? i._id ?? i.id ?? `item-${Math.random()}`);
+            const code = i.itemCode ?? itemObj?.itemCode ?? itemObj?.code ?? '';
+            const name = i.itemName ?? itemObj?.itemName ?? itemObj?.name ?? i.description ?? i.itemDescription ?? '';
+            const match = catalog.find((c: any) => c._id === itemId || c.id === itemId);
+            return {
+              id:          itemId,
+              itemId:      itemId,
+              itemCode:    code || match?.itemCode || match?.code || (i.itemId ? String(i.itemId) : ''),
+              itemName:    name || match?.itemName || match?.name || match?.arabicName || 'Item / مادة',
+              quantity:    i.quantity ?? 1,
+              uom:         i.uom ?? itemObj?.uom ?? match?.uom ?? 'EA',
+              notes:       i.notes ?? ''
+            };
+          }),
         })));
         this.cdr.markForCheck();
       },
@@ -295,45 +334,26 @@ export class RfqsComponent implements OnInit {
     this.http.get<any>(`${this.vendorsApiUrl}?limit=200`).subscribe({
       next: res => {
         const raw = extractApiArray(res);
-        if (raw.length > 0) {
-          this.vendors.set(raw.map((v: any) => ({
-            id:           v._id ?? v.id,
-            vendorId:     v._id ?? v.id,
-            vendorCode:   v.vendorCode ?? v.code ?? '',
-            vendorName:   v.vendorName ?? v.name ?? '',
-            arabicName:   v.arabicName ?? '',
-            category:     v.category ?? '',
-            contactEmail: v.contactEmail ?? v.email ?? '',
-            status:       v.status ?? 'Active',
-            rating:       v.performanceScore ?? v.rating ?? 4.5,
-            country:      v.country ?? 'Saudi Arabia'
-          })));
-        } else {
-          this.useMockVendorsFallback();
-        }
+        this.vendors.set(raw.map((v: any) => ({
+          id:           v._id ?? v.id,
+          vendorId:     v._id ?? v.id,
+          vendorCode:   v.vendorCode ?? v.code ?? '',
+          vendorName:   v.vendorName ?? v.name ?? '',
+          arabicName:   v.arabicName ?? '',
+          category:     v.category ?? '',
+          contactEmail: v.contactEmail ?? v.email ?? '',
+          status:       v.status ?? 'Active',
+          rating:       v.performanceScore ?? v.rating ?? 4.5,
+          country:      v.country ?? 'Saudi Arabia'
+        })));
         this.cdr.markForCheck();
       },
-      error: () => {
-        this.useMockVendorsFallback();
+      error: err => {
+        console.error('Failed to load vendors:', err);
+        this.vendors.set([]);
         this.cdr.markForCheck();
       }
     });
-  }
-
-  private useMockVendorsFallback() {
-    const mock = this.mockDataService.vendors();
-    this.vendors.set(mock.map(v => ({
-      id:           v.id,
-      vendorId:     v.id,
-      vendorCode:   v.vendorCode,
-      vendorName:   v.vendorName,
-      arabicName:   v.arabicName || '',
-      category:     v.category || 'General',
-      contactEmail: v.contactEmail || '',
-      status:       v.status || 'Active',
-      rating:       v.rating || 4.5,
-      country:      v.country || 'Saudi Arabia'
-    })));
   }
 
 
@@ -408,7 +428,12 @@ export class RfqsComponent implements OnInit {
           this.cancelRFQForm();
         },
         error: err => {
-          const msg = err?.error?.message ?? 'Failed to create RFQ.';
+          let msg = 'Failed to create RFQ.';
+          if (err?.error?.message) {
+            msg = Array.isArray(err.error.message) ? err.error.message.join(' | ') : err.error.message;
+          } else if (err?.message) {
+            msg = err.message;
+          }
           this.notificationService.danger('Error', msg);
         }
       });
@@ -689,7 +714,12 @@ export class RfqsComponent implements OnInit {
           this.router.navigate(['/procurement/purchase-orders']);
         },
         error: err => {
-          const msg = err?.error?.message ?? 'Failed to award RFQ.';
+          let msg = 'Failed to award RFQ.';
+          if (err?.error?.message) {
+            msg = Array.isArray(err.error.message) ? err.error.message.join(' | ') : err.error.message;
+          } else if (err?.message) {
+            msg = err.message;
+          }
           this.notificationService.danger('Error', msg);
         }
       });

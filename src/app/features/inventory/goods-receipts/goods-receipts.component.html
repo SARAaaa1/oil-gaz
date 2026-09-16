@@ -28,17 +28,39 @@
           </svg>
           {{ 'inventory.print' | translate }}
         </button>
-        @if (selectedMRV()!.status === 'Pending Approval') {
+        @if (selectedMRV()!.status === 'Draft' || selectedMRV()!.status === 'Inspected') {
+          <button
+            (click)="postMRVToInventory(selectedMRV()!)"
+            [disabled]="isPosting()"
+            class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg transition-colors flex items-center gap-2 cursor-pointer text-xs disabled:opacity-50"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+            </svg>
+            ترحيل للمخزن (Post MRV)
+          </button>
+        } @else if (selectedMRV()!.status === 'Pending Approval') {
           <button
             (click)="approveMRV(selectedMRV()!); selectedMRV.set(null)"
             class="px-4 py-2 bg-amber-600 text-white font-bold rounded-lg hover:bg-amber-700 transition-colors flex items-center gap-2 cursor-pointer text-xs"
           >
             {{ 'inventory.mrv_action.approve_receipt' | translate }}
           </button>
+          <button
+            (click)="postMRVToInventory(selectedMRV()!)"
+            [disabled]="isPosting()"
+            class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg transition-colors flex items-center gap-2 cursor-pointer text-xs disabled:opacity-50"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+            </svg>
+            ترحيل للمخزن (Post MRV)
+          </button>
         } @else if (selectedMRV()!.status === 'Approved') {
           <button
-            (click)="approveFinanceMRV(selectedMRV()!); selectedMRV.set(null)"
-            class="px-4 py-2 bg-emerald-600 text-white font-bold rounded-lg hover:bg-emerald-700 transition-colors flex items-center gap-2 cursor-pointer text-xs"
+            (click)="postMRVToInventory(selectedMRV()!)"
+            [disabled]="isPosting()"
+            class="px-4 py-2 bg-emerald-600 text-white font-bold rounded-lg hover:bg-emerald-700 transition-colors flex items-center gap-2 cursor-pointer text-xs disabled:opacity-50"
           >
             {{ 'inventory.mrv_action.approve_post_invoice' | translate }}
           </button>
@@ -217,20 +239,48 @@
                   </span>
                 </td>
                 <td class="p-4 text-center">
-                  @if (mrv.status === 'Pending Approval') {
+                  @if (mrv.status === 'Draft' || mrv.status === 'Inspected') {
                     <button
-                      (click)="approveMRV(mrv); $event.stopPropagation()"
-                      class="px-2.5 py-1 bg-amber-600 text-white rounded text-[10px] font-bold hover:bg-amber-700 transition-colors cursor-pointer"
+                      (click)="postMRVToInventory(mrv); $event.stopPropagation()"
+                      [disabled]="isPosting()"
+                      class="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-[10px] font-bold transition-colors cursor-pointer disabled:opacity-50"
+                      title="ترحيل إذن الإضافة إلى المخزن وتحديث الرصيد"
                     >
-                      {{ 'inventory.mrv_action.approve_receipt' | translate }}
+                      ترحيل للمخزن (Post)
                     </button>
+                  } @else if (mrv.status === 'Pending Approval') {
+                    <div class="flex items-center justify-center gap-1.5">
+                      <button
+                        (click)="approveMRV(mrv); $event.stopPropagation()"
+                        class="px-2.5 py-1 bg-amber-600 text-white rounded text-[10px] font-bold hover:bg-amber-700 transition-colors cursor-pointer"
+                        title="اعتماد الاستلام المبدئي"
+                      >
+                        {{ 'inventory.mrv_action.approve_receipt' | translate }}
+                      </button>
+                      <button
+                        (click)="postMRVToInventory(mrv); $event.stopPropagation()"
+                        [disabled]="isPosting()"
+                        class="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-[10px] font-bold transition-colors cursor-pointer disabled:opacity-50"
+                        title="ترحيل مباشر للمخزن وتحديث الرصيد"
+                      >
+                        ترحيل (Post)
+                      </button>
+                    </div>
                   } @else if (mrv.status === 'Approved') {
                     <button
-                      (click)="approveFinanceMRV(mrv); $event.stopPropagation()"
-                      class="px-2.5 py-1 bg-emerald-600 text-white rounded text-[10px] font-bold hover:bg-emerald-700 transition-colors cursor-pointer"
+                      (click)="postMRVToInventory(mrv); $event.stopPropagation()"
+                      [disabled]="isPosting()"
+                      class="px-2.5 py-1 bg-emerald-600 text-white rounded text-[10px] font-bold hover:bg-emerald-700 transition-colors cursor-pointer disabled:opacity-50"
                     >
                       {{ 'inventory.mrv_action.approve_post_invoice' | translate }}
                     </button>
+                  } @else if (mrv.status === 'Posted') {
+                    <span class="inline-flex items-center text-emerald-600 font-bold text-[10px]">
+                      <svg class="w-3 h-3 mr-0.5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                      </svg>
+                      مرحل بالكامل
+                    </span>
                   } @else {
                     <span class="text-slate-400 text-[10px]">N/A</span>
                   }

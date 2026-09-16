@@ -1670,6 +1670,7 @@
       "no_rfq_desc": "Select an active RFQ from the dropdown menu above or click 'Compare Bids' from the RFQ table listing to display side-by-side bid metrics.",
       "notif_awarded_title": "Contract Awarded",
       "notif_awarded_desc": "Purchase Order {{po}} has been successfully generated for {{vendor}}.",
+      "no_items_found": "No items recorded for this request",
       "err_failed_title": "Action Failed",
       "err_failed_desc": "Could not create Purchase Order from this quotation. Please try again."
     },

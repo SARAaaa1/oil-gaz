@@ -6,48 +6,76 @@ import { BreadcrumbService } from '../../../core/services/breadcrumb.service';
 import { NotificationService } from '../../../core/services/notification.service';
 import { RFQ, RFQQuotation } from '../../../shared/interfaces/rfq.interface';
 import { ProcurementService } from '../../../core/services/procurement.service';
+import { extractApiArray } from '../../../core/services/inventory-api.service';
 import { finalize } from 'rxjs/operators';
 
 // ─── Mappers (reused from rfqs) ───────────────────────────────────────────────
 
 function mapApiRFQ(raw: any): RFQ {
+  const prObj = (raw.purchaseRequestId && typeof raw.purchaseRequestId === 'object') ? raw.purchaseRequestId : null;
+  const prId = prObj ? (prObj._id ?? prObj.id) : (raw.purchaseRequestId ?? '');
+  const prNum = prObj?.requestNumber ?? raw.purchaseRequestNumber ?? '';
+  const rfqItems = (raw.items && raw.items.length > 0) ? raw.items : (prObj?.items ?? []);
+
+  const quotations: RFQQuotation[] = (raw.quotations ?? []).map((q: any) => ({
+    id:                q._id ?? q.id,
+    quotationNumber:   q.quotationNumber ?? '',
+    quotationSequence: q.quotationSequence ?? 1,
+    procurementChain:  q.procurementChain ?? '',
+    vendorId:          q.vendorId ?? '',
+    vendorName:        q.vendorName ?? '',
+    price:             q.price ?? q.subtotal ?? 0,
+    deliveryWeeks:     q.deliveryWeeks ?? 2,
+    submissionDate:    q.submissionDate,
+    subtotal:          q.subtotal ?? q.price ?? 0,
+    taxPercent:        q.taxPercent ?? 15,
+    taxAmount:         q.taxAmount ?? 0,
+    totalAmount:       q.totalAmount ?? 0,
+    status:            q.status ?? 'Submitted',
+    notes:             q.notes ?? q.remarks ?? '',
+    items:             q.items ?? [],
+    isBestPrice:       false,
+    isRecommended:     false,
+  }));
+
+  if (quotations.length > 0) {
+    const validPrices = quotations.map(q => q.price).filter(p => p > 0);
+    if (validPrices.length > 0) {
+      const minPrice = Math.min(...validPrices);
+      quotations.forEach(q => {
+        q.isBestPrice = q.price === minPrice;
+      });
+      const bestQuotes = quotations.filter(q => q.isBestPrice);
+      const minWeeks = Math.min(...bestQuotes.map(q => q.deliveryWeeks));
+      const recommended = bestQuotes.find(q => q.deliveryWeeks === minWeeks);
+      if (recommended) {
+        recommended.isRecommended = true;
+      }
+    }
+  }
+
   return {
     id:                    raw._id ?? raw.id,
     rfqNumber:             raw.rfqNumber ?? raw.documentNumber ?? '',
-    documentNumber:        raw.documentNumber ?? '',
+    documentNumber:        raw.documentNumber ?? raw.rfqNumber ?? '',
     procurementChain:      raw.procurementChain ?? '',
     rootProcurementNumber: raw.rootProcurementNumber ?? '',
     chainId:               raw.chainId ?? raw._id ?? raw.id,
-    parentDocumentId:      raw.purchaseRequestId ?? '',
-    parentDocumentNumber:  raw.purchaseRequestNumber ?? '',
-    purchaseRequestId:     raw.purchaseRequestId ?? '',
-    purchaseRequestNumber: raw.purchaseRequestNumber ?? '',
+    parentDocumentId:      prId,
+    parentDocumentNumber:  prNum,
+    purchaseRequestId:     prId,
+    purchaseRequestNumber: prNum,
     title:                 raw.title ?? '',
-    createdDate:           raw.createdAt ?? '',
+    createdDate:           raw.createdAt ?? raw.createdDate ?? '',
     deadlineDate:          raw.deadlineDate ?? '',
     status:                raw.status ?? 'Sent',
+    items:                 rfqItems,
     vendors:               (raw.vendors ?? []).map((v: any) => ({
       vendorId: v.vendorId ?? '', vendorName: v.vendorName ?? '',
       contactEmail: v.contactEmail ?? '', status: v.status ?? 'Pending',
       invitationSentDate: v.invitationSentDate
     })),
-    quotations: (raw.quotations ?? []).map((q: any) => ({
-      id:               q._id ?? q.id,
-      quotationNumber:  q.quotationNumber ?? '',
-      quotationSequence: q.quotationSequence ?? 1,
-      procurementChain: q.procurementChain ?? '',
-      vendorId:         q.vendorId ?? '',
-      vendorName:       q.vendorName ?? '',
-      price:            q.price ?? q.subtotal ?? 0,
-      deliveryWeeks:    q.deliveryWeeks ?? 2,
-      submissionDate:   q.submissionDate,
-      subtotal:         q.subtotal ?? q.price ?? 0,
-      taxPercent:       q.taxPercent ?? 15,
-      taxAmount:        q.taxAmount ?? 0,
-      totalAmount:      q.totalAmount ?? 0,
-      status:           q.status ?? 'Submitted',
-      items:            q.items ?? [],
-    })),
+    quotations,
     awardedVendorId:   raw.awardedVendorId,
     awardedVendorName: raw.awardedVendorName,
   };
@@ -88,8 +116,39 @@ export class QuotationComparisonComponent implements OnInit {
   readonly sourcePRItems = computed(() => {
     const rfq = this.activeRFQ();
     if (!rfq) return [];
-    const pr = this.purchaseRequests().find(p => p.id === rfq.purchaseRequestId);
-    return pr ? pr.items : [];
+
+    // 1. Direct items on the RFQ
+    if (rfq.items && rfq.items.length > 0) {
+      return rfq.items.map((i: any) => ({
+        id: i._id ?? i.id ?? `item-${Math.random()}`,
+        itemName: i.itemName ?? i.description ?? i.itemDescription ?? 'Item',
+        quantity: i.quantity ?? 1,
+        uom: i.uom ?? 'EA'
+      }));
+    }
+
+    // 2. From loaded purchaseRequests list
+    const pr = this.purchaseRequests().find(p => 
+      p.id === rfq.purchaseRequestId || 
+      (p as any)._id === rfq.purchaseRequestId ||
+      (rfq.purchaseRequestNumber && p.requestNumber === rfq.purchaseRequestNumber)
+    );
+    if (pr && pr.items && pr.items.length > 0) {
+      return pr.items;
+    }
+
+    // 3. Fallback from quotations line items if available
+    const firstQWithItems = rfq.quotations?.find(q => q.items && q.items.length > 0);
+    if (firstQWithItems && firstQWithItems.items) {
+      return firstQWithItems.items.map((i: any) => ({
+        id: i._id ?? i.id ?? `item-${Math.random()}`,
+        itemName: i.itemName ?? i.description ?? i.itemDescription ?? 'Item',
+        quantity: i.quantity ?? 1,
+        uom: i.uom ?? 'EA'
+      }));
+    }
+
+    return [];
   });
 
   // ── Init ──────────────────────────────────────────────────────────────────
@@ -100,6 +159,7 @@ export class QuotationComparisonComponent implements OnInit {
     ]);
 
     this.loadRFQs();
+    this.loadPRs();
 
     this.route.queryParams.subscribe(params => {
       const id = params['rfqId'];
@@ -121,16 +181,39 @@ export class QuotationComparisonComponent implements OnInit {
     });
   }
 
+  private loadPRs() {
+    this.procurementService.getPRs({ limit: 200 }).subscribe({
+      next: res => {
+        const raw = extractApiArray(res);
+        this.purchaseRequests.set(raw.map((r: any) => ({
+          id:            r._id ?? r.id,
+          requestNumber: r.requestNumber ?? r.prNumber ?? r.documentNumber ?? '',
+          items:         (r.items ?? []).map((i: any) => ({
+            id:       i._id ?? i.id ?? `item-${Math.random()}`,
+            itemName: i.itemName ?? i.description ?? 'Item',
+            quantity: i.quantity ?? 1,
+            uom:      i.uom ?? 'EA'
+          }))
+        })));
+        this.cdr.markForCheck();
+      },
+      error: err => console.error('Failed to load PRs for comparison:', err)
+    });
+  }
+
   private loadRFQs() {
     this.isLoading.set(true);
     this.procurementService.getRFQs(1, 200)
       .pipe(finalize(() => { this.isLoading.set(false); this.cdr.markForCheck(); }))
       .subscribe({
         next: res => {
-          const raw = res?.items ?? (Array.isArray(res) ? res : []);
+          const raw = extractApiArray(res);
           this.rfqs.set(raw.map(mapApiRFQ));
         },
-        error: err => console.error('Failed to load RFQs for comparison:', err)
+        error: err => {
+          console.error('Failed to load RFQs for comparison:', err);
+          this.notificationService.danger('Error', 'Failed to load RFQs.');
+        }
       });
   }
 
@@ -178,9 +261,15 @@ export class QuotationComparisonComponent implements OnInit {
           this.router.navigate(['/procurement/purchase-orders']);
         },
         error: err => {
+          let msg = this.translate.instant('procurement.quotation_comparison.err_failed_desc');
+          if (err?.error?.message) {
+            msg = Array.isArray(err.error.message) ? err.error.message.join(' | ') : err.error.message;
+          } else if (err?.message) {
+            msg = err.message;
+          }
           this.notificationService.danger(
             this.translate.instant('procurement.quotation_comparison.err_failed_title'),
-            err?.error?.message ?? this.translate.instant('procurement.quotation_comparison.err_failed_desc')
+            msg
           );
         }
       });
