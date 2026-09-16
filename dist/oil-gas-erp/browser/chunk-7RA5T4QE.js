@@ -1,0 +1,1 @@
+import{P as t,na as a}from"./chunk-RLHQXC57.js";var c=class r{breadcrumbs=a([]);setBreadcrumbs(e){this.breadcrumbs.set(e)}static \u0275fac=function(o){return new(o||r)};static \u0275prov=t({token:r,factory:r.\u0275fac,providedIn:"root"})};export{c as a};

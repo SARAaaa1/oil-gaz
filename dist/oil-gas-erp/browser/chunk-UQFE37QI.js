@@ -1,0 +1,1 @@
+import{P as c,na as o}from"./chunk-RLHQXC57.js";var r=class t{activeBranch=o("All");static \u0275fac=function(a){return new(a||t)};static \u0275prov=c({token:t,factory:t.\u0275fac,providedIn:"root"})};export{r as a};
