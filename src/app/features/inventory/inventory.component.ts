@@ -26,26 +26,35 @@ import * as XLSX from 'xlsx';
 // ─── Mappers ──────────────────────────────────────────────────────────────────
 
 function mapApiItem(raw: any): InventoryItem {
-  const qty = raw.quantity ?? 0;
-  const min = raw.minQuantity ?? 0;
+  const doc = raw?._doc || raw || {};
+  const qty = Number(doc.quantity ?? raw.quantity ?? 0);
+  const min = Number(doc.minQuantity ?? raw.minQuantity ?? 0);
   let status: 'In Stock' | 'Low Stock' | 'Out of Stock' = 'In Stock';
-  if      (raw.status === 'Available')    status = 'In Stock';
-  else if (raw.status === 'Low Stock')    status = 'Low Stock';
-  else if (raw.status === 'Out of Stock') status = 'Out of Stock';
-  else if (qty === 0)                     status = 'Out of Stock';
-  else if (qty <= min)                    status = 'Low Stock';
+  const rawStatus = doc.status ?? raw.status;
+  if      (rawStatus === 'Available' || rawStatus === 'In Stock') status = 'In Stock';
+  else if (rawStatus === 'Low Stock')                             status = 'Low Stock';
+  else if (rawStatus === 'Out of Stock')                           status = 'Out of Stock';
+  else if (qty === 0)                                             status = 'Out of Stock';
+  else if (qty <= min)                                            status = 'Low Stock';
+
+  const whCode = doc.warehouseCode ?? raw.warehouseCode ?? (typeof doc.warehouse === 'object' ? doc.warehouse?.code : '') ?? '';
+  const whId   = doc.warehouseId ?? raw.warehouseId ?? (typeof doc.warehouse === 'object' ? (doc.warehouse?._id || doc.warehouse?.id) : '') ?? (typeof doc.warehouse === 'string' ? doc.warehouse : '');
+  const whName = doc.warehouseName ?? raw.warehouseName ?? (typeof doc.warehouse === 'object' ? doc.warehouse?.name : '') ?? '';
 
   return {
-    id:          raw._id ?? raw.id,
-    itemCode:    raw.itemCode ?? '',
-    itemName:    raw.itemName ?? '',
+    id:          doc._id ?? raw._id ?? doc.id ?? raw.id ?? '',
+    itemCode:    doc.itemCode ?? raw.itemCode ?? '',
+    itemName:    doc.itemName ?? raw.itemName ?? '',
     quantity:    qty,
     minQuantity: min,
-    category:    raw.category ?? '',
-    uom:         raw.uom ?? 'PCS',
-    location:    raw.location ?? '',
-    unitPrice:   raw.unitPrice ?? 0,
+    category:    doc.category ?? raw.category ?? '',
+    uom:         doc.uom ?? raw.uom ?? 'PCS',
+    location:    doc.location ?? raw.location ?? whName ?? whCode ?? '',
+    unitPrice:   Number(doc.unitPrice ?? raw.unitPrice ?? 0),
     status,
+    warehouseId: whId,
+    warehouseCode: whCode,
+    warehouseName: whName,
   };
 }
 
@@ -158,6 +167,8 @@ function mapApiAdjustment(raw: any): StockAdjustment {
 
 function mapApiOpeningStock(raw: any): OpeningStockItem {
   const doc = raw?._doc || raw || {};
+  const qty = Number(doc?.openingQuantity ?? raw?.openingQuantity ?? 0);
+  const cost = Number(doc?.unitCost ?? raw?.unitCost ?? (doc?.totalCost && qty ? doc.totalCost / qty : 0));
   return {
     id:              raw?._id ?? raw?.id ?? doc?._id ?? doc?.id ?? '',
     openingNumber:   doc?.openingNumber ?? raw?.openingNumber ?? '',
@@ -165,7 +176,8 @@ function mapApiOpeningStock(raw: any): OpeningStockItem {
     itemName:        doc?.itemName ?? raw?.itemName ?? '',
     warehouseCode:   doc?.warehouseCode ?? raw?.warehouseCode ?? '',
     warehouseName:   doc?.warehouseName ?? raw?.warehouseName ?? '',
-    openingQuantity: doc?.openingQuantity ?? raw?.openingQuantity ?? 0,
+    warehouseId:     doc?.warehouseId ?? raw?.warehouseId ?? '',
+    openingQuantity: qty,
     unitOfMeasure:   doc?.unitOfMeasure ?? raw?.unitOfMeasure ?? 'EA',
     location:        doc?.location ?? raw?.location ?? '',
     batchNumber:     doc?.batchNumber ?? raw?.batchNumber ?? '',
@@ -174,6 +186,8 @@ function mapApiOpeningStock(raw: any): OpeningStockItem {
     notes:           doc?.notes ?? raw?.notes ?? '',
     openingDate:     doc?.openingDate ?? raw?.openingDate ?? '',
     status:          doc?.status ?? raw?.status ?? 'Draft',
+    unitCost:        cost,
+    category:        doc?.category ?? raw?.category ?? '',
     createdAt:       doc?.createdAt ?? raw?.createdAt,
     updatedAt:       doc?.updatedAt ?? raw?.updatedAt,
   };
@@ -223,6 +237,7 @@ export class InventoryComponent implements OnInit {
   readonly counts      = signal<StockCount[]>([]);
   readonly openingStocks = signal<OpeningStockItem[]>([]);
   readonly projects    = signal<{ id: string; name: string }[]>([]);
+  private rawBackendItems: InventoryItem[] = [];
 
   readonly costCenters = computed(() => this.costCenterStore.costCenters());
 
@@ -273,13 +288,15 @@ export class InventoryComponent implements OnInit {
   });
 
   // ── KPI Calculations (from API summary or computed locally) ───────────────
-  readonly totalItemsCount = computed(() =>
-    this.apiSummary()?.totalItems ?? this.inventory().length
-  );
-  readonly inventoryValue = computed(() =>
-    this.apiSummary()?.totalValue ??
-    this.inventory().reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0)
-  );
+  readonly totalItemsCount = computed(() => {
+    const apiTotal = this.apiSummary()?.totalItems ?? 0;
+    return Math.max(apiTotal, this.inventory().length);
+  });
+  readonly inventoryValue = computed(() => {
+    const computedVal = this.inventory().reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
+    const apiVal = this.apiSummary()?.totalValue ?? 0;
+    return Math.max(apiVal, computedVal);
+  });
   readonly lowStockCount = computed(() =>
     this.apiSummary()?.lowStockCount ??
     this.inventory().filter(i => i.status === 'Low Stock').length
@@ -289,12 +306,154 @@ export class InventoryComponent implements OnInit {
     this.inventory().filter(i => i.status === 'Out of Stock').length
   );
 
+  // ── Dashboard Advanced Statistics Computations ───────────────────────────
+  readonly totalStockQty = computed(() =>
+    this.inventory().reduce((acc, item) => acc + (item.quantity || 0), 0)
+  );
+
+  readonly warehouseValuations = computed(() => {
+    const whs = this.warehouses();
+    const items = this.inventory();
+    const totalVal = this.inventoryValue();
+
+    return whs.map(wh => {
+      const whName = (wh.name || '').toLowerCase().trim();
+      const whCode = (wh.code || '').toLowerCase().trim();
+      const whId   = (wh.id || '').toLowerCase().trim();
+
+      const whItems = items.filter(i => {
+        if (i.warehouseCode && (i.warehouseCode.toLowerCase().trim() === whCode || i.warehouseCode.toLowerCase().trim() === whName)) return true;
+        if (i.warehouseId && whId && i.warehouseId.toLowerCase().trim() === whId) return true;
+        if (i.warehouseName && (i.warehouseName.toLowerCase().trim() === whName || i.warehouseName.toLowerCase().trim() === whCode)) return true;
+
+        if (!i.location) return false;
+        const loc = i.location.toLowerCase().trim();
+        return loc === whName || loc === whCode || (whId && loc === whId) ||
+               loc.includes(whName) || loc.includes(whCode);
+      });
+      const itemsCount = whItems.length;
+      const totalQty = whItems.reduce((acc, i) => acc + (i.quantity || 0), 0);
+      const value = whItems.reduce((acc, i) => acc + ((i.quantity || 0) * (i.unitPrice || 0)), 0);
+      const percentage = totalVal > 0 ? Math.round((value / totalVal) * 100) : 0;
+
+      return {
+        id: wh.id,
+        code: wh.code,
+        name: wh.name,
+        location: wh.location,
+        status: wh.status,
+        itemsCount,
+        totalQty,
+        value,
+        percentage
+      };
+    });
+  });
+
+  readonly criticalStockItems = computed(() =>
+    this.inventory().filter(i => i.status === 'Low Stock' || i.status === 'Out of Stock' || (i.quantity <= i.minQuantity))
+  );
+
+  readonly recentMovements = computed(() => {
+    const list: {
+      type: 'MRV' | 'MIV' | 'Transfer' | 'Adjustment';
+      number: string;
+      date: string;
+      warehouse: string;
+      itemsCount: number;
+      status: string;
+      amount?: number;
+    }[] = [];
+
+    // Goods Receipts (MRVs)
+    this.mrvs().slice(0, 10).forEach(m => {
+      list.push({
+        type: 'MRV',
+        number: m.voucherNumber,
+        date: m.receivedDate,
+        warehouse: this.getWarehouseName(m.warehouseId),
+        itemsCount: m.items?.length || 0,
+        status: m.status,
+        amount: m.totalAmount
+      });
+    });
+
+    // Material Issues (MIVs)
+    this.mivs().slice(0, 10).forEach(m => {
+      list.push({
+        type: 'MIV',
+        number: m.voucherNumber,
+        date: m.issueDate,
+        warehouse: this.getWarehouseName(m.warehouseId),
+        itemsCount: m.items?.length || 0,
+        status: m.status,
+        amount: m.totalAmount
+      });
+    });
+
+    // Transfers
+    this.transfers().slice(0, 5).forEach(t => {
+      list.push({
+        type: 'Transfer',
+        number: t.transferNumber,
+        date: t.transferDate,
+        warehouse: `${this.getWarehouseName(t.fromWarehouseId)} ➔ ${this.getWarehouseName(t.toWarehouseId)}`,
+        itemsCount: t.items?.length || 0,
+        status: t.status
+      });
+    });
+
+    // Adjustments
+    this.adjustments().slice(0, 5).forEach(a => {
+      list.push({
+        type: 'Adjustment',
+        number: a.adjustmentNumber,
+        date: a.adjustmentDate,
+        warehouse: this.getWarehouseName(a.warehouseId),
+        itemsCount: a.items?.length || 0,
+        status: a.status,
+        amount: a.totalValue
+      });
+    });
+
+    return list.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 8);
+  });
+
+  getWarehouseName(whId: any): string {
+    if (!whId) return 'Main Warehouse';
+    if (typeof whId === 'object' && whId) {
+      return whId.name || whId.warehouseName || whId.code || 'Warehouse';
+    }
+    const match = this.warehouses().find(w => w.id === whId || w.code === whId);
+    return match ? match.name : (whId.toString().length > 15 ? 'Warehouse' : whId.toString());
+  }
+
   // ── Filtered Lists ─────────────────────────────────────────────────────────
   readonly filteredInventory = computed(() => {
     let list    = this.inventory();
     const query = this.searchQuery().trim().toLowerCase();
     const loc   = this.locationFilter();
-    if (loc !== 'ALL') list = list.filter(i => i.location === loc);
+    if (loc !== 'ALL') {
+      const selectedWh = this.warehouses().find(w => 
+        w.name.toLowerCase() === loc.toLowerCase() || 
+        w.code.toLowerCase() === loc.toLowerCase() || 
+        w.id.toLowerCase() === loc.toLowerCase()
+      );
+      const whName = selectedWh ? selectedWh.name.toLowerCase().trim() : loc.toLowerCase().trim();
+      const whCode = selectedWh ? selectedWh.code.toLowerCase().trim() : loc.toLowerCase().trim();
+      const whId   = selectedWh ? (selectedWh.id || '').toLowerCase().trim() : '';
+
+      list = list.filter(i => {
+        if (i.warehouseCode && (i.warehouseCode.toLowerCase().trim() === whCode || i.warehouseCode.toLowerCase().trim() === whName)) return true;
+        if (i.warehouseId && whId && i.warehouseId.toLowerCase().trim() === whId) return true;
+        if (i.warehouseName && (i.warehouseName.toLowerCase().trim() === whName || i.warehouseName.toLowerCase().trim() === whCode)) return true;
+
+        if (!i.location) return false;
+        const itemLoc = i.location.toLowerCase().trim();
+        return itemLoc === whName || itemLoc === whCode || (whId && itemLoc === whId) ||
+               itemLoc.includes(whName) || itemLoc.includes(whCode);
+      });
+    }
     if (query) {
       list = list.filter(i =>
         i.itemCode.toLowerCase().includes(query) ||
@@ -457,13 +616,13 @@ export class InventoryComponent implements OnInit {
     this.inventoryApi.getItems({ limit: 500 }).subscribe({
       next: res => {
         const raw = extractApiArray(res);
-        this.inventory.set(raw.map(mapApiItem));
-        this.cdr.markForCheck();
+        this.rawBackendItems = raw.map(mapApiItem);
+        this.reconcileInventory();
       },
       error: err => {
         console.error('Failed to load items from API:', err);
-        this.inventory.set([]);
-        this.cdr.markForCheck();
+        this.rawBackendItems = [];
+        this.reconcileInventory();
       }
     });
   }
@@ -473,14 +632,147 @@ export class InventoryComponent implements OnInit {
       next: res => {
         const raw: any[] = Array.isArray(res) ? res : extractApiArray(res);
         this.warehouses.set(raw.map(mapApiWarehouse));
-        this.cdr.markForCheck();
+        this.reconcileInventory();
       },
       error: err => {
         console.error('Failed to load warehouses from API:', err);
         this.warehouses.set([]);
-        this.cdr.markForCheck();
+        this.reconcileInventory();
       }
     });
+  }
+
+  private reconcileInventory() {
+    const whs = this.warehouses();
+    const ops = this.openingStocks();
+    const itemsMap = new Map<string, InventoryItem>();
+    const itemsList: InventoryItem[] = [];
+
+    const resolveWarehouse = (codeOrName?: string, rawWhId?: string) => {
+      if (!codeOrName && !rawWhId) return null;
+      const target = (codeOrName || '').toLowerCase().trim();
+      const targetId = (rawWhId || '').toLowerCase().trim();
+
+      return whs.find(w => {
+        const wCode = (w.code || '').toLowerCase().trim();
+        const wName = (w.name || '').toLowerCase().trim();
+        const wId   = (w.id || '').toLowerCase().trim();
+
+        return (target && (wCode === target || wName === target || wId === target)) ||
+               (targetId && (wId === targetId || wCode === targetId));
+      }) || null;
+    };
+
+    // 1. Process backend items
+    for (const rawItem of this.rawBackendItems) {
+      const item: InventoryItem = { ...rawItem };
+      const matchedWh = resolveWarehouse(item.warehouseCode || item.location, item.warehouseId);
+      if (matchedWh) {
+        item.warehouseId = matchedWh.id;
+        item.warehouseCode = matchedWh.code;
+        item.warehouseName = matchedWh.name;
+        item.location = matchedWh.name;
+      }
+      itemsList.push(item);
+      if (item.itemCode) {
+        itemsMap.set(item.itemCode.toLowerCase().trim(), item);
+      }
+      if (item.id) {
+        itemsMap.set(item.id.toLowerCase().trim(), item);
+      }
+    }
+
+    // 2. Process posted Opening Stocks
+    const postedOpeningStocks = ops.filter(os => {
+      const st = (os.status || '').toUpperCase();
+      return st === 'POSTED' || st === 'APPROVED';
+    });
+
+    for (const os of postedOpeningStocks) {
+      if (!os.itemCode && !os.itemName) continue;
+
+      const matchedWh = resolveWarehouse(os.warehouseCode, os.warehouseId);
+      const whName = matchedWh ? matchedWh.name : (os.warehouseName || os.warehouseCode || 'Main Warehouse');
+      const whCode = matchedWh ? matchedWh.code : (os.warehouseCode || 'WH-MAIN');
+      const whId   = matchedWh ? matchedWh.id   : (os.warehouseId || '');
+
+      const existing = (os.itemCode ? itemsMap.get(os.itemCode.toLowerCase().trim()) : null) ||
+                       (os.id ? itemsMap.get(os.id.toLowerCase().trim()) : null);
+
+      if (existing) {
+        if (!existing.warehouseCode) {
+          existing.warehouseCode = whCode;
+          existing.warehouseId = whId;
+          existing.warehouseName = whName;
+          existing.location = whName;
+        } else if (existing.warehouseCode && existing.warehouseCode.toLowerCase() !== whCode.toLowerCase()) {
+          const whKey = `${(os.itemCode || '').toLowerCase().trim()}@${whCode.toLowerCase()}`;
+          let existingForWh = itemsMap.get(whKey);
+          if (!existingForWh) {
+            existingForWh = {
+              id: `${os.id || os.itemCode}-${whCode}`,
+              itemCode: os.itemCode,
+              itemName: os.itemName || existing.itemName,
+              quantity: os.openingQuantity || 0,
+              minQuantity: existing.minQuantity || 5,
+              category: os.category || existing.category || 'General',
+              uom: os.unitOfMeasure || existing.uom || 'PCS',
+              location: whName,
+              unitPrice: os.unitCost || existing.unitPrice || 0,
+              status: (os.openingQuantity > 5) ? 'In Stock' : (os.openingQuantity > 0 ? 'Low Stock' : 'Out of Stock'),
+              warehouseId: whId,
+              warehouseCode: whCode,
+              warehouseName: whName
+            };
+            itemsList.push(existingForWh);
+            itemsMap.set(whKey, existingForWh);
+          } else {
+            existingForWh.quantity = (existingForWh.quantity || 0) + (os.openingQuantity || 0);
+          }
+          continue;
+        }
+
+        if (existing.quantity === 0 && os.openingQuantity > 0) {
+          existing.quantity = os.openingQuantity;
+          existing.status = (os.openingQuantity > (existing.minQuantity || 5)) ? 'In Stock' : 'Low Stock';
+        }
+        if (!existing.unitPrice && os.unitCost) {
+          existing.unitPrice = os.unitCost;
+        }
+        if (!existing.category && os.category) {
+          existing.category = os.category;
+        }
+        if (!existing.location || existing.location === '' || !existing.location.includes(whName)) {
+          existing.location = whName;
+        }
+      } else {
+        const newItem: InventoryItem = {
+          id: os.id || (os as any).itemId || `os-${os.itemCode}`,
+          itemCode: os.itemCode,
+          itemName: os.itemName || os.itemCode,
+          quantity: os.openingQuantity || 0,
+          minQuantity: 5,
+          category: os.category || 'General',
+          uom: os.unitOfMeasure || 'EA',
+          location: whName,
+          unitPrice: os.unitCost || 0,
+          status: (os.openingQuantity > 5) ? 'In Stock' : (os.openingQuantity > 0 ? 'Low Stock' : 'Out of Stock'),
+          warehouseId: whId,
+          warehouseCode: whCode,
+          warehouseName: whName
+        };
+        itemsList.push(newItem);
+        if (os.itemCode) {
+          itemsMap.set(os.itemCode.toLowerCase().trim(), newItem);
+        }
+        if (os.id) {
+          itemsMap.set(os.id.toLowerCase().trim(), newItem);
+        }
+      }
+    }
+
+    this.inventory.set(itemsList);
+    this.cdr.markForCheck();
   }
 
   private loadMRVs() {
@@ -1586,12 +1878,12 @@ export class InventoryComponent implements OnInit {
         next: res => {
           const raw: any[] = Array.isArray(res) ? res : extractApiArray(res);
           this.openingStocks.set(raw.map(mapApiOpeningStock));
-          this.cdr.markForCheck();
+          this.reconcileInventory();
         },
         error: err => {
           console.error('Failed to load opening stock from API:', err);
           this.openingStocks.set([]);
-          this.cdr.markForCheck();
+          this.reconcileInventory();
         }
       });
   }

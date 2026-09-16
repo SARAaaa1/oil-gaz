@@ -699,64 +699,61 @@ export class ItemLedgerComponent implements OnInit {
   }
 
   exportToCSV() {
-    const data = this.ledgerData();
-    if (!this.selectedItemCode()) return;
+    const itemCode = this.selectedItemCode();
+    if (!itemCode) return;
 
-    const headers = [
-      'Date',
-      'Transaction Type',
-      'Document No',
-      'Reference',
-      'Description',
-      'Quantity In',
-      'Quantity Out',
-      'Running Balance'
-    ];
+    this.inventoryApi.downloadReportCsv('item-ledger', {
+      itemId: itemCode,
+      warehouseId: this.selectedWarehouseId(),
+      startDate: this.dateFrom(),
+      endDate: this.dateTo()
+    }, `Item_Ledger_${itemCode}_${this.dateFrom() || 'start'}_to_${this.dateTo() || 'today'}`).subscribe({
+      next: () => {
+        this.notificationService.success(
+          this.translateService.instant('reports.notification_title'),
+          'Item Ledger exported successfully as CSV from Server.'
+        );
+      },
+      error: () => {
+        // Fallback to client-side CSV generation if backend endpoint returns an issue
+        const data = this.ledgerData();
+        const headers = ['Date', 'Transaction Type', 'Document No', 'Reference', 'Description', 'Quantity In', 'Quantity Out', 'Running Balance'];
+        const rows = [
+          [this.dateFrom() || '2026-06-01', 'Opening Balance', '-', '-', 'Opening Stock Statement', '-', '-', data.openingBalance.toString()]
+        ];
+        data.transactions.forEach(tx => {
+          rows.push([
+            tx.date,
+            tx.type,
+            tx.docNo,
+            tx.ref,
+            tx.description,
+            tx.qtyIn > 0 ? tx.qtyIn.toString() : '0',
+            tx.qtyOut > 0 ? tx.qtyOut.toString() : '0',
+            tx.runningBalance.toString()
+          ]);
+        });
 
-    const rows = [
-      [
-        this.dateFrom() || '2026-06-01',
-        'Opening Balance',
-        '-',
-        '-',
-        'Opening Stock Statement',
-        '-',
-        '-',
-        data.openingBalance.toString()
-      ]
-    ];
+        let csvContent = 'data:text/csv;charset=utf-8,';
+        csvContent += headers.join(',') + '\n';
+        rows.forEach(r => {
+          csvContent += r.map(field => `"${field.replace(/"/g, '""')}"`).join(',') + '\n';
+        });
 
-    data.transactions.forEach(tx => {
-      rows.push([
-        tx.date,
-        tx.type,
-        tx.docNo,
-        tx.ref,
-        tx.description,
-        tx.qtyIn > 0 ? tx.qtyIn.toString() : '0',
-        tx.qtyOut > 0 ? tx.qtyOut.toString() : '0',
-        tx.runningBalance.toString()
-      ]);
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement('a');
+        link.setAttribute('href', encodedUri);
+        link.setAttribute('download', `Item_Ledger_${this.selectedItemCode()}_${this.dateFrom()}_to_${this.dateTo()}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        this.notificationService.success(
+          this.translateService.instant('reports.notification_title'),
+          'Item Ledger exported successfully as CSV.'
+        );
+      }
     });
-
-    let csvContent = 'data:text/csv;charset=utf-8,';
-    csvContent += headers.join(',') + '\n';
-    rows.forEach(r => {
-      csvContent += r.map(field => `"${field.replace(/"/g, '""')}"`).join(',') + '\n';
-    });
-
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement('a');
-    link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `Item_Ledger_${this.selectedItemCode()}_${this.dateFrom()}_to_${this.dateTo()}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-
-    this.notificationService.success(
-      this.translateService.instant('reports.notification_title'),
-      'Item Ledger exported successfully as CSV.'
-    );
   }
 
   printReport() {

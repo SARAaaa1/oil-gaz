@@ -3,227 +3,275 @@
   <!-- Header -->
   <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
     <div>
-      <h1 class="text-2xl font-black text-slate-850 tracking-tight">{{ 'inventory.title' | translate }}</h1>
-      <p class="text-xs text-slate-500 font-semibold mt-1">{{ 'inventory.subtitle' | translate }}</p>
+      <h1 class="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2.5">
+        <span class="w-2.5 h-6 rounded-full inline-block" style="background-color: #005CB9;"></span>
+        <span>{{ 'inventory.title' | translate }}</span>
+      </h1>
+      <p class="text-xs text-slate-600 font-bold mt-1">{{ 'inventory.subtitle' | translate }}</p>
     </div>
     <div class="flex flex-wrap gap-2">
       <!-- Quick Action Buttons -->
-      <button (click)="openAddItem()" class="px-3.5 py-2 rounded-lg bg-slate-900 text-white text-xs font-bold hover:bg-slate-850 transition-colors shadow-sm flex items-center gap-1.5">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+      <button (click)="openAddItem()" class="px-4 py-2.5 rounded-xl text-white text-xs font-black transition-all shadow-md shadow-blue-900/20 hover:shadow-lg active:scale-95 flex items-center gap-2 cursor-pointer" style="background-color: #005CB9;">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
         {{ 'inventory.add_item' | translate }}
-      </button>
-      <button (click)="openImport(false)" class="px-3.5 py-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition-all flex items-center gap-1.5">
-        <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
-        {{ 'inventory.import_excel' | translate }}
       </button>
     </div>
   </div>
 
   <!-- KPI Summaries -->
-  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
     <!-- Total Valuation -->
-    <div class="bg-white p-5 rounded-xl border border-slate-100 shadow-sm flex items-center justify-between">
+    <div class="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-xs hover:shadow-md hover:border-blue-400 transition-all flex items-center justify-between group">
       <div class="space-y-1">
-        <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">{{ 'inventory.inventory_value' | translate }}</span>
-        <h2 class="text-2xl font-black text-slate-850">${{ inventoryValue() | number:'1.2-2' }}</h2>
+        <span class="text-xs font-black uppercase tracking-wider block" style="color: #005CB9;">{{ 'inventory.inventory_value' | translate }}</span>
+        <h2 class="text-2xl font-black text-slate-900">&#36;{{ inventoryValue() | number:'1.2-2' }}</h2>
+        <span class="text-[10px] text-slate-600 font-bold flex items-center gap-1">
+          <span class="w-1.5 h-1.5 rounded-full" style="background-color: #005CB9;"></span>
+          {{ totalStockQty() | number }} units in total
+        </span>
       </div>
-      <div class="p-3 bg-blue-50 rounded-xl">
-        <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      <div class="p-3 rounded-2xl group-hover:scale-110 transition-all" style="background-color: #F0F7FF; border: 1px solid #CBE2FC;">
+        <svg class="w-6 h-6 transition-colors" style="color: #005CB9;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
       </div>
     </div>
 
     <!-- Total Items -->
-    <div class="bg-white p-5 rounded-xl border border-slate-100 shadow-sm flex items-center justify-between">
+    <div class="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-xs hover:shadow-md hover:border-blue-400 transition-all flex items-center justify-between group">
       <div class="space-y-1">
-        <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">{{ 'inventory.total_items' | translate }}</span>
-        <h2 class="text-2xl font-black text-slate-800">{{ totalItemsCount() }}</h2>
+        <span class="text-xs font-black uppercase tracking-wider block" style="color: #005CB9;">{{ 'inventory.total_items' | translate }}</span>
+        <h2 class="text-2xl font-black text-slate-900">{{ totalItemsCount() }}</h2>
+        <span class="text-[10px] text-slate-600 font-bold flex items-center gap-1">
+          <span class="w-1.5 h-1.5 rounded-full" style="background-color: #005CB9;"></span>
+          {{ warehouses().length }} Active Warehouses
+        </span>
       </div>
-      <div class="p-3 bg-slate-100 rounded-xl">
-        <svg class="w-6 h-6 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+      <div class="p-3 rounded-2xl group-hover:scale-110 transition-all" style="background-color: #F0F7FF; border: 1px solid #CBE2FC;">
+        <svg class="w-6 h-6 transition-colors" style="color: #005CB9;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
       </div>
     </div>
 
     <!-- Low Stock -->
-    <div class="bg-white p-5 rounded-xl border border-slate-100 shadow-sm flex items-center justify-between">
+    <div class="bg-white p-5 rounded-2xl border border-amber-200/80 shadow-xs hover:shadow-md hover:border-amber-400 transition-all flex items-center justify-between group">
       <div class="space-y-1">
-        <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">{{ 'inventory.low_stock_indicators' | translate }}</span>
-        <h2 class="text-2xl font-black text-amber-500">{{ lowStockCount() }}</h2>
+        <span class="text-xs font-black text-amber-700 uppercase tracking-wider block">{{ 'inventory.low_stock_indicators' | translate }}</span>
+        <h2 class="text-2xl font-black text-slate-900">{{ lowStockCount() }}</h2>
+        <span class="text-[10px] text-amber-800 font-bold flex items-center gap-1">
+          <span class="w-1.5 h-1.5 rounded-full bg-amber-600"></span>
+          Under Reorder Level
+        </span>
       </div>
-      <div class="p-3 bg-amber-50 rounded-xl">
-        <svg class="w-6 h-6 text-amber-505" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+      <div class="p-3 bg-amber-50 border border-amber-200 rounded-2xl group-hover:scale-110 transition-all">
+        <svg class="w-6 h-6 text-amber-700 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
       </div>
     </div>
 
     <!-- Out Of Stock -->
-    <div class="bg-white p-5 rounded-xl border border-slate-100 shadow-sm flex items-center justify-between">
+    <div class="bg-white p-5 rounded-2xl border border-rose-200/80 shadow-xs hover:shadow-md hover:border-rose-400 transition-all flex items-center justify-between group">
       <div class="space-y-1">
-        <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">{{ 'inventory.out_of_stock_depleted' | translate }}</span>
-        <h2 class="text-2xl font-black text-danger">{{ outOfStockCount() }}</h2>
+        <span class="text-xs font-black text-rose-700 uppercase tracking-wider block">{{ 'inventory.out_of_stock_depleted' | translate }}</span>
+        <h2 class="text-2xl font-black text-rose-700">{{ outOfStockCount() }}</h2>
+        <span class="text-[10px] text-rose-800 font-bold flex items-center gap-1">
+          <span class="w-1.5 h-1.5 rounded-full bg-rose-600"></span>
+          Immediate Action Needed
+        </span>
       </div>
-      <div class="p-3 bg-red-50 rounded-xl">
-        <svg class="w-6 h-6 text-red-505" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      <div class="p-3 bg-rose-50 border border-rose-200 rounded-2xl group-hover:scale-110 transition-all">
+        <svg class="w-6 h-6 text-rose-700 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
       </div>
     </div>
   </div>
 
-  <!-- MULTI-TAB NAVIGATION PANEL -->
-  <div class="border-b border-slate-200">
-    <nav class="flex flex-wrap gap-1 md:gap-2 select-none">
-      <button 
-        (click)="activeTab.set('dashboard')" 
-        [class.border-slate-800]="activeTab() === 'dashboard'" 
-        [class.text-slate-900]="activeTab() === 'dashboard'"
-        [class.font-bold]="activeTab() === 'dashboard'"
-        class="pb-3 px-3 border-b-2 border-transparent text-xs text-slate-500 font-medium hover:text-slate-800 transition-all cursor-pointer"
-      >
-        {{ 'inventory.tab_dashboard' | translate }}
-      </button>
-      <button 
-        (click)="activeTab.set('items')" 
-        [class.border-slate-800]="activeTab() === 'items'" 
-        [class.text-slate-900]="activeTab() === 'items'"
-        [class.font-bold]="activeTab() === 'items'"
-        class="pb-3 px-3 border-b-2 border-transparent text-xs text-slate-500 font-medium hover:text-slate-800 transition-all cursor-pointer"
-      >
-        {{ 'inventory.tab_items' | translate }}
-      </button>
-      <button 
-        (click)="activeTab.set('warehouses')" 
-        [class.border-slate-800]="activeTab() === 'warehouses'" 
-        [class.text-slate-900]="activeTab() === 'warehouses'"
-        [class.font-bold]="activeTab() === 'warehouses'"
-        class="pb-3 px-3 border-b-2 border-transparent text-xs text-slate-500 font-medium hover:text-slate-800 transition-all cursor-pointer"
-      >
-        {{ 'inventory.tab_warehouses' | translate }}
-      </button>
-      <button 
-        (click)="activeTab.set('opening-stock')" 
-        [class.border-slate-800]="activeTab() === 'opening-stock'" 
-        [class.text-slate-900]="activeTab() === 'opening-stock'"
-        [class.font-bold]="activeTab() === 'opening-stock'"
-        class="pb-3 px-3 border-b-2 border-transparent text-xs text-slate-500 font-medium hover:text-slate-800 transition-all cursor-pointer whitespace-nowrap"
-      >
-        {{ 'inventory.tab_opening_stock' | translate }}
-      </button>
-      <a 
-        routerLink="/inventory/goods-receipts" 
-        class="pb-3 px-3 border-b-2 border-transparent text-xs text-slate-500 font-medium hover:text-slate-800 transition-all cursor-pointer"
-      >
-        {{ 'inventory.tab_mrv' | translate }}
-      </a>
-      <button 
-        (click)="activeTab.set('miv')" 
-        [class.border-slate-800]="activeTab() === 'miv'" 
-        [class.text-slate-900]="activeTab() === 'miv'"
-        [class.font-bold]="activeTab() === 'miv'"
-        class="pb-3 px-3 border-b-2 border-transparent text-xs text-slate-500 font-medium hover:text-slate-800 transition-all cursor-pointer"
-      >
-        {{ 'inventory.tab_miv' | translate }}
-      </button>
-      <button 
-        (click)="activeTab.set('transfers')" 
-        [class.border-slate-800]="activeTab() === 'transfers'" 
-        [class.text-slate-900]="activeTab() === 'transfers'"
-        [class.font-bold]="activeTab() === 'transfers'"
-        class="pb-3 px-3 border-b-2 border-transparent text-xs text-slate-500 font-medium hover:text-slate-800 transition-all cursor-pointer"
-      >
-        {{ 'inventory.tab_transfers' | translate }}
-      </button>
-      <button 
-        (click)="activeTab.set('adjustments')" 
-        [class.border-slate-800]="activeTab() === 'adjustments'" 
-        [class.text-slate-900]="activeTab() === 'adjustments'"
-        [class.font-bold]="activeTab() === 'adjustments'"
-        class="pb-3 px-3 border-b-2 border-transparent text-xs text-slate-500 font-medium hover:text-slate-800 transition-all cursor-pointer"
-      >
-        {{ 'inventory.tab_adjustments' | translate }}
-      </button>
-      <button 
-        (click)="activeTab.set('valuation')" 
-        [class.border-slate-800]="activeTab() === 'valuation'" 
-        [class.text-slate-900]="activeTab() === 'valuation'"
-        [class.font-bold]="activeTab() === 'valuation'"
-        class="pb-3 px-3 border-b-2 border-transparent text-xs text-slate-500 font-medium hover:text-slate-800 transition-all cursor-pointer"
-      >
-        {{ 'inventory.tab_valuation' | translate }}
-      </button>
-      <button 
-        (click)="activeTab.set('history')" 
-        [class.border-slate-800]="activeTab() === 'history'" 
-        [class.text-slate-900]="activeTab() === 'history'"
-        [class.font-bold]="activeTab() === 'history'"
-        class="pb-3 px-3 border-b-2 border-transparent text-xs text-slate-500 font-medium hover:text-slate-800 transition-all cursor-pointer"
-      >
-        {{ 'inventory.tab_history' | translate }}
-      </button>
-      <button
-        (click)="activeTab.set('reservations')"
-        [class.border-indigo-600]="activeTab() === 'reservations'"
-        [class.text-indigo-600]="activeTab() === 'reservations'"
-        [class.font-bold]="activeTab() === 'reservations'"
-        class="pb-3 px-3 border-b-2 border-transparent text-xs text-slate-500 font-medium hover:text-indigo-600 transition-all cursor-pointer whitespace-nowrap"
-      >
-        🔒 {{ 'inventory.tab_reservations' | translate }}
-        @if (pendingReservations() > 0) {
-          <span class="ml-1 bg-amber-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full">{{ pendingReservations() }}</span>
-        }
-      </button>
-    </nav>
-  </div>
-
   <!-- TAB CONTENT VIEWS -->
 
-  <!-- 1. DASHBOARD VIEW -->
+  <!-- 1. DASHBOARD & WAREHOUSE STATISTICS VIEW -->
   @if (activeTab() === 'dashboard') {
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-fade-in">
+    <div class="space-y-6 animate-fade-in">
       
-      <!-- Category Chart Breakdown -->
-      <div class="bg-white p-5 rounded-xl border border-slate-100 shadow-sm lg:col-span-2 space-y-4">
-        <h3 class="text-sm font-bold text-slate-800">Valuation Breakdown by Warehouse</h3>
-        <div class="space-y-3">
-          @for (wh of warehouses(); track wh.id) {
-            <div class="space-y-1 text-xs">
-              <div class="flex items-center justify-between">
-                <span class="font-bold text-slate-700">{{ wh.name }} ({{ wh.code }})</span>
-                <span class="font-bold font-mono text-slate-800">${{ (wh.id === 'w1' ? 820000 : wh.id === 'w2' ? 410000 : 120000) | number }}</span>
+      <!-- Section Header -->
+      <div class="flex items-center justify-between pt-2">
+        <div class="flex items-center gap-2.5">
+          <span class="p-2.5 rounded-xl text-white shadow-xs" style="background-color: #005CB9;">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+          </span>
+          <div>
+            <h3 class="text-base font-black text-slate-900">توزيع المستودعات وحجم المخزون</h3>
+            <p class="text-xs font-bold text-slate-600">Warehouse Allocation &amp; Capital Distribution</p>
+          </div>
+        </div>
+        <span class="px-3.5 py-1.5 rounded-full text-xs font-black border" style="background-color: #F0F7FF; color: #005CB9; border-color: #CBE2FC;">
+          {{ warehouseValuations().length }} مستودعات نشطة
+        </span>
+      </div>
+
+      <!-- Warehouse Breakdown Cards -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        @for (wh of warehouseValuations(); track wh.id || wh.code || $index) {
+          <div class="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-xs hover:shadow-md hover:border-blue-500 transition-all space-y-4 group">
+            <div class="flex items-start justify-between">
+              <div>
+                <div class="flex items-center gap-2">
+                  <span class="w-2.5 h-2.5 rounded-full ring-2 ring-emerald-100" [class.bg-emerald-500]="wh.status === 'Active'" [class.bg-slate-300]="wh.status !== 'Active'"></span>
+                  <h4 class="font-black text-slate-900 text-sm group-hover:text-blue-900 transition-colors">{{ wh.name }}</h4>
+                </div>
+                <p class="text-[11px] font-mono font-bold mt-0.5" style="color: #005CB9;">{{ wh.code }} &bull; {{ wh.location || 'Central Facility' }}</p>
               </div>
-              <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+              <span class="px-2.5 py-1 text-[11px] font-black rounded-lg font-mono border" style="background-color: #F0F7FF; color: #005CB9; border-color: #CBE2FC;">
+                {{ wh.percentage }}%
+              </span>
+            </div>
+
+            <!-- Stats Grid -->
+            <div class="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100 text-xs">
+              <div class="p-2.5 rounded-xl border border-slate-100 bg-slate-50/70">
+                <span class="text-[10px] text-slate-600 font-black uppercase tracking-wider block">Items Stored</span>
+                <span class="text-sm font-black text-slate-900 font-mono">{{ wh.itemsCount }} <span class="text-[10px] font-bold" style="color: #005CB9;">SKUs</span></span>
+              </div>
+              <div class="p-2.5 rounded-xl border border-slate-100 bg-slate-50/70">
+                <span class="text-[10px] text-slate-600 font-black uppercase tracking-wider block">Total Quantity</span>
+                <span class="text-sm font-black text-slate-900 font-mono">{{ wh.totalQty | number }}</span>
+              </div>
+            </div>
+
+            <!-- Valuation Bar -->
+            <div class="space-y-1.5 pt-1">
+              <div class="flex justify-between items-center text-xs">
+                <span class="text-slate-800 font-bold">Total Valuation</span>
+                <span class="font-black text-emerald-800 font-mono">&#36;{{ wh.value | number:'1.2-2' }}</span>
+              </div>
+              <div class="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden p-0.5 border border-slate-200">
                 <div 
-                  class="bg-blue-600 h-2 rounded-full" 
-                  [style.width.%]="wh.id === 'w1' ? 60 : wh.id === 'w2' ? 30 : 10"
+                  class="h-1.5 rounded-full transition-all duration-700" 
+                  style="background: linear-gradient(90deg, #009FE3 0%, #005CB9 100%);"
+                  [style.width.%]="wh.percentage"
                 ></div>
               </div>
             </div>
-          }
-        </div>
+
+            <div class="pt-2 flex justify-end">
+              <a 
+                routerLink="/inventory" 
+                [queryParams]="{ tab: 'items' }" 
+                (click)="locationFilter.set(wh.name); activeTab.set('items')"
+                class="text-xs font-black flex items-center gap-1.5 cursor-pointer hover:underline"
+                style="color: #005CB9;"
+              >
+                <span>عرض المواد في هذا المخزن</span>
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
+              </a>
+            </div>
+          </div>
+        }
       </div>
 
-      <!-- Critical Warnings Card -->
-      <div class="bg-white p-5 rounded-xl border border-slate-100 shadow-sm space-y-4">
-        <h3 class="text-sm font-bold text-slate-800">Critical Stock Warnings</h3>
-        <div class="space-y-3">
-          @for (item of inventory(); track item.id) {
-            @if (item.status !== 'In Stock') {
-              <div class="flex items-center justify-between p-2.5 rounded-lg bg-slate-50 text-xs border-l-4" 
-                [class.border-amber-500]="item.status === 'Low Stock'" 
-                [class.border-red-500]="item.status === 'Out of Stock'">
-                <div>
-                  <p class="font-bold text-slate-850">{{ item.itemName }}</p>
-                  <p class="text-[10px] text-slate-400 font-mono">{{ item.itemCode }} - {{ item.location }}</p>
+      <!-- Two Columns: Critical Stock Warnings & Recent Warehouse Movements -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-2">
+
+        <!-- Critical Stock Warnings -->
+        <div class="bg-white p-5 rounded-2xl border border-amber-200/80 shadow-xs space-y-4">
+          <div class="flex items-center justify-between pb-2 border-b border-amber-100">
+            <div class="flex items-center gap-2.5">
+              <span class="p-2.5 bg-amber-500 text-white rounded-xl shadow-xs">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+              </span>
+              <div>
+                <h3 class="text-sm font-black text-slate-900">تنبيهات انخفاض ونفاد المواد</h3>
+                <p class="text-[11px] font-bold text-amber-800">Critical Stock &amp; Reorder Alerts</p>
+              </div>
+            </div>
+            <span class="px-2.5 py-1 bg-amber-50 text-amber-800 border border-amber-200 rounded-full text-xs font-mono font-black">
+              {{ criticalStockItems().length }} items
+            </span>
+          </div>
+
+          <div class="space-y-2.5 max-h-[380px] overflow-y-auto pr-1">
+            @for (item of criticalStockItems(); track item.id) {
+              <div class="flex items-center justify-between p-3.5 rounded-xl bg-slate-50 border border-slate-200 hover:border-amber-300 hover:bg-amber-50/20 transition-all text-xs">
+                <div class="space-y-0.5">
+                  <p class="font-black text-slate-900 text-xs">{{ item.itemName }}</p>
+                  <p class="text-[11px] font-mono font-bold" style="color: #005CB9;">{{ item.itemCode }} &bull; {{ item.location || 'Main Warehouse' }}</p>
                 </div>
-                <div class="text-right">
-                  <p class="font-extrabold text-slate-700">{{ item.quantity }} / {{ item.minQuantity }}</p>
-                  <span class="text-[9px] font-extrabold uppercase tracking-wide" 
-                    [class.text-amber-500]="item.status === 'Low Stock'" 
-                    [class.text-red-500]="item.status === 'Out of Stock'">
+                <div class="text-right space-y-1">
+                  <p class="font-black text-slate-900 font-mono">
+                    {{ item.quantity }} <span class="text-slate-500 font-normal">/ min {{ item.minQuantity }}</span>
+                  </p>
+                  <span 
+                    class="px-2.5 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wider inline-block" 
+                    [class.bg-amber-100]="item.status === 'Low Stock'" 
+                    [class.text-amber-800]="item.status === 'Low Stock'" 
+                    [class.bg-rose-100]="item.status === 'Out of Stock'" 
+                    [class.text-rose-800]="item.status === 'Out of Stock'"
+                  >
                     {{ item.status }}
                   </span>
                 </div>
               </div>
+            } @empty {
+              <div class="py-12 text-center text-slate-500 font-bold text-xs">
+                <svg class="w-10 h-10 mx-auto mb-2 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                جميع المواد متوفرة بكفاية وفوق حدود الأمان وإعادة الطلب.
+              </div>
             }
-          }
+          </div>
         </div>
+
+        <!-- Recent Warehouse Movements -->
+        <div class="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-xs space-y-4">
+          <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+            <div class="flex items-center gap-2.5">
+              <span class="p-2.5 rounded-xl text-white shadow-xs" style="background-color: #005CB9;">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
+              </span>
+              <div>
+                <h3 class="text-sm font-black text-slate-900">أحدث حركات وسندات المستودعات</h3>
+                <p class="text-[11px] font-bold text-slate-600">Recent Inventory Transactions</p>
+              </div>
+            </div>
+            <span class="px-3 py-1 rounded-full text-xs font-mono font-black border" style="background-color: #F0F7FF; color: #005CB9; border-color: #CBE2FC;">
+              Latest 8 events
+            </span>
+          </div>
+
+          <div class="space-y-2.5 max-h-[380px] overflow-y-auto pr-1">
+            @for (mov of recentMovements(); track mov.number + $index) {
+              <div class="flex items-center justify-between p-3.5 rounded-xl bg-slate-50 border border-slate-200 hover:border-blue-400 hover:bg-blue-50/20 transition-all text-xs">
+                <div class="flex items-center gap-3">
+                  <span 
+                    class="px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider shadow-xs"
+                    [class.bg-emerald-100]="mov.type === 'MRV'"
+                    [class.text-emerald-800]="mov.type === 'MRV'"
+                    [class.bg-blue-100]="mov.type === 'MIV'"
+                    [class.text-blue-900]="mov.type === 'MIV'"
+                    [class.bg-indigo-100]="mov.type === 'Transfer'"
+                    [class.text-indigo-900]="mov.type === 'Transfer'"
+                    [class.bg-amber-100]="mov.type === 'Adjustment'"
+                    [class.text-amber-800]="mov.type === 'Adjustment'"
+                  >
+                    {{ mov.type }}
+                  </span>
+                  <div>
+                    <p class="font-mono font-black text-slate-900 text-xs">{{ mov.number }}</p>
+                    <p class="text-[11px] font-semibold text-slate-600">{{ mov.warehouse }} &bull; {{ mov.date | date:'shortDate' }}</p>
+                  </div>
+                </div>
+                <div class="text-right">
+                  <span class="px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wide border" style="background-color: #F0F7FF; color: #005CB9; border-color: #CBE2FC;">
+                    {{ mov.status }}
+                  </span>
+                  @if (mov.amount) {
+                    <p class="text-[11px] font-mono font-black text-slate-900 mt-0.5">&#36;{{ mov.amount | number:'1.2-2' }}</p>
+                  }
+                </div>
+              </div>
+            } @empty {
+              <div class="py-12 text-center text-slate-500 font-bold text-xs">
+                لا توجد حركات أو معاملات مخزنية مسجلة حتى الآن.
+              </div>
+            }
+          </div>
+        </div>
+
       </div>
+
     </div>
   }
 
@@ -244,12 +292,13 @@
         <div class="flex items-center gap-2">
           <span class="text-slate-400 font-semibold">{{ 'inventory.warehouse_loc' | translate }}</span>
           <select 
+            [value]="locationFilter()"
             (change)="locationFilter.set($any($event.target).value)"
             class="bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-700 focus:outline-none"
           >
             <option value="ALL">{{ 'inventory.all_warehouses' | translate }}</option>
             @for (wh of warehouses(); track wh.id || wh.code || $index) {
-              <option [value]="wh.name">{{ wh.name }}</option>
+              <option [value]="wh.name">{{ wh.name }} ({{ wh.code }})</option>
             }
           </select>
         </div>
@@ -277,7 +326,12 @@
                 <td class="p-4 font-mono font-bold text-slate-500">{{ item.itemCode }}</td>
                 <td class="p-4 font-bold text-slate-900">{{ item.itemName }}</td>
                 <td class="p-4 text-slate-600">{{ item.category }}</td>
-                <td class="p-4 text-slate-500">{{ item.location }}</td>
+                <td class="p-4 text-slate-700">
+                  <div class="font-bold text-slate-900">{{ item.warehouseName || item.location }}</div>
+                  @if (item.warehouseCode) {
+                    <div class="text-[10px] font-mono font-bold" style="color: #005CB9;">{{ item.warehouseCode }}</div>
+                  }
+                </td>
                 <td class="p-4 text-right font-mono font-bold">{{ item.quantity | number }}</td>
                 <td class="p-4 text-center text-slate-400 font-bold">{{ item.uom }}</td>
                 <td class="p-4 text-right font-mono text-slate-650">${{ item.unitPrice | number:'1.2-2' }}</td>
@@ -338,6 +392,15 @@
                   </span>
                 </td>
                 <td class="p-4 text-center space-x-2">
+                  <a 
+                    routerLink="/inventory" 
+                    [queryParams]="{ tab: 'items' }" 
+                    (click)="locationFilter.set(wh.name); activeTab.set('items')"
+                    class="px-2 py-1 text-blue-600 hover:bg-blue-50 rounded text-xs font-bold transition-colors cursor-pointer"
+                    title="عرض المواد في هذا المخزن"
+                  >
+                    عرض المواد
+                  </a>
                   @if (canEditInventory()) {
                     <button 
                       (click)="openEditWarehouse(wh)" 

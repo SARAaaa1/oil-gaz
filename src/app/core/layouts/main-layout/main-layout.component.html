@@ -395,6 +395,14 @@
             <div class="sidebar-submenu-container transition-all duration-300">
               <a 
                 routerLink="/inventory" 
+                [queryParams]="{ tab: 'dashboard' }"
+                routerLinkActive="active"
+                class="sidebar-submenu-item group/item"
+              >
+                {{ 'navigation.inventory_dashboard' | translate }}
+              </a>
+              <a 
+                routerLink="/inventory" 
                 [queryParams]="{ tab: 'items' }"
                 routerLinkActive="active"
                 class="sidebar-submenu-item group/item"
@@ -408,6 +416,14 @@
                 class="sidebar-submenu-item group/item"
               >
                 {{ 'navigation.warehouses' | translate }}
+              </a>
+              <a 
+                routerLink="/inventory" 
+                [queryParams]="{ tab: 'opening-stock' }"
+                routerLinkActive="active"
+                class="sidebar-submenu-item group/item"
+              >
+                {{ 'navigation.opening_stock' | translate }}
               </a>
               <a 
                 routerLink="/inventory/goods-receipts" 
@@ -453,6 +469,13 @@
                 class="sidebar-submenu-item group/item"
               >
                 {{ 'navigation.stock_summary' | translate }}
+              </a>
+              <a 
+                routerLink="/inventory/reports" 
+                routerLinkActive="active"
+                class="sidebar-submenu-item group/item"
+              >
+                {{ 'navigation.inventory_reports' | translate }}
               </a>
             </div>
           }

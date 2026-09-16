@@ -9,6 +9,9 @@ export interface InventoryItem {
   location: string;
   unitPrice: number;
   status: 'In Stock' | 'Low Stock' | 'Out of Stock';
+  warehouseId?: string;
+  warehouseCode?: string;
+  warehouseName?: string;
 }
 
 export interface Warehouse {
@@ -186,6 +189,7 @@ export interface OpeningStockItem {
   itemName?: string;
   warehouseCode: string;
   warehouseName?: string;
+  warehouseId?: string;
   openingQuantity: number;
   unitOfMeasure: string;
   location?: string;
@@ -238,13 +242,182 @@ export interface OpeningStockImportResponse {
     createdMaterials?: number;
     existingMaterials?: number;
   };
-  results?: Array<{
-    row: number;
-    itemCode: string;
-    warehouseCode: string;
-    status: string;
-    openingNumber: string;
-  }>;
   errors?: OpeningStockImportError[];
+}
+
+// ── Advanced Reports Interfaces ─────────────────────────────────────────────
+
+export interface ItemLedgerReportResponse {
+  item: {
+    _id: string;
+    itemCode: string;
+    name: string;
+    unit: string;
+    unitCost: number;
+  };
+  period: {
+    startDate?: string;
+    endDate?: string;
+  };
+  openingBalance: number;
+  openingValue: number;
+  totalIn: number;
+  totalOut: number;
+  closingBalance: number;
+  closingValue: number;
+  transactions: Array<{
+    transactionId: string;
+    date: string;
+    type: string;
+    reference: string;
+    warehouse?: {
+      _id: string;
+      name: string;
+    };
+    partner?: string;
+    qtyIn: number;
+    qtyOut: number;
+    runningBalance: number;
+    unitPrice: number;
+    totalPrice: number;
+    runningValue: number;
+    remarks?: string;
+  }>;
+}
+
+export interface StockSummaryReportResponse {
+  kpis: {
+    totalItemsCount: number;
+    totalStockQty: number;
+    totalValuationUSD: number;
+    lowStockCount: number;
+  };
+  items: Array<{
+    itemId: string;
+    itemCode: string;
+    itemName: string;
+    category?: string;
+    uom: string;
+    openingBalance: number;
+    purchases: number;
+    opsIn: number;
+    transfersIn: number;
+    consumption: number;
+    opsOut: number;
+    transfersOut: number;
+    contractors: number;
+    currentBalance: number;
+    closingBalance: number;
+    unitPrice: number;
+    totalValue: number;
+    minQuantity: number;
+    status: string;
+  }>;
+}
+
+export interface ValuationReportResponse {
+  asOfDate: string;
+  valuationMethod: 'WAVG' | 'FIFO';
+  summary: {
+    totalSKUs: number;
+    totalPhysicalUnits: number;
+    totalInventoryAssetValue: number;
+  };
+  byCategory: Array<{
+    category: string;
+    skuCount: number;
+    totalQty: number;
+    totalValuation: number;
+  }>;
+  items: Array<{
+    itemId: string;
+    itemCode: string;
+    itemName: string;
+    uom: string;
+    warehouseId?: string;
+    warehouseName?: string;
+    onHandQty: number;
+    averageUnitCost: number;
+    totalAssetValue: number;
+    lastReceivedDate?: string;
+  }>;
+}
+
+export interface ReorderAlertItem {
+  itemId: string;
+  itemCode: string;
+  itemName: string;
+  warehouseName?: string;
+  currentStock: number;
+  minQuantity: number;
+  maxQuantity: number;
+  reorderQuantity: number;
+  urgency: 'CRITICAL' | 'WARNING';
+  openPurchaseOrderQty: number;
+}
+
+export interface ReorderAlertsReportResponse {
+  totalAlerts: number;
+  criticalAlerts: number;
+  warningAlerts: number;
+  alerts: ReorderAlertItem[];
+}
+
+export interface StockAgingReportResponse {
+  agingDistribution: {
+    tier_0_30: { qty: number; value: number };
+    tier_31_60: { qty: number; value: number };
+    tier_61_90: { qty: number; value: number };
+    tier_91_180: { qty: number; value: number };
+    tier_over_180: { qty: number; value: number };
+  };
+  deadStockItems: Array<{
+    itemId: string;
+    itemCode: string;
+    itemName: string;
+    onHandQty: number;
+    unitCost: number;
+    totalValuation: number;
+    lastMovementDate?: string;
+    daysDormant: number;
+  }>;
+}
+
+export interface ConsumptionByProjectReportResponse {
+  totalConsumptionValue: number;
+  projects: Array<{
+    projectId: string;
+    projectName: string;
+    totalItemsIssued: number;
+    totalCost: number;
+    topMaterials: Array<{
+      itemCode: string;
+      name: string;
+      quantity: number;
+      cost: number;
+    }>;
+  }>;
+}
+
+export interface StockCountVarianceReportResponse {
+  summary: {
+    totalCounts: number;
+    totalItemsAudited: number;
+    discrepanciesCount: number;
+    netVarianceQty: number;
+    netVarianceValue: number;
+  };
+  variances: Array<{
+    countNumber: string;
+    countDate: string;
+    warehouseName: string;
+    itemCode: string;
+    itemName: string;
+    systemQuantity: number;
+    countedQuantity: number;
+    variance: number;
+    unitPrice: number;
+    varianceValue: number;
+  }>;
 }
 

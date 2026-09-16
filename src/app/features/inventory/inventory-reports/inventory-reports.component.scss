@@ -1,0 +1,7 @@
+.printable-container {
+  @media print {
+    .no-print {
+      display: none !important;
+    }
+  }
+}

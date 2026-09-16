@@ -607,66 +607,81 @@ export class StockSummaryComponent implements OnInit {
   }
 
   exportToCSV() {
-    const headers = [
-      'Item Code',
-      'Item Name',
-      'Unit',
-      'Opening Balance',
-      'Purchases',
-      'Operations In',
-      'Transfers In',
-      'Consumption',
-      'Operations Out',
-      'Contractors',
-      'Current Balance',
-      'Closing Balance',
-      'Unit Cost ($)',
-      'Valuation ($)',
-      'PTD In',
-      'PTD Out',
-      'PTD Consumption',
-      'Status'
-    ];
+    this.inventoryApi.downloadReportCsv('stock-summary', {
+      warehouseId: this.selectedWarehouseId(),
+      startDate: this.dateFrom(),
+      endDate: this.dateTo()
+    }, `Stock_Summary_${this.dateFrom() || 'start'}_to_${this.dateTo() || 'today'}`).subscribe({
+      next: () => {
+        this.notificationService.success(
+          this.translateService.instant('reports.notification_title'),
+          'Stock Summary exported successfully as CSV from Server.'
+        );
+      },
+      error: () => {
+        // Fallback to client-side CSV generation
+        const headers = [
+          'Item Code',
+          'Item Name',
+          'Unit',
+          'Opening Balance',
+          'Purchases',
+          'Operations In',
+          'Transfers In',
+          'Consumption',
+          'Operations Out',
+          'Contractors',
+          'Current Balance',
+          'Closing Balance',
+          'Unit Cost ($)',
+          'Valuation ($)',
+          'PTD In',
+          'PTD Out',
+          'PTD Consumption',
+          'Status'
+        ];
 
-    const rows = this.summaryRows().map(row => [
-      row.itemCode,
-      row.itemName,
-      row.uom,
-      row.openingBalance.toString(),
-      row.purchases.toString(),
-      row.opsIn.toString(),
-      row.transfersIn.toString(),
-      row.consumption.toString(),
-      row.opsOut.toString(),
-      row.contractors.toString(),
-      row.currentBalance.toString(),
-      row.closingBalance.toString(),
-      (row.unitPrice || 0).toFixed(2),
-      (row.totalValue || 0).toFixed(2),
-      row.ptdIn.toString(),
-      row.ptdOut.toString(),
-      row.ptdConsumption.toString(),
-      row.status
-    ]);
+        const rows = this.summaryRows().map(row => [
+          row.itemCode,
+          row.itemName,
+          row.uom,
+          row.openingBalance.toString(),
+          row.purchases.toString(),
+          row.opsIn.toString(),
+          row.transfersIn.toString(),
+          row.consumption.toString(),
+          row.opsOut.toString(),
+          row.contractors.toString(),
+          row.currentBalance.toString(),
+          row.closingBalance.toString(),
+          (row.unitPrice || 0).toFixed(2),
+          (row.totalValue || 0).toFixed(2),
+          row.ptdIn.toString(),
+          row.ptdOut.toString(),
+          row.ptdConsumption.toString(),
+          row.status
+        ]);
 
-    let csvContent = 'data:text/csv;charset=utf-8,';
-    csvContent += headers.join(',') + '\n';
-    rows.forEach(r => {
-      csvContent += r.map(field => `"${field.replace(/"/g, '""')}"`).join(',') + '\n';
+        let csvContent = 'data:text/csv;charset=utf-8,';
+        csvContent += headers.join(',') + '\n';
+        rows.forEach(r => {
+          csvContent += r.map(field => `"${field.replace(/"/g, '""')}"`).join(',') + '\n';
+        });
+
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement('a');
+        link.setAttribute('href', encodedUri);
+        link.setAttribute('download', `Stock_Summary_${this.dateFrom()}_to_${this.dateTo()}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        this.notificationService.success(
+          this.translateService.instant('reports.notification_title'),
+          'Stock Summary exported successfully as CSV.'
+        );
+      }
     });
-
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement('a');
-    link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `Stock_Summary_${this.dateFrom()}_to_${this.dateTo()}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-
-    this.notificationService.success(
-      this.translateService.instant('reports.notification_title'),
-      'Stock Summary exported successfully as CSV.'
-    );
   }
 
   printReport() {

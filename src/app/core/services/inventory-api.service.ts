@@ -3,7 +3,17 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
-import { CreateOpeningStockDto, OpeningStockImportResponse } from '../../shared/interfaces/inventory.interface';
+import { 
+  CreateOpeningStockDto, 
+  OpeningStockImportResponse,
+  ItemLedgerReportResponse,
+  StockSummaryReportResponse,
+  ValuationReportResponse,
+  ReorderAlertsReportResponse,
+  StockAgingReportResponse,
+  ConsumptionByProjectReportResponse,
+  StockCountVarianceReportResponse
+} from '../../shared/interfaces/inventory.interface';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -483,7 +493,7 @@ export class InventoryApiService {
     );
   }
 
-  // ── Reports ────────────────────────────────────────────────────────────────
+  // ── Reports (Legacy & Enterprise v1 Endpoints) ───────────────────────────
 
   /** GET /inventory/summary */
   getSummary(): Observable<InventorySummary> {
@@ -495,7 +505,7 @@ export class InventoryApiService {
     );
   }
 
-  /** GET /inventory/valuation */
+  /** GET /inventory/valuation (Legacy) */
   getValuation(): Observable<any[]> {
     return this.http.get<ApiResponse<any[]>>(
       `${this.baseUrl}/valuation`
@@ -505,12 +515,208 @@ export class InventoryApiService {
     );
   }
 
-  /** GET /inventory/item-ledger/:itemCode */
+  /** GET /inventory/item-ledger/:itemCode (Legacy) */
   getItemLedger(itemCode: string): Observable<any> {
     return this.http.get<ApiResponse<any>>(
       `${this.baseUrl}/item-ledger/${itemCode}`
     ).pipe(
       map(res => res.data ?? res),
+      catchError(err => throwError(() => err))
+    );
+  }
+
+  // ── Enterprise Reporting Engine Endpoints (/inventory/reports/*) ──────────
+
+  /**
+   * 1. GET /inventory/reports/item-ledger
+   * كارت حركة الصنف التاريخي مع رصيد افتتاحي وحركات ورصيد إغلاق
+   */
+  getReportItemLedger(params: {
+    itemId: string;
+    warehouseId?: string;
+    startDate?: string;
+    endDate?: string;
+  }): Observable<ItemLedgerReportResponse> {
+    let httpParams = new HttpParams().set('itemId', params.itemId);
+    if (params.warehouseId && params.warehouseId !== 'all') httpParams = httpParams.set('warehouseId', params.warehouseId);
+    if (params.startDate) httpParams = httpParams.set('startDate', params.startDate);
+    if (params.endDate) httpParams = httpParams.set('endDate', params.endDate);
+
+    return this.http.get<ApiResponse<ItemLedgerReportResponse>>(
+      `${this.baseUrl}/reports/item-ledger`,
+      { params: httpParams }
+    ).pipe(
+      map(res => res.data ?? (res as any)),
+      catchError(err => throwError(() => err))
+    );
+  }
+
+  /**
+   * 2. GET /inventory/reports/stock-summary
+   * مصفوفة أرصدة المخزون وحركاته (افتتاحي، مشتريات، منصرف، تحويلات، رصيد ختامي) + مؤشرات KPIs
+   */
+  getReportStockSummary(params: {
+    warehouseId?: string;
+    categoryId?: string;
+    search?: string;
+    startDate?: string;
+    endDate?: string;
+  } = {}): Observable<StockSummaryReportResponse> {
+    let httpParams = new HttpParams();
+    if (params.warehouseId && params.warehouseId !== 'all') httpParams = httpParams.set('warehouseId', params.warehouseId);
+    if (params.categoryId && params.categoryId !== 'all') httpParams = httpParams.set('categoryId', params.categoryId);
+    if (params.search) httpParams = httpParams.set('search', params.search);
+    if (params.startDate) httpParams = httpParams.set('startDate', params.startDate);
+    if (params.endDate) httpParams = httpParams.set('endDate', params.endDate);
+
+    return this.http.get<ApiResponse<StockSummaryReportResponse>>(
+      `${this.baseUrl}/reports/stock-summary`,
+      { params: httpParams }
+    ).pipe(
+      map(res => res.data ?? (res as any)),
+      catchError(err => throwError(() => err))
+    );
+  }
+
+  /**
+   * 3. GET /inventory/reports/valuation
+   * تقرير تقييم أصول المخزون المالي بنظامي WAVG أو FIFO
+   */
+  getReportValuation(params: {
+    warehouseId?: string;
+    asOfDate?: string;
+    valuationMethod?: 'WAVG' | 'FIFO';
+  } = {}): Observable<ValuationReportResponse> {
+    let httpParams = new HttpParams();
+    if (params.warehouseId && params.warehouseId !== 'all') httpParams = httpParams.set('warehouseId', params.warehouseId);
+    if (params.asOfDate) httpParams = httpParams.set('asOfDate', params.asOfDate);
+    if (params.valuationMethod) httpParams = httpParams.set('valuationMethod', params.valuationMethod);
+
+    return this.http.get<ApiResponse<ValuationReportResponse>>(
+      `${this.baseUrl}/reports/valuation`,
+      { params: httpParams }
+    ).pipe(
+      map(res => res.data ?? (res as any)),
+      catchError(err => throwError(() => err))
+    );
+  }
+
+  /**
+   * 4. GET /inventory/reports/reorder-alerts
+   * تنبيهات إعادة الطلب ونفاد المخزون (حرجة وتحذيرية) مع كميات أوامر الشراء المفتوحة
+   */
+  getReportReorderAlerts(params: {
+    warehouseId?: string;
+    urgency?: 'critical' | 'warning';
+  } = {}): Observable<ReorderAlertsReportResponse> {
+    let httpParams = new HttpParams();
+    if (params.warehouseId && params.warehouseId !== 'all') httpParams = httpParams.set('warehouseId', params.warehouseId);
+    if (params.urgency) httpParams = httpParams.set('urgency', params.urgency);
+
+    return this.http.get<ApiResponse<ReorderAlertsReportResponse>>(
+      `${this.baseUrl}/reports/reorder-alerts`,
+      { params: httpParams }
+    ).pipe(
+      map(res => res.data ?? (res as any)),
+      catchError(err => throwError(() => err))
+    );
+  }
+
+  /**
+   * 5. GET /inventory/reports/aging
+   * أعمار المخزون والركود (Aging Brackets) وتحديد الأصناف الراكدة (Dead Stock)
+   */
+  getReportAging(params: {
+    warehouseId?: string;
+    asOfDate?: string;
+  } = {}): Observable<StockAgingReportResponse> {
+    let httpParams = new HttpParams();
+    if (params.warehouseId && params.warehouseId !== 'all') httpParams = httpParams.set('warehouseId', params.warehouseId);
+    if (params.asOfDate) httpParams = httpParams.set('asOfDate', params.asOfDate);
+
+    return this.http.get<ApiResponse<StockAgingReportResponse>>(
+      `${this.baseUrl}/reports/aging`,
+      { params: httpParams }
+    ).pipe(
+      map(res => res.data ?? (res as any)),
+      catchError(err => throwError(() => err))
+    );
+  }
+
+  /**
+   * 6. GET /inventory/reports/consumption-by-project
+   * استهلاك المواد موزعة حسب المشروع أو مركز التكلفة
+   */
+  getReportConsumptionByProject(params: {
+    projectId?: string;
+    costCenter?: string;
+    startDate?: string;
+    endDate?: string;
+  } = {}): Observable<ConsumptionByProjectReportResponse> {
+    let httpParams = new HttpParams();
+    if (params.projectId && params.projectId !== 'all') httpParams = httpParams.set('projectId', params.projectId);
+    if (params.costCenter) httpParams = httpParams.set('costCenter', params.costCenter);
+    if (params.startDate) httpParams = httpParams.set('startDate', params.startDate);
+    if (params.endDate) httpParams = httpParams.set('endDate', params.endDate);
+
+    return this.http.get<ApiResponse<ConsumptionByProjectReportResponse>>(
+      `${this.baseUrl}/reports/consumption-by-project`,
+      { params: httpParams }
+    ).pipe(
+      map(res => res.data ?? (res as any)),
+      catchError(err => throwError(() => err))
+    );
+  }
+
+  /**
+   * 7. GET /inventory/reports/stock-count-variance
+   * فروقات الجرد الفعلي للمخزون مقارنة بالنظام مع التقييم المالي
+   */
+  getReportStockCountVariance(params: {
+    warehouseId?: string;
+    startDate?: string;
+    endDate?: string;
+  } = {}): Observable<StockCountVarianceReportResponse> {
+    let httpParams = new HttpParams();
+    if (params.warehouseId && params.warehouseId !== 'all') httpParams = httpParams.set('warehouseId', params.warehouseId);
+    if (params.startDate) httpParams = httpParams.set('startDate', params.startDate);
+    if (params.endDate) httpParams = httpParams.set('endDate', params.endDate);
+
+    return this.http.get<ApiResponse<StockCountVarianceReportResponse>>(
+      `${this.baseUrl}/reports/stock-count-variance`,
+      { params: httpParams }
+    ).pipe(
+      map(res => res.data ?? (res as any)),
+      catchError(err => throwError(() => err))
+    );
+  }
+
+  /**
+   * تنزيل تقرير بصيغة CSV مباشرة من خادم الباك إند
+   */
+  downloadReportCsv(endpointName: string, params: Record<string, any>, filename: string): Observable<Blob> {
+    let httpParams = new HttpParams().set('format', 'csv');
+    Object.keys(params).forEach(k => {
+      if (params[k] !== undefined && params[k] !== null && params[k] !== '' && params[k] !== 'all') {
+        httpParams = httpParams.set(k, String(params[k]));
+      }
+    });
+
+    return this.http.get(`${this.baseUrl}/reports/${endpointName}`, {
+      params: httpParams,
+      responseType: 'blob'
+    }).pipe(
+      map(blob => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${filename}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(url);
+        return blob;
+      }),
       catchError(err => throwError(() => err))
     );
   }
