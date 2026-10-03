@@ -8,7 +8,7 @@
         <span>{{ 'navigation.inventory_reports' | translate }}</span>
       </h1>
       <p class="text-xs text-slate-600 font-bold mt-1">
-        محرك تقارير المخزون المالي، التقييم، الأعمار، والرقابة الميدانية المتقدمة
+        {{ 'inventory.reports.subtitle' | translate }}
       </p>
     </div>
     <div class="flex items-center gap-2">
@@ -17,7 +17,7 @@
         class="px-4 py-2 border border-slate-200 bg-white text-slate-700 font-bold rounded-xl hover:bg-slate-50 transition-colors flex items-center gap-2 cursor-pointer text-xs shadow-xs"
       >
         <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-        <span>تصدير CSV (Excel)</span>
+        <span>{{ 'inventory.reports.export_csv' | translate }}</span>
       </button>
       <button 
         (click)="printReport()" 
@@ -39,7 +39,7 @@
       class="px-4 py-2 rounded-xl transition-all flex items-center gap-2 cursor-pointer text-slate-600 hover:text-slate-900"
     >
       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-      <span>1. تقييم أصول المخزون (Valuation)</span>
+      <span>{{ 'inventory.reports.tab_valuation' | translate }}</span>
     </button>
 
     <button 
@@ -49,7 +49,7 @@
       class="px-4 py-2 rounded-xl transition-all flex items-center gap-2 cursor-pointer text-slate-600 hover:text-slate-900"
     >
       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
-      <span>2. تنبيهات إعادة الطلب والحرجة (Reorder Alerts)</span>
+      <span>{{ 'inventory.reports.tab_alerts' | translate }}</span>
     </button>
 
     <button 
@@ -59,7 +59,7 @@
       class="px-4 py-2 rounded-xl transition-all flex items-center gap-2 cursor-pointer text-slate-600 hover:text-slate-900"
     >
       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-      <span>3. أعمار المخزون والراكد (Aging &amp; Dead Stock)</span>
+      <span>{{ 'inventory.reports.tab_aging' | translate }}</span>
     </button>
 
     <button 
@@ -69,7 +69,7 @@
       class="px-4 py-2 rounded-xl transition-all flex items-center gap-2 cursor-pointer text-slate-600 hover:text-slate-900"
     >
       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
-      <span>4. الاستهلاك بالمشروع (Project Consumption)</span>
+      <span>{{ 'inventory.reports.tab_consumption' | translate }}</span>
     </button>
 
     <button 
@@ -79,7 +79,7 @@
       class="px-4 py-2 rounded-xl transition-all flex items-center gap-2 cursor-pointer text-slate-600 hover:text-slate-900"
     >
       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
-      <span>5. فروقات الجرد الفعلي (Count Variance)</span>
+      <span>{{ 'inventory.reports.tab_variance' | translate }}</span>
     </button>
   </div>
 
@@ -106,18 +106,18 @@
       <!-- Tab-Specific Filters -->
       @if (activeTab() === 'valuation') {
         <div class="space-y-1">
-          <label class="text-[10px] uppercase font-bold text-slate-500 tracking-wider block">طريقة التقييم المحاسبي</label>
+          <label class="text-[10px] uppercase font-bold text-slate-500 tracking-wider block">{{ 'inventory.reports.valuation_method' | translate }}</label>
           <select 
             [(ngModel)]="selectedValuationMethod" 
             (change)="loadCurrentReport()"
             class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-800 font-bold focus:outline-none"
           >
-            <option value="WAVG">متوسط التكلفة المرجح (WAVG)</option>
-            <option value="FIFO">الوارد أولاً صادر أولاً (FIFO)</option>
+            <option value="WAVG">{{ 'inventory.reports.wavg' | translate }}</option>
+            <option value="FIFO">{{ 'inventory.reports.fifo' | translate }}</option>
           </select>
         </div>
         <div class="space-y-1">
-          <label class="text-[10px] uppercase font-bold text-slate-500 tracking-wider block">بتاريخ (As of Date)</label>
+          <label class="text-[10px] uppercase font-bold text-slate-500 tracking-wider block">{{ 'inventory.reports.as_of_date' | translate }}</label>
           <input 
             type="date" 
             [(ngModel)]="asOfDate" 
@@ -129,22 +129,22 @@
 
       @if (activeTab() === 'alerts') {
         <div class="space-y-1">
-          <label class="text-[10px] uppercase font-bold text-slate-500 tracking-wider block">درجة الإلحاح (Urgency)</label>
+          <label class="text-[10px] uppercase font-bold text-slate-500 tracking-wider block">{{ 'inventory.reports.urgency' | translate }}</label>
           <select 
             [(ngModel)]="selectedUrgency" 
             (change)="loadCurrentReport()"
             class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-800 font-bold focus:outline-none"
           >
-            <option value="all">الكل (حرجة + تحذيرية)</option>
-            <option value="critical">حرجة فقط (Critical)</option>
-            <option value="warning">تحذيرية فقط (Warning)</option>
+            <option value="all">{{ 'inventory.reports.urgency_all' | translate }}</option>
+            <option value="critical">{{ 'inventory.reports.urgency_critical' | translate }}</option>
+            <option value="warning">{{ 'inventory.reports.urgency_warning' | translate }}</option>
           </select>
         </div>
       }
 
       @if (activeTab() === 'aging') {
         <div class="space-y-1">
-          <label class="text-[10px] uppercase font-bold text-slate-500 tracking-wider block">حتى تاريخ (As of Date)</label>
+          <label class="text-[10px] uppercase font-bold text-slate-500 tracking-wider block">{{ 'inventory.reports.as_of_date' | translate }}</label>
           <input 
             type="date" 
             [(ngModel)]="asOfDate" 
@@ -156,7 +156,7 @@
 
       @if (activeTab() === 'consumption' || activeTab() === 'variance') {
         <div class="space-y-1">
-          <label class="text-[10px] uppercase font-bold text-slate-500 tracking-wider block">من تاريخ</label>
+          <label class="text-[10px] uppercase font-bold text-slate-500 tracking-wider block">{{ 'inventory.reports.date_from' | translate }}</label>
           <input 
             type="date" 
             [(ngModel)]="dateFrom" 
@@ -165,7 +165,7 @@
           />
         </div>
         <div class="space-y-1">
-          <label class="text-[10px] uppercase font-bold text-slate-500 tracking-wider block">إلى تاريخ</label>
+          <label class="text-[10px] uppercase font-bold text-slate-500 tracking-wider block">{{ 'inventory.reports.date_to' | translate }}</label>
           <input 
             type="date" 
             [(ngModel)]="dateTo" 
@@ -182,7 +182,7 @@
           style="background-color: #005CB9;"
         >
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-          <span>تحديث التقرير</span>
+          <span>{{ 'inventory.reports.refresh_report' | translate }}</span>
         </button>
       </div>
     </div>
@@ -192,7 +192,7 @@
   @if (isLoading()) {
     <div class="py-16 text-center space-y-3">
       <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-slate-200 border-t-blue-600"></div>
-      <p class="text-xs font-bold text-slate-500">جاري استرجاع وحساب بيانات التقرير من الخادم...</p>
+      <p class="text-xs font-bold text-slate-500">{{ 'inventory.reports.loading_report' | translate }}</p>
     </div>
   } @else {
 
@@ -202,41 +202,41 @@
         <!-- Summary KPI Cards -->
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-5">
           <div class="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-xs">
-            <span class="text-[10px] font-black uppercase tracking-wider block mb-1" style="color: #005CB9;">Total Inventory Asset Value</span>
+            <span class="text-[10px] font-black uppercase tracking-wider block mb-1" style="color: #005CB9;">{{ 'inventory.reports.total_inventory_asset_value' | translate }}</span>
             <h3 class="text-2xl font-black text-slate-900 font-mono">&#36;{{ valuationData()!.summary.totalInventoryAssetValue | number:'1.2-2' }}</h3>
-            <span class="text-[11px] text-slate-500 font-bold">طريقة: {{ valuationData()!.valuationMethod }}</span>
+            <span class="text-[11px] text-slate-500 font-bold">{{ 'inventory.reports.method_label' | translate }}: {{ valuationData()!.valuationMethod }}</span>
           </div>
 
           <div class="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-xs">
-            <span class="text-[10px] font-black uppercase tracking-wider block mb-1" style="color: #005CB9;">Total SKUs Count</span>
+            <span class="text-[10px] font-black uppercase tracking-wider block mb-1" style="color: #005CB9;">{{ 'inventory.reports.total_skus_count' | translate }}</span>
             <h3 class="text-2xl font-black text-slate-900 font-mono">{{ valuationData()!.summary.totalSKUs }}</h3>
-            <span class="text-[11px] text-slate-500 font-bold">أصناف مسجلة</span>
+            <span class="text-[11px] text-slate-500 font-bold">{{ 'inventory.reports.registered_items' | translate }}</span>
           </div>
 
           <div class="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-xs">
-            <span class="text-[10px] font-black uppercase tracking-wider block mb-1" style="color: #005CB9;">Total Physical Units</span>
+            <span class="text-[10px] font-black uppercase tracking-wider block mb-1" style="color: #005CB9;">{{ 'inventory.reports.total_physical_units' | translate }}</span>
             <h3 class="text-2xl font-black text-slate-900 font-mono">{{ valuationData()!.summary.totalPhysicalUnits | number }}</h3>
-            <span class="text-[11px] text-slate-500 font-bold">إجمالي القطع في المستودعات</span>
+            <span class="text-[11px] text-slate-500 font-bold">{{ 'inventory.reports.total_pieces_in_wh' | translate }}</span>
           </div>
         </div>
 
         <!-- Valuation Table -->
         <div class="bg-white rounded-2xl border border-slate-200/90 shadow-xs overflow-hidden">
           <div class="p-4 bg-slate-50/70 border-b border-slate-200 flex justify-between items-center text-xs font-black">
-            <span class="text-slate-900">تفاصيل تقييم المواد المخزنية</span>
-            <span class="px-2.5 py-1 rounded-lg border bg-white text-slate-700 font-mono">{{ valuationData()!.items.length }} عناصر</span>
+            <span class="text-slate-900">{{ 'inventory.reports.valuation_details' | translate }}</span>
+            <span class="px-2.5 py-1 rounded-lg border bg-white text-slate-700 font-mono">{{ 'inventory.reports.items_count_badge' | translate:{ count: valuationData()!.items.length } }}</span>
           </div>
           <div class="overflow-x-auto">
             <table class="w-full text-left border-collapse text-xs">
               <thead>
                 <tr class="text-slate-500 font-black border-b border-slate-200 bg-slate-50/40">
-                  <th class="p-4">كود الصنف</th>
-                  <th class="p-4">اسم الصنف</th>
-                  <th class="p-4">الوحدة</th>
-                  <th class="p-4">المستودع</th>
-                  <th class="p-4 text-right">الكمية الفعلية</th>
-                  <th class="p-4 text-right">متوسط التكلفة</th>
-                  <th class="p-4 text-right">إجمالي القيمة</th>
+                  <th class="p-4">{{ 'inventory.reports.col_item_code' | translate }}</th>
+                  <th class="p-4">{{ 'inventory.reports.col_item_name' | translate }}</th>
+                  <th class="p-4">{{ 'inventory.reports.col_uom' | translate }}</th>
+                  <th class="p-4">{{ 'inventory.reports.col_warehouse' | translate }}</th>
+                  <th class="p-4 text-right">{{ 'inventory.reports.col_actual_qty' | translate }}</th>
+                  <th class="p-4 text-right">{{ 'inventory.reports.col_avg_cost' | translate }}</th>
+                  <th class="p-4 text-right">{{ 'inventory.reports.col_total_val' | translate }}</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-slate-100 font-semibold text-slate-800">
@@ -263,21 +263,21 @@
       <div class="space-y-6">
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-5">
           <div class="bg-white p-5 rounded-2xl border border-rose-200/90 shadow-xs">
-            <span class="text-[10px] font-black uppercase tracking-wider block mb-1 text-rose-700">Critical Alerts</span>
+            <span class="text-[10px] font-black uppercase tracking-wider block mb-1 text-rose-700">{{ 'inventory.reports.critical_alerts' | translate }}</span>
             <h3 class="text-2xl font-black text-rose-700 font-mono">{{ alertsData()!.criticalAlerts }}</h3>
-            <span class="text-[11px] text-rose-800 font-bold">مواد بلغت مرحلة الخطر الفوري</span>
+            <span class="text-[11px] text-rose-800 font-bold">{{ 'inventory.reports.critical_alerts_desc' | translate }}</span>
           </div>
 
           <div class="bg-white p-5 rounded-2xl border border-amber-200/90 shadow-xs">
-            <span class="text-[10px] font-black uppercase tracking-wider block mb-1 text-amber-700">Warning Alerts</span>
+            <span class="text-[10px] font-black uppercase tracking-wider block mb-1 text-amber-700">{{ 'inventory.reports.warning_alerts' | translate }}</span>
             <h3 class="text-2xl font-black text-amber-800 font-mono">{{ alertsData()!.warningAlerts }}</h3>
-            <span class="text-[11px] text-amber-900 font-bold">مواد قاربت حد إعادة الطلب</span>
+            <span class="text-[11px] text-amber-900 font-bold">{{ 'inventory.reports.warning_alerts_desc' | translate }}</span>
           </div>
 
           <div class="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-xs">
-            <span class="text-[10px] font-black uppercase tracking-wider block mb-1" style="color: #005CB9;">Total Flagged Items</span>
+            <span class="text-[10px] font-black uppercase tracking-wider block mb-1" style="color: #005CB9;">{{ 'inventory.reports.total_flagged_items' | translate }}</span>
             <h3 class="text-2xl font-black text-slate-900 font-mono">{{ alertsData()!.totalAlerts }}</h3>
-            <span class="text-[11px] text-slate-500 font-bold">إجمالي المواد المتأثرة</span>
+            <span class="text-[11px] text-slate-500 font-bold">{{ 'inventory.reports.warning_alerts_desc' | translate }}</span>
           </div>
         </div>
 
@@ -286,14 +286,14 @@
             <table class="w-full text-left border-collapse text-xs">
               <thead>
                 <tr class="text-slate-500 font-black border-b border-slate-200 bg-slate-50/40">
-                  <th class="p-4">كود الصنف</th>
-                  <th class="p-4">اسم الصنف</th>
-                  <th class="p-4">المستودع</th>
-                  <th class="p-4 text-right">الرصيد الفعلي</th>
-                  <th class="p-4 text-right">الحد الأدنى (Min)</th>
-                  <th class="p-4 text-right">كمية إعادة الطلب</th>
-                  <th class="p-4 text-right">أوامر شراء مفتوحة (POs)</th>
-                  <th class="p-4">درجة الإلحاح</th>
+                  <th class="p-4">{{ 'inventory.reports.col_item_code' | translate }}</th>
+                  <th class="p-4">{{ 'inventory.reports.col_item_name' | translate }}</th>
+                  <th class="p-4">{{ 'inventory.reports.col_warehouse' | translate }}</th>
+                  <th class="p-4 text-right">{{ 'inventory.reports.col_actual_qty' | translate }}</th>
+                  <th class="p-4 text-right">{{ 'inventory.reports.min_qty' | translate }}</th>
+                  <th class="p-4 text-right">{{ 'inventory.reports.reorder_qty' | translate }}</th>
+                  <th class="p-4 text-right">{{ 'inventory.reports.open_pos_qty' | translate }}</th>
+                  <th class="p-4">{{ 'inventory.reports.urgency' | translate }}</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-slate-100 font-semibold text-slate-800">
@@ -365,20 +365,20 @@
         <!-- Dead Stock Details -->
         <div class="bg-white rounded-2xl border border-slate-200/90 shadow-xs overflow-hidden">
           <div class="p-4 bg-slate-50/70 border-b border-slate-200 flex justify-between items-center text-xs font-black">
-            <span class="text-slate-900">الأصناف الراكدة المعطلة لرأس المال (Dead Stock List)</span>
-            <span class="px-2.5 py-1 rounded-lg border bg-rose-50 text-rose-700 border-rose-200 font-mono">{{ agingData()!.deadStockItems.length }} أصناف راكدة</span>
+            <span class="text-slate-900">{{ 'inventory.reports.dead_stock_title' | translate }}</span>
+            <span class="px-2.5 py-1 rounded-lg border bg-rose-50 text-rose-700 border-rose-200 font-mono">{{ 'inventory.reports.dead_stock_badge' | translate:{ count: agingData()!.deadStockItems.length } }}</span>
           </div>
           <div class="overflow-x-auto">
             <table class="w-full text-left border-collapse text-xs">
               <thead>
                 <tr class="text-slate-500 font-black border-b border-slate-200 bg-slate-50/40">
-                  <th class="p-4">كود الصنف</th>
-                  <th class="p-4">اسم الصنف</th>
-                  <th class="p-4 text-right">الكمية الراكدة</th>
-                  <th class="p-4 text-right">سعر الوحدة</th>
-                  <th class="p-4 text-right">رأس المال المجمد</th>
-                  <th class="p-4">تاريخ آخر حركة</th>
-                  <th class="p-4 text-right">أيام الركود (Dormant)</th>
+                  <th class="p-4">{{ 'inventory.reports.col_item_code' | translate }}</th>
+                  <th class="p-4">{{ 'inventory.reports.col_item_name' | translate }}</th>
+                  <th class="p-4 text-right">{{ 'inventory.reports.dead_qty' | translate }}</th>
+                  <th class="p-4 text-right">{{ 'inventory.reports.unit_cost' | translate }}</th>
+                  <th class="p-4 text-right">{{ 'inventory.reports.dormant_capital' | translate }}</th>
+                  <th class="p-4">{{ 'inventory.reports.last_movement_date' | translate }}</th>
+                  <th class="p-4 text-right">{{ 'inventory.reports.days_dormant' | translate }}</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-slate-100 font-semibold text-slate-800">
@@ -390,7 +390,7 @@
                     <td class="p-4 text-right font-mono">&#36;{{ item.unitCost | number:'1.2-2' }}</td>
                     <td class="p-4 text-right font-mono font-black text-rose-700">&#36;{{ item.totalValuation | number:'1.2-2' }}</td>
                     <td class="p-4 font-mono text-slate-500">{{ item.lastMovementDate | date:'shortDate' }}</td>
-                    <td class="p-4 text-right font-mono font-black text-slate-900">{{ item.daysDormant }} يوم</td>
+                    <td class="p-4 text-right font-mono font-black text-slate-900">{{ item.daysDormant }} {{ 'inventory.reports.days_unit' | translate }}</td>
                   </tr>
                 }
               </tbody>
@@ -405,11 +405,11 @@
       <div class="space-y-6">
         <div class="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-xs flex items-center justify-between">
           <div>
-            <span class="text-[10px] font-black uppercase tracking-wider block mb-1" style="color: #005CB9;">Total Projects Material Consumption</span>
+            <span class="text-[10px] font-black uppercase tracking-wider block mb-1" style="color: #005CB9;">{{ 'inventory.reports.total_project_consumption' | translate }}</span>
             <h3 class="text-2xl font-black text-slate-900 font-mono">&#36;{{ consumptionData()!.totalConsumptionValue | number:'1.2-2' }}</h3>
           </div>
           <span class="px-3 py-1.5 rounded-full border text-xs font-black" style="background-color: #F0F7FF; color: #005CB9; border-color: #CBE2FC;">
-            {{ consumptionData()!.projects.length }} مشاريع ومواقع
+            {{ 'inventory.reports.projects_count_badge' | translate:{ count: consumptionData()!.projects.length } }}
           </span>
         </div>
 
@@ -423,13 +423,13 @@
                 </div>
                 <div class="text-right">
                   <span class="text-xs font-black text-emerald-800 font-mono">&#36;{{ proj.totalCost | number:'1.2-2' }}</span>
-                  <p class="text-[10px] text-slate-500 font-bold">{{ proj.totalItemsIssued }} قطعة منصرفة</p>
+                  <p class="text-[10px] text-slate-500 font-bold">{{ 'inventory.reports.items_issued_count' | translate:{ count: proj.totalItemsIssued } }}</p>
                 </div>
               </div>
 
               <!-- Top Materials in Project -->
               <div class="space-y-2 pt-2 border-t border-slate-100 text-xs">
-                <span class="text-[10px] font-black text-slate-500 uppercase tracking-wider block">أعلى المواد استهلاكاً:</span>
+                <span class="text-[10px] font-black text-slate-500 uppercase tracking-wider block">{{ 'inventory.reports.top_consumed_materials' | translate }}</span>
                 @for (mat of proj.topMaterials; track mat.itemCode) {
                   <div class="flex justify-between items-center p-2 rounded-xl bg-slate-50 text-xs">
                     <div>
@@ -454,22 +454,22 @@
       <div class="space-y-6">
         <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
           <div class="bg-white p-4 rounded-xl border border-slate-200/90 shadow-xs">
-            <span class="text-[10px] font-black text-slate-500 uppercase tracking-wider block mb-1">Total Counts</span>
+            <span class="text-[10px] font-black text-slate-500 uppercase tracking-wider block mb-1">{{ 'inventory.reports.total_counts' | translate }}</span>
             <p class="text-base font-black text-slate-900 font-mono">{{ varianceData()!.summary.totalCounts }}</p>
           </div>
 
           <div class="bg-white p-4 rounded-xl border border-slate-200/90 shadow-xs">
-            <span class="text-[10px] font-black text-slate-500 uppercase tracking-wider block mb-1">Items Audited</span>
+            <span class="text-[10px] font-black text-slate-500 uppercase tracking-wider block mb-1">{{ 'inventory.reports.items_audited' | translate }}</span>
             <p class="text-base font-black text-slate-900 font-mono">{{ varianceData()!.summary.totalItemsAudited }}</p>
           </div>
 
           <div class="bg-white p-4 rounded-xl border border-slate-200/90 shadow-xs">
-            <span class="text-[10px] font-black text-rose-700 uppercase tracking-wider block mb-1">Discrepancies</span>
+            <span class="text-[10px] font-black text-rose-700 uppercase tracking-wider block mb-1">{{ 'inventory.reports.discrepancies' | translate }}</span>
             <p class="text-base font-black text-rose-700 font-mono">{{ varianceData()!.summary.discrepanciesCount }}</p>
           </div>
 
           <div class="bg-white p-4 rounded-xl border border-slate-200/90 shadow-xs">
-            <span class="text-[10px] font-black uppercase tracking-wider block mb-1" [class.text-rose-700]="varianceData()!.summary.netVarianceValue < 0" [class.text-emerald-700]="varianceData()!.summary.netVarianceValue >= 0">Net Variance Value</span>
+            <span class="text-[10px] font-black uppercase tracking-wider block mb-1" [class.text-rose-700]="varianceData()!.summary.netVarianceValue < 0" [class.text-emerald-700]="varianceData()!.summary.netVarianceValue >= 0">{{ 'inventory.reports.net_variance_value' | translate }}</span>
             <p class="text-base font-black font-mono" [class.text-rose-700]="varianceData()!.summary.netVarianceValue < 0" [class.text-emerald-700]="varianceData()!.summary.netVarianceValue >= 0">
               &#36;{{ varianceData()!.summary.netVarianceValue | number:'1.2-2' }}
             </p>
@@ -481,14 +481,14 @@
             <table class="w-full text-left border-collapse text-xs">
               <thead>
                 <tr class="text-slate-500 font-black border-b border-slate-200 bg-slate-50/40">
-                  <th class="p-4">رقم الجرد</th>
-                  <th class="p-4">المستودع</th>
-                  <th class="p-4">كود الصنف</th>
-                  <th class="p-4">اسم الصنف</th>
-                  <th class="p-4 text-right">رصيد النظام</th>
-                  <th class="p-4 text-right">الجرد الفعلي</th>
-                  <th class="p-4 text-right">الفارق (Variance)</th>
-                  <th class="p-4 text-right">القيمة المالية للفارق</th>
+                  <th class="p-4">{{ 'inventory.reports.count_number' | translate }}</th>
+                  <th class="p-4">{{ 'inventory.reports.col_warehouse' | translate }}</th>
+                  <th class="p-4">{{ 'inventory.reports.col_item_code' | translate }}</th>
+                  <th class="p-4">{{ 'inventory.reports.col_item_name' | translate }}</th>
+                  <th class="p-4 text-right">{{ 'inventory.reports.system_stock' | translate }}</th>
+                  <th class="p-4 text-right">{{ 'inventory.reports.counted_stock' | translate }}</th>
+                  <th class="p-4 text-right">{{ 'inventory.reports.count_variance' | translate }}</th>
+                  <th class="p-4 text-right">{{ 'inventory.reports.variance_value' | translate }}</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-slate-100 font-semibold text-slate-800">

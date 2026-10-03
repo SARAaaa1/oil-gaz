@@ -15,13 +15,13 @@
       <div class="flex items-center gap-1.5 bg-white border border-slate-100 rounded-lg px-3 py-1.5 shadow-xs">
         <span class="w-2 h-2 rounded-full bg-amber-400"></span>
         <span class="text-[11px] font-bold text-slate-600">
-          {{ filteredPOs().length }} POs Total
+          {{ 'procurement.purchase_orders.pos_total' | translate: {count: filteredPOs().length} }}
         </span>
       </div>
       <div class="flex items-center gap-1.5 bg-white border border-slate-100 rounded-lg px-3 py-1.5 shadow-xs">
         <span class="w-2 h-2 rounded-full bg-green-500"></span>
         <span class="text-[11px] font-bold text-slate-600">
-          {{ approvedPOCount() }} Approved
+          {{ 'procurement.purchase_orders.approved_count' | translate: {count: approvedPOCount()} }}
         </span>
       </div>
     </div>
@@ -54,7 +54,7 @@
               (change)="selectedProject.set($any($event.target).value)"
               class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-700 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all cursor-pointer font-medium"
             >
-              <option value="ALL">جميع المشاريع (All Projects)</option>
+              <option value="ALL">{{ 'procurement.purchase_orders.all_projects' | translate }}</option>
               @for (proj of projects(); track proj.id) {
                 <option [value]="proj.id">{{ proj.name }} ({{ proj.id }})</option>
               }
@@ -223,7 +223,7 @@
                   </div>
                   @if (activePO()?.projectName || activePO()?.projectId) {
                     <div>
-                      <span class="text-slate-400 block mb-0.5">Project / المشروع</span>
+                      <span class="text-slate-400 block mb-0.5">{{ 'procurement.purchase_orders.project_label' | translate }}</span>
                       <span class="text-slate-800 font-bold font-mono">{{ activePO()?.projectName || activePO()?.projectId }}</span>
                     </div>
                   }
@@ -308,8 +308,8 @@
                 </svg>
               </div>
               <div>
-                <h3 class="text-sm font-black text-slate-800">Quotation Comparison & Bidders</h3>
-                <p class="text-[10px] text-slate-400 font-semibold">الموردين وعروض الأسعار المنافسة لطلب العروض: {{ activePO()?.rfqNumber }}</p>
+                <h3 class="text-sm font-black text-slate-800">{{ 'procurement.purchase_orders.bidders_summary_title' | translate }}</h3>
+                <p class="text-[10px] text-slate-400 font-semibold">{{ 'procurement.purchase_orders.bidders_summary_subtitle' | translate: {rfq: activePO()?.rfqNumber} }}</p>
               </div>
             </div>
 
@@ -317,11 +317,11 @@
               <table class="w-full text-left text-xs">
                 <thead>
                   <tr class="bg-slate-50 text-slate-400 font-bold border-b border-slate-100">
-                    <th class="px-4 py-3">Vendor / المورد</th>
-                    <th class="px-4 py-3">RFQ Bid Status</th>
-                    <th class="px-4 py-3 text-right">Quoted Amount</th>
-                    <th class="px-4 py-3 text-center">Lead Time</th>
-                    <th class="px-4 py-3 text-center">Award Status</th>
+                    <th class="px-4 py-3">{{ 'procurement.purchase_orders.vendor_label' | translate }}</th>
+                    <th class="px-4 py-3">{{ 'procurement.purchase_orders.rfq_bid_status' | translate }}</th>
+                    <th class="px-4 py-3 text-right">{{ 'procurement.purchase_orders.quoted_amount' | translate }}</th>
+                    <th class="px-4 py-3 text-center">{{ 'procurement.purchase_orders.lead_time' | translate }}</th>
+                    <th class="px-4 py-3 text-center">{{ 'procurement.purchase_orders.award_status' | translate }}</th>
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-50 font-semibold text-slate-700 bg-white">
@@ -352,12 +352,12 @@
                         @if (getRFQQuotationForVendor(getRelatedRFQ(activePO()), v.vendorId); as q) {
                           ${{ q.totalAmount | number:'1.0-0' }}
                         } @else {
-                          <span class="text-slate-400 text-[10px]">No quotation</span>
+                          <span class="text-slate-400 text-[10px]">{{ 'procurement.purchase_orders.no_quotation' | translate }}</span>
                         }
                       </td>
                       <td class="px-4 py-3 text-center font-mono text-slate-500">
                         @if (getRFQQuotationForVendor(getRelatedRFQ(activePO()), v.vendorId); as q) {
-                          {{ q.deliveryWeeks }} Weeks
+                          {{ q.deliveryWeeks }} {{ 'procurement.quotation_comparison.weeks' | translate }}
                         } @else {
                           <span class="text-slate-400">—</span>
                         }
@@ -365,10 +365,10 @@
                       <td class="px-4 py-3 text-center">
                         @if (activePO()?.vendorId === v.vendorId) {
                           <span class="px-2 py-0.5 rounded-full text-[9px] font-black tracking-wide bg-green-500 text-white shadow-xs">
-                            Awarded / Selected
+                            {{ 'procurement.purchase_orders.awarded_selected' | translate }}
                           </span>
                         } @else {
-                          <span class="text-slate-400 text-[10px]">Not Selected</span>
+                          <span class="text-slate-400 text-[10px]">{{ 'procurement.purchase_orders.not_selected' | translate }}</span>
                         }
                       </td>
                     </tr>
@@ -391,34 +391,34 @@
                 </svg>
               </div>
               <div>
-                <h3 class="text-sm font-black text-slate-800">Contract Document</h3>
-                <p class="text-[10px] text-slate-400 font-semibold">العقد المرتبط بأمر الشراء</p>
+                <h3 class="text-sm font-black text-slate-800">{{ 'procurement.purchase_orders.contract_document' | translate }}</h3>
+                <p class="text-[10px] text-slate-400 font-semibold">{{ 'procurement.purchase_orders.contract_document_desc' | translate }}</p>
               </div>
             </div>
             <button
               (click)="downloadContract()"
-              class="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary hover:bg-primary-dark text-white text-xs font-bold shadow-sm transition-all active:scale-95"
+              class="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary hover:bg-primary-dark text-white text-xs font-bold shadow-sm transition-all active:scale-95 cursor-pointer"
             >
               <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
                   d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
               </svg>
-              <span>تحميل العقد</span>
+              <span>{{ 'procurement.purchase_orders.download_contract' | translate }}</span>
             </button>
           </div>
 
           <!-- Contract Info -->
           <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-[11px] mb-4">
             <div class="bg-slate-50 rounded-xl p-3 border border-slate-100">
-              <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Contract No.</span>
+              <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">{{ 'procurement.purchase_orders.contract_number' | translate }}</span>
               <span class="font-black text-slate-800 font-mono">{{ activePO()?.contractNumber || ('CNT-' + activePO()?.poNumber) }}</span>
             </div>
             <div class="bg-slate-50 rounded-xl p-3 border border-slate-100 md:col-span-2">
-              <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Title</span>
+              <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">{{ 'procurement.purchase_orders.contract_title' | translate }}</span>
               <span class="font-bold text-slate-700">{{ activePO()?.contractTitle || ('Supply Contract — ' + activePO()?.vendorName) }}</span>
             </div>
             <div class="bg-slate-50 rounded-xl p-3 border border-slate-100">
-              <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Expiry Date</span>
+              <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">{{ 'procurement.purchase_orders.expiry_date' | translate }}</span>
               <span class="font-bold text-slate-700">{{ activePO()?.contractExpiryDate || activePO()?.deliveryDate }}</span>
             </div>
           </div>
@@ -426,7 +426,7 @@
           <!-- Contract Items Table -->
           <div class="mb-4">
             <div class="flex items-center gap-2 mb-3">
-              <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest">Contract Items — عناصر العقد</span>
+              <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest">{{ 'procurement.purchase_orders.contract_items' | translate }}</span>
               <div class="flex-1 h-px bg-slate-100"></div>
               <span class="text-[9px] font-bold text-slate-400 bg-slate-50 px-2 py-0.5 rounded-full">
                 {{ activePO()?.items?.length }} items
@@ -438,12 +438,12 @@
                 <thead>
                   <tr class="bg-slate-50 text-slate-400 font-bold border-b border-slate-100">
                     <th class="px-3 py-2.5 w-8">#</th>
-                    <th class="px-3 py-2.5">Item Code</th>
-                    <th class="px-3 py-2.5">Description</th>
-                    <th class="px-3 py-2.5 text-right">Qty</th>
-                    <th class="px-3 py-2.5 text-center">UOM</th>
-                    <th class="px-3 py-2.5 text-right">Unit Price</th>
-                    <th class="px-3 py-2.5 text-right">Line Total</th>
+                    <th class="px-3 py-2.5">{{ 'procurement.quotation_comparison.col_code' | translate }}</th>
+                    <th class="px-3 py-2.5">{{ 'procurement.purchase_orders.col_description' | translate }}</th>
+                    <th class="px-3 py-2.5 text-right">{{ 'procurement.purchase_orders.col_qty' | translate }}</th>
+                    <th class="px-3 py-2.5 text-center">{{ 'procurement.purchase_orders.col_uom' | translate }}</th>
+                    <th class="px-3 py-2.5 text-right">{{ 'procurement.purchase_orders.col_unit_price' | translate }}</th>
+                    <th class="px-3 py-2.5 text-right">{{ 'procurement.purchase_orders.col_total' | translate }}</th>
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-50 font-semibold text-slate-700 bg-white">
@@ -462,19 +462,19 @@
                 <!-- Table footer totals -->
                 <tfoot class="border-t-2 border-slate-200 bg-slate-50/50">
                   <tr class="text-[11px] text-slate-500 font-semibold">
-                    <td colspan="6" class="px-3 py-2 text-right">Subtotal</td>
+                    <td colspan="6" class="px-3 py-2 text-right">{{ 'procurement.purchase_orders.subtotal' | translate }}</td>
                     <td class="px-3 py-2 text-right font-mono font-bold text-slate-700">${{ activePO()?.subtotal | number:'1.0-0' }}</td>
                   </tr>
                   <tr class="text-[11px] text-slate-500 font-semibold">
-                    <td colspan="6" class="px-3 py-1.5 text-right">VAT ({{ activePO()?.taxPercent }}%)</td>
+                    <td colspan="6" class="px-3 py-1.5 text-right">{{ 'procurement.purchase_orders.vat' | translate: {pct: activePO()?.taxPercent} }}</td>
                     <td class="px-3 py-1.5 text-right font-mono text-slate-600">${{ activePO()?.taxAmount | number:'1.0-0' }}</td>
                   </tr>
                   <tr class="text-[11px] text-red-500 font-semibold">
-                    <td colspan="6" class="px-3 py-1.5 text-right">WHT ({{ activePO()?.withholdingTaxPercent }}%)</td>
+                    <td colspan="6" class="px-3 py-1.5 text-right">{{ 'procurement.purchase_orders.wht_retained' | translate: {pct: activePO()?.withholdingTaxPercent} }}</td>
                     <td class="px-3 py-1.5 text-right font-mono">-${{ activePO()?.withholdingTaxAmount | number:'1.0-0' }}</td>
                   </tr>
                   <tr class="text-xs font-black text-slate-900 border-t border-slate-200">
-                    <td colspan="6" class="px-3 py-2.5 text-right">Grand Total</td>
+                    <td colspan="6" class="px-3 py-2.5 text-right">{{ 'procurement.purchase_orders.grand_total' | translate }}</td>
                     <td class="px-3 py-2.5 text-right font-mono text-primary">${{ activePO()?.totalAmount | number:'1.0-0' }}</td>
                   </tr>
                 </tfoot>
@@ -499,7 +499,7 @@
               </div>
             </div>
             <div class="flex items-center gap-2">
-              <span class="px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-widest bg-green-100 text-green-700">Ready</span>
+              <span class="px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-widest bg-green-100 text-green-700">{{ 'procurement.purchase_orders.ready_status' | translate }}</span>
               <svg class="w-4 h-4 text-primary group-hover:translate-y-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
               </svg>
@@ -643,8 +643,8 @@
                 </svg>
               </div>
               <div>
-                <h3 class="text-sm font-black text-slate-800">Procurement Journey</h3>
-                <p class="text-[10px] text-slate-400 font-semibold">Full lifecycle traceability</p>
+                <h3 class="text-sm font-black text-slate-800">{{ 'procurement.purchase_orders.procurement_journey' | translate }}</h3>
+                <p class="text-[10px] text-slate-400 font-semibold">{{ 'procurement.purchase_orders.procurement_journey_desc' | translate }}</p>
               </div>
             </div>
             <app-procurement-chain [documentNumber]="activePO()!.documentNumber"></app-procurement-chain>
@@ -682,7 +682,7 @@
         <div>
           <h2 class="text-xl font-black text-slate-800">PETROFLOW SERVICES LTD</h2>
           <p class="text-xs text-slate-400 font-semibold">100 Drilling Boulevard, Suite 500 · Houston, TX 77002</p>
-          <h1 class="text-lg font-black text-slate-800 mt-4">أمر شراء رسمي — PURCHASE ORDER VOUCHER</h1>
+          <h1 class="text-lg font-black text-slate-800 mt-4">{{ 'procurement.purchase_orders.official_voucher_title' | translate }} — {{ activePO()?.poNumber }}</h1>
         </div>
         <div class="text-right text-xs text-slate-500 font-semibold space-y-1">
           <p class="font-mono">PO Number: <span class="font-bold text-slate-900">{{ activePO()?.poNumber }}</span></p>
@@ -697,7 +697,7 @@
       <div class="grid grid-cols-2 gap-6 pt-4">
         <!-- Vendor info -->
         <div class="border border-slate-200 rounded-lg p-4 space-y-1">
-          <span class="block text-[9px] uppercase font-bold text-slate-400">Supplier / المورد</span>
+          <span class="block text-[9px] uppercase font-bold text-slate-400">{{ 'procurement.purchase_orders.supplier_label' | translate }}</span>
           <p class="font-bold text-slate-800 text-sm">{{ activePO()?.vendorName }}</p>
           <p class="text-slate-500 text-[10px] leading-relaxed">{{ activePO()?.vendorAddress }}</p>
           <p class="text-slate-400 text-[9px] font-mono">Tax Registration ID: {{ activePO()?.vendorTaxNumber }}</p>
@@ -705,22 +705,22 @@
 
         <!-- Logistics info -->
         <div class="border border-slate-200 rounded-lg p-4 space-y-2 text-xs">
-          <span class="block text-[9px] uppercase font-bold text-slate-400">Logistics & Budget / الخدمات اللوجستية</span>
+          <span class="block text-[9px] uppercase font-bold text-slate-400">{{ 'procurement.purchase_orders.logistics_budgeting' | translate }}</span>
           <div class="grid grid-cols-2 gap-2 text-[10px]">
             <div>
-              <span class="text-slate-400 block">Cost Center:</span>
+              <span class="text-slate-400 block">{{ 'procurement.purchase_orders.cost_center' | translate }}:</span>
               <span class="text-slate-800 font-bold font-mono">{{ activePO()?.costCenter }}</span>
             </div>
             <div>
-              <span class="text-slate-400 block">Payment Terms:</span>
+              <span class="text-slate-400 block">{{ 'procurement.purchase_orders.payment_terms' | translate }}:</span>
               <span class="text-slate-800 font-bold">{{ activePO()?.paymentTerms }}</span>
             </div>
             <div>
-              <span class="text-slate-400 block">Charge Allocation:</span>
+              <span class="text-slate-400 block">{{ 'procurement.purchase_orders.charge_allocation' | translate }}:</span>
               <span class="text-slate-800 font-bold">{{ activePO()?.chargeType || 'N/A' }}</span>
             </div>
             <div>
-              <span class="text-slate-400 block">Project:</span>
+              <span class="text-slate-400 block">{{ 'procurement.purchase_orders.project_label' | translate }}:</span>
               <span class="text-slate-800 font-bold">{{ activePO()?.projectName || activePO()?.projectId || 'N/A' }}</span>
             </div>
           </div>
@@ -729,18 +729,18 @@
 
       <!-- Line Items Table -->
       <div class="space-y-2">
-        <h3 class="text-xs font-black text-slate-800 uppercase tracking-widest">Line Items — المواد والأصناف المطلوبة</h3>
+        <h3 class="text-xs font-black text-slate-800 uppercase tracking-widest">{{ 'procurement.purchase_orders.voucher_line_items' | translate }}</h3>
         <div class="border border-slate-200 rounded-lg overflow-hidden">
           <table class="w-full text-left border-collapse text-xs">
             <thead>
               <tr class="bg-slate-50 text-slate-700 border-b-2 border-slate-300 font-bold">
                 <th class="p-3 w-8">#</th>
-                <th class="p-3">Item Code</th>
-                <th class="p-3">Material Name & Description</th>
-                <th class="p-3 text-right">Quantity</th>
-                <th class="p-3 text-center">Unit</th>
-                <th class="p-3 text-right">Unit Price</th>
-                <th class="p-3 text-right">Line Total</th>
+                <th class="p-3">{{ 'procurement.quotation_comparison.col_code' | translate }}</th>
+                <th class="p-3">{{ 'procurement.purchase_orders.col_description' | translate }}</th>
+                <th class="p-3 text-right">{{ 'procurement.purchase_orders.col_qty' | translate }}</th>
+                <th class="p-3 text-center">{{ 'procurement.purchase_orders.col_uom' | translate }}</th>
+                <th class="p-3 text-right">{{ 'procurement.purchase_orders.col_unit_price' | translate }}</th>
+                <th class="p-3 text-right">{{ 'procurement.purchase_orders.col_total' | translate }}</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100 font-medium text-slate-700">
@@ -759,19 +759,19 @@
             <!-- Financial breakdown inside print table -->
             <tfoot class="border-t-2 border-slate-200 bg-slate-50">
               <tr class="text-[10px] text-slate-500 font-semibold">
-                <td colspan="6" class="p-2 text-right">Subtotal / المجموع الفرعي</td>
+                <td colspan="6" class="p-2 text-right">{{ 'procurement.purchase_orders.voucher_subtotal' | translate }}</td>
                 <td class="p-2 text-right font-mono font-bold text-slate-700">${{ activePO()?.subtotal | number:'1.0-0' }}</td>
               </tr>
               <tr class="text-[10px] text-slate-500 font-semibold">
-                <td colspan="6" class="p-1.5 text-right">VAT / ضريبة القيمة المضافة ({{ activePO()?.taxPercent }}%)</td>
+                <td colspan="6" class="p-1.5 text-right">{{ 'procurement.purchase_orders.voucher_vat' | translate: {pct: activePO()?.taxPercent} }}</td>
                 <td class="p-1.5 text-right font-mono text-slate-650">${{ activePO()?.taxAmount | number:'1.0-0' }}</td>
               </tr>
               <tr class="text-[10px] text-red-500 font-semibold">
-                <td colspan="6" class="p-1.5 text-right">WHT Retained / ضريبة الاستقطاع ({{ activePO()?.withholdingTaxPercent }}%)</td>
+                <td colspan="6" class="p-1.5 text-right">{{ 'procurement.purchase_orders.voucher_wht' | translate: {pct: activePO()?.withholdingTaxPercent} }}</td>
                 <td class="p-1.5 text-right font-mono">-${{ activePO()?.withholdingTaxAmount | number:'1.0-0' }}</td>
               </tr>
               <tr class="text-xs font-black text-slate-900 border-t border-slate-300">
-                <td colspan="6" class="p-2.5 text-right">Grand Total / الإجمالي الكلي</td>
+                <td colspan="6" class="p-2.5 text-right">{{ 'procurement.purchase_orders.voucher_grand_total' | translate }}</td>
                 <td class="p-2.5 text-right font-mono text-primary">${{ activePO()?.totalAmount | number:'1.0-0' }}</td>
               </tr>
             </tfoot>
@@ -781,13 +781,13 @@
 
       <!-- Approvals Sign-off Status -->
       <div class="pt-6 border-t border-slate-200 space-y-4">
-        <h3 class="text-xs font-black text-slate-800 uppercase tracking-widest">Authorized Signatures & Audit Trail / الاعتمادات والتوقيعات</h3>
+        <h3 class="text-xs font-black text-slate-800 uppercase tracking-widest">{{ 'procurement.purchase_orders.authorized_signatures' | translate }}</h3>
         <div class="grid grid-cols-3 gap-4">
           @for (step of activePO()?.approvalWorkflow; track step.role) {
             <div class="border border-slate-200 rounded-lg p-3 bg-slate-50/50 space-y-1">
               <span class="block text-[8px] font-black text-slate-400 uppercase tracking-wider">{{ step.role }}</span>
               <p class="font-bold text-slate-850 text-xs">
-                {{ step.status === 'Approved' ? step.approverName : 'Awaiting Approval' }}
+                {{ step.status === 'Approved' ? step.approverName : ('procurement.purchase_orders.awaiting_approval' | translate) }}
               </p>
               <span class="text-[8px] font-mono text-slate-400 block mt-0.5">
                 {{ step.status === 'Approved' ? ('Date: ' + step.actionDate) : 'Status: Pending' }}

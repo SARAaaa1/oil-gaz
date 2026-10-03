@@ -58,7 +58,7 @@
         </svg>
       </div>
       <div>
-        <span class="kpi-card__label">الأدوار المتاحة</span>
+        <span class="kpi-card__label">{{ 'roles.roles_available' | translate }}</span>
         <span class="kpi-card__value kpi-value--purple">10</span>
       </div>
     </div>
@@ -83,9 +83,9 @@
     <!-- Filters -->
     <div class="filter-group">
       <select [ngModel]="filter().role" (ngModelChange)="onRoleFilter($event)" class="filter-select">
-        <option value="">جميع الأدوار</option>
+        <option value="">{{ 'roles.all_roles' | translate }}</option>
         @for (role of ALL_ROLES; track role) {
-          <option [value]="role">{{ role }}</option>
+          <option [value]="role">{{ ('roles.' + role) | translate }}</option>
         }
       </select>
 
@@ -145,7 +145,7 @@
         <thead>
           <tr>
             <th>المستخدم</th>
-            <th>الدور</th>
+            <th>{{ 'roles.role_label' | translate }}</th>
             <th>القسم</th>
             <th>آخر دخول</th>
             <th>الحالة</th>
@@ -170,7 +170,7 @@
               <!-- Role -->
               <td>
                 <span class="role-badge" [ngClass]="getRoleClass(user.role)">
-                  {{ user.roleName || user.role }}
+                  {{ user.role ? (('roles.' + user.role) | translate) : (user.roleName || '—') }}
                 </span>
               </td>
 
@@ -279,15 +279,15 @@
             }
           </div>
           <div class="form-group">
-            <label class="form-label form-label--required">الدور</label>
+            <label class="form-label form-label--required">{{ 'roles.role_label' | translate }}</label>
             <select formControlName="role" class="form-select">
-              <option value="">اختر الدور...</option>
+              <option value="">{{ 'roles.select_role' | translate }}</option>
               @for (role of ALL_ROLES; track role) {
-                <option [value]="role">{{ role }}</option>
+                <option [value]="role">{{ ('roles.' + role) | translate }}</option>
               }
             </select>
             @if (createForm.get('role')?.invalid && createForm.get('role')?.touched) {
-              <span class="form-error">الدور مطلوب</span>
+              <span class="form-error">{{ 'roles.role_required' | translate }}</span>
             }
           </div>
           <div class="form-group">
@@ -365,10 +365,10 @@
             <input formControlName="email" type="email" class="form-input" dir="ltr"/>
           </div>
           <div class="form-group">
-            <label class="form-label form-label--required">الدور</label>
+            <label class="form-label form-label--required">{{ 'roles.role_label' | translate }}</label>
             <select formControlName="role" class="form-select">
               @for (role of ALL_ROLES; track role) {
-                <option [value]="role">{{ role }}</option>
+                <option [value]="role">{{ ('roles.' + role) | translate }}</option>
               }
             </select>
           </div>
@@ -421,7 +421,7 @@
             <p class="user-details-name-ar">{{ selectedUser()!.fullNameAr }}</p>
           }
           <span class="role-badge" [ngClass]="getRoleClass(selectedUser()!.role)">
-            {{ selectedUser()!.roleName || selectedUser()!.role }}
+            {{ selectedUser()!.role ? (('roles.' + selectedUser()!.role) | translate) : (selectedUser()!.roleName || '—') }}
           </span>
         </div>
         <span class="status-badge status-badge--lg" [ngClass]="getStatusClass(selectedUser()!.status)">

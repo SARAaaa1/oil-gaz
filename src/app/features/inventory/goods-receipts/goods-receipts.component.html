@@ -8,7 +8,7 @@
         {{ 'navigation.goods_receipts' | translate }}
       </h1>
       <p class="text-xs text-slate-500 font-semibold mt-1">
-        Official warehouse goods receipt &amp; purchase order matching — إذن إضافة أصناف مشتراة
+        {{ 'inventory.goods_receipts.voucher_subtitle' | translate }}
       </p>
     </div>
     <div class="flex items-center gap-2">
@@ -17,7 +17,7 @@
           (click)="selectedMRV.set(null)"
           class="px-4 py-2 border border-slate-200 bg-white text-slate-700 font-bold rounded-lg hover:bg-slate-50 transition-colors flex items-center gap-2 cursor-pointer text-xs"
         >
-          ← Back to List
+          ← {{ 'inventory.goods_receipts.back_to_list' | translate }}
         </button>
         <button
           (click)="printMRV()"
@@ -37,7 +37,7 @@
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
             </svg>
-            ترحيل للمخزن (Post MRV)
+            {{ 'inventory.goods_receipts.post_mrv' | translate }}
           </button>
         } @else if (selectedMRV()!.status === 'Pending Approval') {
           <button
@@ -54,7 +54,7 @@
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
             </svg>
-            ترحيل للمخزن (Post MRV)
+            {{ 'inventory.goods_receipts.post_mrv' | translate }}
           </button>
         } @else if (selectedMRV()!.status === 'Approved') {
           <button
@@ -81,32 +81,32 @@
           <span class="no-print px-2 py-0.5 bg-slate-100 text-slate-700 text-[10px] font-extrabold uppercase tracking-wider rounded">
             {{ selectedMRV()!.status }}
           </span>
-          <h2 class="text-xl font-black text-slate-800 mt-2">إذن إضافة أصناف مشتراة — Goods Receipt Voucher</h2>
-          <p class="text-xs text-slate-500 font-mono mt-0.5">Voucher No: {{ selectedMRV()!.voucherNumber }}</p>
+          <h2 class="text-xl font-black text-slate-800 mt-2">{{ 'inventory.goods_receipts.voucher_title' | translate }}</h2>
+          <p class="text-xs text-slate-500 font-mono mt-0.5">{{ 'inventory.goods_receipts.voucher_number' | translate }}: {{ selectedMRV()!.voucherNumber }}</p>
         </div>
         <div class="text-right text-[10px] text-slate-400 font-semibold space-y-0.5">
-          <p>Receipt Date: {{ selectedMRV()!.receivedDate | date:'mediumDate' }}</p>
-          <p>Received By: {{ selectedMRV()!.receivedBy }}</p>
-          <p>PO Ref: {{ selectedMRV()!.poNumber || 'Direct' }}</p>
+          <p>{{ 'inventory.goods_receipts.received_date' | translate }}: {{ selectedMRV()!.receivedDate | date:'mediumDate' }}</p>
+          <p>{{ 'procurement.purchase_orders.received_by' | translate }}: {{ selectedMRV()!.receivedBy }}</p>
+          <p>{{ 'inventory.goods_receipts.po_number' | translate }}: {{ selectedMRV()!.poNumber || 'Direct' }}</p>
         </div>
       </div>
 
       <!-- Dimensions Grid -->
       <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs font-semibold text-slate-600 bg-slate-50/50 p-4 rounded-lg">
         <div>
-          <span class="block text-[9px] uppercase font-bold text-slate-400">Supplier / المورد</span>
+          <span class="block text-[9px] uppercase font-bold text-slate-400">{{ 'inventory.goods_receipts.supplier_name' | translate }}</span>
           <span class="text-slate-900 font-bold">{{ selectedMRV()!.supplierName }}</span>
         </div>
         <div>
-          <span class="block text-[9px] uppercase font-bold text-slate-400">Project / المشروع</span>
+          <span class="block text-[9px] uppercase font-bold text-slate-400">{{ 'procurement.rfqs.project_name' | translate }}</span>
           <span class="text-slate-900 font-bold">{{ getProjectName(selectedMRV()!.projectId || selectedMRV()!.projectName) }}</span>
         </div>
         <div>
-          <span class="block text-[9px] uppercase font-bold text-slate-400">Warehouse / المستودع</span>
+          <span class="block text-[9px] uppercase font-bold text-slate-400">{{ 'inventory.reports.col_warehouse' | translate }}</span>
           <span class="text-slate-900 font-bold">{{ getWarehouseName(selectedMRV()!.warehouseId) }}</span>
         </div>
         <div>
-          <span class="block text-[9px] uppercase font-bold text-slate-400">Transport / طريقة الشحن</span>
+          <span class="block text-[9px] uppercase font-bold text-slate-400">{{ 'inventory.goods_receipts.transport_mode' | translate }}</span>
           <span class="text-slate-900 font-bold">{{ selectedMRV()!.chargeType || 'Road Transport' }}</span>
         </div>
       </div>
@@ -116,13 +116,13 @@
         <table class="w-full text-left border-collapse text-xs">
           <thead>
             <tr class="bg-slate-50 text-slate-400 border-b border-slate-100 font-bold uppercase tracking-wider text-[10px]">
-              <th class="p-3">Item Code</th>
-              <th class="p-3">Material Name</th>
-              <th class="p-3">Unit</th>
-              <th class="p-3 text-right">Received Qty</th>
-              <th class="p-3 text-right">Unit Price</th>
-              <th class="p-3 text-right">Total Price</th>
-              <th class="p-3">Remarks</th>
+              <th class="p-3">{{ 'inventory.goods_receipts.item_code' | translate }}</th>
+              <th class="p-3">{{ 'inventory.goods_receipts.material_name' | translate }}</th>
+              <th class="p-3">{{ 'inventory.goods_receipts.unit' | translate }}</th>
+              <th class="p-3 text-right">{{ 'inventory.goods_receipts.received_qty' | translate }}</th>
+              <th class="p-3 text-right">{{ 'inventory.goods_receipts.unit_price' | translate }}</th>
+              <th class="p-3 text-right">{{ 'inventory.goods_receipts.total_price' | translate }}</th>
+              <th class="p-3">{{ 'inventory.goods_receipts.remarks' | translate }}</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-50 font-medium text-slate-700">
@@ -140,7 +140,7 @@
           </tbody>
           <tfoot>
             <tr class="bg-slate-50/30 font-bold border-t border-slate-100">
-              <td colspan="3" class="p-3 text-right uppercase tracking-wider text-[10px] font-bold text-slate-400">Total</td>
+              <td colspan="3" class="p-3 text-right uppercase tracking-wider text-[10px] font-bold text-slate-400">{{ 'inventory.goods_receipts.total' | translate }}</td>
               <td class="p-3 text-right font-mono font-black text-slate-900">{{ calculateTotalQty(selectedMRV()!) }}</td>
               <td></td>
               <td class="p-3 text-right font-mono font-black text-slate-900">{{ selectedMRV()!.totalAmount | number:'1.2-2' }}</td>
@@ -153,17 +153,17 @@
       <!-- Signatures Footer -->
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6 pt-6 border-t border-slate-100 text-xs font-semibold text-slate-700">
         <div>
-          <p class="text-slate-400 text-[10px] uppercase font-bold tracking-wider">Inspection Report Number</p>
+          <p class="text-slate-400 text-[10px] uppercase font-bold tracking-wider">{{ 'inventory.goods_receipts.inspection_report_no' | translate }}</p>
           <p class="mt-1 font-mono text-slate-900">IR-2026-0001 (Approved)</p>
         </div>
         <div>
-          <p class="text-slate-400 text-[10px] uppercase font-bold tracking-wider">Storekeeper Name &amp; Signature</p>
+          <p class="text-slate-400 text-[10px] uppercase font-bold tracking-wider">{{ 'inventory.goods_receipts.storekeeper_signature' | translate }}</p>
           <div class="mt-4 border-b border-slate-200 w-48 h-6 flex items-end">
             <span class="text-slate-400 italic text-[10px] font-serif pr-2">{{ selectedMRV()!.receivedBy }}</span>
           </div>
         </div>
         <div>
-          <p class="text-slate-400 text-[10px] uppercase font-bold tracking-wider">Project Manager Approval</p>
+          <p class="text-slate-400 text-[10px] uppercase font-bold tracking-wider">{{ 'inventory.goods_receipts.pm_approval' | translate }}</p>
           <div class="mt-4 border-b border-slate-200 w-48 h-6 flex items-end">
             <span class="text-slate-400 italic text-[10px] font-serif pr-2">Sarah Jenkins</span>
           </div>
@@ -178,12 +178,12 @@
     <div class="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden animate-fade-in">
       <!-- Filters -->
       <div class="p-4 bg-slate-50/50 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Registered Vouchers</h3>
+        <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider">{{ 'inventory.goods_receipts.registered_vouchers' | translate }}</h3>
         <div class="flex items-center gap-3 text-xs">
           <input
             type="text"
             [(ngModel)]="searchQuery"
-            placeholder="Search vouchers, supplier, PO..."
+            [placeholder]="'inventory.goods_receipts.search_vouchers' | translate"
             class="bg-white border border-slate-200 rounded-lg px-3 py-1.5 focus:outline-none w-64"
           />
           <select
@@ -204,13 +204,13 @@
         <table class="w-full text-left border-collapse text-xs">
           <thead>
             <tr class="text-slate-400 font-bold border-b border-slate-100 bg-slate-50/20">
-              <th class="p-4 py-3">Voucher Number</th>
-              <th class="p-4 py-3">PO Number</th>
-              <th class="p-4 py-3">Supplier Name</th>
-              <th class="p-4 py-3">Received Date</th>
-              <th class="p-4 py-3 text-right">Total Amount</th>
-              <th class="p-4 py-3 text-center">Status</th>
-              <th class="p-4 py-3 text-center">Actions</th>
+              <th class="p-4 py-3">{{ 'inventory.goods_receipts.voucher_number' | translate }}</th>
+              <th class="p-4 py-3">{{ 'inventory.goods_receipts.po_number' | translate }}</th>
+              <th class="p-4 py-3">{{ 'inventory.goods_receipts.supplier_name' | translate }}</th>
+              <th class="p-4 py-3">{{ 'inventory.goods_receipts.received_date' | translate }}</th>
+              <th class="p-4 py-3 text-right">{{ 'inventory.goods_receipts.total_amount' | translate }}</th>
+              <th class="p-4 py-3 text-center">{{ 'inventory.goods_receipts.status' | translate }}</th>
+              <th class="p-4 py-3 text-center">{{ 'inventory.goods_receipts.actions' | translate }}</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-50 font-medium text-slate-700">
@@ -244,16 +244,16 @@
                       (click)="postMRVToInventory(mrv); $event.stopPropagation()"
                       [disabled]="isPosting()"
                       class="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-[10px] font-bold transition-colors cursor-pointer disabled:opacity-50"
-                      title="ترحيل إذن الإضافة إلى المخزن وتحديث الرصيد"
+                      [title]="'inventory.goods_receipts.post_direct_title' | translate"
                     >
-                      ترحيل للمخزن (Post)
+                      {{ 'inventory.goods_receipts.post_mrv' | translate }}
                     </button>
                   } @else if (mrv.status === 'Pending Approval') {
                     <div class="flex items-center justify-center gap-1.5">
                       <button
                         (click)="approveMRV(mrv); $event.stopPropagation()"
                         class="px-2.5 py-1 bg-amber-600 text-white rounded text-[10px] font-bold hover:bg-amber-700 transition-colors cursor-pointer"
-                        title="اعتماد الاستلام المبدئي"
+                        [title]="'inventory.goods_receipts.approve_preliminary_title' | translate"
                       >
                         {{ 'inventory.mrv_action.approve_receipt' | translate }}
                       </button>
@@ -261,9 +261,9 @@
                         (click)="postMRVToInventory(mrv); $event.stopPropagation()"
                         [disabled]="isPosting()"
                         class="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-[10px] font-bold transition-colors cursor-pointer disabled:opacity-50"
-                        title="ترحيل مباشر للمخزن وتحديث الرصيد"
+                        [title]="'inventory.goods_receipts.post_direct_title' | translate"
                       >
-                        ترحيل (Post)
+                        {{ 'inventory.goods_receipts.post_mrv' | translate }}
                       </button>
                     </div>
                   } @else if (mrv.status === 'Approved') {
@@ -279,7 +279,7 @@
                       <svg class="w-3 h-3 mr-0.5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
                       </svg>
-                      مرحل بالكامل
+                      {{ 'inventory.goods_receipts.posted_full' | translate }}
                     </span>
                   } @else {
                     <span class="text-slate-400 text-[10px]">N/A</span>
@@ -289,7 +289,7 @@
             } @empty {
               <tr>
                 <td colspan="7" class="p-8 text-center text-slate-400 font-semibold">
-                  No Goods Receipt (MRV) vouchers found.
+                  {{ 'common.no_records' | translate }}
                 </td>
               </tr>
             }
@@ -309,8 +309,8 @@
         <!-- Modal Header -->
         <div class="p-4 bg-slate-50 border-b border-slate-100 flex items-center justify-between shrink-0">
           <div>
-            <h3 class="text-sm font-black text-slate-900">New Goods Receipt Voucher (MRV)</h3>
-            <p class="text-[10px] text-slate-400 font-semibold mt-0.5">إذن إضافة أصناف مشتراة</p>
+            <h3 class="text-sm font-black text-slate-900">{{ 'inventory.goods_receipts.voucher_title' | translate }}</h3>
+            <p class="text-[10px] text-slate-400 font-semibold mt-0.5">{{ 'inventory.goods_receipts.voucher_subtitle' | translate }}</p>
           </div>
           <button (click)="isMRVModalOpen.set(false)" class="text-slate-400 hover:text-slate-600">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -325,14 +325,14 @@
           <!-- Row 1: PO & Warehouse -->
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label class="block text-slate-400 mb-1">Link Approved Purchase Order *</label>
+              <label class="block text-slate-400 mb-1">{{ 'inventory.goods_receipts.modal.link_approved_po' | translate }}</label>
               <select
                 [(ngModel)]="mrvForm.poId"
                 name="poId"
                 (change)="onMRVPOSelect()"
                 class="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-2.5 focus:outline-none"
               >
-                <option value="" disabled>-- Select Approved PO --</option>
+                <option value="" disabled>{{ 'inventory.goods_receipts.modal.select_po' | translate }}</option>
                 @for (po of purchaseOrders(); track po.id) {
                   @if (po.status === 'Approved' || po.status === 'Issued') {
                     <option [value]="po.id">{{ po.poNumber }} — {{ po.vendorName }}</option>
@@ -341,7 +341,7 @@
               </select>
             </div>
             <div>
-              <label class="block text-slate-400 mb-1">Target Warehouse *</label>
+              <label class="block text-slate-400 mb-1">{{ 'inventory.goods_receipts.modal.target_warehouse' | translate }}</label>
               <select
                 [(ngModel)]="mrvForm.warehouseId"
                 name="warehouseId"
@@ -357,7 +357,7 @@
           <!-- Row 2: Supplier / Project / Date -->
           <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <label class="block text-slate-400 mb-1">Supplier Name</label>
+              <label class="block text-slate-400 mb-1">{{ 'inventory.goods_receipts.modal.supplier' | translate }}</label>
               <input
                 type="text"
                 [(ngModel)]="mrvForm.supplierName"
@@ -367,7 +367,7 @@
               />
             </div>
             <div>
-              <label class="block text-slate-400 mb-1">Project</label>
+              <label class="block text-slate-400 mb-1">{{ 'inventory.goods_receipts.modal.project' | translate }}</label>
               <input
                 type="text"
                 [(ngModel)]="mrvForm.projectId"
@@ -377,7 +377,7 @@
               />
             </div>
             <div>
-              <label class="block text-slate-400 mb-1">Date Received *</label>
+              <label class="block text-slate-400 mb-1">{{ 'inventory.goods_receipts.modal.date_received' | translate }}</label>
               <input
                 type="date"
                 [(ngModel)]="mrvForm.receivedDate"
@@ -390,7 +390,7 @@
           <!-- Row 3: Transport / Ref Type / Invoice Num -->
           <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <label class="block text-slate-400 mb-1">Transport Method</label>
+              <label class="block text-slate-400 mb-1">{{ 'inventory.goods_receipts.modal.transport_method' | translate }}</label>
               <select
                 [(ngModel)]="mrvForm.transportMethod"
                 name="transportMethod"
@@ -403,7 +403,7 @@
               </select>
             </div>
             <div>
-              <label class="block text-slate-400 mb-1">Reference Document</label>
+              <label class="block text-slate-400 mb-1">{{ 'inventory.goods_receipts.modal.ref_doc' | translate }}</label>
               <select
                 [(ngModel)]="mrvForm.referenceType"
                 name="referenceType"
@@ -414,7 +414,7 @@
               </select>
             </div>
             <div>
-              <label class="block text-slate-400 mb-1">Supplier Invoice Number</label>
+              <label class="block text-slate-400 mb-1">{{ 'inventory.goods_receipts.modal.supplier_inv' | translate }}</label>
               <input
                 type="text"
                 [(ngModel)]="mrvForm.referenceNumber"
@@ -428,20 +428,20 @@
           <!-- Items Table -->
           <div class="border border-slate-100 rounded-lg overflow-hidden">
             <div class="p-2.5 bg-slate-50 border-b border-slate-100 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-              Line Items — Quantities must not exceed remaining PO balance
+              {{ 'inventory.goods_receipts.modal.line_items_hint' | translate }}
             </div>
             <div class="overflow-x-auto">
               <table class="w-full text-left border-collapse text-[10px] md:text-xs">
                 <thead>
                   <tr class="bg-slate-50/50 text-slate-400 border-b border-slate-100 font-bold">
-                    <th class="p-3">Item</th>
-                    <th class="p-3 text-right">PO Qty</th>
-                    <th class="p-3 text-right">Prev Recv</th>
-                    <th class="p-3 text-right text-amber-600">Remaining</th>
-                    <th class="p-3 text-right w-28 text-slate-900">Recv Now *</th>
-                    <th class="p-3 text-right">Unit Price</th>
-                    <th class="p-3 text-right">Stock After</th>
-                    <th class="p-3 text-right">Total</th>
+                    <th class="p-3">{{ 'inventory.goods_receipts.modal.col_item' | translate }}</th>
+                    <th class="p-3 text-right">{{ 'inventory.goods_receipts.modal.col_po_qty' | translate }}</th>
+                    <th class="p-3 text-right">{{ 'inventory.goods_receipts.modal.col_prev_recv' | translate }}</th>
+                    <th class="p-3 text-right text-amber-600">{{ 'inventory.goods_receipts.modal.col_remaining' | translate }}</th>
+                    <th class="p-3 text-right w-28 text-slate-900">{{ 'inventory.goods_receipts.modal.col_recv_now' | translate }}</th>
+                    <th class="p-3 text-right">{{ 'inventory.goods_receipts.modal.col_unit_price' | translate }}</th>
+                    <th class="p-3 text-right">{{ 'inventory.goods_receipts.modal.col_stock_after' | translate }}</th>
+                    <th class="p-3 text-right">{{ 'inventory.goods_receipts.modal.col_total' | translate }}</th>
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-50 font-medium text-slate-700">
@@ -475,7 +475,7 @@
                   } @empty {
                     <tr>
                       <td colspan="8" class="p-6 text-center text-slate-400 font-semibold">
-                        Select an approved Purchase Order above to load items automatically.
+                        {{ 'inventory.goods_receipts.modal.empty_items_hint' | translate }}
                       </td>
                     </tr>
                   }
@@ -483,7 +483,7 @@
                 @if (mrvForm.items.length > 0) {
                   <tfoot>
                     <tr class="bg-slate-50/30 border-t border-slate-100 font-bold text-slate-800">
-                      <td colspan="7" class="p-3 text-right text-[10px] uppercase tracking-wider text-slate-400">Grand Total</td>
+                      <td colspan="7" class="p-3 text-right text-[10px] uppercase tracking-wider text-slate-400">{{ 'inventory.goods_receipts.modal.grand_total' | translate }}</td>
                       <td class="p-3 text-right font-mono font-black text-slate-900">{{ mrvGrandTotal() | number:'1.2-2' }}</td>
                     </tr>
                   </tfoot>
@@ -499,14 +499,14 @@
               (click)="isMRVModalOpen.set(false)"
               class="px-4 py-2 border border-slate-200 bg-white text-slate-700 rounded-lg hover:bg-slate-50 cursor-pointer font-semibold text-xs"
             >
-              Cancel
+              {{ 'common.cancel' | translate }}
             </button>
             <button
               type="submit"
               [disabled]="mrvForm.items.length === 0"
               class="px-5 py-2 bg-slate-900 text-white rounded-lg hover:bg-slate-800 cursor-pointer font-bold text-xs disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Save Receipt Draft
+              {{ 'inventory.goods_receipts.modal.save_draft' | translate }}
             </button>
           </div>
         </form>

@@ -127,41 +127,50 @@ function mapApiMIV(raw: any): MIV {
 }
 
 function mapApiTransfer(raw: any): InternalTransfer {
+  const doc = raw?._doc || raw || {};
+  const fromWh = doc.fromWarehouseId ?? doc.sourceWarehouseId ?? (typeof doc.fromWarehouse === 'object' ? (doc.fromWarehouse?._id || doc.fromWarehouse?.id || doc.fromWarehouse?.code) : doc.fromWarehouse) ?? '';
+  const toWh   = doc.toWarehouseId ?? doc.destinationWarehouseId ?? (typeof doc.toWarehouse === 'object' ? (doc.toWarehouse?._id || doc.toWarehouse?.id || doc.toWarehouse?.code) : doc.toWarehouse) ?? '';
+  const requester = typeof doc.requestedBy === 'object' && doc.requestedBy ? (doc.requestedBy?.fullName || doc.requestedBy?.username || doc.requestedBy?.name || '') : (doc.requestedBy ?? '');
+
   return {
-    id:             raw._id ?? raw.id,
-    transferNumber: raw.documentNumber ?? raw.transferNumber ?? '',
-    fromWarehouseId: raw.fromWarehouseId ?? '',
-    toWarehouseId:   raw.toWarehouseId ?? '',
-    transferDate:   raw.transferDate ?? raw.createdAt ?? '',
-    requestedBy:    raw.requestedBy ?? '',
-    status:         raw.status ?? 'Draft',
-    items:          (raw.items ?? []).map((i: any): InternalTransferItem => ({
-      itemCode: i.itemCode ?? '',
-      itemName: i.itemName ?? '',
-      quantity: i.quantity ?? 0,
-      uom:      i.uom ?? 'PCS',
+    id:             doc._id ?? doc.id ?? '',
+    transferNumber: doc.transferNumber ?? doc.documentNumber ?? doc.transferNo ?? doc.code ?? '',
+    fromWarehouseId: String(fromWh),
+    toWarehouseId:   String(toWh),
+    transferDate:   doc.transferDate ?? doc.date ?? doc.createdAt ?? '',
+    requestedBy:    String(requester),
+    status:         doc.status ?? 'Draft',
+    items:          (doc.items ?? []).map((i: any): InternalTransferItem => ({
+      itemCode: i.itemCode ?? i.item?.itemCode ?? i.item?.code ?? '',
+      itemName: i.itemName ?? i.item?.itemName ?? i.item?.name ?? '',
+      quantity: Number(i.quantity ?? i.quantityTransferred ?? i.qty ?? 0),
+      uom:      i.uom ?? i.item?.uom ?? 'PCS',
     })),
   };
 }
 
 function mapApiAdjustment(raw: any): StockAdjustment {
+  const doc = raw?._doc || raw || {};
+  const wh = doc.warehouseId ?? (typeof doc.warehouse === 'object' ? (doc.warehouse?._id || doc.warehouse?.id || doc.warehouse?.code) : doc.warehouse) ?? '';
+  const requester = typeof doc.requestedBy === 'object' && doc.requestedBy ? (doc.requestedBy?.fullName || doc.requestedBy?.username || doc.requestedBy?.name || '') : (doc.requestedBy ?? '');
+
   return {
-    id:               raw._id ?? raw.id,
-    adjustmentNumber: raw.documentNumber ?? raw.adjustmentNumber ?? '',
-    warehouseId:      raw.warehouseId ?? '',
-    adjustmentDate:   raw.adjustmentDate ?? raw.createdAt ?? '',
-    requestedBy:      raw.requestedBy ?? '',
-    status:           raw.status ?? 'Draft',
-    items:            (raw.items ?? []).map((i: any): StockAdjustmentItem => ({
-      itemCode:       i.itemCode ?? '',
-      itemName:       i.itemName ?? '',
-      systemQuantity: i.systemQuantity ?? 0,
-      adjustedQuantity: i.adjustedQuantity ?? i.quantity ?? 0,
-      adjustmentType: i.adjustmentType === 'decrease' ? 'Deduction' : 'Addition',
-      unitPrice:      i.unitPrice ?? 0,
+    id:               doc._id ?? doc.id ?? '',
+    adjustmentNumber: doc.adjustmentNumber ?? doc.documentNumber ?? doc.adjustmentNo ?? doc.code ?? '',
+    warehouseId:      String(wh),
+    adjustmentDate:   doc.adjustmentDate ?? doc.date ?? doc.createdAt ?? '',
+    requestedBy:      String(requester),
+    status:           doc.status ?? 'Draft',
+    items:            (doc.items ?? []).map((i: any): StockAdjustmentItem => ({
+      itemCode:       i.itemCode ?? i.item?.itemCode ?? i.item?.code ?? '',
+      itemName:       i.itemName ?? i.item?.itemName ?? i.item?.name ?? '',
+      systemQuantity: Number(i.systemQuantity ?? 0),
+      adjustedQuantity: Number(i.adjustedQuantity ?? i.quantity ?? 0),
+      adjustmentType: (i.adjustmentType === 'decrease' || i.adjustmentType === 'Deduction') ? 'Deduction' : 'Addition',
+      unitPrice:      Number(i.unitPrice ?? 0),
       reason:         i.notes ?? i.reason ?? '',
     })),
-    totalValue: raw.totalValue ?? 0,
+    totalValue: Number(doc.totalValue ?? 0),
   };
 }
 
@@ -420,12 +429,16 @@ export class InventoryComponent implements OnInit {
   });
 
   getWarehouseName(whId: any): string {
-    if (!whId) return 'Main Warehouse';
+    if (!whId) return '—';
     if (typeof whId === 'object' && whId) {
       return whId.name || whId.warehouseName || whId.code || 'Warehouse';
     }
     const match = this.warehouses().find(w => w.id === whId || w.code === whId);
-    return match ? match.name : (whId.toString().length > 15 ? 'Warehouse' : whId.toString());
+    if (match) return match.name;
+    if (whId === 'w1') return this.translate.instant('inventory.warehouse_a') || 'Warehouse A';
+    if (whId === 'w2') return this.translate.instant('inventory.warehouse_b') || 'Warehouse B';
+    if (whId === 'w3') return this.translate.instant('inventory.pipe_yard_1') || 'Pipe Yard 1';
+    return (whId.toString().length > 15 ? 'Warehouse' : whId.toString());
   }
 
   // ── Filtered Lists ─────────────────────────────────────────────────────────
@@ -1298,11 +1311,14 @@ export class InventoryComponent implements OnInit {
 
   openAddTransfer() {
     const whs = this.warehouses();
+    const user = this.authService.currentUser();
+    const requester = user?.fullName || user?.username || 'Current User';
     this.transferForm = {
       fromWarehouseId: whs[0]?.id ?? '',
       toWarehouseId:   whs[1]?.id ?? '',
       transferDate:    new Date().toISOString().split('T')[0],
-      requestedBy:     '', items: []
+      requestedBy:     requester,
+      items: []
     };
     this.addTransferRow();
     this.isTransferModalOpen.set(true);
@@ -1316,30 +1332,116 @@ export class InventoryComponent implements OnInit {
     if (this.transferForm.items.length > 1) this.transferForm.items.splice(index, 1);
   }
 
+  getAvailableItemsForWarehouse(warehouseId: string): InventoryItem[] {
+    if (!warehouseId) return [];
+    const wh = this.warehouses().find(w => w.id === warehouseId || w.code === warehouseId);
+    const targetWhId = (warehouseId || '').toLowerCase().trim();
+    const whCode     = (wh?.code || '').toLowerCase().trim();
+    const whName     = (wh?.name || '').toLowerCase().trim();
+
+    return this.inventory().filter(i => {
+      if ((i.quantity || 0) <= 0) return false;
+      if (i.warehouseId && targetWhId && i.warehouseId.toLowerCase().trim() === targetWhId) return true;
+      if (whCode && i.warehouseCode && i.warehouseCode.toLowerCase().trim() === whCode) return true;
+      if (whName && i.warehouseName && i.warehouseName.toLowerCase().trim() === whName) return true;
+      if (targetWhId === 'w1' && (i.location === 'Warehouse A' || i.warehouseName === 'Warehouse A')) return true;
+      if (targetWhId === 'w2' && (i.location === 'Warehouse B' || i.warehouseName === 'Warehouse B')) return true;
+      if (targetWhId === 'w3' && (i.location === 'Pipe Yard 1' || i.warehouseName === 'Pipe Yard 1')) return true;
+      if (i.location) {
+        const loc = i.location.toLowerCase().trim();
+        if (whName && (loc === whName || loc.includes(whName))) return true;
+        if (whCode && (loc === whCode || loc.includes(whCode))) return true;
+        if (targetWhId && loc === targetWhId) return true;
+      }
+      return false;
+    });
+  }
+
+  getItemStockInWarehouse(itemCode: string, warehouseId: string): number {
+    if (!itemCode || !warehouseId) return 9999;
+    const match = this.getAvailableItemsForWarehouse(warehouseId).find(i => i.itemCode === itemCode);
+    return match?.quantity ?? 9999;
+  }
+
+  onFromWarehouseChange() {
+    const available = this.getAvailableItemsForWarehouse(this.transferForm.fromWarehouseId);
+    this.transferForm.items.forEach(row => {
+      const match = available.find(i => i.itemCode === row.itemCode);
+      if (!match) {
+        row.itemCode = '';
+        row.itemName = '';
+        row.quantity = 1;
+        row.uom      = 'EA';
+      } else if (row.quantity > match.quantity) {
+        row.quantity = match.quantity;
+      }
+    });
+    if (this.transferForm.fromWarehouseId === this.transferForm.toWarehouseId) {
+      const otherWh = this.warehouses().find(w => w.id !== this.transferForm.fromWarehouseId);
+      if (otherWh) this.transferForm.toWarehouseId = otherWh.id;
+    }
+  }
+
   onTransferItemChange(index: number) {
-    const row   = this.transferForm.items[index];
-    const match = this.inventory().find(i => i.itemCode === row.itemCode);
-    if (match) { row.itemName = match.itemName; row.uom = match.uom; }
+    const row       = this.transferForm.items[index];
+    const available = this.getAvailableItemsForWarehouse(this.transferForm.fromWarehouseId);
+    const match     = available.find(i => i.itemCode === row.itemCode);
+    if (match) {
+      row.itemName = match.itemName;
+      row.uom      = match.uom;
+      if (row.quantity > match.quantity) row.quantity = match.quantity;
+    }
   }
 
   saveTransfer() {
     if (this.transferForm.fromWarehouseId === this.transferForm.toWarehouseId) {
-      this.notificationService.danger('Validation Error', 'Source and Destination warehouses must be different.');
+      this.notificationService.danger(
+        this.translate.instant('common.warning') || 'Validation Error',
+        this.translate.instant('inventory.transfers.err_same_wh') || 'Source and Destination warehouses must be different.'
+      );
       return;
     }
     const invalid = this.transferForm.items.some(i => !i.itemCode || i.quantity <= 0);
     if (invalid) {
-      this.notificationService.danger('Validation Error', 'Please select valid items and transfer quantities.');
+      this.notificationService.danger(
+        this.translate.instant('common.warning') || 'Validation Error',
+        this.translate.instant('inventory.transfers.err_invalid_items') || 'Please select valid items and transfer quantities.'
+      );
       return;
     }
+
+    const available = this.getAvailableItemsForWarehouse(this.transferForm.fromWarehouseId);
+    for (const row of this.transferForm.items) {
+      const match = available.find(i => i.itemCode === row.itemCode);
+      if (!match) {
+        this.notificationService.danger(
+          this.translate.instant('common.warning') || 'Validation Error',
+          this.translate.instant('inventory.transfers.err_item_not_in_wh') || 'Selected material is not available in the source warehouse.'
+        );
+        return;
+      }
+      if (row.quantity > match.quantity) {
+        this.notificationService.danger(
+          this.translate.instant('common.warning') || 'Validation Error',
+          this.translate.instant('inventory.transfers.err_qty_exceeds_stock') || 'Transfer quantity cannot exceed available stock in source warehouse.'
+        );
+        return;
+      }
+    }
+
+    const user = this.authService.currentUser();
+    const requester = this.transferForm.requestedBy?.trim() || user?.fullName || user?.username || 'Current User';
 
     const payload = {
       fromWarehouseId: this.transferForm.fromWarehouseId,
       toWarehouseId:   this.transferForm.toWarehouseId,
-      reason:          `Transfer requested by ${this.transferForm.requestedBy}`,
-      items:           this.transferForm.items.map(i => ({
-        itemCode: i.itemCode, itemName: i.itemName, quantity: i.quantity, uom: i.uom
-      }))
+      transferDate:    this.transferForm.transferDate || new Date().toISOString().split('T')[0],
+      requestedBy:     requester,
+      reason:          `Transfer requested by ${requester}`,
+      items:           this.transferForm.items.map(i => {
+        const m = available.find(inv => inv.itemCode === i.itemCode);
+        return { itemCode: i.itemCode, itemName: i.itemName, itemId: m?.id ?? i.itemCode, quantity: i.quantity, uom: i.uom };
+      })
     };
 
     this.isLoading.set(true);
@@ -1350,9 +1452,12 @@ export class InventoryComponent implements OnInit {
           const mapped = mapApiTransfer(created);
           this.transfers.update(list => [mapped, ...list]);
           this.isTransferModalOpen.set(false);
-          this.notificationService.success('Draft Saved', `Transfer ${mapped.transferNumber} created.`);
+          this.notificationService.success(
+            this.translate.instant('inventory.transfers.msg_saved_title') || 'Draft Saved',
+            this.translate.instant('inventory.transfers.msg_saved_desc', { number: mapped.transferNumber }) || `Transfer ${mapped.transferNumber} created.`
+          );
         },
-        error: err => this.notificationService.danger('Error', err?.error?.message ?? 'Failed to create transfer.')
+        error: err => this.notificationService.danger(this.translate.instant('common.warning') || 'Error', err?.error?.message ?? 'Failed to create transfer.')
       });
   }
 
@@ -1366,7 +1471,10 @@ export class InventoryComponent implements OnInit {
       .subscribe({
         next: () => {
           this.transfers.update(list => list.map(t => t.id === xfer.id ? { ...t, status: 'Posted' as const } : t));
-          this.notificationService.success('Transfer Posted', `Voucher ${xfer.transferNumber} executed.`);
+          this.notificationService.success(
+            this.translate.instant('inventory.transfers.msg_approved_title') || 'Transfer Posted',
+            this.translate.instant('inventory.transfers.msg_approved_desc', { number: xfer.transferNumber }) || `Voucher ${xfer.transferNumber} executed.`
+          );
           this.auditService.log({
             user: 'Current User', role: 'Store Keeper', module: 'Inventory',
             entityName: 'InternalTransfer', entityId: xfer.transferNumber, action: 'Approve',
@@ -1374,17 +1482,20 @@ export class InventoryComponent implements OnInit {
             details: `Approved transfer from ${whSource} to ${whDest}`
           });
         },
-        error: err => this.notificationService.danger('Error', err?.error?.message ?? 'Failed to approve transfer.')
+        error: err => this.notificationService.danger(this.translate.instant('common.warning') || 'Error', err?.error?.message ?? 'Failed to approve transfer.')
       });
   }
 
   // ─── STOCK ADJUSTMENT METHODS ──────────────────────────────────────────────
 
   openAddAdjustment() {
+    const user = this.authService.currentUser();
+    const requester = user?.fullName || user?.username || 'Current User';
     this.adjustmentForm = {
       warehouseId:    this.warehouses()[0]?.id ?? '',
       adjustmentDate: new Date().toISOString().split('T')[0],
-      requestedBy:    '', items: []
+      requestedBy:    requester,
+      items: []
     };
     this.addAdjustmentRow();
     this.isAdjustmentModalOpen.set(true);
@@ -1414,10 +1525,15 @@ export class InventoryComponent implements OnInit {
       return;
     }
 
+    const user = this.authService.currentUser();
+    const requester = this.adjustmentForm.requestedBy?.trim() || user?.fullName || user?.username || 'Current User';
+
     const payload = {
-      warehouseId: this.adjustmentForm.warehouseId,
-      reason:      `Adjustment requested by ${this.adjustmentForm.requestedBy}`,
-      items:       this.adjustmentForm.items.map(i => ({
+      warehouseId:    this.adjustmentForm.warehouseId,
+      adjustmentDate: this.adjustmentForm.adjustmentDate || new Date().toISOString().split('T')[0],
+      requestedBy:    requester,
+      reason:         `Adjustment requested by ${requester}`,
+      items:          this.adjustmentForm.items.map(i => ({
         itemCode:       i.itemCode,
         itemName:       i.itemName,
         adjustmentType: i.adjustmentType === 'Addition' ? 'increase' : 'decrease',
@@ -1435,9 +1551,12 @@ export class InventoryComponent implements OnInit {
           const mapped = mapApiAdjustment(created);
           this.adjustments.update(list => [mapped, ...list]);
           this.isAdjustmentModalOpen.set(false);
-          this.notificationService.success('Draft Saved', `Adjustment ${mapped.adjustmentNumber} registered.`);
+          this.notificationService.success(
+            this.translate.instant('inventory.adjustments.msg_saved_title') || 'Draft Saved',
+            this.translate.instant('inventory.adjustments.msg_saved_desc', { number: mapped.adjustmentNumber }) || `Adjustment ${mapped.adjustmentNumber} registered.`
+          );
         },
-        error: err => this.notificationService.danger('Error', err?.error?.message ?? 'Failed to create adjustment.')
+        error: err => this.notificationService.danger(this.translate.instant('common.warning') || 'Error', err?.error?.message ?? 'Failed to create adjustment.')
       });
   }
 
@@ -1460,12 +1579,15 @@ export class InventoryComponent implements OnInit {
                 { id: crypto.randomUUID(), accountCode: '521000', accountName: 'General & Administrative Costs', debit: isPositive ? 0 : amount, credit: isPositive ? amount : 0 }
               ]
             });
-            this.notificationService.success('Adjustment Posted', `Adjustment ${adj.adjustmentNumber} ledger updated.`);
+            this.notificationService.success(
+              this.translate.instant('inventory.adjustments.msg_approved_title') || 'Adjustment Posted',
+              this.translate.instant('inventory.adjustments.msg_approved_desc', { number: adj.adjustmentNumber }) || `Adjustment ${adj.adjustmentNumber} ledger updated.`
+            );
           } catch (e: any) {
             this.notificationService.danger('GL Posting Error', e.message);
           }
         },
-        error: err => this.notificationService.danger('Error', err?.error?.message ?? 'Failed to approve adjustment.')
+        error: err => this.notificationService.danger(this.translate.instant('common.warning') || 'Error', err?.error?.message ?? 'Failed to approve adjustment.')
       });
   }
 
@@ -1524,9 +1646,12 @@ export class InventoryComponent implements OnInit {
           };
           this.counts.update(list => [...list, newCount]);
           this.isCountModalOpen.set(false);
-          this.notificationService.success('Count Completed', `Physical count ${newCount.countNumber} finalized.`);
+          this.notificationService.success(
+            this.translate.instant('inventory.adjustments.msg_count_title') || 'Count Completed',
+            this.translate.instant('inventory.adjustments.msg_count_desc', { number: newCount.countNumber }) || `Physical count ${newCount.countNumber} finalized.`
+          );
         },
-        error: err => this.notificationService.danger('Error', err?.error?.message ?? 'Failed to create count.')
+        error: err => this.notificationService.danger(this.translate.instant('common.warning') || 'Error', err?.error?.message ?? 'Failed to create count.')
       });
   }
 

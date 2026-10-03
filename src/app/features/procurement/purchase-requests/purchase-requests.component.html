@@ -62,7 +62,7 @@
             </label>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <div>
-                <label class="block text-[10px] uppercase font-bold text-slate-600 mb-1">Main Root Center <span class="text-red-500">*</span></label>
+                <label class="block text-[10px] uppercase font-bold text-slate-600 mb-1">{{ 'procurement.purchase_requests.main_root_center' | translate }} <span class="text-red-500">*</span></label>
                 <select 
                   [ngModel]="prParentCC()" 
                   (ngModelChange)="onPRParentCCChange($event)"
@@ -70,7 +70,7 @@
                   class="w-full bg-white border border-slate-300 rounded-lg p-2 text-slate-900 font-bold text-xs focus:outline-none focus:ring-2 focus:ring-indigo-400"
                   style="color:#0f172a !important; background-color:#ffffff !important;"
                 >
-                  <option value="" style="color:#64748b">— اختر المركز الرئيسي —</option>
+                  <option value="" style="color:#64748b">{{ 'procurement.purchase_requests.select_main_center' | translate }}</option>
                   @for (cc of parentCostCenters(); track cc.code) {
                     <option [value]="cc.code" style="color:#0f172a !important;">🏢 {{ cc.nameAr || cc.nameEn }}</option>
                   }
@@ -78,7 +78,7 @@
               </div>
 
               <div>
-                <label class="block text-[10px] uppercase font-bold text-slate-600 mb-1">Department / Cost Center <span class="text-slate-400 font-semibold normal-case">(اختياري)</span></label>
+                <label class="block text-[10px] uppercase font-bold text-slate-600 mb-1">{{ 'procurement.purchase_requests.dept_cost_center' | translate }} <span class="text-slate-400 font-semibold normal-case">{{ 'procurement.purchase_requests.optional_hint' | translate }}</span></label>
                 @if (childCostCenters().length > 0) {
                   <select 
                     [(ngModel)]="formPR.costCenter" 
@@ -86,22 +86,22 @@
                     class="w-full bg-white border border-slate-300 rounded-lg p-2 text-slate-900 font-bold text-xs focus:outline-none focus:ring-2 focus:ring-indigo-400"
                     style="color:#0f172a !important; background-color:#ffffff !important;"
                   >
-                    <option value="" style="color:#64748b">— اختر القسم / مركز التكلفة —</option>
+                    <option value="" style="color:#64748b">{{ 'procurement.purchase_requests.select_dept_cc' | translate }}</option>
                     @for (cc of childCostCenters(); track cc.code) {
                       <option [value]="cc.code" style="color:#0f172a !important;">{{ cc.code }} — {{ cc.nameAr || cc.nameEn || cc.name }}</option>
                     }
                   </select>
                 } @else if (prParentCC()) {
-                  <div class="w-full bg-amber-50 border border-amber-200 rounded-lg p-2 text-amber-700 font-bold text-[10px]">No sub-departments — using main CC</div>
+                  <div class="w-full bg-amber-50 border border-amber-200 rounded-lg p-2 text-amber-700 font-bold text-[10px]">{{ 'procurement.purchase_requests.no_sub_depts' | translate }}</div>
                 } @else {
-                  <div class="w-full bg-slate-100 border border-slate-200 rounded-lg p-2 text-slate-400 text-[10px]">اختر المركز الرئيسي أولاً</div>
+                  <div class="w-full bg-slate-100 border border-slate-200 rounded-lg p-2 text-slate-400 text-[10px]">{{ 'procurement.purchase_requests.select_main_first' | translate }}</div>
                 }
               </div>
             </div>
 
             @if (prParentCC()) {
               <div class="flex items-center gap-2 bg-indigo-50 border border-indigo-100 rounded px-2.5 py-1 text-[10px]">
-                <span class="text-indigo-500 font-bold uppercase tracking-wider text-[9px]">Resolved CC:</span>
+                <span class="text-indigo-500 font-bold uppercase tracking-wider text-[9px]">{{ 'procurement.purchase_requests.resolved_cc' | translate }}</span>
                 <span class="font-mono font-black text-indigo-700">{{ formPR.costCenter || prParentCC() }}</span>
               </div>
             }
@@ -149,7 +149,7 @@
                 class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-slate-800 focus:outline-none focus:border-accent"
                 required
               >
-                <option value="">Select Project</option>
+                <option value="">{{ 'procurement.purchase_requests.select_project' | translate }}</option>
                 @for (proj of projects(); track proj.id) {
                   <option [value]="proj.id">{{ proj.name }} ({{ proj.id }})</option>
                 }
@@ -168,7 +168,7 @@
                 class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-slate-800 focus:outline-none focus:border-accent"
                 required
               >
-                <option value="">Select Asset</option>
+                <option value="">{{ 'procurement.purchase_requests.select_asset' | translate }}</option>
                 @for (a of assets(); track a.id) {
                   <option [value]="a.id">{{ a.name }} ({{ a.id }})</option>
                 }
@@ -220,9 +220,9 @@
                     class="w-full bg-white border border-slate-200 rounded-md p-2 text-slate-800 focus:outline-none focus:border-accent"
                     required
                   >
-                    <option value="Inventory Item">Inventory Item</option>
-                    <option value="New Item">New Item</option>
-                    <option value="Service">Service</option>
+                    <option value="Inventory Item">{{ 'procurement.purchase_requests.item_type_inventory' | translate }}</option>
+                    <option value="New Item">{{ 'procurement.purchase_requests.item_type_new' | translate }}</option>
+                    <option value="Service">{{ 'procurement.purchase_requests.item_type_service' | translate }}</option>
                   </select>
                 </div>
 
@@ -281,18 +281,18 @@
                         (change)="onAllowPartialChange($index)"
                         class="rounded text-accent focus:ring-accent"
                       >
-                      <span>Allow Partial</span>
+                      <span>{{ 'procurement.purchase_requests.allow_partial' | translate }}</span>
                     </label>
                   </div>
                 } @else if (item.itemType === 'New Item') {
                   <!-- Description -->
                   <div class="md:col-span-4 font-semibold text-slate-600">
-                    <label class="block mb-1">Item Description</label>
+                    <label class="block mb-1">{{ 'procurement.purchase_requests.item_description' | translate }}</label>
                     <input 
                       type="text" 
                       [name]="'newItemDesc_' + $index" 
                       [(ngModel)]="item.itemDescription"
-                      placeholder="e.g. Specialized Titanium Bolts"
+                      [placeholder]="'procurement.purchase_requests.item_description' | translate"
                       class="w-full bg-white border border-slate-200 rounded-md p-2 text-slate-800 focus:outline-none"
                       required
                     >
@@ -300,19 +300,19 @@
 
                   <!-- Category -->
                   <div class="md:col-span-2 font-semibold text-slate-600">
-                    <label class="block mb-1">Category</label>
+                    <label class="block mb-1">{{ 'procurement.purchase_requests.category' | translate }}</label>
                     <input 
                       type="text" 
                       [name]="'newItemCat_' + $index" 
                       [(ngModel)]="item.category"
-                      placeholder="Category"
+                      [placeholder]="'procurement.purchase_requests.category' | translate"
                       class="w-full bg-white border border-slate-200 rounded-md p-2 text-slate-800 focus:outline-none"
                     >
                   </div>
 
                   <!-- Est. Qty -->
                   <div class="md:col-span-1 font-semibold text-slate-600">
-                    <label class="block mb-1">Qty</label>
+                    <label class="block mb-1">{{ 'procurement.purchase_requests.qty' | translate }}</label>
                     <input 
                       type="number" 
                       [name]="'newItemQty_' + $index" 
@@ -325,7 +325,7 @@
 
                   <!-- UOM -->
                   <div class="md:col-span-1 font-semibold text-slate-600">
-                    <label class="block mb-1">UOM</label>
+                    <label class="block mb-1">{{ 'procurement.purchase_requests.uom' | translate }}</label>
                     <input 
                       type="text" 
                       [name]="'newItemUom_' + $index" 
@@ -338,12 +338,12 @@
 
                   <!-- Est. Unit Cost -->
                   <div class="md:col-span-2 font-semibold text-slate-600">
-                    <label class="block mb-1">Est. Unit Cost ($)</label>
+                    <label class="block mb-1">{{ 'procurement.purchase_requests.est_unit_cost' | translate }} ($)</label>
                     <input 
                       type="number" 
                       [name]="'newItemCost_' + $index" 
                       [(ngModel)]="item.estimatedUnitCost"
-                      placeholder="Unit Cost"
+                      [placeholder]="'procurement.purchase_requests.est_unit_cost' | translate"
                       class="w-full bg-white border border-slate-200 rounded-md p-2 text-slate-800 focus:outline-none"
                       required
                     >
@@ -351,12 +351,12 @@
                 } @else if (item.itemType === 'Service') {
                   <!-- Description -->
                   <div class="md:col-span-4 font-semibold text-slate-600">
-                    <label class="block mb-1">Service Description</label>
+                    <label class="block mb-1">{{ 'procurement.purchase_requests.service_description' | translate }}</label>
                     <input 
                       type="text" 
                       [name]="'srvDesc_' + $index" 
                       [(ngModel)]="item.serviceDescription"
-                      placeholder="e.g. Annual Generator Calibration"
+                      [placeholder]="'procurement.purchase_requests.service_description' | translate"
                       class="w-full bg-white border border-slate-200 rounded-md p-2 text-slate-800 focus:outline-none"
                       required
                     >
@@ -364,24 +364,24 @@
 
                   <!-- Scope of Work -->
                   <div class="md:col-span-4 font-semibold text-slate-600">
-                    <label class="block mb-1">Scope of Work</label>
+                    <label class="block mb-1">{{ 'procurement.purchase_requests.scope_of_work' | translate }}</label>
                     <input 
                       type="text" 
                       [name]="'srvScope_' + $index" 
                       [(ngModel)]="item.scopeOfWork"
-                      placeholder="Brief details of service delivery"
+                      [placeholder]="'procurement.purchase_requests.scope_of_work' | translate"
                       class="w-full bg-white border border-slate-200 rounded-md p-2 text-slate-800 focus:outline-none"
                     >
                   </div>
 
                   <!-- Est. Cost -->
                   <div class="md:col-span-2 font-semibold text-slate-600">
-                    <label class="block mb-1">Est. Cost ($)</label>
+                    <label class="block mb-1">{{ 'procurement.purchase_requests.est_cost' | translate }} ($)</label>
                     <input 
                       type="number" 
                       [name]="'srvCost_' + $index" 
                       [(ngModel)]="item.estimatedCost"
-                      placeholder="Total Service Cost"
+                      [placeholder]="'procurement.purchase_requests.est_cost' | translate"
                       class="w-full bg-white border border-slate-200 rounded-md p-2 text-slate-800 focus:outline-none"
                       required
                     >
@@ -390,7 +390,7 @@
 
                 <!-- Notes & Delete -->
                 <div class="md:col-span-2 font-semibold text-slate-600">
-                  <label class="block mb-1">Notes</label>
+                  <label class="block mb-1">{{ 'procurement.purchase_requests.notes' | translate }}</label>
                   <div class="flex items-center space-x-2">
                     <input 
                       type="text" 
@@ -419,22 +419,22 @@
               @if (item.itemType === 'Inventory Item' && item.itemCode) {
                 <div class="bg-white p-3 rounded-lg border border-slate-100 grid grid-cols-2 sm:grid-cols-4 gap-4 items-center animate-fade-in">
                   <div>
-                    <span class="block text-[10px] text-slate-400 font-bold uppercase tracking-wider">Current Stock</span>
+                    <span class="block text-[10px] text-slate-400 font-bold uppercase tracking-wider">{{ 'procurement.purchase_requests.current_stock' | translate }}</span>
                     <span class="text-xs font-bold text-slate-850">{{ item.currentStock }} {{ item.uom }}</span>
                   </div>
                   <div>
-                    <span class="block text-[10px] text-slate-400 font-bold uppercase tracking-wider">Reserved Qty</span>
+                    <span class="block text-[10px] text-slate-400 font-bold uppercase tracking-wider">{{ 'procurement.purchase_requests.reserved_qty' | translate }}</span>
                     <span class="text-xs font-bold text-slate-500">{{ item.reservedQty }} {{ item.uom }}</span>
                   </div>
                   <div>
-                    <span class="block text-[10px] text-slate-400 font-bold uppercase tracking-wider">Available Qty</span>
+                    <span class="block text-[10px] text-slate-400 font-bold uppercase tracking-wider">{{ 'procurement.purchase_requests.available_qty' | translate }}</span>
                     <span class="text-xs font-bold" [class.text-success]="item.availableQty > 0" [class.text-danger]="item.availableQty <= 0">
                       {{ item.availableQty }} {{ item.uom }}
                     </span>
                   </div>
                   <div class="flex items-center justify-between">
                     <div>
-                      <span class="block text-[10px] text-slate-400 font-bold uppercase tracking-wider">Shortage</span>
+                      <span class="block text-[10px] text-slate-400 font-bold uppercase tracking-wider">{{ 'procurement.purchase_requests.shortage' | translate }}</span>
                       <span class="text-xs font-bold font-mono" [class.text-danger]="item.shortageQty > 0" [class.text-slate-500]="item.shortageQty === 0">
                         {{ item.shortageQty }} {{ item.uom }}
                       </span>
@@ -450,11 +450,11 @@
                       [class.text-danger]="item.availableQty <= 0"
                     >
                       @if (item.shortageQty === 0) {
-                        Stock Available
+                        {{ 'procurement.purchase_requests.stock_available' | translate }}
                       } @else if (item.availableQty > 0) {
-                        Partial
+                        {{ 'procurement.purchase_requests.partial_status' | translate }}
                       } @else {
-                        Out of Stock
+                        {{ 'procurement.purchase_requests.out_of_stock' | translate }}
                       }
                     </span>
                   </div>
@@ -462,12 +462,12 @@
                   <!-- Split Fulfillment Info -->
                   @if (item.shortageQty > 0) {
                     <div class="sm:col-span-4 bg-slate-50 border border-slate-100 p-2.5 rounded text-[11px] text-slate-600 flex flex-wrap gap-x-4 gap-y-1">
-                      <span><strong>Store Issue (MIV):</strong> {{ item.fulfillFromStock }} {{ item.uom }}</span>
-                      <span><strong>Procurement (RFQ):</strong> {{ item.fulfillByPurchase }} {{ item.uom }}</span>
+                      <span><strong>{{ 'procurement.purchase_requests.store_issue_miv' | translate }}:</strong> {{ item.fulfillFromStock }} {{ item.uom }}</span>
+                      <span><strong>{{ 'procurement.purchase_requests.procurement_rfq' | translate }}:</strong> {{ item.fulfillByPurchase }} {{ item.uom }}</span>
                       @if (item.allowPartialIssue) {
-                        <span class="text-success font-semibold">✓ Partial fulfillment enabled. Split active.</span>
+                        <span class="text-success font-semibold">✓ {{ 'procurement.purchase_requests.partial_fulfillment_enabled' | translate }}</span>
                       } @else {
-                        <span class="text-danger font-semibold">✗ Partial fulfillment disabled. Full amount will be purchased.</span>
+                        <span class="text-danger font-semibold">✗ {{ 'procurement.purchase_requests.partial_fulfillment_disabled' | translate }}</span>
                       }
                     </div>
                   }
@@ -539,9 +539,9 @@
           <thead>
             <tr class="text-slate-400 font-bold border-b border-slate-100 bg-slate-50/20">
               <th class="p-4 py-3">{{ 'procurement.purchase_requests.col_pr_number' | translate }}</th>
-              <th class="p-4 py-3">Chain ID</th>
+              <th class="p-4 py-3">{{ 'procurement.purchase_requests.chain_id' | translate }}</th>
               <th class="p-4 py-3">{{ 'procurement.purchase_requests.col_dept' | translate }}</th>
-              <th class="p-4 py-3">Allocation Dimension</th>
+              <th class="p-4 py-3">{{ 'procurement.purchase_requests.allocation_dimension' | translate }}</th>
               <th class="p-4 py-3">{{ 'procurement.purchase_requests.cost_center' | translate }}</th>
               <th class="p-4 py-3">{{ 'procurement.purchase_requests.col_date' | translate }}</th>
               <th class="p-4 py-3">{{ 'procurement.purchase_requests.required_date' | translate }}</th>
@@ -561,12 +561,12 @@
                     <span class="block text-[10px] text-slate-400">{{ pr.projectName }}</span>
                   }
                   @if (pr.assetName) {
-                    <span class="block text-[10px] text-slate-400">Asset: {{ pr.assetName }}</span>
+                    <span class="block text-[10px] text-slate-400">{{ 'procurement.purchase_requests.asset_prefix' | translate }}: {{ pr.assetName }}</span>
                   }
                 </td>
                 <td class="p-4 font-mono text-slate-500">{{ pr.costCenter }}</td>
-                <td class="p-4 text-slate-500">{{ pr.requestDate }}</td>
-                <td class="p-4 text-slate-500">{{ pr.requiredDate }}</td>
+                <td class="p-4 text-slate-500">{{ (pr.requestDate | date:'dd MMM yyyy') || pr.requestDate }}</td>
+                <td class="p-4 text-slate-500">{{ (pr.requiredDate | date:'dd MMM yyyy') || pr.requiredDate }}</td>
                 <td class="p-4 text-center">
                   <span 
                     class="px-2.5 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider"
@@ -682,28 +682,28 @@
           </div>
           <div>
             <span class="block text-[10px] text-slate-400 uppercase">{{ 'procurement.purchase_requests.required_date' | translate }}</span>
-            <span class="text-slate-800">{{ selectedPR()?.requiredDate }}</span>
+            <span class="text-slate-800">{{ (selectedPR()?.requiredDate | date:'dd MMM yyyy') || selectedPR()?.requiredDate }}</span>
           </div>
           
           <div>
-            <span class="block text-[10px] text-slate-400 uppercase">Allocation Type</span>
+            <span class="block text-[10px] text-slate-400 uppercase">{{ 'procurement.purchase_requests.allocation_type' | translate }}</span>
             <span class="text-slate-800 font-bold">{{ selectedPR()?.chargeType }}</span>
           </div>
           @if (selectedPR()?.projectId) {
             <div>
-              <span class="block text-[10px] text-slate-400 uppercase">Project</span>
+              <span class="block text-[10px] text-slate-400 uppercase">{{ 'procurement.purchase_requests.project_label' | translate }}</span>
               <span class="text-slate-800 font-bold">{{ selectedPR()?.projectName }} ({{ selectedPR()?.projectId }})</span>
             </div>
           }
           @if (selectedPR()?.assetId) {
             <div>
-              <span class="block text-[10px] text-slate-400 uppercase">Asset</span>
+              <span class="block text-[10px] text-slate-400 uppercase">{{ 'procurement.purchase_requests.asset_label' | translate }}</span>
               <span class="text-slate-800 font-bold">{{ selectedPR()?.assetName }} ({{ selectedPR()?.assetId }})</span>
             </div>
           }
           @if (selectedPR()?.chainId) {
             <div>
-              <span class="block text-[10px] text-slate-400 uppercase">Chain ID</span>
+              <span class="block text-[10px] text-slate-400 uppercase">{{ 'procurement.purchase_requests.chain_id' | translate }}</span>
               <span class="text-indigo-600 font-mono font-bold">{{ selectedPR()?.chainId }}</span>
             </div>
           }
@@ -743,31 +743,31 @@
                 <!-- Type-specific details -->
                 @if (item.itemType === 'New Item') {
                   <div class="text-[10px] text-slate-500 bg-white border border-slate-100 p-2 rounded-lg flex justify-between font-semibold">
-                    <span>Category: <strong class="text-slate-700">{{ item.category }}</strong></span>
-                    <span>Est. Unit Cost: <strong class="text-slate-700">${{ item.estimatedUnitCost }}</strong></span>
+                    <span>{{ 'procurement.purchase_requests.category' | translate }}: <strong class="text-slate-700">{{ item.category }}</strong></span>
+                    <span>{{ 'procurement.purchase_requests.est_unit_cost' | translate }}: <strong class="text-slate-700">${{ item.estimatedUnitCost }}</strong></span>
                   </div>
                 } @else if (item.itemType === 'Service') {
                   <div class="text-[10px] text-slate-500 bg-white border border-slate-100 p-2 rounded-lg space-y-1 font-semibold">
-                    <div>Scope of Work: <strong class="text-slate-700">{{ item.scopeOfWork }}</strong></div>
+                    <div>{{ 'procurement.purchase_requests.scope_of_work' | translate }}: <strong class="text-slate-700">{{ item.scopeOfWork }}</strong></div>
                     <div class="flex justify-between">
-                      <span>Service UOM: <strong class="text-slate-700">{{ item.uom }}</strong></span>
-                      <span>Est. Cost: <strong class="text-slate-700">${{ item.estimatedCost }}</strong></span>
+                      <span>{{ 'procurement.purchase_requests.service_uom' | translate }}: <strong class="text-slate-700">{{ item.uom }}</strong></span>
+                      <span>{{ 'procurement.purchase_requests.est_cost' | translate }}: <strong class="text-slate-700">${{ item.estimatedCost }}</strong></span>
                     </div>
                   </div>
                 } @else {
                   <!-- Stock Availability snapshots -->
                   @if (item.currentStock !== undefined) {
                     <div class="grid grid-cols-4 gap-1.5 bg-white border border-slate-100 p-2 rounded-lg text-[9px] font-bold text-slate-500">
-                      <div>Stock: <span class="text-slate-800">{{ item.currentStock }}</span></div>
-                      <div>Reserved: <span class="text-slate-850">{{ item.reservedQty }}</span></div>
-                      <div>Available: <span [class.text-success]="(item.availableQty ?? 0) > 0" [class.text-danger]="(item.availableQty ?? 0) <= 0">{{ item.availableQty }}</span></div>
-                      <div>Shortage: <span [class.text-danger]="(item.shortageQty ?? 0) > 0">{{ item.shortageQty }}</span></div>
+                      <div>{{ 'procurement.purchase_requests.current_stock' | translate }}: <span class="text-slate-800">{{ item.currentStock }}</span></div>
+                      <div>{{ 'procurement.purchase_requests.reserved_qty' | translate }}: <span class="text-slate-850">{{ item.reservedQty }}</span></div>
+                      <div>{{ 'procurement.purchase_requests.available_qty' | translate }}: <span [class.text-success]="(item.availableQty ?? 0) > 0" [class.text-danger]="(item.availableQty ?? 0) <= 0">{{ item.availableQty }}</span></div>
+                      <div>{{ 'procurement.purchase_requests.shortage' | translate }}: <span [class.text-danger]="(item.shortageQty ?? 0) > 0">{{ item.shortageQty }}</span></div>
                     </div>
                     @if ((item.shortageQty ?? 0) > 0) {
                       <div class="text-[10px] text-slate-650 bg-amber-50/50 border border-amber-100/50 p-2 rounded-lg font-semibold flex justify-between">
-                        <span>Fulfill from Stock: <strong>{{ item.fulfillFromStock }}</strong></span>
-                        <span>Fulfill by Purchase: <strong>{{ item.fulfillByPurchase }}</strong></span>
-                        <span>Partial: <strong>{{ item.allowPartialIssue ? 'Allowed' : 'Disabled' }}</strong></span>
+                        <span>{{ 'procurement.purchase_requests.fulfill_from_stock' | translate }}: <strong>{{ item.fulfillFromStock }}</strong></span>
+                        <span>{{ 'procurement.purchase_requests.fulfill_by_purchase' | translate }}: <strong>{{ item.fulfillByPurchase }}</strong></span>
+                        <span>{{ 'procurement.purchase_requests.allow_partial' | translate }}: <strong>{{ item.allowPartialIssue ? ('procurement.purchase_requests.partial_allowed' | translate) : ('procurement.purchase_requests.partial_disabled' | translate) }}</strong></span>
                       </div>
                     }
                   }

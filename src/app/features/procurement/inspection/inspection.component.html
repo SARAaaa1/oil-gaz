@@ -236,9 +236,9 @@
           <div>
             <label class="block text-slate-500 font-bold mb-1">{{ 'procurement.inspection.overall_status' | translate }}</label>
             <select [(ngModel)]="inspectionStatus" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-900 font-semibold focus:outline-none focus:border-primary">
-              <option value="Accepted">Passed / Accepted</option>
-              <option value="Rejected">Rejected</option>
-              <option value="Conditional">Conditional Acceptance</option>
+              <option value="Accepted">{{ 'procurement.inspection.status_passed' | translate }}</option>
+              <option value="Rejected">{{ 'procurement.inspection.status_rejected' | translate }}</option>
+              <option value="Conditional">{{ 'procurement.inspection.status_conditional' | translate }}</option>
             </select>
           </div>
         </div>
@@ -257,12 +257,12 @@
                 <!-- Quantities Input / Display -->
                 <div class="flex flex-wrap items-center gap-3">
                   <div class="flex flex-col items-center">
-                    <span class="text-[9px] text-slate-400 font-bold uppercase tracking-wider mb-0.5">Ordered</span>
+                    <span class="text-[9px] text-slate-400 font-bold uppercase tracking-wider mb-0.5">{{ 'procurement.inspection.ordered' | translate }}</span>
                     <span class="px-2.5 py-1 bg-slate-150 border border-slate-200 text-slate-700 font-mono font-bold text-center rounded w-14">{{ item.quantityOrdered }}</span>
                   </div>
 
                   <div class="flex flex-col items-center">
-                    <span class="text-[9px] text-slate-400 font-bold uppercase tracking-wider mb-0.5">Received</span>
+                    <span class="text-[9px] text-slate-400 font-bold uppercase tracking-wider mb-0.5">{{ 'procurement.inspection.received' | translate }}</span>
                     <input 
                       type="number" 
                       [name]="'qtyRec_' + $index"
@@ -275,7 +275,7 @@
                   </div>
 
                   <div class="flex flex-col items-center">
-                    <span class="text-[9px] text-slate-450 font-bold uppercase tracking-wider mb-0.5">Accepted</span>
+                    <span class="text-[9px] text-slate-450 font-bold uppercase tracking-wider mb-0.5">{{ 'procurement.inspection.accepted' | translate }}</span>
                     <input 
                       type="number" 
                       [name]="'qtyAcc_' + $index"
@@ -288,7 +288,7 @@
                   </div>
 
                   <div class="flex flex-col items-center">
-                    <span class="text-[9px] text-slate-455 font-bold uppercase tracking-wider mb-0.5">Rejected</span>
+                    <span class="text-[9px] text-slate-455 font-bold uppercase tracking-wider mb-0.5">{{ 'procurement.inspection.rejected' | translate }}</span>
                     <input 
                       type="number" 
                       [name]="'qtyRej_' + $index"
@@ -311,7 +311,7 @@
                       [class.text-green-650]="item.status !== 'Passed'"
                       class="px-2 py-1 rounded border border-green-500 font-black text-[10px]"
                     >
-                      Pass
+                      {{ 'procurement.inspection.pass' | translate }}
                     </button>
                     <button 
                       type="button"
@@ -322,7 +322,7 @@
                       [class.text-red-650]="item.status !== 'Failed'"
                       class="px-2 py-1 rounded border border-red-500 font-black text-[10px]"
                     >
-                      Fail
+                      {{ 'procurement.inspection.fail' | translate }}
                     </button>
                   </div>
                 </div>
